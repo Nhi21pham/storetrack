@@ -43,6 +43,23 @@ services:
     networks:
       - app-network
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vue_app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    networks:
+      - app-network
+    environment:
+      - VITE_API_URL=http://localhost/api
+    depends_on:
+      - app
+
 networks:
   app-network:
     driver: bridge
