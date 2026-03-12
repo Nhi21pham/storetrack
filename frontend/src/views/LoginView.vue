@@ -51,154 +51,154 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import api from '@/api'
+  import { ref } from 'vue'
+  import api from '@/api'
 
-const form = ref({ email: '', password: '' })
-const loading = ref(false)
+  const form = ref({ email: '', password: '' })
+  const loading = ref(false)
 
-const handleLogin = async () => {
-  loading.value = true
-  try {
-    const response = await api.post('/login', form.value)
-    console.log('Login success:', response.data)
-    // redirect here later
-  } catch (error) {
-    console.error('Login failed:', error.response?.data)
-  } finally {
-    loading.value = false
+  const handleLogin = async () => {
+    loading.value = true
+    try {
+      const response = await api.post('/login', form.value)
+      console.log('Login success:', response.data)
+      // redirect here later
+    } catch (error) {
+      console.error('Login failed:', error.response?.data)
+    } finally {
+      loading.value = false
+    }
   }
-}
-</script>
+  </script>
 
-<style scoped>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+  <style scoped>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.login-page {
-  min-height: 100vh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
-  font-family: 'Segoe UI', sans-serif;
-}
+  .login-page {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    font-family: 'Segoe UI', sans-serif;
+  }
 
-.brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 28px;
-  gap: 12px;
-}
+  .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 28px;
+    gap: 12px;
+  }
 
-.logo {
-  width: 72px;
-  height: 72px;
-  background: #111;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .logo {
+    width: 72px;
+    height: 72px;
+    background: #111;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-.brand-name {
-  font-size: 22px;
-  font-weight: 600;
-  color: #111;
-}
+  .brand-name {
+    font-size: 22px;
+    font-weight: 600;
+    color: #111;
+  }
 
-.card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  padding: 48px;
-  width: 100%;
-  max-width: 560px;
-}
+  .card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 48px;
+    width: 100%;
+    max-width: 560px;
+  }
 
-h1 {
-  font-size: 26px;
-  font-weight: 700;
-  color: #111;
-  text-align: center;
-}
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #111;
+    text-align: center;
+  }
 
-.subtitle {
-  color: #9ca3af;
-  text-align: center;
-  margin-top: 8px;
-  margin-bottom: 32px;
-  font-size: 16px;
-}
+  .subtitle {
+    color: #9ca3af;
+    text-align: center;
+    margin-top: 8px;
+    margin-bottom: 32px;
+    font-size: 16px;
+  }
 
-.field {
-  margin-bottom: 20px;
-}
+  .field {
+    margin-bottom: 20px;
+  }
 
-label {
-  display: block;
-  font-size: 15px;
-  font-weight: 500;
-  color: #111;
-  margin-bottom: 8px;
-}
+  label {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    color: #111;
+    margin-bottom: 8px;
+  }
 
-input {
-  width: 100%;
-  padding: 16px 18px;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  color: #111;
-  outline: none;
-  transition: background 0.2s;
-}
+  input {
+    width: 100%;
+    padding: 16px 18px;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    color: #111;
+    outline: none;
+    transition: background 0.2s;
+  }
 
-input:focus {
-  background: #e9eaec;
-}
+  input:focus {
+    background: #e9eaec;
+  }
 
-.forgot {
-  text-align: right;
-  margin-bottom: 24px;
-}
+  .forgot {
+    text-align: right;
+    margin-bottom: 24px;
+  }
 
-.forgot a {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111;
-  text-decoration: none;
-}
+  .forgot a {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111;
+    text-decoration: none;
+  }
 
-button {
-  width: 100%;
-  padding: 17px;
-  background: #111;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
+  button {
+    width: 100%;
+    padding: 17px;
+    background: #111;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
 
-button:hover { background: #333; }
-button:disabled { background: #555; cursor: not-allowed; }
+  button:hover { background: #333; }
+  button:disabled { background: #555; cursor: not-allowed; }
 
-.register {
-  text-align: center;
-  margin-top: 24px;
-  font-size: 15px;
-  color: #6b7280;
-}
+  .register {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 15px;
+    color: #6b7280;
+  }
 
-.register a {
-  color: #111;
-  font-weight: 700;
-  text-decoration: none;
-}
+  .register a {
+    color: #111;
+    font-weight: 700;
+    text-decoration: none;
+  }
 </style>
