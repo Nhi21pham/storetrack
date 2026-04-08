@@ -20,7 +20,7 @@ class Register
         try {
             $result = $this->registerService->register($args);
             return [
-                'message' => 'Registration successful! Please check your email for the verification code.',
+                'message' => 'Please check your email for the verification code.',
                 'email' => $result['email']
             ];
         } catch (\Exception $e) {

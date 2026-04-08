@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
-use App\Mail\VerificationCodeMail;
 use App\Repositories\VerifyRepository;
 use App\Repositories\RegisterRepository;
-use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendVerifyMailJob;
+use Illuminate\Support\Facades\DB;
 
 class VerifyService
 {
@@ -32,8 +32,10 @@ class VerifyService
             throw new \Exception('Registration session has expired. Please register again.');
         }
 
-        $this->verifyRepository->createUser($pendingUser);
-        $this->verifyRepository->cleanup($email);
+        DB::transaction(function () use ($pendingUser, $email) {
+            $this->verifyRepository->createUser($pendingUser);
+            $this->verifyRepository->cleanup($email);
+        });
 
         return true;
     }
@@ -50,6 +52,6 @@ class VerifyService
 
         $this->registerRepository->saveVerificationCode($email, $code);
 
-        Mail::to($email)->send(new VerificationCodeMail($code));
+        SendVerifyMailJob::dispatch($email, $code);
     }
 }

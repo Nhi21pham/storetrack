@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
-use App\Mail\VerificationCodeMail;
 use App\Repositories\RegisterRepository;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendVerifyMailJob;
+
+use function Illuminate\Support\microseconds;
 
 class RegisterService
 {
@@ -25,7 +26,7 @@ class RegisterService
 
         $this->registerRepository->saveVerificationCode($data['email'], $code);
 
-        Mail::to($data['email'])->send(new VerificationCodeMail($code));
+        SendVerifyMailJob::dispatch($data['email'], $code);
 
         return ['email' => $data['email']];
     }
