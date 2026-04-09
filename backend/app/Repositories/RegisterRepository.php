@@ -14,5 +14,6 @@ class RegisterRepository
     public function saveVerificationCode(string $email, string $code): void
     {
         Cache::put('verification_code:' . $email, $code, now()->addMinutes(10));
+        \Log::info('Saved verification code to Redis: ' . $email . ' code: ' . $code);
     }
 }

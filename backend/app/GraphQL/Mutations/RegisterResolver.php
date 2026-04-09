@@ -5,11 +5,11 @@ namespace App\GraphQL\Mutations;
 use App\Services\RegisterService;
 use GraphQL\Error\UserError;
 
-class Register
+class RegisterResolver
 {
     public function __construct(private RegisterService $registerService) {}
 
-    public function __invoke(null $root, array $args): array
+    public function register(null $root, array $args): array
     {
         validator($args, [
             'name' => 'required|string|max:255',

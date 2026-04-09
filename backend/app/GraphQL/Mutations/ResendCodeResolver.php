@@ -5,15 +5,15 @@ namespace App\GraphQL\Mutations;
 use App\Services\VerifyService;
 use GraphQL\Error\UserError;
 
-class VerifyCode
+class ResendCodeResolver
 {
     public function __construct(private VerifyService $verifyService) {}
 
-    public function __invoke(null $root, array $args): array
+    public function resendCode(null $root, array $args): array
     {
         try {
-            $this->verifyService->verifyCode($args['email'], $args['code']);
-            return ['message' => 'Email verified successfully!'];
+            $this->verifyService->resendCode($args['email']);
+            return ['message' => 'Verification code resent successfully!'];
         } catch (\Exception $e) {
             throw new UserError($e->getMessage());
         }
