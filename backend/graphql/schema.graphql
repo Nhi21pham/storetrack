@@ -8,13 +8,13 @@ type Mutation {
         email: String!
         password: String!
         password_confirmation: String!
-    ): RegisterResponse! @field(resolver: "App\\GraphQL\\Mutations\\Register")
+    ): RegisterResponse! @field(resolver: "App\\GraphQL\\Mutations\\RegisterResolver@register")
 
     verifyCode(email: String!, code: String!): MessageResponse!
-        @field(resolver: "App\\GraphQL\\Mutations\\VerifyCode")
+        @field(resolver: "App\\GraphQL\\Mutations\\VerifyCodeResolver@verifyCode")
 
     resendCode(email: String!): MessageResponse!
-        @field(resolver: "App\\GraphQL\\Mutations\\ResendCode")
+        @field(resolver: "App\\GraphQL\\Mutations\\ResendCodeResolver@resendCode")
 }
 
 type RegisterResponse {
