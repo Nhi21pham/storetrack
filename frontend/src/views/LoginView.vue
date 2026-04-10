@@ -38,12 +38,14 @@
           <a href="#">Forgot password?</a>
         </div>
 
+        <p v-if="error" class="error" style="white-space: pre-line">{{ error }}</p>
+
         <button type="submit" :disabled="loading">
           {{ loading ? 'Signing in...' : 'Sign in' }}
         </button>
 
         <p class="register">
-          Don't have an account? <a href="#">Register</a>
+          Don't have an account? <RouterLink to="/register">Register</RouterLink>
         </p>
       </form>
     </div>
@@ -52,19 +54,42 @@
 
 <script setup>
   import { ref } from 'vue'
-  import api from '@/api'
+  import { useRouter } from 'vue-router'
+  import { graphql } from '@/api'
 
+  const router = useRouter()
   const form = ref({ email: '', password: '' })
   const loading = ref(false)
+  const error = ref('')
 
   const handleLogin = async () => {
     loading.value = true
+    error.value = ''
     try {
-      const response = await api.post('/login', form.value)
-      console.log('Login success:', response.data)
-      // redirect here later
-    } catch (error) {
-      console.error('Login failed:', error.response?.data)
+      const data = await graphql(`
+        mutation Login($email: String!, $password: String!) {
+          login(email: $email, password: $password) {
+            message
+            token
+            user {
+              id
+              name
+              email
+            }
+          }
+        }
+      `, {
+        email: form.value.email,
+        password: form.value.password
+      })
+
+      // Save token to localStorage
+      localStorage.setItem('token', data.login.token)
+      localStorage.setItem('user', JSON.stringify(data.login.user))
+
+      router.push('/dashboard')
+    } catch (err) {
+      error.value = err.message || 'Login failed'
     } finally {
       loading.value = false
     }
@@ -201,4 +226,11 @@
     font-weight: 700;
     text-decoration: none;
   }
+
+  .error {
+  color: red;
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
 </style>

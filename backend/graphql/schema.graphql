@@ -1,5 +1,7 @@
 #import Mutations/*.graphql
 #import Queries/*.graphql
+#import Subscriptions/*.graphql
+#import Types/*.graphql
 
 type Query
 type Mutation

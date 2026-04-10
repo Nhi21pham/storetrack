@@ -4,8 +4,4 @@ extend type Mutation{
         code: String!
     ): MessageResponse!
     @field(resolver: "App\\GraphQL\\Mutations\\VerifyCodeResolver@verifyCode")
-} 
-
-type MessageResponse {
-    message: String!
 }
