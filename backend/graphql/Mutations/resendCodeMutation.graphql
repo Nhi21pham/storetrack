@@ -1,0 +1,6 @@
+extend type Mutation {
+    resendCode(
+        email: String!
+    ): MessageResponse!
+    @field(resolver: "App\\GraphQL\\Mutations\\ResendCodeResolver@resendCode")
+}
