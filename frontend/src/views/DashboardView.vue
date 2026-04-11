@@ -101,10 +101,6 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
               Store Information
             </div>
-            <div class="dropdown-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M4.93 4.93l1.41 1.41"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M20 12h2"/><path d="M2 12h2"/><path d="M19.07 19.07l-1.41-1.41"/><path d="M4.93 19.07l1.41-1.41"/></svg>
-              Store Settings
-            </div>
 
             <div class="dropdown-divider"></div>
 
@@ -157,7 +153,7 @@
             </div>
           </div>
           <div class="chart-area">
-            <svg viewBox="0 0 500 220" class="line-chart">
+            <svg viewBox="0 0 500 260" class="line-chart">
               <defs>
                 <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#e8450a" stop-opacity="0.15"/>
@@ -260,9 +256,7 @@ const handleLogout = () => {
 
 const stats = [
   { label: 'Total Sales', value: '$72,340', change: '+14.2%', positive: true, icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' },
-  { label: 'Active Stores', value: '24', change: '+8.3%', positive: true, icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>' },
   { label: 'Products in Stock', value: '1,847', change: '-2.1%', positive: false, icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' },
-  { label: 'Total Customers', value: '12,458', change: '+22.6%', positive: true, icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' },
 ]
 
 const topProducts = [
@@ -284,15 +278,15 @@ const recentOrders = [
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']
 const rawData = [45, 52, 48, 61, 59, 65, 68, 72]
 const minVal = 0, maxVal = 80
-const chartWidth = 440, chartHeight = 160, startX = 50
+const chartWidth = 440, chartHeight = 190, startX = 50
 
 const points = rawData.map((v, i) => ({
   x: startX + (i * chartWidth / (rawData.length - 1)),
-  y: 170 - ((v - minVal) / (maxVal - minVal)) * chartHeight
+  y: 200 - ((v - minVal) / (maxVal - minVal)) * chartHeight
 }))
 
 const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-const areaPath = linePath + ` L ${points[points.length-1].x} 175 L ${points[0].x} 175 Z`
+const areaPath = linePath + ` L ${points[points.length-1].x} 210 L ${points[0].x} 210 Z`
 </script>
 
 <style scoped>
@@ -411,7 +405,7 @@ const areaPath = linePath + ` L ${points[points.length-1].x} 175 L ${points[0].x
 /* Content */
 .content { padding: 32px; max-width: 1400px; margin: 0 auto; }
 
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px; }
 
 .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
 .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -428,7 +422,7 @@ const areaPath = linePath + ` L ${points[points.length-1].x} 175 L ${points[0].x
 .chart-header { margin-bottom: 20px; }
 .chart-header h3 { font-size: 18px; font-weight: 700; color: #111; }
 .chart-header p { font-size: 14px; color: #6b7280; margin-top: 2px; }
-.line-chart { width: 100%; height: 210px; }
+.line-chart { width: 100%; height: 280px; }
 
 .products-list { display: flex; flex-direction: column; gap: 20px; }
 .product-item { display: flex; justify-content: space-between; align-items: center; }
