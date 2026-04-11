@@ -11,9 +11,13 @@ class RegisterRepository
         Cache::put('pending_user:' . $email, $data, now()->addMinutes(10));
     }
 
-    public function saveVerificationCode(string $email, string $code): void
+    public function getPendingUser(string $email): ?array
     {
-        Cache::put('verification_code:' . $email, $code, now()->addMinutes(10));
-        \Log::info('Saved verification code to Redis: ' . $email . ' code: ' . $code);
+        return Cache::get('pending_user:' . $email);
+    }
+
+    public function deletePendingUser(string $email): void
+    {
+        Cache::forget('pending_user:' . $email);
     }
 }

@@ -4,15 +4,20 @@ namespace App\Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Repositories\UserRepository;
 
 class LoginService
 {
+    public function __construct(
+        private UserRepository $userRepository
+    ) {}
+
     public function login(string $email, string $password): array
     {
-        $user = User::where('email', $email)->first();
+        $user = $this->userRepository->findByEmail($email);
 
         if (!$user) {
-            throw new \Exception('Invalid email address');
+            throw new \Exception('No account found with this email');
         }
 
         if (!Hash::check($password, $user->password)) {
