@@ -35,7 +35,7 @@
         </div>
 
         <div class="forgot">
-          <a href="#">Forgot password?</a>
+          <a href="/forgot-password">Forgot password?</a>
         </div>
 
         <p v-if="error" class="error" style="white-space: pre-line">{{ error }}</p>
