@@ -6,17 +6,20 @@ use App\Repositories\VerifyRepository;
 use App\Repositories\RegisterRepository;
 use App\Jobs\SendVerifyMailJob;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use App\Repositories\UserRepository;
 
 class VerifyService
 {
     public function __construct(
         private VerifyRepository $verifyRepository,
-        private RegisterRepository $registerRepository
+        private RegisterRepository $registerRepository,
+        private UserRepository $userRepository
     ) {}
 
     public function verifyCode(string $email, string $code): bool
     {
-        $storedCode = $this->verifyRepository->findVerificationCode($email);
+        $storedCode = $this->verifyRepository->getCode('verification_code', $email);
 
         if (!$storedCode) {
             throw new \Exception('Verification code has expired or does not exist.');
@@ -26,15 +29,16 @@ class VerifyService
             throw new \Exception('Invalid verification code.');
         }
 
-        $pendingUser = $this->verifyRepository->getPendingUser($email);
+        $pendingUser = $this->registerRepository->getPendingUser($email);
 
         if (!$pendingUser) {
             throw new \Exception('Registration session has expired. Please register again.');
         }
 
         DB::transaction(function () use ($pendingUser, $email) {
-            $this->verifyRepository->createUser($pendingUser);
-            $this->verifyRepository->cleanup($email);
+            $this->userRepository->create($pendingUser);
+            $this->verifyRepository->deleteCode('verification_code', $email);
+            $this->registerRepository->deletePendingUser($email);
         });
 
         return true;
@@ -42,15 +46,15 @@ class VerifyService
 
     public function resendCode(string $email): void
     {
-        $pendingUser = $this->verifyRepository->getPendingUser($email);
+        $pendingUser = $this->registerRepository->getPendingUser($email);
 
         if (!$pendingUser) {
             throw new \Exception('Registration session has expired. Please register again.');
         }
 
-        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $code = $this->verifyRepository->createRandomCode($email);
 
-        $this->registerRepository->saveVerificationCode($email, $code);
+        $this->verifyRepository->saveCode('verification_code', $email, $code);
 
         SendVerifyMailJob::dispatch($email, $code);
     }

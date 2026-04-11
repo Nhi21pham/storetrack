@@ -1,0 +1,7 @@
+extend type Mutation{
+    verifyCode(
+        email: String!, 
+        code: String!
+    ): MessageResponse!
+    @field(resolver: "App\\GraphQL\\Mutations\\VerifyCodeResolver@verifyCode")
+}

@@ -5,18 +5,19 @@ namespace App\Services;
 use App\Repositories\RegisterRepository;
 use Illuminate\Support\Facades\Hash;
 use App\Jobs\SendVerifyMailJob;
-
+use App\Repositories\VerifyRepository;
 use function Illuminate\Support\microseconds;
 
 class RegisterService
 {
     public function __construct(
-        private RegisterRepository $registerRepository
+        private RegisterRepository $registerRepository,
+        private VerifyRepository $verifyRepository
     ) {}
 
     public function register(array $data): array
     {
-        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $code = $this->verifyRepository->createRandomCode($data['email']);
 
         $this->registerRepository->savePendingUser($data['email'], [
             'name' => $data['name'],
@@ -24,7 +25,7 @@ class RegisterService
             'password' => Hash::make($data['password']),
         ]);
 
-        $this->registerRepository->saveVerificationCode($data['email'], $code);
+        $this->verifyRepository->saveCode('verification_code', $data['email'], $code);
 
         SendVerifyMailJob::dispatch($data['email'], $code);
 
