@@ -23,4 +23,12 @@ class UserRepository
             'password' => Hash::make($password)
         ]);
     }
+    public function updateUser(User $user, array $data): User
+    {
+        $user->update(array_filter([
+            'name' => $data['name'] ?? null,
+        ]));
+
+        return $user->fresh();
+    }
 }
