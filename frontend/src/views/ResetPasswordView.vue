@@ -126,6 +126,9 @@ const handleReset = async () => {
     })
 
     success.value = 'Password reset successfully! Redirecting to login...'
+    // Clear auth and force login
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
     setTimeout(() => router.push('/login'), 2000)
   } catch (err) {
     error.value = err.message || 'Reset failed'

@@ -4,6 +4,7 @@ namespace App\GraphQL\Mutations;
 
 use App\Services\ForgotPasswordService;
 use GraphQL\Error\UserError;
+use App\Validators\AuthValidator;
 
 class ResetPasswordResolver
 {
@@ -11,6 +12,7 @@ class ResetPasswordResolver
 
     public function resetPassword(null $root, array $args): array
     {
+         validator($args, AuthValidator::resetPassword())->validate();
         try {
             $this->forgotPasswordService->resetPassword(
                 $args['email'],

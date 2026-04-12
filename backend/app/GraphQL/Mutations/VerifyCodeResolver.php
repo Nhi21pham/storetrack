@@ -4,6 +4,7 @@ namespace App\GraphQL\Mutations;
 
 use App\Services\VerifyService;
 use GraphQL\Error\UserError;
+use App\Validators\AuthValidator;
 
 class VerifyCodeResolver
 {
@@ -11,6 +12,8 @@ class VerifyCodeResolver
 
     public function verifyCode(null $root, array $args): array
     {
+         validator($args, AuthValidator::verifyCode())->validate();
+
         try {
             $this->verifyService->verifyCode($args['email'], $args['code']);
             return ['message' => 'Email verified successfully!'];

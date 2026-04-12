@@ -37,6 +37,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { graphql } from '@/api'
+import { validators, validate } from '@/utils/validators'
 
 const router = useRouter()
 const email = ref('')
@@ -46,6 +47,15 @@ const error = ref('')
 const handleForgot = async () => {
   loading.value = true
   error.value = ''
+  const errors = validate([
+    () => validators.email(email.value),
+  ])
+
+  if (errors.length > 0) {
+    error.value = errors.join('\n')
+    return
+  }
+
   try {
     await graphql(`
       mutation ForgotPassword($email: String!) {

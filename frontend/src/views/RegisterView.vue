@@ -72,6 +72,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { graphql } from '@/api'
+import { validators, validate } from '@/utils/validators'
 
 const router = useRouter()
 const error = ref('')
@@ -84,6 +85,17 @@ const form = ref({
 })
 
 const handleRegister = async () => {
+  const errors = validate([
+    () => validators.name(form.value.name),
+    () => validators.email(form.value.email),
+    () => validators.password(form.value.password),
+    () => validators.confirmPassword(form.value.password_confirmation, form.value.password),
+  ])
+
+  if (errors.length > 0) {
+    error.value = errors.join('\n')
+    return
+  }
   loading.value = true
   error.value = ''
   try {
