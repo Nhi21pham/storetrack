@@ -51,17 +51,17 @@
 
           <div class="dropdown-divider"></div>
           <div class="dropdown-section-title">Account</div>
-          <div class="dropdown-item">
+          <div class="dropdown-item" @click.stop="$emit('account-info')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Account Information
           </div>
-          <div class="dropdown-item" @click="$emit('change-password')">
+          <div class="dropdown-item" @click.stop="$emit('change-password')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             Change Password
           </div>
 
           <div class="dropdown-divider"></div>
-          <div class="dropdown-item logout" @click="$emit('logout')">
+          <div class="dropdown-item logout" @click.stop="$emit('logout')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
           </div>
@@ -72,25 +72,35 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
   username: String,
   email: String
 })
 
-defineEmits(['toggle-sidebar', 'change-password', 'logout'])
+defineEmits(['toggle-sidebar', 'account-info', 'change-password', 'logout'])
 
 const dropdownOpen = ref(false)
+
+const handleClickOutside = (e) => {
+  const wrapper = document.querySelector('.avatar-wrapper')
+  if (wrapper && !wrapper.contains(e.target)) {
+    dropdownOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>
-.navbar {
-  background: #fff; border-bottom: 1px solid #e5e7eb;
-  padding: 0 24px; height: 64px;
-  display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 100;
-}
+.navbar { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .navbar-left { display: flex; align-items: center; gap: 16px; }
 .navbar-right { display: flex; align-items: center; gap: 12px; }
 .hello-text { font-size: 14px; color: #6b7280; }

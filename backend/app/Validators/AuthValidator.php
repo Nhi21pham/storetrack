@@ -53,7 +53,7 @@ class AuthValidator
         ];
     }
 
-    public static function updateProfile(): array
+    public static function updateUser(): array
     {
         return [
             'name' => 'sometimes|string|min:2|max:255'
