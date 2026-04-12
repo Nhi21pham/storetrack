@@ -5,20 +5,21 @@ const api = axios.create({
 })
 
 export const graphql = async (query, variables = {}) => {
-  const response = await api.post('/graphql', { query, variables })
-  
+  const token = localStorage.getItem('token')
+  const headers = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const response = await api.post('/graphql', { query, variables }, { headers })
+
   if (response.data.errors) {
     const error = response.data.errors[0]
-    
-    // Handle validation errors
     if (error.extensions?.validation) {
       const messages = Object.values(error.extensions.validation).flat()
       throw new Error(messages.join('\n'))
     }
-    
     throw new Error(error.message)
   }
-  
+
   return response.data.data
 }
 

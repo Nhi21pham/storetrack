@@ -16,6 +16,9 @@
         <label>Confirm New Password</label>
         <input v-model="form.new_password_confirmation" type="password" placeholder="Confirm new password" />
       </div>
+      <p class="forgot-link">
+        <a href="#" @click.prevent="handleForgotPassword">Forgot your password, want to reset it?</a>
+      </p>
 
       <p v-if="error" class="error">{{ error }}</p>
       <p v-if="success" class="success">{{ success }}</p>
@@ -33,8 +36,10 @@
 <script setup>
 import { ref } from 'vue'
 import { graphql } from '@/api'
+import { useRouter } from 'vue-router'
+import { validators, validate } from '@/utils/validators'
 
-defineEmits(['close'])
+const emit = defineEmits(['close'])
 
 const loading = ref(false)
 const error = ref('')
@@ -45,10 +50,56 @@ const form = ref({
   new_password_confirmation: ''
 })
 
+const router = useRouter()
+
+const handleForgotPassword = async () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const email = user.email
+
+  try {
+    // Auto send reset code using user's email
+    await graphql(`
+      mutation ForgotPassword($email: String!) {
+        forgotPassword(email: $email) {
+          message
+        }
+      }
+    `, { email })
+
+    // Close modal and redirect to reset password page
+    emit('close')
+    router.push({ path: '/reset-password', query: { email } })
+  } catch (err) {
+    error.value = err.message || 'Failed to send reset code'
+  }
+}
 const handleSubmit = async () => {
-  loading.value = true
   error.value = ''
   success.value = ''
+  const errors = validate([
+    () => validators.password(form.value.old_password),
+    () => validators.password(form.value.new_password),
+    () => validators.confirmPassword(form.value.new_password_confirmation, form.value.new_password),
+  ])
+
+  if (errors.length > 0) {
+    error.value = errors.join('\n')
+    return
+  }
+  // if (!form.value.old_password) {
+  //   error.value = 'Old password is required.'
+  //   return
+  // }
+  // if (!form.value.new_password) {
+  //   error.value = 'New password is required.'
+  //   return
+  // }
+  // if (!form.value.new_password_confirmation) {
+  //   error.value = 'Please confirm your new password.'
+  //   return
+  // }
+
+  loading.value = true
   try {
     await graphql(`
       mutation UpdatePassword($old_password: String!, $new_password: String!, $new_password_confirmation: String!) {
@@ -64,7 +115,7 @@ const handleSubmit = async () => {
 
     success.value = 'Password updated successfully!'
     form.value = { old_password: '', new_password: '', new_password_confirmation: '' }
-    setTimeout(() => { success.value = ''; }, 2000)
+    setTimeout(() => { success.value = '' }, 2000)
   } catch (err) {
     error.value = err.message || 'Failed to update password'
   } finally {
@@ -90,4 +141,7 @@ const handleSubmit = async () => {
 .btn-ok { flex: 1; padding: 14px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
 .btn-ok:hover { background: #333; }
 .btn-ok:disabled { background: #555; cursor: not-allowed; }
+.forgot-link { text-align: right; margin-top: 6px; }
+.forgot-link a { font-size: 13px; font-weight: 600; color: #111; text-decoration: none; }
+.forgot-link a:hover { text-decoration: underline; }
 </style>

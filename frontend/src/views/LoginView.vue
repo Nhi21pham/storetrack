@@ -35,7 +35,7 @@
         </div>
 
         <div class="forgot">
-          <a href="#">Forgot password?</a>
+          <a href="/forgot-password">Forgot password?</a>
         </div>
 
         <p v-if="error" class="error" style="white-space: pre-line">{{ error }}</p>
@@ -56,6 +56,7 @@
   import { ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { graphql } from '@/api'
+  import { validators, validate } from '@/utils/validators'
 
   const router = useRouter()
   const form = ref({ email: '', password: '' })
@@ -63,6 +64,15 @@
   const error = ref('')
 
   const handleLogin = async () => {
+    const errors = validate([
+      () => validators.email(form.value.email),
+      () => validators.password(form.value.password),
+    ])
+
+    if (errors.length > 0) {
+      error.value = errors.join('\n')
+      return
+    }
     loading.value = true
     error.value = ''
     try {
