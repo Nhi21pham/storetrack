@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-overlay" @click.self="$emit('close')">
+  <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <h2>Change Password</h2>
       <p class="modal-subtitle">Update your account password</p>
@@ -24,13 +24,22 @@
       <p v-if="success" class="success">{{ success }}</p>
 
       <div class="modal-actions">
-        <button class="btn-cancel" @click="$emit('close')">Cancel</button>
+        <button class="btn-cancel" @click="handleClickOutside">Cancel</button>
         <button class="btn-ok" :disabled="loading" @click="handleSubmit">
           {{ loading ? 'Updating...' : 'Update Password' }}
         </button>
       </div>
     </div>
   </div>
+  <ConfirmDialog
+  v-if="showConfirm"
+  title="Discard Changes"
+  message="You have unsaved changes. Are you sure you want to cancel?"
+  confirm-text="Yes, discard"
+  cancel-text="Keep editing"
+  @confirm="emit('close')"
+  @cancel="showConfirm = false"
+  />
 </template>
 
 <script setup>
@@ -38,26 +47,38 @@ import { ref } from 'vue'
 import { graphql } from '@/api'
 import { useRouter } from 'vue-router'
 import { validators, validate } from '@/utils/validators'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const emit = defineEmits(['close'])
-
+const showConfirm = ref(false)
 const loading = ref(false)
 const error = ref('')
 const success = ref('')
+const router = useRouter()
+
 const form = ref({
   old_password: '',
   new_password: '',
   new_password_confirmation: ''
 })
 
-const router = useRouter()
+const hasChanges = () => {
+  return form.value.old_password || form.value.new_password || form.value.new_password_confirmation
+}
+
+const handleClickOutside = () => {
+  if (hasChanges()) {
+    showConfirm.value = true
+  } else {
+    emit('close')
+  }
+}
 
 const handleForgotPassword = async () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const email = user.email
 
   try {
-    // Auto send reset code using user's email
     await graphql(`
       mutation ForgotPassword($email: String!) {
         forgotPassword(email: $email) {
@@ -66,7 +87,9 @@ const handleForgotPassword = async () => {
       }
     `, { email })
 
-    // Close modal and redirect to reset password page
+    // Set session flag before redirecting
+    sessionStorage.setItem('canReset', 'true')
+
     emit('close')
     router.push({ path: '/reset-password', query: { email } })
   } catch (err) {
@@ -86,18 +109,6 @@ const handleSubmit = async () => {
     error.value = errors.join('\n')
     return
   }
-  // if (!form.value.old_password) {
-  //   error.value = 'Old password is required.'
-  //   return
-  // }
-  // if (!form.value.new_password) {
-  //   error.value = 'New password is required.'
-  //   return
-  // }
-  // if (!form.value.new_password_confirmation) {
-  //   error.value = 'Please confirm your new password.'
-  //   return
-  // }
 
   loading.value = true
   try {
