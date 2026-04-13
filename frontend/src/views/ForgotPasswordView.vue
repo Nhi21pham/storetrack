@@ -64,7 +64,7 @@ const handleForgot = async () => {
         }
       }
     `, { email: email.value })
-
+    sessionStorage.setItem('canReset', 'true')
     router.push({ path: '/reset-password', query: { email: email.value } })
   } catch (err) {
     error.value = err.message || 'Something went wrong'

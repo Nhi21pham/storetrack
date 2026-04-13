@@ -113,6 +113,7 @@ const handleRegister = async () => {
       password_confirmation: form.value.password_confirmation
     })
 
+    sessionStorage.setItem('canVerify', 'true')
     router.push({ path: '/verify-code', query: { email: form.value.email } })
   } catch (err) {
     error.value = err.message || 'Registration failed'

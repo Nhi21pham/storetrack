@@ -57,7 +57,6 @@ const handleForgotPassword = async () => {
   const email = user.email
 
   try {
-    // Auto send reset code using user's email
     await graphql(`
       mutation ForgotPassword($email: String!) {
         forgotPassword(email: $email) {
@@ -66,7 +65,9 @@ const handleForgotPassword = async () => {
       }
     `, { email })
 
-    // Close modal and redirect to reset password page
+    // Set session flag before redirecting
+    sessionStorage.setItem('canReset', 'true')
+
     emit('close')
     router.push({ path: '/reset-password', query: { email } })
   } catch (err) {
