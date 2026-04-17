@@ -187,7 +187,7 @@ onMounted(fetchBusinesses)
 </script>
 
 <style scoped>
-.business-page { padding: 32px; max-width: 900px; margin: 0 auto; }
+.business-page { padding: 32px; max-width: 900px; margin: 0 auto; overflow: hidden; }
 
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
 .page-header h1 { font-size: 22px; font-weight: 700; color: #111; }
@@ -212,11 +212,12 @@ onMounted(fetchBusinesses)
 .card-body { flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
 .card-main { display: flex; align-items: center; gap: 12px; }
 .card-icon { width: 40px; height: 40px; background: #f3f4f6; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #6b7280; flex-shrink: 0; }
-.card-info h3 { font-size: 15px; font-weight: 600; color: #111; }
-.tax-badge { display: inline-block; font-size: 11px; font-weight: 500; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 4px; margin-top: 2px; font-family: monospace; }
+.card-info { min-width: 0; }
+.card-info h3 { font-size: 15px; font-weight: 600; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tax-badge { display: inline-block; font-size: 11px; font-weight: 500; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 4px; margin-top: 2px; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
 
 .card-details { display: flex; flex-wrap: wrap; gap: 12px; padding-left: 52px; }
-.detail-item { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #6b7280; }
+.detail-item { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .card-meta { padding-left: 52px; }
 .store-count { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #9ca3af; }
@@ -232,6 +233,8 @@ onMounted(fetchBusinesses)
 .member-badge { font-size: 10px; font-weight: 600; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
 .card-role-badge { display: flex; align-items: center; justify-content: center; padding: 0 18px; border-left: 1px solid #f3f4f6; }
 .member-tag { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: capitalize; }
+
+.card-body { flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow: hidden; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
