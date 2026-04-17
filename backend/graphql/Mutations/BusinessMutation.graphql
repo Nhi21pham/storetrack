@@ -22,6 +22,7 @@ input CreateBusinessInput {
 
 input UpdateBusinessInput {
     name: String
+    tax_code: String @rules(apply: ["nullable", "string", "max:50"])
     address: String
     email: String @rules(apply: ["nullable", "email"])
     phone: String

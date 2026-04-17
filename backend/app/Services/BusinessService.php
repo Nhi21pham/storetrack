@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\User;
 use App\Repositories\BusinessRepository;
 use Illuminate\Support\Facades\DB;
+use App\Exceptions\BusinessException;
 
 class BusinessService
 {
@@ -27,6 +28,14 @@ class BusinessService
     {
         $this->permissionService->authorizeBusiness($user, PermissionEnum::UpdateBusiness, $businessId);
         $business = $this->mustFind($businessId);
+        if (!empty($data['tax_code']) && $data['tax_code'] !== $business->tax_code) {
+            $exists = Business::where('tax_code', $data['tax_code'])
+                    ->where('id', '!=', $business->id)
+                    ->exists();
+            if ($exists) {
+                throw new BusinessException('This tax code is already in use.');
+            }
+        }
         return $this->businessRepository->update($business, $data);
     }
 

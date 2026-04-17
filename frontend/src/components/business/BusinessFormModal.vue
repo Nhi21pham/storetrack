@@ -19,9 +19,8 @@
 
         <div class="form-group">
           <label>Tax Code <span class="required">*</span></label>
-          <input v-model="form.tax_code" type="text" placeholder="Enter tax code" :class="{ error: errors.tax_code }" :disabled="isEdit" />
+          <input v-model="form.tax_code" type="text" placeholder="Enter tax code" :class="{ error: errors.tax_code }" />
           <span v-if="errors.tax_code" class="error-text">{{ errors.tax_code }}</span>
-          <span v-if="isEdit" class="hint">Tax code cannot be changed after creation.</span>
         </div>
 
         <div class="form-group">
@@ -103,7 +102,7 @@ const validate = () => {
     errors.value.name = 'Business name is required.'
     valid = false
   }
-  if (!isEdit.value && !form.value.tax_code.trim()) {
+  if (!form.value.tax_code.trim()) {
     errors.value.tax_code = 'Tax code is required.'
     valid = false
   }
@@ -135,6 +134,7 @@ const handleSubmit = async () => {
         id: props.business.id,
         input: {
           name: form.value.name,
+          tax_code: form.value.tax_code,
           address: form.value.address || null,
           email: form.value.email || null,
           phone: form.value.phone || null
