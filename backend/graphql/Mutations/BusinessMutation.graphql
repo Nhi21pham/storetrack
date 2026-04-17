@@ -13,17 +13,17 @@ extend type Mutation {
 }
 
 input CreateBusinessInput {
-    name: String! @rules(apply: ["required", "string", "max:255"])
-    tax_code: String! @rules(apply: ["required", "string", "max:50", "unique:businesses,tax_code"])
-    address: String
-    email: String @rules(apply: ["nullable", "email"])
-    phone: String
+    name: String! @rules(apply: ["required", "string", "min:2", "max:255"])
+    tax_code: String! @rules(apply: ["required", "string", "min:5", "max:50", "unique:businesses,tax_code"])
+    address: String @rules(apply: ["nullable", "string", "max:500"])
+    email: String @rules(apply: ["nullable", "email", "max:255"])
+    phone: String @rules(apply: ["nullable", "string", "max:20"])
 }
 
 input UpdateBusinessInput {
-    name: String
-    tax_code: String @rules(apply: ["nullable", "string", "max:50"])
-    address: String
-    email: String @rules(apply: ["nullable", "email"])
-    phone: String
+    name: String @rules(apply: ["sometimes", "string", "min:2", "max:255"])
+    tax_code: String @rules(apply: ["sometimes", "string", "min:5", "max:50"])
+    address: String @rules(apply: ["nullable", "string", "max:500"])
+    email: String @rules(apply: ["nullable", "email", "max:255"])
+    phone: String @rules(apply: ["nullable", "string", "max:20"])
 }

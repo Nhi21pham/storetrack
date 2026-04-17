@@ -25,7 +25,8 @@
 
         <div class="form-group">
           <label>Address</label>
-          <input v-model="form.address" type="text" placeholder="Enter address" />
+          <input v-model="form.address" type="text" placeholder="Enter address" :class="{ error: errors.address }" />
+          <span v-if="errors.address" class="error-text">{{ errors.address }}</span>
         </div>
 
         <div class="form-row">
@@ -36,7 +37,8 @@
           </div>
           <div class="form-group">
             <label>Phone</label>
-            <input v-model="form.phone" type="tel" placeholder="Enter phone number" />
+            <input v-model="form.phone" type="tel" placeholder="Enter phone number" :class="{ error: errors.phone }" />
+            <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
           </div>
         </div>
 
@@ -67,6 +69,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { validators, validate } from '@/utils/validators'
 
 const props = defineProps({
   business: { type: Object, default: null }
@@ -79,7 +82,7 @@ const loading = ref(false)
 const apiError = ref('')
 const showUnsavedWarning = ref(false)
 
-const errors = ref({ name: '', tax_code: '', email: '' })
+const errors = ref({ name: '', tax_code: '', email: '', phone: '', address: '' })
 
 const initialForm = () => ({
   name: props.business?.name || '',
@@ -94,28 +97,20 @@ const originalForm = ref(JSON.stringify(initialForm()))
 
 const isDirty = computed(() => JSON.stringify(form.value) !== originalForm.value)
 
-const validate = () => {
-  errors.value = { name: '', tax_code: '', email: '' }
-  let valid = true
+const validateForm = () => {
+  errors.value = { name: '', tax_code: '', email: '', phone: '', address: '' }
 
-  if (!form.value.name.trim()) {
-    errors.value.name = 'Business name is required.'
-    valid = false
-  }
-  if (!form.value.tax_code.trim()) {
-    errors.value.tax_code = 'Tax code is required.'
-    valid = false
-  }
-  if (form.value.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
-    errors.value.email = 'Please enter a valid email.'
-    valid = false
-  }
+  errors.value.name = validators.businessName(form.value.name)
+  errors.value.tax_code = validators.taxCode(form.value.tax_code)
+  errors.value.email = validators.businessEmail(form.value.email)
+  errors.value.phone = validators.businessPhone(form.value.phone)
+  errors.value.address = validators.businessAddress(form.value.address)
 
-  return valid
+  return !Object.values(errors.value).some(e => e !== null)
 }
 
 const handleSubmit = async () => {
-  if (!validate()) return
+  if (!validateForm()) return
 
   loading.value = true
   apiError.value = ''
