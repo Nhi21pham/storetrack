@@ -12,10 +12,26 @@
     </div>
 
     <div class="sidebar-menu">
-      <div class="menu-item active">
+      <router-link to="/dashboard" class="menu-item" :class="{ active: isActive('/dashboard') }" @click="$emit('close')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Dashboard
-      </div>
+      </router-link>
+
+      <router-link to="/business" class="menu-item" :class="{ active: isActive('/business') }" @click="$emit('close')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        Business
+      </router-link>
+
+      <router-link to="/stores" class="menu-item" :class="{ active: isActive('/stores') }" @click="$emit('close')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/>
+          <path d="M8 7v4"/><path d="M16 7v4"/>
+        </svg>
+        Stores
+      </router-link>
 
       <div class="menu-item has-sub" @mouseenter="reportsOpen = true" @mouseleave="reportsOpen = false">
         <div class="menu-item-inner">
@@ -37,11 +53,6 @@
       </div>
 
       <div class="menu-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        Stores
-      </div>
-
-      <div class="menu-item">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Customers
       </div>
@@ -53,11 +64,15 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 defineProps({ open: Boolean })
 defineEmits(['close'])
 
+const route = useRoute()
 const reportsOpen = ref(false)
+
+const isActive = (path) => route.path.startsWith(path)
 </script>
 
 <style scoped>
@@ -68,7 +83,7 @@ const reportsOpen = ref(false)
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-logo { width: 36px; height: 36px; background: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 .brand-name { font-size: 18px; font-weight: 700; color: #111; }
-.menu-item { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 8px; margin-bottom: 4px; cursor: pointer; color: #6b7280; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+.menu-item { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 8px; margin-bottom: 4px; cursor: pointer; color: #6b7280; font-size: 14px; font-weight: 500; transition: all 0.2s; text-decoration: none; }
 .menu-item.active { background: #f3f4f6; color: #111; }
 .menu-item:hover { background: #f3f4f6; color: #111; }
 .menu-item:not(.has-sub) { flex-direction: row; align-items: center; gap: 10px; }

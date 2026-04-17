@@ -24,6 +24,12 @@ export default defineConfig({
     watch: {
       usePolling: true,
       interval: 1000
+    },
+    proxy: {
+      '/graphql': {
+        target: 'http://web',
+        changeOrigin: true
+      }
     }
   }
 })

@@ -73,16 +73,16 @@ onMounted(async () => {
   try {
     const data = await graphql(`
       query {
-        user {
+        me {
           id
           name
           email
         }
       }
     `)
-    form.value.name = data.user.name
-    form.value.email = data.user.email
-    originalUser.value = data.user
+    form.value.name = data.me.name
+    form.value.email = data.me.email
+    originalUser.value = data.me  
   } catch (err) {
     error.value = 'Failed to load user info'
   }
