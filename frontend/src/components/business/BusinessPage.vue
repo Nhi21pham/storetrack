@@ -12,14 +12,18 @@
         New Business
       </button>
     </div>
+    <SearchBar v-model="searchQuery" placeholder="Search businesses..." />
 
     <!-- Loading -->
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <span>Loading businesses...</span>
     </div>
-
+    
     <!-- Empty -->
+    <div v-else-if="filteredBusinesses.length === 0 && searchQuery.trim()" class="empty-state">
+      <p>No businesses matching "{{ searchQuery }}"</p>
+    </div>
     <div v-else-if="businesses.length === 0" class="empty-state">
       <div class="empty-icon">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -33,7 +37,7 @@
 
     <!-- Business list -->
     <div v-else class="business-list">
-      <div v-for="biz in businesses" :key="biz.id" class="business-card">
+      <div v-for="biz in filteredBusinesses" :key="biz.id" class="business-card">
         <div class="card-body">
           <div class="card-main">
             <div class="card-icon">
@@ -103,9 +107,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
 import BusinessFormModal from '@/components/business/BusinessFormModal.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import SearchBar from '@/components/common/SearchBar.vue'
+import { ref, computed, onMounted } from 'vue'
 
 const emit = defineEmits(['business-updated'])
 
@@ -114,6 +119,13 @@ const loading = ref(true)
 const showForm = ref(false)
 const editingBusiness = ref(null)
 const deletingBusiness = ref(null)
+const searchQuery = ref('')
+
+const filteredBusinesses = computed(() => {
+  if (!searchQuery.value.trim()) return businesses.value
+  const query = searchQuery.value.toLowerCase()
+  return businesses.value.filter(biz => biz.name.toLowerCase().includes(query))
+})
 
 const fetchBusinesses = async () => {
   loading.value = true
