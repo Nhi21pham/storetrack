@@ -4,4 +4,10 @@ extend type Query {
 
     business(id: ID!): Business @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\BusinessResolver@getBusiness")
+        
+    accessibleBusinesses: [AccessibleBusiness!]! @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BusinessResolver@accessibleBusinesses")
+
+    business(id: ID!): Business @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BusinessResolver@getBusiness")
 }

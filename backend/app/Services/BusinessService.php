@@ -57,4 +57,72 @@ class BusinessService
         }
         return $business;
     }
+    public function getAccessibleBusinesses(User $user): array
+    {
+        $ownedBusinesses = $this->getOwnedBusinesses($user);
+        $assignedBusinesses = $this->getAssignedBusinesses($user);
+
+        return array_merge($ownedBusinesses, $assignedBusinesses);
+    }
+
+    private function getOwnedBusinesses(User $user): array
+    {
+        $businesses = $user->businesses()->with('stores')->get();
+        $result = [];
+
+        foreach ($businesses as $business) {
+            $stores = [];
+
+            foreach ($business->stores as $store) {
+                if (!$store->is_active) continue;
+
+                $stores[] = [
+                    'id' => (string) $store->id,
+                    'name' => $store->name,
+                    'is_active' => $store->is_active,
+                    'my_role' => 'owner',
+                ];
+            }
+
+            $result[] = [
+                'id' => (string) $business->id,
+                'name' => $business->name,
+                'tax_code' => $business->tax_code,
+                'role' => 'owner',
+                'stores' => $stores,
+            ];
+        }
+
+        return $result;
+    }
+
+    private function getAssignedBusinesses(User $user): array
+    {
+        $stores = $user->stores()->with('business')->where('is_active', true)->get();
+
+        foreach ($stores as $store) {
+            if ($store->business->owner_id === $user->id) continue;
+
+            $bizId = $store->business_id;
+
+            if (!isset($grouped[$bizId])) {
+                $grouped[$bizId] = [
+                    'id' => (string) $store->business->id,
+                    'name' => $store->business->name,
+                    'tax_code' => $store->business->tax_code,
+                    'role' => 'member',
+                    'stores' => [],
+                ];
+            }
+
+            $grouped[$bizId]['stores'][] = [
+                'id' => (string) $store->id,
+                'name' => $store->name,
+                'is_active' => $store->is_active,
+                'my_role' => $store->pivot->role,
+            ];
+        }
+
+        return array_values($grouped);
+    }
 }

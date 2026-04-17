@@ -31,4 +31,8 @@ class BusinessResolver extends BaseResolver
             return $business;
         });
     }
+    public function accessibleBusinesses($_, array $args)
+    {
+        return $this->businessService->getAccessibleBusinesses($this->user());
+    }
 }

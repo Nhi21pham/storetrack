@@ -1,0 +1,14 @@
+type AccessibleBusiness {
+    id: ID!
+    name: String!
+    tax_code: String!
+    role: String!
+    stores: [AccessibleStore!]!
+}
+
+type AccessibleStore {
+    id: ID!
+    name: String!
+    is_active: Boolean!
+    my_role: Role!
+}
