@@ -2,4 +2,6 @@ type User {
     id: ID!
     name: String!
     email: String!
+    businesses: [Business!]! @hasMany
+    stores: [Store!]! @belongsToMany
 }

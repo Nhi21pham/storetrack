@@ -2,7 +2,10 @@
 #import Queries/*.graphql
 #import Subscriptions/*.graphql
 #import Types/*.graphql
+#import Enums/*.graphql
 
 type Query
 type Mutation
 type Subscription
+
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")

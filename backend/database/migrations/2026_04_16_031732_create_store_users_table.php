@@ -11,13 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('store_users', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
-            $table->enum('role', ['owner', 'accountant', 'staff']);
+        Schema::create('store_user', function (Blueprint $table) {
+            $table->foreignId('store_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('role');
             $table->timestamps();
-            $table->unique(['user_id', 'store_id']);
+
+            $table->primary(['store_id', 'user_id']);
+            $table->index('role');
         });
     }
 
@@ -26,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('store_users');
+        Schema::dropIfExists('store_user');
     }
 };

@@ -1,0 +1,40 @@
+extend type Mutation {
+    createStore(input: CreateStoreInput! @spread): Store!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\StoreResolver@create")
+
+    updateStore(id: ID!, input: UpdateStoreInput! @spread): Store!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\StoreResolver@update")
+
+    deactivateStore(id: ID!): Store!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\StoreResolver@deactivate")
+
+    reactivateStore(id: ID!): Store!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\StoreResolver@reactivate")
+
+    assignUserToStore(store_id: ID!, user_id: ID!, role: Role!): Store!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\StoreResolver@assignUser")
+
+    removeUserFromStore(store_id: ID!, user_id: ID!): Store!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\StoreResolver@removeUser")
+}
+
+input CreateStoreInput {
+    business_id: ID!
+    name: String! @rules(apply: ["required", "string", "max:255"])
+    address: String
+    email: String @rules(apply: ["nullable", "email"])
+    phone: String
+}
+
+input UpdateStoreInput {
+    name: String
+    address: String
+    email: String @rules(apply: ["nullable", "email"])
+    phone: String
+}

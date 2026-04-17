@@ -1,0 +1,28 @@
+extend type Mutation {
+    createBusiness(input: CreateBusinessInput! @spread): Business!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BusinessResolver@create")
+
+    updateBusiness(id: ID!, input: UpdateBusinessInput! @spread): Business!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BusinessResolver@update")
+
+    deleteBusiness(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BusinessResolver@delete")
+}
+
+input CreateBusinessInput {
+    name: String! @rules(apply: ["required", "string", "max:255"])
+    tax_code: String! @rules(apply: ["required", "string", "max:50", "unique:businesses,tax_code"])
+    address: String
+    email: String @rules(apply: ["nullable", "email"])
+    phone: String
+}
+
+input UpdateBusinessInput {
+    name: String
+    address: String
+    email: String @rules(apply: ["nullable", "email"])
+    phone: String
+}

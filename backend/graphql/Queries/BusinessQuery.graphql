@@ -1,0 +1,7 @@
+extend type Query {
+    myBusinesses: [Business!]! @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BusinessResolver@myBusinesses")
+
+    business(id: ID!): Business @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BusinessResolver@getBusiness")
+}

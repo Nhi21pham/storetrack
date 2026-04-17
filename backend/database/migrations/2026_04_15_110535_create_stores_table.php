@@ -13,13 +13,16 @@ return new class extends Migration
     {
         Schema::create('stores', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('business_id')->constrained('businesses')->cascadeOnDelete();
+            $table->foreignId('business_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('address')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->timestamp('deactivated_at')->nullable();
             $table->timestamps();
+
+            $table->index(['business_id', 'is_active']);
         });
     }
 
