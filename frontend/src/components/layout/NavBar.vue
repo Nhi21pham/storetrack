@@ -16,6 +16,11 @@
       </div>
     </div>
 
+    <!-- NEW: Business Switcher in center -->
+    <div class="navbar-center">
+      <BusinessSwitcher ref="switcherRef" @switched="$emit('business-switched', $event)" />
+    </div>
+
     <div class="navbar-right">
       <span class="hello-text">Hello, <strong>{{ username }}</strong></span>
       <div class="avatar-wrapper" @click.stop="dropdownOpen = !dropdownOpen">
@@ -51,17 +56,17 @@
 
           <div class="dropdown-divider"></div>
           <div class="dropdown-section-title">Account</div>
-          <div class="dropdown-item" @click.stop="$emit('account-info')">
+          <div class="dropdown-item" @click.stop="handleAction('account-info')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Account Information
           </div>
-          <div class="dropdown-item" @click.stop="$emit('change-password')">
+          <div class="dropdown-item" @click.stop="handleAction('change-password')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             Change Password
           </div>
 
           <div class="dropdown-divider"></div>
-          <div class="dropdown-item logout" @click.stop="$emit('logout')">
+          <div class="dropdown-item logout" @click.stop="handleAction('logout')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             Logout
           </div>
@@ -73,21 +78,33 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import BusinessSwitcher from '@/components/layout/BusinessSwitcher.vue'
 
 const props = defineProps({
   username: String,
   email: String
 })
 
-defineEmits(['toggle-sidebar', 'account-info', 'change-password', 'logout'])
-
 const dropdownOpen = ref(false)
+const switcherRef = ref(null)
+
+const emit = defineEmits(['toggle-sidebar', 'account-info', 'change-password', 'logout', 'business-switched'])
+
+const handleAction = (action) => {
+  dropdownOpen.value = false
+  emit(action)
+}
 
 const handleClickOutside = (e) => {
   const wrapper = document.querySelector('.avatar-wrapper')
   if (wrapper && !wrapper.contains(e.target)) {
     dropdownOpen.value = false
   }
+}
+
+// Expose so AppLayout can trigger refresh
+const refreshBusinesses = () => {
+  switcherRef.value?.fetchBusinesses()
 }
 
 onMounted(() => {
@@ -97,11 +114,14 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
+
+defineExpose({ refreshBusinesses })
 </script>
 
 <style scoped>
 .navbar { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
 .navbar-left { display: flex; align-items: center; gap: 16px; }
+.navbar-center { flex: 1; display: flex; justify-content: center; padding: 0 20px; max-width: 400px; margin: 0 auto; }
 .navbar-right { display: flex; align-items: center; gap: 12px; }
 .hello-text { font-size: 14px; color: #6b7280; }
 .hello-text strong { color: #111; }
