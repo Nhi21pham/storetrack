@@ -53,8 +53,8 @@ export const validators = {
     },
 
     businessPhone: (value) => {
-        if (!value || !value.trim()) return null  // optional field
-        if (value.length > 20) return 'Phone number is too long.'
+        if (!value || !value.trim()) return null
+        if (!/^\d{10}$/.test(value.trim())) return 'Invalid phone number. Must be exactly 10 digits.'
         return null
     },
 
