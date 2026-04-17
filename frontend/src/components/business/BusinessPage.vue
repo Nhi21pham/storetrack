@@ -111,7 +111,7 @@
 import BusinessFormModal from '@/components/business/BusinessFormModal.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 
 const emit = defineEmits(['business-updated'])
 
@@ -121,6 +121,7 @@ const showForm = ref(false)
 const editingBusiness = ref(null)
 const deletingBusiness = ref(null)
 const searchQuery = ref('')
+const showToast = inject('showToast')
 
 const filteredBusinesses = computed(() => {
   if (!searchQuery.value.trim()) return businesses.value
@@ -153,10 +154,11 @@ const fetchBusinesses = async () => {
 const openCreate = () => { editingBusiness.value = null; showForm.value = true }
 const openEdit = (biz) => { editingBusiness.value = { ...biz }; showForm.value = true }
 
-const onSaved = () => {
+const onSaved = (result) => {
   showForm.value = false
   fetchBusinesses()
   emit('business-updated')
+  showToast(editingBusiness.value ? 'Business updated successfully!' : 'Business created successfully!')
 }
 
 const confirmDelete = (biz) => { deletingBusiness.value = biz }
@@ -177,6 +179,7 @@ const handleDelete = async () => {
       deletingBusiness.value = null
       fetchBusinesses()
       emit('business-updated')
+      showToast('Business deleted successfully!')
     }
   } catch (err) {
     console.error('Failed to delete:', err)

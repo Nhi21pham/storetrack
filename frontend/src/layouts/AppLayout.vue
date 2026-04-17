@@ -20,6 +20,7 @@
     <ChangePasswordModal v-if="showChangePassword" @close="showChangePassword = false" />
     <AccountModal v-if="showAccountInfo" @close="showAccountInfo = false" @updated="onProfileUpdated" />
     <BusinessFormModal v-if="showCreateBusiness" @close="showCreateBusiness = false" @saved="onBusinessCreated" />
+    <Toast :message="toastMessage" :type="toastType" @done="toastMessage = ''" />
   </div>
 </template>
 
@@ -31,6 +32,7 @@ import NavBar from '@/components/layout/NavBar.vue'
 import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
 import AccountModal from '@/components/layout/AccountModal.vue'
 import BusinessFormModal from '@/components/business/BusinessFormModal.vue'
+import Toast from '@/components/common/Toast.vue'
 
 const router = useRouter()
 const sidebarOpen = ref(false)
@@ -40,11 +42,20 @@ const navbarRef = ref(null)
 const currentBusiness = ref(null)
 const currentStore = ref(null)
 const showCreateBusiness = ref(false)
+const toastMessage = ref('')
+const toastType = ref('success')
 
 const user = JSON.parse(localStorage.getItem('user') || '{}')
 const username = ref(user.name || 'User')
 const email = ref(user.email || '')
 
+const showToast = (message, type = 'success') => {
+  toastMessage.value = ''
+  setTimeout(() => {
+    toastMessage.value = message
+    toastType.value = type
+  }, 10)
+}
 const onProfileUpdated = (updatedUser) => {
   username.value = updatedUser.name
 }
@@ -56,6 +67,7 @@ const onStoreSwitched = (payload) => {
 const onBusinessCreated = () => {
   showCreateBusiness.value = false
   refreshBusinessSwitcher()
+  showToast('Business created successfully!')
 }
 const refreshBusinessSwitcher = () => {
   navbarRef.value?.refreshBusinesses()
@@ -64,6 +76,7 @@ const refreshBusinessSwitcher = () => {
 provide('currentBusiness', currentBusiness)
 provide('currentStore', currentStore)
 provide('refreshStoreSwitcher', refreshBusinessSwitcher)
+provide('showToast', showToast)
 
 const handleLogout = () => {
   localStorage.removeItem('token')
