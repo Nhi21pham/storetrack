@@ -3,5 +3,5 @@ extend type Mutation {
         name: String!
     ): User 
     @guard(with: ["sanctum"]) 
-    @field(resolver: "App\\GraphQL\\Mutations\\UpdateUserResolver@updateUser")
+    @field(resolver: "App\\GraphQL\\Mutations\\UserResolver@updateUser")
 }
