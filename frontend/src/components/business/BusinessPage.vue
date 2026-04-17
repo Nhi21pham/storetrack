@@ -135,7 +135,7 @@ const fetchBusinesses = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
-        query: `query { accessibleBusinesses { id name tax_code role stores { id name is_active my_role } } }`
+        query: `query { accessibleBusinesses { id name tax_code address email phone role stores { id name is_active my_role } } }`
       })
     })
     const data = await res.json()

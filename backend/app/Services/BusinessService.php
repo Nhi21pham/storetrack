@@ -97,6 +97,9 @@ class BusinessService
                 'id' => (string) $business->id,
                 'name' => $business->name,
                 'tax_code' => $business->tax_code,
+                'address' => $business->address,
+                'email' => $business->email,
+                'phone' => $business->phone,
                 'role' => 'owner',
                 'stores' => $stores,
             ];
@@ -119,6 +122,9 @@ class BusinessService
                     'id' => (string) $store->business->id,
                     'name' => $store->business->name,
                     'tax_code' => $store->business->tax_code,
+                    'address' => $store->business->address,
+                    'email' => $store->business->email,
+                    'phone' => $store->business->phone,
                     'role' => 'member',
                     'stores' => [],
                 ];

@@ -2,6 +2,9 @@ type AccessibleBusiness {
     id: ID!
     name: String!
     tax_code: String!
+    address: String
+    email: String
+    phone: String
     role: String!
     stores: [AccessibleStore!]!
 }
