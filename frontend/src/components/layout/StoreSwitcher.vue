@@ -74,7 +74,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 
-const emit = defineEmits(['switched'])
+const emit = defineEmits(['switched', 'create-business'])
 const router = useRouter()
 
 const businesses = ref([])
@@ -159,7 +159,7 @@ const saveSelection = () => {
 
 const goToCreateBusiness = () => {
   open.value = false
-  router.push('/business')
+  emit('create-business')
 }
 
 const handleClickOutside = (e) => {

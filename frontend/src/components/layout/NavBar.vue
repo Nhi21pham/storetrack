@@ -18,7 +18,7 @@
 
     <!-- NEW: Business Switcher in center -->
     <div class="navbar-center">
-      <StoreSwitcher ref="switcherRef" @switched="$emit('store-switched', $event)" />
+      <StoreSwitcher ref="switcherRef" @switched="$emit('store-switched', $event)" @create-business="$emit('create-business')" />
     </div>
 
     <div class="navbar-right">
@@ -88,7 +88,7 @@ const props = defineProps({
 const dropdownOpen = ref(false)
 const switcherRef = ref(null)
 
-const emit = defineEmits(['toggle-sidebar', 'account-info', 'change-password', 'logout', 'store-switched'])
+const emit = defineEmits(['toggle-sidebar', 'account-info', 'change-password', 'logout', 'store-switched', 'create-business'])
 
 const handleAction = (action) => {
   dropdownOpen.value = false

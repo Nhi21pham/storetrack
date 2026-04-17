@@ -10,6 +10,7 @@
       @account-info="showAccountInfo = true"
       @logout="handleLogout"
       @store-switched="onStoreSwitched"
+      @create-business="showCreateBusiness = true"
     />
 
     <main>
@@ -18,6 +19,7 @@
 
     <ChangePasswordModal v-if="showChangePassword" @close="showChangePassword = false" />
     <AccountModal v-if="showAccountInfo" @close="showAccountInfo = false" @updated="onProfileUpdated" />
+    <BusinessFormModal v-if="showCreateBusiness" @close="showCreateBusiness = false" @saved="onBusinessCreated" />
   </div>
 </template>
 
@@ -28,6 +30,7 @@ import SideBar from '@/components/layout/SideBar.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
 import AccountModal from '@/components/layout/AccountModal.vue'
+import BusinessFormModal from '@/components/business/BusinessFormModal.vue'
 
 const router = useRouter()
 const sidebarOpen = ref(false)
@@ -36,6 +39,7 @@ const showAccountInfo = ref(false)
 const navbarRef = ref(null)
 const currentBusiness = ref(null)
 const currentStore = ref(null)
+const showCreateBusiness = ref(false)
 
 const user = JSON.parse(localStorage.getItem('user') || '{}')
 const username = ref(user.name || 'User')
@@ -49,7 +53,10 @@ const onStoreSwitched = (payload) => {
   currentBusiness.value = payload.business
   currentStore.value = payload.store
 }
-
+const onBusinessCreated = () => {
+  showCreateBusiness.value = false
+  refreshBusinessSwitcher()
+}
 const refreshBusinessSwitcher = () => {
   navbarRef.value?.refreshBusinesses()
 }
