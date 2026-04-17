@@ -18,7 +18,7 @@
 
     <!-- NEW: Business Switcher in center -->
     <div class="navbar-center">
-      <BusinessSwitcher ref="switcherRef" @switched="$emit('business-switched', $event)" />
+      <StoreSwitcher ref="switcherRef" @switched="$emit('store-switched', $event)" />
     </div>
 
     <div class="navbar-right">
@@ -78,7 +78,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import BusinessSwitcher from '@/components/layout/BusinessSwitcher.vue'
+import StoreSwitcher from '@/components/layout/StoreSwitcher.vue'
 
 const props = defineProps({
   username: String,
@@ -88,7 +88,7 @@ const props = defineProps({
 const dropdownOpen = ref(false)
 const switcherRef = ref(null)
 
-const emit = defineEmits(['toggle-sidebar', 'account-info', 'change-password', 'logout', 'business-switched'])
+const emit = defineEmits(['toggle-sidebar', 'account-info', 'change-password', 'logout', 'store-switched'])
 
 const handleAction = (action) => {
   dropdownOpen.value = false

@@ -9,7 +9,7 @@
       @change-password="showChangePassword = true"
       @account-info="showAccountInfo = true"
       @logout="handleLogout"
-      @business-switched="onBusinessSwitched"
+      @store-switched="onStoreSwitched"
     />
 
     <main>
@@ -35,6 +35,7 @@ const showChangePassword = ref(false)
 const showAccountInfo = ref(false)
 const navbarRef = ref(null)
 const currentBusiness = ref(null)
+const currentStore = ref(null)
 
 const user = JSON.parse(localStorage.getItem('user') || '{}')
 const username = ref(user.name || 'User')
@@ -44,8 +45,9 @@ const onProfileUpdated = (updatedUser) => {
   username.value = updatedUser.name
 }
 
-const onBusinessSwitched = (biz) => {
-  currentBusiness.value = biz
+const onStoreSwitched = (payload) => {
+  currentBusiness.value = payload.business
+  currentStore.value = payload.store
 }
 
 const refreshBusinessSwitcher = () => {
@@ -53,7 +55,8 @@ const refreshBusinessSwitcher = () => {
 }
 
 provide('currentBusiness', currentBusiness)
-provide('refreshBusinessSwitcher', refreshBusinessSwitcher)
+provide('currentStore', currentStore)
+provide('refreshStoreSwitcher', refreshBusinessSwitcher)
 
 const handleLogout = () => {
   localStorage.removeItem('token')

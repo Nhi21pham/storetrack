@@ -6,9 +6,9 @@
 import { inject } from 'vue'
 import BusinessPage from '@/components/business/BusinessPage.vue'
 
-const refreshBusinessSwitcher = inject('refreshBusinessSwitcher')
+const refreshStoreSwitcher = inject('refreshStoreSwitcher')
 
 const onBusinessUpdated = () => {
-  refreshBusinessSwitcher?.()
+  refreshStoreSwitcher?.()
 }
 </script>
