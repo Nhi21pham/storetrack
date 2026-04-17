@@ -28,7 +28,7 @@
         </svg>
       </div>
       <h3>No businesses yet</h3>
-      <p>Click "New Business" to get started.</p>
+      <p>You don't have any businesses yet. Create one or ask to be invited to a store.</p>
     </div>
 
     <!-- Business list -->
@@ -43,7 +43,11 @@
               </svg>
             </div>
             <div class="card-info">
-              <h3>{{ biz.name }}</h3>
+              <div class="card-title-row">
+                <h3>{{ biz.name }}</h3>
+                <span class="owner-badge" v-if="biz.role === 'owner'">Owner</span>
+                <span class="member-badge" v-else>Member</span>
+              </div>
               <span class="tax-badge">{{ biz.tax_code }}</span>
             </div>
           </div>
@@ -68,7 +72,7 @@
             </span>
           </div>
         </div>
-        <div class="card-actions">
+        <div v-if="biz.role === 'owner'" class="card-actions">
           <button class="action-btn" @click="openEdit(biz)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit
@@ -77,6 +81,9 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             Delete
           </button>
+        </div>
+        <div v-else class="card-role-badge">
+          <span class="member-tag">{{ biz.role }}</span>
         </div>
       </div>
     </div>
@@ -116,12 +123,12 @@ const fetchBusinesses = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
-        query: `query { myBusinesses { id name tax_code address email phone stores { id name is_active } } }`
+        query: `query { accessibleBusinesses { id name tax_code role stores { id name is_active my_role } } }`
       })
     })
     const data = await res.json()
-    if (data.data?.myBusinesses) {
-      businesses.value = data.data.myBusinesses
+    if (data.data?.accessibleBusinesses) {
+      businesses.value = data.data.accessibleBusinesses
     }
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
@@ -206,6 +213,12 @@ onMounted(fetchBusinesses)
 .action-btn:first-child { border-bottom: 1px solid #f3f4f6; }
 .action-btn:hover { background: #f9fafb; color: #111; }
 .action-btn.danger:hover { background: #fef2f2; color: #dc2626; }
+
+.card-title-row { display: flex; align-items: center; gap: 8px; }
+.owner-badge { font-size: 10px; font-weight: 600; color: #16a34a; background: #f0fdf4; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+.member-badge { font-size: 10px; font-weight: 600; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+.card-role-badge { display: flex; align-items: center; justify-content: center; padding: 0 18px; border-left: 1px solid #f3f4f6; }
+.member-tag { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: capitalize; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
