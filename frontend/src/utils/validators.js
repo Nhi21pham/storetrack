@@ -40,7 +40,8 @@ export const validators = {
 
     taxCode: (value) => {
         if (!value || !value.trim()) return 'Tax code is required.'
-        if (value.trim().length < 5) return 'Tax code must be at least 5 characters.'
+        if (!/^\d+$/.test(value.trim())) return 'Tax code must contain numbers only.'
+        if (value.trim().length < 5) return 'Tax code must be at least 5 digits.'
         if (value.length > 50) return 'Tax code is too long.'
         return null
     },
