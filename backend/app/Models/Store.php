@@ -16,7 +16,9 @@ class Store extends Model
         'is_active',
         'deactivated_at',
     ];
-
+    protected $attributes = [
+    'is_active' => true,
+    ];
     protected $casts = [
         'is_active' => 'boolean',
         'deactivated_at' => 'datetime',

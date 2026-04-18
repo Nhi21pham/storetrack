@@ -25,7 +25,7 @@ class StoreService
         );
 
         return DB::transaction(function () use ($user, $data) {
-            $store = $this->storeRepository->create($data);
+            $store = $this->storeRepository->create(array_merge($data, ['is_active' => true]));
             $store->users()->attach($user->id, ['role' => RoleEnum::Owner->value]);
             return $store;
         });
@@ -48,7 +48,6 @@ class StoreService
             'deactivated_at' => now(),
         ]);
     }
-
     public function reactivateStore(User $user, int $storeId): Store
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::ReactivateStore, $storeId);
@@ -59,7 +58,16 @@ class StoreService
             'deactivated_at' => null,
         ]);
     }
+    public function deleteStore(User $user, int $storeId): void
+    {
+        $this->permissionService->authorizeStore($user, PermissionEnum::DeactivateStore, $storeId);
+        $store = $this->mustFind($storeId);
 
+        DB::transaction(function () use ($store) {
+            $store->users()->detach();
+            $store->delete();
+        });
+    }
     public function assignUser(User $actor, int $storeId, int $userId, RoleEnum $role): Store
     {
         $this->permissionService->authorizeStore($actor, PermissionEnum::AssignStoreUser, $storeId);
@@ -103,5 +111,67 @@ class StoreService
             throw new \Exception('Store not found.');
         }
         return $store;
+    }
+    public function getAccessibleStores(User $user): array
+    {
+        $ownedStores = $this->getOwnedStores($user);
+        $assignedStores = $this->getAssignedStores($user);
+
+        return array_merge($ownedStores, $assignedStores);
+    }
+
+    private function getOwnedStores(User $user): array
+    {
+        $businesses = $user->businesses()->with('stores')->get();
+        $result = [];
+
+        foreach ($businesses as $business) {
+            foreach ($business->stores as $store) {
+                $result[] = [
+                    'id' => (string) $store->id,
+                    'name' => $store->name,
+                    'address' => $store->address,
+                    'email' => $store->email,
+                    'phone' => $store->phone,
+                    'is_active' => $store->is_active,
+                    'my_role' => 'owner',
+                    'business' => [
+                        'id' => (string) $business->id,
+                        'name' => $business->name,
+                    ],
+                ];
+            }
+        }
+
+        return $result;
+    }
+
+    private function getAssignedStores(User $user): array
+    {
+        $stores = $user->stores()
+            ->with('business')
+            ->get();
+
+        $result = [];
+
+        foreach ($stores as $store) {
+            if ($store->business->owner_id === $user->id) continue;
+
+            $result[] = [
+                'id' => (string) $store->id,
+                'name' => $store->name,
+                'address' => $store->address,
+                'email' => $store->email,
+                'phone' => $store->phone,
+                'is_active' => $store->is_active,
+                'my_role' => $store->pivot->role,
+                'business' => [
+                    'id' => (string) $store->business->id,
+                    'name' => $store->business->name,
+                ],
+            ];
+        }
+
+        return $result;
     }
 }

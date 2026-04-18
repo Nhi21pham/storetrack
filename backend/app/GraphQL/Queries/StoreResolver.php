@@ -42,4 +42,8 @@ class StoreResolver extends BaseResolver
             return $store;
         });
     }
+    public function accessibleStores($_, array $args)
+    {
+        return $this->storeService->getAccessibleStores($this->user());
+    }
 }

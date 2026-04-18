@@ -39,7 +39,13 @@ class StoreResolver extends BaseResolver
             $this->storeService->reactivateStore($this->user(), (int) $args['id'])
         );
     }
-
+    public function delete($_, array $args)
+    {
+        return $this->safe(function () use ($args) {
+            $this->storeService->deleteStore($this->user(), (int) $args['id']);
+            return true;
+        });
+    }
     public function assignUser($_, array $args)
     {
         return $this->safe(fn() =>

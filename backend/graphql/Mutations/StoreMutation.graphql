@@ -14,6 +14,10 @@ extend type Mutation {
     reactivateStore(id: ID!): Store!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\StoreResolver@reactivate")
+    
+    deleteStore(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\StoreResolver@delete")
 
     assignUserToStore(store_id: ID!, user_id: ID!, role: Role!): Store!
         @guard(with: ["sanctum"])
@@ -26,15 +30,15 @@ extend type Mutation {
 
 input CreateStoreInput {
     business_id: ID!
-    name: String! @rules(apply: ["required", "string", "max:255"])
-    address: String
-    email: String @rules(apply: ["nullable", "email"])
-    phone: String
+    name: String! @rules(apply: ["required", "string", "min:2", "max:255"])
+    address: String @rules(apply: ["nullable", "string", "max:500"])
+    email: String @rules(apply: ["nullable", "email", "max:255"])
+    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10}$/"])
 }
 
 input UpdateStoreInput {
-    name: String
-    address: String
-    email: String @rules(apply: ["nullable", "email"])
-    phone: String
+    name: String @rules(apply: ["sometimes", "string", "min:2", "max:255"])
+    address: String @rules(apply: ["nullable", "string", "max:500"])
+    email: String @rules(apply: ["nullable", "email", "max:255"])
+    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10}$/"])
 }

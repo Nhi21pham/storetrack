@@ -12,6 +12,15 @@ type AccessibleBusiness {
 type AccessibleStore {
     id: ID!
     name: String!
+    address: String
+    email: String
+    phone: String
     is_active: Boolean!
     my_role: Role!
+    business: AccessibleBusinessInfo!
+}
+
+type AccessibleBusinessInfo {
+    id: ID!
+    name: String!
 }

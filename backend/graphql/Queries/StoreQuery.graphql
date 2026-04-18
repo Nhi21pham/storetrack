@@ -4,4 +4,7 @@ extend type Query {
 
     store(id: ID!): Store @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\StoreResolver@getStore")
+    
+    accessibleStores: [AccessibleStore!]! @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\StoreResolver@accessibleStores")
 }
