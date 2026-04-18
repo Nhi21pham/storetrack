@@ -1,0 +1,29 @@
+extend type Mutation {
+    createBusiness(input: CreateBusinessInput! @spread): Business!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BusinessResolver@create")
+
+    updateBusiness(id: ID!, input: UpdateBusinessInput! @spread): Business!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BusinessResolver@update")
+
+    deleteBusiness(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BusinessResolver@delete")
+}
+
+input CreateBusinessInput {
+    name: String! @rules(apply: ["required", "string", "min:2", "max:255"])
+    tax_code: String! @rules(apply: ["required", "string", "regex:/^\\d+$/", "min:5", "max:50", "unique:businesses,tax_code"])
+    address: String @rules(apply: ["nullable", "string", "max:500"])
+    email: String @rules(apply: ["nullable", "email", "max:255"])
+    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10}$/"])
+}
+
+input UpdateBusinessInput {
+    name: String @rules(apply: ["sometimes", "string", "min:2", "max:255"])
+    tax_code: String @rules(apply: ["sometimes", "string", "regex:/^\\d+$/", "min:5", "max:50"])
+    address: String @rules(apply: ["nullable", "string", "max:500"])
+    email: String @rules(apply: ["nullable", "email", "max:255"])
+    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10}$/"])
+}

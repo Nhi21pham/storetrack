@@ -6,7 +6,7 @@ use App\Services\UpdateUserService;
 use App\Validators\AuthValidator;
 use GraphQL\Error\UserError;
 
-class UpdateUserResolver
+class UserResolver
 {
     public function __construct(private UpdateUserService $updateUserService) {}
 

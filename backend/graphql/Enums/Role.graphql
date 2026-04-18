@@ -1,0 +1,5 @@
+enum Role {
+    OWNER @enum(value: "owner")
+    ACCOUNTANT @enum(value: "accountant")
+    STAFF @enum(value: "staff")
+}

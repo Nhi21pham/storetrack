@@ -4,15 +4,15 @@ import RegisterView from '@/views/RegisterView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import VerifyCodeView from '@/views/VerifyCodeView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
+import AppLayout from '@/layouts/AppLayout.vue'
 import DashboardView from '@/views/DashboardView.vue'
+import BusinessView from '@/views/BusinessView.vue'
+import StoreView from '@/views/StoreView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {
-      path: '/',
-      redirect: '/login'
-    },
+    // Guest routes (no layout wrapper)
     {
       path: '/login',
       name: 'login',
@@ -52,12 +52,34 @@ const router = createRouter({
         }
       }
     },
+
+    // Authenticated routes (wrapped in AppLayout)
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: DashboardView,
-      meta: { auth: true }
-    },
+      path: '/',
+      component: AppLayout,
+      meta: { auth: true },
+      children: [
+        {
+          path: '',
+          redirect: '/dashboard'
+        },
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: DashboardView
+        },
+        {
+          path: 'business',
+          name: 'business',
+          component: BusinessView
+        },
+        {
+          path: 'stores',
+          name: 'stores',
+          component: StoreView
+        },
+      ]
+    }
   ],
 })
 

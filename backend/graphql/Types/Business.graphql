@@ -1,0 +1,13 @@
+type Business {
+    id: ID!
+    name: String!
+    tax_code: String!
+    address: String
+    email: String
+    phone: String
+    owner: User! @belongsTo
+    stores: [Store!]! @hasMany
+    active_stores: [Store!]! @hasMany(relation: "activeStores")
+    created_at: DateTime!
+    updated_at: DateTime!
+}
