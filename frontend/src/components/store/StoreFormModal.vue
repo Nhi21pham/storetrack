@@ -84,6 +84,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { validators } from '@/utils/validators'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { graphql } from '@/api'
 
 const props = defineProps({
   store: { type: Object, default: null }
@@ -113,17 +114,9 @@ const originalForm = ref(JSON.stringify(initialForm()))
 const isDirty = computed(() => JSON.stringify(form.value) !== originalForm.value)
 
 const fetchOwnedBusinesses = async () => {
-  const token = localStorage.getItem('token')
   try {
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ query: `query { myBusinesses { id name } }` })
-    })
-    const data = await res.json()
-    if (data.data?.myBusinesses) {
-      ownedBusinesses.value = data.data.myBusinesses
-    }
+    const data = await graphql(`query { myBusinesses { id name } }`)
+    ownedBusinesses.value = data.myBusinesses
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
   }
@@ -149,7 +142,6 @@ const handleSubmit = async () => {
 
   loading.value = true
   apiError.value = ''
-  const token = localStorage.getItem('token')
 
   try {
     let query, variables
@@ -190,21 +182,11 @@ const handleSubmit = async () => {
       }
     }
 
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ query, variables })
-    })
-    const data = await res.json()
-
-    if (data.errors) {
-      apiError.value = data.errors[0].message
-      return
-    }
-
-    emit('saved', isEdit.value ? data.data.updateStore : data.data.createStore)
+    const data = await graphql(query, variables)
+    const result = isEdit.value ? data.updateStore : data.createStore
+    emit('saved', result)
   } catch (err) {
-    apiError.value = 'Something went wrong. Please try again.'
+    apiError.value = err.message
   } finally {
     loading.value = false
   }

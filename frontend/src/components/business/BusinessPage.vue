@@ -113,6 +113,7 @@ import BusinessFormModal from '@/components/business/BusinessFormModal.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 import { ref, computed, onMounted, inject } from 'vue'
+import { graphql } from '@/api'
 
 const emit = defineEmits(['business-updated'])
 
@@ -132,19 +133,14 @@ const filteredBusinesses = computed(() => {
 
 const fetchBusinesses = async () => {
   loading.value = true
-  const token = localStorage.getItem('token')
   try {
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        query: `query { accessibleBusinesses { id name tax_code address email phone role stores { id name is_active my_role } } }`
-      })
-    })
-    const data = await res.json()
-    if (data.data?.accessibleBusinesses) {
-      businesses.value = data.data.accessibleBusinesses
-    }
+    const data = await graphql(`query {
+      accessibleBusinesses {
+        id name tax_code address email phone role
+        stores { id name is_active my_role }
+      }
+    }`)
+    businesses.value = data.accessibleBusinesses
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
   } finally {
@@ -165,25 +161,17 @@ const onSaved = (result) => {
 const confirmDelete = (biz) => { deletingBusiness.value = biz }
 
 const handleDelete = async () => {
-  const token = localStorage.getItem('token')
   try {
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        query: `mutation DeleteBusiness($id: ID!) { deleteBusiness(id: $id) }`,
-        variables: { id: deletingBusiness.value.id }
-      })
-    })
-    const data = await res.json()
-    if (!data.errors) {
-      deletingBusiness.value = null
-      fetchBusinesses()
-      emit('business-updated')
-      showToast('Business deleted successfully!')
-    }
+    await graphql(
+      `mutation DeleteBusiness($id: ID!) { deleteBusiness(id: $id) }`,
+      { id: deletingBusiness.value.id }
+    )
+    deletingBusiness.value = null
+    fetchBusinesses()
+    emit('business-updated')
+    showToast('Business deleted successfully!')
   } catch (err) {
-    console.error('Failed to delete:', err)
+    showToast(err.message, 'error')
   }
 }
 

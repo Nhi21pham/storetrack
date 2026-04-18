@@ -111,7 +111,7 @@ class BusinessService
     private function getAssignedBusinesses(User $user): array
     {
         $stores = $user->stores()->with('business')->where('is_active', true)->get();
-
+        $grouped = [];
         foreach ($stores as $store) {
             if ($store->business->owner_id === $user->id) continue;
 

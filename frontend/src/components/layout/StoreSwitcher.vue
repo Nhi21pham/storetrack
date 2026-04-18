@@ -73,6 +73,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { graphql } from '@/api'
 
 const emit = defineEmits(['switched', 'create-business'])
 const router = useRouter()
@@ -84,28 +85,15 @@ const open = ref(false)
 const switcherRef = ref(null)
 
 const fetchBusinesses = async () => {
-  const token = localStorage.getItem('token')
   try {
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        query: `query {
-          accessibleBusinesses {
-            id name tax_code role
-            stores { id name is_active my_role }
-          }
-        }`
-      })
-    })
-    const data = await res.json()
-    if (data.data?.accessibleBusinesses) {
-      businesses.value = data.data.accessibleBusinesses
-      restoreSelection()
-    }
+    const data = await graphql(`query {
+      accessibleBusinesses {
+        id name tax_code role
+        stores { id name is_active my_role }
+      }
+    }`)
+    businesses.value = data.accessibleBusinesses
+    restoreSelection()
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
   }
