@@ -101,6 +101,7 @@
       :message="`Are you sure you want to delete '${deletingBusiness.name}'? This will also delete all stores under this business. This action cannot be undone.`"
       confirm-text="Yes, delete"
       cancel-text="Cancel"
+      type="danger"
       @confirm="handleDelete"
       @cancel="deletingBusiness = null"
     />
