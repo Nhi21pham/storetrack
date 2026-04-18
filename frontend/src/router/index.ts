@@ -7,6 +7,7 @@ import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import DashboardView from '@/views/DashboardView.vue'
 import BusinessView from '@/views/BusinessView.vue'
+import StoreView from '@/views/StoreView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -72,12 +73,11 @@ const router = createRouter({
           name: 'business',
           component: BusinessView
         },
-        // Future pages — all get sidebar + navbar + modals for free
-        // {
-        //   path: 'stores',
-        //   name: 'stores',
-        //   component: () => import('@/views/StoreView.vue')
-        // },
+        {
+          path: 'stores',
+          name: 'stores',
+          component: StoreView
+        },
       ]
     }
   ],

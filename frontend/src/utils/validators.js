@@ -63,7 +63,14 @@ export const validators = {
         if (!value || !value.trim()) return null  // optional field
         if (value.length > 500) return 'Address is too long.'
         return null
-    }
+    },
+
+    storeName: (value) => {
+        if (!value || !value.trim()) return 'Store name is required.'
+        if (value.trim().length < 2) return 'Store name must be at least 2 characters.'
+        if (value.length > 255) return 'Store name is too long.'
+        return null
+    },
 }
 
 export const validate = (rules) => {
