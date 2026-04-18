@@ -4,7 +4,7 @@ namespace App\Exceptions;
 
 use App\Enums\ErrorCode;
 
-class BusinessException extends AppException
+class AuthException extends AppException
 {
     public function __construct(ErrorCode $errorCode, string $message = '')
     {

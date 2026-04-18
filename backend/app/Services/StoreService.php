@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Enums\ErrorCode;
 use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Models\Store;
 use App\Models\User;
 use App\Repositories\StoreRepository;
 use Illuminate\Support\Facades\DB;
+use App\Exceptions\StoreException;
 
 class StoreService
 {
@@ -48,6 +50,7 @@ class StoreService
             'deactivated_at' => now(),
         ]);
     }
+
     public function reactivateStore(User $user, int $storeId): Store
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::ReactivateStore, $storeId);
@@ -58,6 +61,7 @@ class StoreService
             'deactivated_at' => null,
         ]);
     }
+
     public function deleteStore(User $user, int $storeId): void
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::DeactivateStore, $storeId);
@@ -68,13 +72,14 @@ class StoreService
             $store->delete();
         });
     }
+
     public function assignUser(User $actor, int $storeId, int $userId, RoleEnum $role): Store
     {
         $this->permissionService->authorizeStore($actor, PermissionEnum::AssignStoreUser, $storeId);
         $store = $this->mustFind($storeId);
 
         if ($store->business->owner_id === $userId && $role !== RoleEnum::Owner) {
-            throw new \Exception('Cannot change the role of the business owner.');
+            throw new StoreException(ErrorCode::CANNOT_CHANGE_OWNER_ROLE, 'Cannot change the role of the business owner.');
         }
 
         DB::transaction(function () use ($store, $userId, $role) {
@@ -92,7 +97,7 @@ class StoreService
         $store = $this->mustFind($storeId);
 
         if ($store->business->owner_id === $userId) {
-            throw new \Exception('Cannot remove the business owner from their own store.');
+            throw new StoreException(ErrorCode::CANNOT_REMOVE_OWNER, 'Cannot remove the business owner from their own store.');
         }
 
         $store->users()->detach($userId);
@@ -108,10 +113,11 @@ class StoreService
     {
         $store = $this->storeRepository->findById($id);
         if (!$store) {
-            throw new \Exception('Store not found.');
+            throw new StoreException(ErrorCode::STORE_NOT_FOUND, 'Store not found.');
         }
         return $store;
     }
+
     public function getAccessibleStores(User $user): array
     {
         $ownedStores = $this->getOwnedStores($user);
@@ -173,5 +179,18 @@ class StoreService
         }
 
         return $result;
+    }
+    public function getStore(User $user, int $storeId): Store
+    {
+        $store = $this->mustFind($storeId);
+
+        $role = $this->permissionService->getUserRoleOnStore($user, $storeId);
+        $isOwner = $store->business->owner_id === $user->id;
+
+        if (!$role && !$isOwner) {
+            throw new StoreException(ErrorCode::STORE_NOT_FOUND, 'Store not found.');
+        }
+
+        return $store;
     }
 }

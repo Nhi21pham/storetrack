@@ -6,7 +6,6 @@ use App\Repositories\RegisterRepository;
 use Illuminate\Support\Facades\Hash;
 use App\Jobs\SendVerifyMailJob;
 use App\Repositories\VerifyRepository;
-use function Illuminate\Support\microseconds;
 
 class RegisterService
 {
