@@ -119,6 +119,7 @@ const fetchOwnedBusinesses = async () => {
     ownedBusinesses.value = data.myBusinesses
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
+    apiError.value = err.message
   }
 }
 

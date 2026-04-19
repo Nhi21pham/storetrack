@@ -143,6 +143,7 @@ const fetchBusinesses = async () => {
     businesses.value = data.accessibleBusinesses
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
+    showToast(err.message, 'error')
   } finally {
     loading.value = false
   }

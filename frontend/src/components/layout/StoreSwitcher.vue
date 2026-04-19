@@ -71,11 +71,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, inject, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { graphql } from '@/api'
 
 const emit = defineEmits(['switched', 'create-business'])
+const showToast = inject('showToast', null)
 const router = useRouter()
 
 const businesses = ref([])
@@ -96,6 +97,7 @@ const fetchBusinesses = async () => {
     restoreSelection()
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
+    showToast?.(err.message, 'error')
   }
 }
 

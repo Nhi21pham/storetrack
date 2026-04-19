@@ -189,6 +189,7 @@ const fetchStores = async () => {
     stores.value = data.accessibleStores
   } catch (err) {
     console.error('Failed to fetch stores:', err)
+    showToast(err.message, 'error')
   } finally {
     loading.value = false
   }
