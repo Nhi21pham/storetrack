@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Jobs\SendVerifyMailJob;
 use App\Repositories\UserRepository;
 use App\Repositories\VerifyRepository;
+use App\Exceptions\AuthException;
+use App\Enums\ErrorCode;
 
 class ForgotPasswordService
 {
@@ -18,7 +20,7 @@ class ForgotPasswordService
         $user = $this->userRepository->findByEmail($email);
 
         if (!$user) {
-            throw new \Exception('No account found with this email.');
+            throw new AuthException(ErrorCode::ACCOUNT_NOT_FOUND, 'No account found with this email.');
         }
 
         $code = $this->verifyRepository->createRandomCode($email);
@@ -33,17 +35,17 @@ class ForgotPasswordService
         $storedCode = $this->verifyRepository->getCode('reset_code', $email);
 
         if (!$storedCode) {
-            throw new \Exception('Reset code has expired. Please request a new one.');
+            throw new AuthException(ErrorCode::CODE_EXPIRED, 'Reset code has expired. Please request a new one.');
         }
 
         if ($storedCode !== $code) {
-            throw new \Exception('Invalid reset code.');
+            throw new AuthException(ErrorCode::INVALID_CODE, 'Invalid reset code.');
         }
 
         $user = $this->userRepository->findByEmail($email);
 
         if (!$user) {
-            throw new \Exception('No account found with this email.');
+            throw new AuthException(ErrorCode::ACCOUNT_NOT_FOUND, 'No account found with this email.');
         }
 
         $this->userRepository->updatePassword($email, $password);

@@ -155,6 +155,7 @@ import { ref, computed, onMounted, inject } from 'vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 import StoreFormModal from '@/components/store/StoreFormModal.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { graphql } from '@/api'
 
 const emit = defineEmits(['store-updated'])
 const showToast = inject('showToast')
@@ -178,26 +179,17 @@ const filteredStores = computed(() => {
 
 const fetchStores = async () => {
   loading.value = true
-  const token = localStorage.getItem('token')
   try {
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        query: `query {
-          accessibleStores {
-            id name address email phone is_active my_role
-            business { id name }
-          }
-        }`
-      })
-    })
-    const data = await res.json()
-    if (data.data?.accessibleStores) {
-      stores.value = data.data.accessibleStores
-    }
+    const data = await graphql(`query {
+      accessibleStores {
+        id name address email phone is_active my_role
+        business { id name }
+      }
+    }`)
+    stores.value = data.accessibleStores
   } catch (err) {
     console.error('Failed to fetch stores:', err)
+    showToast(err.message, 'error')
   } finally {
     loading.value = false
   }
@@ -220,57 +212,35 @@ const onSaved = () => {
 const confirmToggle = (store) => { togglingStore.value = store }
 
 const handleToggle = async () => {
-  const token = localStorage.getItem('token')
   const store = togglingStore.value
   const mutation = store.is_active ? 'deactivateStore' : 'reactivateStore'
 
   try {
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        query: `mutation ($id: ID!) { ${mutation}(id: $id) { id is_active } }`,
-        variables: { id: store.id }
-      })
-    })
-    const data = await res.json()
-
-    if (data.errors) {
-      console.error('Toggle error:', data.errors)
-      return
-    }
-
+    await graphql(
+      `mutation ($id: ID!) { ${mutation}(id: $id) { id is_active } }`,
+      { id: store.id }
+    )
     togglingStore.value = null
     fetchStores()
     emit('store-updated')
-    showToast(store.is_active ? 'Store disabled successfully!' : 'Store enabled successfully!')
+    showToast(store.is_active ? 'Store deactivated!' : 'Store reactivated!')
   } catch (err) {
-    console.error('Failed to toggle store:', err)
+    showToast(err.message, 'error')
   }
 }
 const confirmDelete = (store) => { deletingStore.value = store }
 const handleDelete = async () => {
-  const token = localStorage.getItem('token')
   try {
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({
-        query: `mutation ($id: ID!) { deleteStore(id: $id) }`,
-        variables: { id: deletingStore.value.id }
-      })
-    })
-    const data = await res.json()
-    if (data.errors) {
-      console.error('Delete error:', data.errors)
-      return
-    }
+    await graphql(
+      `mutation ($id: ID!) { deleteStore(id: $id) }`,
+      { id: deletingStore.value.id }
+    )
     deletingStore.value = null
     fetchStores()
     emit('store-updated')
     showToast('Store deleted successfully!')
   } catch (err) {
-    console.error('Failed to delete store:', err)
+    showToast(err.message, 'error')
   }
 }
 onMounted(fetchStores)

@@ -8,6 +8,8 @@ use App\Jobs\SendVerifyMailJob;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Repositories\UserRepository;
+use App\Exceptions\AuthException;
+use App\Enums\ErrorCode;
 
 class VerifyService
 {
@@ -22,17 +24,17 @@ class VerifyService
         $storedCode = $this->verifyRepository->getCode('verification_code', $email);
 
         if (!$storedCode) {
-            throw new \Exception('Verification code has expired or does not exist.');
+            throw new AuthException(ErrorCode::CODE_EXPIRED, 'Verification code has expired or does not exist.');
         }
 
         if ($storedCode !== $code) {
-            throw new \Exception('Invalid verification code.');
+            throw new AuthException(ErrorCode::INVALID_CODE, 'Invalid verification code.');
         }
 
         $pendingUser = $this->registerRepository->getPendingUser($email);
 
         if (!$pendingUser) {
-            throw new \Exception('Registration session has expired. Please register again.');
+            throw new AuthException(ErrorCode::REGISTRATION_EXPIRED, 'Registration session has expired. Please register again.');
         }
 
         DB::transaction(function () use ($pendingUser, $email) {
@@ -49,7 +51,7 @@ class VerifyService
         $pendingUser = $this->registerRepository->getPendingUser($email);
 
         if (!$pendingUser) {
-            throw new \Exception('Registration session has expired. Please register again.');
+            throw new AuthException(ErrorCode::REGISTRATION_EXPIRED, 'Registration session has expired. Please register again.');
         }
 
         $code = $this->verifyRepository->createRandomCode($email);

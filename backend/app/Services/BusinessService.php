@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\ErrorCode;
 use App\Enums\PermissionEnum;
 use App\Models\Business;
 use App\Models\User;
@@ -18,24 +19,25 @@ class BusinessService
 
     public function createBusiness(User $user, array $data): Business
     {
-        return $this->businessRepository->create([
+        return $this->businessRepository->create(array_merge($data, [
             'owner_id' => $user->id,
-            ...$data,
-        ]);
+        ]));
     }
 
     public function updateBusiness(User $user, int $businessId, array $data): Business
     {
         $this->permissionService->authorizeBusiness($user, PermissionEnum::UpdateBusiness, $businessId);
         $business = $this->mustFind($businessId);
+
         if (!empty($data['tax_code']) && $data['tax_code'] !== $business->tax_code) {
             $exists = Business::where('tax_code', $data['tax_code'])
                     ->where('id', '!=', $business->id)
                     ->exists();
             if ($exists) {
-                throw new BusinessException('This tax code is already in use.');
+                throw new BusinessException(ErrorCode::TAX_CODE_TAKEN, 'This tax code is already in use.');
             }
         }
+
         return $this->businessRepository->update($business, $data);
     }
 
@@ -62,10 +64,11 @@ class BusinessService
     {
         $business = $this->businessRepository->findById($id);
         if (!$business) {
-            throw new \Exception('Business not found.');
+            throw new BusinessException(ErrorCode::BUSINESS_NOT_FOUND, 'Business not found.');
         }
         return $business;
     }
+
     public function getAccessibleBusinesses(User $user): array
     {
         $ownedBusinesses = $this->getOwnedBusinesses($user);
@@ -74,7 +77,7 @@ class BusinessService
         return array_merge($ownedBusinesses, $assignedBusinesses);
     }
 
-    private function getOwnedBusinesses(User $user): array
+    public function getOwnedBusinesses(User $user): array
     {
         $businesses = $user->businesses()->with('stores')->get();
         $result = [];
@@ -108,9 +111,10 @@ class BusinessService
         return $result;
     }
 
-    private function getAssignedBusinesses(User $user): array
+    public function getAssignedBusinesses(User $user): array
     {
         $stores = $user->stores()->with('business')->where('is_active', true)->get();
+        $grouped = [];
 
         foreach ($stores as $store) {
             if ($store->business->owner_id === $user->id) continue;
@@ -139,5 +143,15 @@ class BusinessService
         }
 
         return array_values($grouped);
+    }
+    public function getBusiness(User $user, int $businessId): Business
+    {
+        $business = $this->businessRepository->findById($businessId);
+
+        if (!$business || $business->owner_id !== $user->id) {
+            throw new BusinessException(ErrorCode::BUSINESS_NOT_FOUND, 'Business not found.');
+        }
+
+        return $business;
     }
 }

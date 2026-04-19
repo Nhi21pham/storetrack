@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use App\Repositories\UserRepository;
+use App\Exceptions\AuthException;
+use App\Enums\ErrorCode;
 
 class LoginService
 {
@@ -17,11 +19,11 @@ class LoginService
         $user = $this->userRepository->findByEmail($email);
 
         if (!$user) {
-            throw new \Exception('No account found with this email');
+            throw new AuthException(ErrorCode::ACCOUNT_NOT_FOUND, 'No account found with this email.');
         }
 
         if (!Hash::check($password, $user->password)) {
-            throw new \Exception('Invalid password');
+            throw new AuthException(ErrorCode::INVALID_CREDENTIALS, 'Invalid password.');
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;

@@ -70,6 +70,7 @@
 import { ref, computed } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { validators, validate } from '@/utils/validators'
+import { graphql } from '@/api'
 
 const props = defineProps({
   business: { type: Object, default: null }
@@ -114,7 +115,6 @@ const handleSubmit = async () => {
 
   loading.value = true
   apiError.value = ''
-  const token = localStorage.getItem('token')
 
   try {
     let query, variables
@@ -152,21 +152,11 @@ const handleSubmit = async () => {
       }
     }
 
-    const res = await fetch('/graphql', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ query, variables })
-    })
-    const data = await res.json()
-
-    if (data.errors) {
-      apiError.value = data.errors[0].message
-      return
-    }
-
-    emit('saved', isEdit.value ? data.data.updateBusiness : data.data.createBusiness)
+    const data = await graphql(query, variables)
+    const result = isEdit.value ? data.updateBusiness : data.createBusiness
+    emit('saved', result)
   } catch (err) {
-    apiError.value = 'Something went wrong. Please try again.'
+    apiError.value = err.message
   } finally {
     loading.value = false
   }

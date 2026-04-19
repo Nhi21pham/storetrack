@@ -36,12 +36,12 @@ watch(() => props.message, (val) => {
 </script>
 
 <style scoped>
-.toast { position: fixed; top: 24px; left: 24px; display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; box-shadow: 0 8px 30px rgba(0,0,0,0.12); z-index: 5000; animation: slideIn 0.3s ease; }
+.toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; box-shadow: 0 8px 30px rgba(0,0,0,0.12); z-index: 5000; animation: slideIn 0.3s ease; }
 .toast.success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 .toast.error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-20px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 </style>

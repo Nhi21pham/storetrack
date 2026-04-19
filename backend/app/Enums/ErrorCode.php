@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Enums;
+
+enum ErrorCode: string
+{
+    // Auth
+    case INVALID_CREDENTIALS = 'INVALID_CREDENTIALS';
+    case ACCOUNT_NOT_FOUND = 'ACCOUNT_NOT_FOUND';
+    case SESSION_EXPIRED = 'SESSION_EXPIRED';
+    case INVALID_CODE = 'INVALID_CODE';
+    case CODE_EXPIRED = 'CODE_EXPIRED';
+    case PASSWORDS_NOT_MATCH = 'PASSWORDS_NOT_MATCH';
+    case OLD_PASSWORD_INCORRECT = 'OLD_PASSWORD_INCORRECT';
+    case REGISTRATION_EXPIRED = 'REGISTRATION_EXPIRED';
+
+    // Authorization
+    case FORBIDDEN = 'FORBIDDEN';
+
+    // Business
+    case BUSINESS_NOT_FOUND = 'BUSINESS_NOT_FOUND';
+    case TAX_CODE_TAKEN = 'TAX_CODE_TAKEN';
+
+    // Store
+    case STORE_NOT_FOUND = 'STORE_NOT_FOUND';
+    case CANNOT_CHANGE_OWNER_ROLE = 'CANNOT_CHANGE_OWNER_ROLE';
+    case CANNOT_REMOVE_OWNER = 'CANNOT_REMOVE_OWNER';
+
+    // General
+    case VALIDATION_ERROR = 'VALIDATION_ERROR';
+    case NOT_FOUND = 'NOT_FOUND';
+    case SERVER_ERROR = 'SERVER_ERROR';
+    case NETWORK_ERROR = 'NETWORK_ERROR';
+    case RATE_LIMITED = 'RATE_LIMITED';
+
+    public function statusCode(): int
+    {
+        return match ($this) {
+            self::INVALID_CREDENTIALS,
+            self::INVALID_CODE,
+            self::PASSWORDS_NOT_MATCH,
+            self::OLD_PASSWORD_INCORRECT,
+            self::CODE_EXPIRED,
+            self::REGISTRATION_EXPIRED,
+            self::TAX_CODE_TAKEN,
+            self::CANNOT_CHANGE_OWNER_ROLE,
+            self::CANNOT_REMOVE_OWNER,
+            self::VALIDATION_ERROR => 400,
+
+            self::SESSION_EXPIRED => 401,
+
+            self::FORBIDDEN => 403,
+
+            self::ACCOUNT_NOT_FOUND,
+            self::BUSINESS_NOT_FOUND,
+            self::STORE_NOT_FOUND,
+            self::NOT_FOUND => 404,
+
+            self::RATE_LIMITED => 429,
+
+            self::SERVER_ERROR,
+            self::NETWORK_ERROR => 500,
+        };
+    }
+}

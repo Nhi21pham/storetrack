@@ -16,7 +16,6 @@ class PermissionService
 
     public function canOnStore(User $user, PermissionEnum $permission, int $storeId): bool
     {
-        // Business owner always has full access to stores under their business
         if ($this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)) {
             return true;
         }
