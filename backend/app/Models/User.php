@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NormalizedEmail;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -43,8 +44,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'email'             => NormalizedEmail::class,
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
     public function businesses()

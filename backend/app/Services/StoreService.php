@@ -128,7 +128,7 @@ class StoreService
 
     private function getOwnedStores(User $user): array
     {
-        $businesses = $user->businesses()->with('stores')->get();
+        $businesses = $user->businesses()->with('stores.users')->get();
         $result = [];
 
         foreach ($businesses as $business) {
@@ -145,6 +145,12 @@ class StoreService
                         'id' => (string) $business->id,
                         'name' => $business->name,
                     ],
+                    'users' => $store->users->map(fn($u) => [
+                        'id' => (string) $u->id,
+                        'name' => $u->name,
+                        'email' => $u->email,
+                        'role' => $u->pivot->role,
+                    ])->toArray(),
                 ];
             }
         }
@@ -155,7 +161,7 @@ class StoreService
     private function getAssignedStores(User $user): array
     {
         $stores = $user->stores()
-            ->with('business')
+            ->with(['business', 'users'])
             ->get();
 
         $result = [];
@@ -175,6 +181,12 @@ class StoreService
                     'id' => (string) $store->business->id,
                     'name' => $store->business->name,
                 ],
+                'users' => $store->users->map(fn($u) => [
+                    'id' => (string) $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'role' => $u->pivot->role,
+                ])->toArray(),
             ];
         }
 

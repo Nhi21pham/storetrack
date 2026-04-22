@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NormalizedEmail;
 use Illuminate\Database\Eloquent\Model;
 
 class Business extends Model
@@ -13,6 +14,10 @@ class Business extends Model
         'address',
         'email',
         'phone',
+    ];
+
+    protected $casts = [
+        'email' => NormalizedEmail::class,
     ];
 
     public function owner()

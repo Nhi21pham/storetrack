@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\NormalizedEmail;
 use App\Enums\RoleEnum;
 use Illuminate\Database\Eloquent\Model;
 
@@ -20,7 +21,8 @@ class Store extends Model
     'is_active' => true,
     ];
     protected $casts = [
-        'is_active' => 'boolean',
+        'email'          => NormalizedEmail::class,
+        'is_active'      => 'boolean',
         'deactivated_at' => 'datetime',
     ];
 

@@ -21,6 +21,8 @@ class VerifyService
 
     public function verifyCode(string $email, string $code): bool
     {
+        $email = strtolower(trim($email));
+
         $storedCode = $this->verifyRepository->getCode('verification_code', $email);
 
         if (!$storedCode) {
@@ -48,6 +50,8 @@ class VerifyService
 
     public function resendCode(string $email): void
     {
+        $email = strtolower(trim($email));
+
         $pendingUser = $this->registerRepository->getPendingUser($email);
 
         if (!$pendingUser) {

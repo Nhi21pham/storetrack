@@ -16,6 +16,8 @@ class RegisterService
 
     public function register(array $data): array
     {
+        $data['email'] = strtolower(trim($data['email']));
+
         $code = $this->verifyRepository->createRandomCode($data['email']);
 
         $this->registerRepository->savePendingUser($data['email'], [
