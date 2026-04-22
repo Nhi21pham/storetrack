@@ -30,7 +30,15 @@
 
     <!-- Pending invitations (owner only) -->
     <div v-if="canInvite" class="section">
-      <h4 class="section-title">Pending Invitations</h4>
+      <div class="section-header">
+        <h4 class="section-title">Pending Invitations</h4>
+        <button class="btn-invite" @click="$emit('invite')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Invite
+        </button>
+      </div>
       <div v-if="invitesLoading" class="list-loading">
         <div class="spinner"></div> Loading...
       </div>
@@ -43,7 +51,7 @@
           </div>
           <div class="member-right">
             <span class="role-badge" :class="inv.role">{{ roleLabel(inv.role) }}</span>
-            <button class="remove-btn" @click="handleCancelInvitation(inv)" title="Cancel invitation">
+            <button class="remove-btn" @click="cancellingInvitation = inv" title="Cancel invitation">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
@@ -51,7 +59,6 @@
       </div>
     </div>
 
-    <!-- Remove member confirm -->
     <ConfirmDialog
       v-if="removingMember"
       title="Remove Member"
@@ -61,6 +68,17 @@
       type="danger"
       @confirm="handleRemoveMember"
       @cancel="removingMember = null"
+    />
+
+    <ConfirmDialog
+      v-if="cancellingInvitation"
+      title="Cancel Invitation"
+      :message="`Cancel the invitation sent to ${cancellingInvitation.invitee_email}?`"
+      confirm-text="Yes, cancel"
+      cancel-text="Keep"
+      type="warning"
+      @confirm="handleCancelInvitation"
+      @cancel="cancellingInvitation = null"
     />
   </div>
 </template>
@@ -76,13 +94,14 @@ const props = defineProps({
   canRemove: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['member-removed', 'error'])
+const emit = defineEmits(['member-removed', 'error', 'invite'])
 
 const members = ref([])
 const membersLoading = ref(true)
 const pendingInvitations = ref([])
 const invitesLoading = ref(true)
 const removingMember = ref(null)
+const cancellingInvitation = ref(null)
 
 const roleLabel = (role) => ({ OWNER: 'Owner', ACCOUNTANT: 'Accountant', STAFF: 'Staff' }[role] ?? role)
 
@@ -140,7 +159,9 @@ const handleRemoveMember = async () => {
   }
 }
 
-const handleCancelInvitation = async (inv) => {
+const handleCancelInvitation = async () => {
+  const inv = cancellingInvitation.value
+  cancellingInvitation.value = null
   try {
     await graphql(`
       mutation CancelInvitation($invitation_id: ID!) {
@@ -169,7 +190,11 @@ onMounted(() => {
 .members-panel { display: flex; flex-direction: column; gap: 20px; padding-top: 12px; }
 
 .section { }
-.section-title { font-size: 12px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.section-title { font-size: 12px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.btn-invite { display: flex; align-items: center; gap: 4px; padding: 4px 10px; background: #111; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.btn-invite:hover { background: #333; }
 
 .list-loading { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9ca3af; padding: 8px 0; }
 .spinner { width: 14px; height: 14px; border: 2px solid #e5e7eb; border-top-color: #6b7280; border-radius: 50%; animation: spin 0.6s linear infinite; }
