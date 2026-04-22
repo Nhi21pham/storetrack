@@ -1,0 +1,17 @@
+extend type Mutation {
+    inviteUserToStore(store_id: ID!, email: String!, role: Role!): Invitation!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\InvitationResolver@invite")
+
+    cancelInvitation(invitation_id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\InvitationResolver@cancel")
+
+    acceptInvitation(token: String!): Store!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\InvitationResolver@accept")
+
+    declineInvitation(token: String!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\InvitationResolver@decline")
+}

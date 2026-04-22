@@ -1,0 +1,28 @@
+type Invitation {
+    id: ID!
+    store: Store! @belongsTo
+    inviter: InvitationUser! @belongsTo(relation: "inviter")
+    invitee_email: String!
+    invitee_name: String
+    role: Role!
+    status: InvitationStatus!
+    expires_at: DateTime!
+    accepted_at: DateTime
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+type InvitationUser {
+    id: ID!
+    name: String!
+    email: String!
+}
+
+type InvitationPreview {
+    inviter_name: String!
+    store_name: String!
+    role: Role!
+    is_expired: Boolean!
+    is_already_accepted: Boolean!
+    status: String!
+}

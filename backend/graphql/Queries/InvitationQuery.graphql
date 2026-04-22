@@ -1,0 +1,12 @@
+extend type Query {
+    storePendingInvitations(store_id: ID!): [Invitation!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\InvitationResolver@pending")
+
+    storeAllInvitations(store_id: ID!): [Invitation!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\InvitationResolver@all")
+
+    invitationPreview(token: String!): InvitationPreview!
+        @field(resolver: "App\\GraphQL\\Queries\\InvitationResolver@preview")
+}
