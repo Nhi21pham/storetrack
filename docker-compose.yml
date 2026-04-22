@@ -74,6 +74,21 @@ services:
       - redis
       - db
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scheduler
+    command: php artisan schedule:work --verbose --no-interaction
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - db:
+        condition: service_healthy
+
 networks:
   app-network:
     driver: bridge
