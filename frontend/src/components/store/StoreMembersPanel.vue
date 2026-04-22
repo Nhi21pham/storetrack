@@ -15,7 +15,27 @@
             <span class="member-email">{{ member.email }}</span>
           </div>
           <div class="member-right">
-            <span class="role-badge" :class="member.role">{{ roleLabel(member.role) }}</span>
+            <div v-if="canRemove && member.role !== 'OWNER'" class="role-dropdown-wrap">
+              <button class="role-btn" :class="member.role" @click.stop="editingRoleId = editingRoleId === member.id ? null : member.id">
+                {{ roleLabel(member.role) }}
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div v-if="editingRoleId === member.id" class="role-menu">
+                <button
+                  v-for="opt in roleOptions"
+                  :key="opt.value"
+                  class="role-menu-item"
+                  :class="[opt.value, { active: member.role === opt.value }]"
+                  :disabled="member.role === opt.value"
+                  @click.stop="requestRoleChange(member, opt.value)"
+                >
+                  <span class="role-dot" :class="member.role === opt.value ? opt.value : 'hidden'"></span>
+                  {{ opt.label }}
+                  <svg v-if="member.role === opt.value" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:auto"><polyline points="20 6 9 17 4 12"/></svg>
+                </button>
+              </div>
+            </div>
+            <span v-else class="role-badge" :class="member.role">{{ roleLabel(member.role) }}</span>
             <button
               v-if="canRemove && member.role !== 'OWNER'"
               class="remove-btn"
@@ -72,6 +92,17 @@
     />
 
     <ConfirmDialog
+      v-if="pendingRoleChange"
+      title="Change Role"
+      :message="`Change ${pendingRoleChange.member.name}'s role to ${roleLabel(pendingRoleChange.newRole)}?`"
+      confirm-text="Yes, change"
+      cancel-text="Cancel"
+      type="warning"
+      @confirm="confirmRoleChange"
+      @cancel="pendingRoleChange = null"
+    />
+
+    <ConfirmDialog
       v-if="cancellingInvitation"
       title="Cancel Invitation"
       :message="`Cancel the invitation sent to ${cancellingInvitation.invitee_email}?`"
@@ -85,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { graphql } from '@/api'
 
@@ -104,6 +135,8 @@ const pendingInvitations = ref([])
 const invitesLoading = ref(true)
 const removingMember = ref(null)
 const cancellingInvitation = ref(null)
+const editingRoleId = ref(null)
+const pendingRoleChange = ref(null)
 
 const filteredMembers = computed(() => {
   const q = props.search.trim().toLowerCase()
@@ -155,6 +188,27 @@ const fetchPendingInvitations = async () => {
   }
 }
 
+const requestRoleChange = (member, newRole) => {
+  editingRoleId.value = null
+  if (newRole === member.role) return
+  pendingRoleChange.value = { member, newRole }
+}
+
+const confirmRoleChange = async () => {
+  const { member, newRole } = pendingRoleChange.value
+  pendingRoleChange.value = null
+  try {
+    await graphql(`
+      mutation ChangeRole($store_id: ID!, $user_id: ID!, $role: Role!) {
+        assignUserToStore(store_id: $store_id, user_id: $user_id, role: $role) { id }
+      }
+    `, { store_id: props.storeId, user_id: member.id, role: newRole })
+    await fetchMembers()
+  } catch (err) {
+    emit('error', err.message)
+  }
+}
+
 const confirmRemoveMember = (member) => { removingMember.value = member }
 
 const handleRemoveMember = async () => {
@@ -192,6 +246,18 @@ const refresh = async () => {
   await Promise.all([fetchMembers(), fetchPendingInvitations()])
 }
 
+const roleOptions = [
+  { value: 'ACCOUNTANT', label: 'Accountant' },
+  { value: 'STAFF', label: 'Staff' },
+]
+
+const closeDropdown = () => { editingRoleId.value = null }
+watch(editingRoleId, (val) => {
+  if (val) document.addEventListener('click', closeDropdown)
+  else document.removeEventListener('click', closeDropdown)
+})
+onBeforeUnmount(() => document.removeEventListener('click', closeDropdown))
+
 defineExpose({ refresh })
 
 onMounted(() => {
@@ -224,10 +290,32 @@ onMounted(() => {
 
 .member-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-.role-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+.role-badge { font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 6px; }
 .role-badge.OWNER { color: #16a34a; background: #f0fdf4; }
 .role-badge.ACCOUNTANT { color: #2563eb; background: #eff6ff; }
 .role-badge.STAFF { color: #6b7280; background: #f3f4f6; }
+
+.role-dropdown-wrap { position: relative; }
+.role-btn { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer; transition: filter 0.15s; }
+.role-btn.ACCOUNTANT { color: #2563eb; background: #eff6ff; }
+.role-btn.STAFF { color: #6b7280; background: #f3f4f6; }
+.role-btn:hover { filter: brightness(0.93); }
+.role-btn svg { opacity: 0.6; }
+
+.role-menu { position: absolute; right: 0; top: calc(100% + 6px); background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.1); z-index: 10; min-width: 140px; overflow: hidden; padding: 4px; }
+.role-menu-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; text-align: left; border-radius: 6px; transition: background 0.12s; background: none; }
+.role-menu-item.ACCOUNTANT { color: #93c5fd; }
+.role-menu-item.STAFF { color: #d1d5db; }
+.role-menu-item:not(.active):hover.ACCOUNTANT { background: #eff6ff; color: #2563eb; }
+.role-menu-item:not(.active):hover.STAFF { background: #f3f4f6; color: #6b7280; }
+.role-menu-item.active.ACCOUNTANT { background: #eff6ff; color: #1d4ed8; cursor: default; }
+.role-menu-item.active.STAFF { background: #f3f4f6; color: #374151; cursor: default; }
+
+.role-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.role-dot.ACCOUNTANT { background: #2563eb; }
+.role-dot.STAFF { background: #9ca3af; }
+.role-dot.hidden { visibility: hidden; }
+
 
 .remove-btn { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: none; background: none; color: #d1d5db; border-radius: 6px; cursor: pointer; transition: all 0.15s; }
 .remove-btn:hover { background: #fef2f2; color: #dc2626; }
