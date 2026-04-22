@@ -10,6 +10,7 @@ use App\Exceptions\InvitationException;
 use App\Mail\InvitationMail;
 use App\Mail\InvitationResponseMail;
 use App\Models\Invitation;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Store;
 use App\Models\User;
@@ -74,6 +75,8 @@ class InvitationService
                 throw $e;
             }
         });
+
+        Log::info('[Invitation] link for ' . $email . ': ' . config('app.frontend_url', 'http://localhost:5173') . '/invite/' . $invitation->token);
 
         Mail::to($email)->queue(new InvitationMail(
             inviterName: $inviter->name,

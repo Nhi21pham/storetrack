@@ -7,8 +7,9 @@
         <div class="spinner"></div> Loading members...
       </div>
       <div v-else-if="members.length === 0" class="empty-list">No members yet.</div>
+      <div v-else-if="filteredMembers.length === 0" class="empty-list">No members match "{{ search }}".</div>
       <div v-else class="member-list">
-        <div v-for="member in members" :key="member.id" class="member-row">
+        <div v-for="member in filteredMembers" :key="member.id" class="member-row">
           <div class="member-info">
             <span class="member-name">{{ member.name }}</span>
             <span class="member-email">{{ member.email }}</span>
@@ -84,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { graphql } from '@/api'
 
@@ -92,9 +93,10 @@ const props = defineProps({
   storeId: { type: String, required: true },
   canInvite: { type: Boolean, default: false },
   canRemove: { type: Boolean, default: false },
+  search: { type: String, default: '' },
 })
 
-const emit = defineEmits(['member-removed', 'error', 'invite'])
+const emit = defineEmits(['member-removed', 'error', 'invite', 'has-matches'])
 
 const members = ref([])
 const membersLoading = ref(true)
@@ -102,6 +104,18 @@ const pendingInvitations = ref([])
 const invitesLoading = ref(true)
 const removingMember = ref(null)
 const cancellingInvitation = ref(null)
+
+const filteredMembers = computed(() => {
+  const q = props.search.trim().toLowerCase()
+  if (!q) return members.value
+  return members.value.filter(m =>
+    m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)
+  )
+})
+
+watch([filteredMembers, membersLoading], ([filtered, loading]) => {
+  if (props.search.trim() && !loading) emit('has-matches', filtered.length > 0)
+})
 
 const roleLabel = (role) => ({ OWNER: 'Owner', ACCOUNTANT: 'Accountant', STAFF: 'Staff' }[role] ?? role)
 

@@ -13,6 +13,18 @@
       </button>
     </div>
 
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input v-model="searchQuery" type="text" placeholder="Search member name or email..." class="search-input" />
+      <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <span>Loading stores...</span>
@@ -30,7 +42,7 @@
     </div>
 
     <div v-else class="store-list">
-      <div v-for="store in ownedStores" :key="store.id" class="store-card" :class="{ expanded: expandedStores.has(store.id) }">
+      <div v-for="store in visibleStores" :key="store.id" class="store-card" :class="{ expanded: expandedStores.has(store.id) }">
 
         <div class="card-header" @click="toggleStore(store.id)">
           <div class="store-info">
@@ -55,7 +67,9 @@
             :storeId="store.id"
             :canInvite="true"
             :canRemove="true"
+            :search="searchQuery"
             @invite="openInvite(store)"
+            @has-matches="storeMatchMap[store.id] = $event"
             @error="showToast($event, 'error')"
             @member-removed="showToast('Member removed successfully.')"
           />
@@ -81,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, watch, onMounted, inject } from 'vue'
 import { graphql } from '@/api'
 import StoreMembersPanel from '@/components/store/StoreMembersPanel.vue'
 import InviteUserModal from '@/components/store/InviteUserModal.vue'
@@ -91,6 +105,22 @@ const showToast = inject('showToast')
 
 const stores = ref([])
 const loading = ref(true)
+const searchQuery = ref('')
+const storeMatchMap = ref({})
+
+const visibleStores = computed(() => {
+  if (!searchQuery.value.trim()) return ownedStores.value
+  return ownedStores.value.filter(s => storeMatchMap.value[s.id] !== false)
+})
+
+watch(searchQuery, (q) => {
+  if (q.trim()) {
+    ownedStores.value.forEach(s => expandedStores.value.add(s.id))
+  } else {
+    storeMatchMap.value = {}
+    expandedStores.value.clear()
+  }
+})
 const invitingStore = ref(null)
 const showHistory = ref(false)
 const panelRefs = ref({})
@@ -144,6 +174,14 @@ onMounted(fetchStores)
 
 .btn-history { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: #fff; color: #374151; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
 .btn-history:hover { border-color: #d1d5db; background: #f9fafb; }
+
+.search-wrap { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; margin-bottom: 20px; transition: border-color 0.15s; }
+.search-wrap:focus-within { border-color: #111; }
+.search-wrap svg { color: #9ca3af; flex-shrink: 0; }
+.search-input { flex: 1; border: none; outline: none; font-size: 14px; color: #111; background: transparent; }
+.search-input::placeholder { color: #d1d5db; }
+.search-clear { display: flex; align-items: center; justify-content: center; background: none; border: none; color: #9ca3af; cursor: pointer; padding: 2px; border-radius: 4px; transition: color 0.15s; }
+.search-clear:hover { color: #374151; }
 
 .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 60px 0; color: #6b7280; font-size: 14px; }
 .spinner { width: 20px; height: 20px; border: 2.5px solid #e5e7eb; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; }
