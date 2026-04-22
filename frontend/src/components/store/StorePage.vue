@@ -166,7 +166,7 @@ const searchQuery = ref('')
 const showForm = ref(false)
 const editingStore = ref(null)
 const togglingStore = ref(null)
-const deletingStore = ref(null) 
+const deletingStore = ref(null)
 
 const filteredStores = computed(() => {
   if (!searchQuery.value.trim()) return stores.value
@@ -188,7 +188,6 @@ const fetchStores = async () => {
     }`)
     stores.value = data.accessibleStores
   } catch (err) {
-    console.error('Failed to fetch stores:', err)
     showToast(err.message, 'error')
   } finally {
     loading.value = false
@@ -214,12 +213,8 @@ const confirmToggle = (store) => { togglingStore.value = store }
 const handleToggle = async () => {
   const store = togglingStore.value
   const mutation = store.is_active ? 'deactivateStore' : 'reactivateStore'
-
   try {
-    await graphql(
-      `mutation ($id: ID!) { ${mutation}(id: $id) { id is_active } }`,
-      { id: store.id }
-    )
+    await graphql(`mutation ($id: ID!) { ${mutation}(id: $id) { id is_active } }`, { id: store.id })
     togglingStore.value = null
     fetchStores()
     emit('store-updated')
@@ -228,13 +223,12 @@ const handleToggle = async () => {
     showToast(err.message, 'error')
   }
 }
+
 const confirmDelete = (store) => { deletingStore.value = store }
+
 const handleDelete = async () => {
   try {
-    await graphql(
-      `mutation ($id: ID!) { deleteStore(id: $id) }`,
-      { id: deletingStore.value.id }
-    )
+    await graphql(`mutation ($id: ID!) { deleteStore(id: $id) }`, { id: deletingStore.value.id })
     deletingStore.value = null
     fetchStores()
     emit('store-updated')
@@ -243,6 +237,7 @@ const handleDelete = async () => {
     showToast(err.message, 'error')
   }
 }
+
 onMounted(fetchStores)
 </script>
 
@@ -302,6 +297,7 @@ onMounted(fetchStores)
 .action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 18px; background: none; border: none; font-size: 13px; font-weight: 500; color: #6b7280; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
 .action-btn:first-child { border-bottom: 1px solid #f3f4f6; }
 .action-btn:hover { background: #f9fafb; color: #111; }
+.action-btn.danger:hover { background: #fef2f2; color: #dc2626; }
 
 .card-role-badge { display: flex; align-items: center; justify-content: center; padding: 0 18px; border-left: 1px solid #f3f4f6; }
 .member-tag { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: capitalize; }

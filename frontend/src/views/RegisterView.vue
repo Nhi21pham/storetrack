@@ -70,11 +70,12 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { graphql } from '@/api'
 import { validators, validate } from '@/utils/validators'
 
 const router = useRouter()
+const route = useRoute()
 const error = ref('')
 const loading = ref(false)
 const form = ref({
@@ -114,6 +115,8 @@ const handleRegister = async () => {
     })
 
     sessionStorage.setItem('canVerify', 'true')
+    const redirect = route.query.redirect
+    if (typeof redirect === 'string') sessionStorage.setItem('postLoginRedirect', redirect)
     router.push({ path: '/verify-code', query: { email: form.value.email } })
   } catch (err) {
     error.value = err.message || 'Registration failed'

@@ -9,6 +9,8 @@ import DashboardView from '@/views/DashboardView.vue'
 import BusinessView from '@/views/BusinessView.vue'
 import StoreView from '@/views/StoreView.vue'
 import ErrorView from '@/views/ErrorView.vue'
+import AcceptInvitationView from '@/views/AcceptInvitationView.vue'
+import UserManagementView from '@/views/UserManagementView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -79,8 +81,20 @@ const router = createRouter({
           name: 'stores',
           component: StoreView
         },
+        {
+          path: 'users',
+          name: 'users',
+          component: UserManagementView
+        },
       ]
     },
+    // Public invite route — no auth meta, view handles its own auth state
+    {
+      path: '/invite/:token',
+      name: 'accept-invitation',
+      component: AcceptInvitationView,
+    },
+
     {
       path: '/error/:code',
       name: 'error',
@@ -94,13 +108,14 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, from) => {
+router.beforeEach((to) => {
   const token = localStorage.getItem('token')
 
   if (to.meta.auth && !token) {
     return '/login'
   } else if (to.meta.guest && token) {
-    return '/dashboard'
+    const redirect = to.query.redirect as string | undefined
+    return redirect || '/dashboard'
   }
 })
 
