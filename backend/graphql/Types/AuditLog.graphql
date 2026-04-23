@@ -1,0 +1,17 @@
+type AuditLog {
+    id: ID!
+    actor_name: String
+    actor_email: String
+    object_type: String!
+    action: String!
+    message: String!
+    created_at: DateTime!
+}
+
+type AuditLogPage {
+    data: [AuditLog!]!
+    total: Int!
+    current_page: Int!
+    last_page: Int!
+    per_page: Int!
+}

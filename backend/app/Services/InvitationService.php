@@ -22,7 +22,8 @@ use Illuminate\Support\Str;
 class InvitationService
 {
     public function __construct(
-        private PermissionService $permissionService
+        private PermissionService $permissionService,
+        private AuditLogService $auditLogService
     ) {}
 
     public function sendInvitation(User $inviter, int $storeId, string $email, RoleEnum $role): Invitation
@@ -86,6 +87,8 @@ class InvitationService
             token: $invitation->token,
         ));
 
+        $this->auditLogService->invitationSent($inviter, $store, $email, $role->value);
+
         return $invitation->load(['store', 'inviter']);
     }
 
@@ -106,6 +109,8 @@ class InvitationService
         if ($updated === 0) {
             throw new InvitationException(ErrorCode::INVITATION_NOT_CANCELLABLE, 'This invitation can no longer be cancelled.');
         }
+
+        $this->auditLogService->invitationCancelled($actor, $invitation);
     }
 
     public function getStorePendingInvitations(User $actor, int $storeId): Collection
@@ -204,6 +209,7 @@ class InvitationService
 
             return (object) [
                 'store'        => $store,
+                'invitation'   => $invitation,
                 'inviterEmail' => $invitation->inviter->email,
                 'inviteeEmail' => $invitation->invitee_email,
                 'storeName'    => $store->name,
@@ -219,6 +225,8 @@ class InvitationService
             storeName: $result->storeName,
             accepted: true,
         ));
+
+        $this->auditLogService->invitationAccepted($user, $result->invitation);
 
         return $result->store->fresh('users', 'business');
     }
@@ -255,6 +263,7 @@ class InvitationService
             $invitation->update(['status' => InvitationStatusEnum::Declined]);
 
             return (object) [
+                'invitation'   => $invitation,
                 'inviterEmail' => $invitation->inviter->email,
                 'inviteeEmail' => $invitation->invitee_email,
                 'storeName'    => $invitation->store->name,
@@ -270,5 +279,7 @@ class InvitationService
             storeName: $result->storeName,
             accepted: false,
         ));
+
+        $this->auditLogService->invitationDeclined($user, $result->invitation);
     }
 }
