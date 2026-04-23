@@ -1,0 +1,7 @@
+enum InvitationStatus {
+    PENDING @enum(value: "pending")
+    ACCEPTED @enum(value: "accepted")
+    DECLINED @enum(value: "declined")
+    EXPIRED @enum(value: "expired")
+    CANCELLED @enum(value: "cancelled")
+}

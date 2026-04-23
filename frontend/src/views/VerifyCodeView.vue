@@ -142,7 +142,9 @@ const handleVerify = async () => {
     })
 
     success.value = 'Email verified! Redirecting to login...'
-    setTimeout(() => router.push('/login'), 2000)
+    const redirect = sessionStorage.getItem('postLoginRedirect')
+    const loginQuery = redirect ? { redirect } : {}
+    setTimeout(() => router.push({ path: '/login', query: loginQuery }), 2000)
   } catch (err) {
     error.value = err.message || 'Verification failed'
   } finally {

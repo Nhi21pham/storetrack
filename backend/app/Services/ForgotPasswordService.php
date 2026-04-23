@@ -17,6 +17,8 @@ class ForgotPasswordService
 
     public function sendResetCode(string $email): void
     {
+        $email = strtolower(trim($email));
+
         $user = $this->userRepository->findByEmail($email);
 
         if (!$user) {
@@ -32,6 +34,8 @@ class ForgotPasswordService
 
     public function resetPassword(string $email, string $code, string $password): void
     {
+        $email = strtolower(trim($email));
+
         $storedCode = $this->verifyRepository->getCode('reset_code', $email);
 
         if (!$storedCode) {

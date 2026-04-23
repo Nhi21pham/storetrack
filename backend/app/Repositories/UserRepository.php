@@ -9,7 +9,7 @@ class UserRepository
 {
     public function findByEmail(string $email): ?User
     {
-        return User::where('email', $email)->first();
+        return User::where('email', strtolower(trim($email)))->first();
     }
 
     public function create(array $data): User
@@ -19,7 +19,7 @@ class UserRepository
 
     public function updatePassword(string $email, string $password): void
     {
-        User::where('email', $email)->update([
+        User::where('email', strtolower(trim($email)))->update([
             'password' => Hash::make($password)
         ]);
     }

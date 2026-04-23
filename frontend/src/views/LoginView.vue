@@ -54,11 +54,12 @@
 
 <script setup>
   import { ref } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { useRouter, useRoute } from 'vue-router'
   import { graphql } from '@/api'
   import { validators, validate } from '@/utils/validators'
 
   const router = useRouter()
+  const route = useRoute()
   const form = ref({ email: '', password: '' })
   const loading = ref(false)
   const error = ref('')
@@ -97,7 +98,9 @@
       localStorage.setItem('token', data.login.token)
       localStorage.setItem('user', JSON.stringify(data.login.user))
 
-      router.push('/dashboard')
+      const redirect = route.query.redirect || sessionStorage.getItem('postLoginRedirect')
+      sessionStorage.removeItem('postLoginRedirect')
+      router.push(typeof redirect === 'string' ? redirect : '/dashboard')
     } catch (err) {
       error.value = err.message || 'Login failed'
     } finally {

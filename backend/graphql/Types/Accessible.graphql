@@ -18,6 +18,14 @@ type AccessibleStore {
     is_active: Boolean!
     my_role: Role!
     business: AccessibleBusinessInfo!
+    users: [AccessibleStoreMember!]!
+}
+
+type AccessibleStoreMember {
+    id: ID!
+    name: String!
+    email: String!
+    role: Role!
 }
 
 type AccessibleBusinessInfo {

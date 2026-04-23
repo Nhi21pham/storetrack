@@ -36,6 +36,12 @@ services:
       - db_data:/var/lib/mysql
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   redis:
     image: redis:latest
@@ -73,6 +79,21 @@ services:
     depends_on:
       - redis
       - db
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scheduler
+    command: php artisan schedule:work --verbose --no-interaction
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      db:
+        condition: service_healthy
 
 networks:
   app-network:
