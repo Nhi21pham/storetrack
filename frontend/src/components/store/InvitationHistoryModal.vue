@@ -244,14 +244,14 @@ onMounted(fetchInvitations)
 .spinner { width: 18px; height: 18px; border: 2px solid #e5e7eb; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; }
 .empty-state { text-align: center; padding: 48px; font-size: 14px; color: #9ca3af; }
 
-.table-wrap { overflow-y: scroll; flex: 1; min-height: 280px; }
-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.sortable-th:nth-child(1) { width: 26%; }
-.sortable-th:nth-child(2) { width: 18%; }
-.sortable-th:nth-child(3) { width: 11%; }
-.sortable-th:nth-child(4) { width: 12%; }
-.sortable-th:nth-child(5) { width: 16%; }
-.sortable-th:nth-child(6) { width: 17%; }
+.table-wrap { overflow-x: auto; overflow-y: scroll; flex: 1; min-height: 280px; }
+table { width: 100%; min-width: 820px; border-collapse: collapse; table-layout: fixed; }
+.sortable-th:nth-child(1) { min-width: 200px; }
+.sortable-th:nth-child(2) { min-width: 140px; }
+.sortable-th:nth-child(3) { min-width: 90px; }
+.sortable-th:nth-child(4) { min-width: 100px; }
+.sortable-th:nth-child(5) { min-width: 155px; }
+.sortable-th:nth-child(6) { min-width: 155px; }
 thead { position: sticky; top: 0; background: #fff; z-index: 1; box-shadow: 0 1px 0 #f3f4f6; }
 
 .sortable-th { padding: 10px 16px; text-align: left; user-select: none; white-space: nowrap; }
