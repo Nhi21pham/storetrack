@@ -21,6 +21,16 @@
     </div>
 
     <template v-else>
+      <div class="filter-bar">
+        <div class="date-range">
+          <label>From</label>
+          <input type="date" v-model="startDate" :max="endDate || undefined" @change="applyFilter" />
+          <label>To</label>
+          <input type="date" v-model="endDate" :min="startDate || undefined" @change="applyFilter" />
+          <button v-if="startDate || endDate" class="btn-clear" @click="clearFilter">Clear</button>
+        </div>
+      </div>
+
       <div v-if="loading" class="loading-state">
         <div class="spinner"></div>
         <span>Loading activity...</span>
@@ -56,7 +66,7 @@
           :total="total"
           :perPage="perPage"
           @update:currentPage="loadPage"
-          @update:perPage="val => { perPage = val; loadPage(1) }"
+          @update:perPage="changePerPage"
         />
       </div>
     </template>
@@ -77,11 +87,14 @@ const fetching = ref(false)
 const currentPage = ref(1)
 const lastPage = ref(1)
 const total = ref(0)
-const perPage = ref(20)
+const STORAGE_KEY = 'audit_log_per_page'
+const perPage = ref(Number(localStorage.getItem(STORAGE_KEY)) || 20)
+const startDate = ref('')
+const endDate = ref('')
 
 const QUERY = `
-  query AuditLogs($store_id: ID!, $page: Int, $per_page: Int) {
-    auditLogs(store_id: $store_id, page: $page, per_page: $per_page) {
+  query AuditLogs($store_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String) {
+    auditLogs(store_id: $store_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date) {
       data {
         id
         actor_name
@@ -108,6 +121,8 @@ const fetchLogs = async (page = 1) => {
       store_id: currentStore.value.id,
       page,
       per_page: perPage.value,
+      start_date: startDate.value || null,
+      end_date: endDate.value || null,
     })
     logs.value = data.auditLogs.data
     currentPage.value = data.auditLogs.current_page
@@ -122,6 +137,21 @@ const fetchLogs = async (page = 1) => {
 }
 
 const loadPage = (page) => fetchLogs(page)
+
+const changePerPage = (val) => {
+  perPage.value = val
+  localStorage.setItem(STORAGE_KEY, val)
+  fetchLogs(1)
+}
+
+const applyFilter = () => { currentPage.value = 1; fetchLogs(1) }
+
+const clearFilter = () => {
+  startDate.value = ''
+  endDate.value = ''
+  currentPage.value = 1
+  fetchLogs(1)
+}
 
 const ACTION_COLORS = {
   CREATED: '#16a34a',
@@ -158,7 +188,14 @@ const highlightMessage = (msg) => {
 
 watch(
   () => currentStore.value?.id,
-  (id) => { if (id) { currentPage.value = 1; fetchLogs(1) } },
+  (id) => {
+    if (id) {
+      currentPage.value = 1
+      startDate.value = ''
+      endDate.value = ''
+      fetchLogs(1)
+    }
+  },
   { immediate: true }
 )
 
@@ -180,6 +217,15 @@ const formatDatetime = (isoString) =>
 .page-header { margin-bottom: 28px; }
 .page-header h1 { font-size: 22px; font-weight: 700; color: #111; }
 .subtitle { font-size: 14px; color: #6b7280; margin-top: 4px; }
+
+.filter-bar { margin-bottom: 16px; }
+.date-range { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.date-range label { font-size: 12.5px; font-weight: 400; color: #9ca3af; letter-spacing: 0.01em; }
+.date-range input[type="date"] { padding: 7px 11px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13.5px; font-family: inherit; color: #374151; background: #fafafa; cursor: pointer; outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; }
+.date-range input[type="date"]:hover { background: #fff; border-color: #d1d5db; }
+.date-range input[type="date"]:focus { background: #fff; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(156,163,175,0.12); }
+.btn-clear { padding: 7px 13px; border: 1px solid #f3f4f6; border-radius: 10px; font-size: 12.5px; font-family: inherit; color: #c0c4cc; background: #fafafa; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.btn-clear:hover { background: #f3f4f6; border-color: #e5e7eb; color: #6b7280; }
 
 .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 60px 0; color: #6b7280; font-size: 14px; }
 .spinner { width: 20px; height: 20px; border: 2.5px solid #e5e7eb; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; }

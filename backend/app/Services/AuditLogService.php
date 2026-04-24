@@ -16,7 +16,7 @@ class AuditLogService
 {
     public function __construct(private PermissionRepository $permissionRepository) {}
 
-    public function getStoreLogs(User $user, int $storeId, int $page = 1, int $perPage = 20): array
+    public function getStoreLogs(User $user, int $storeId, int $page = 1, int $perPage = 20, ?string $startDate = null, ?string $endDate = null): array
     {
         $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
             || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
@@ -25,8 +25,16 @@ class AuditLogService
             throw new AuthorizationException('You do not have access to this store.');
         }
 
-        $paginator = AuditLog::where('store_id', $storeId)
-            ->orderByDesc('created_at')
+        $query = AuditLog::where('store_id', $storeId);
+
+        if ($startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
+
+        $paginator = $query->orderByDesc('created_at')
             ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
 
         return [
