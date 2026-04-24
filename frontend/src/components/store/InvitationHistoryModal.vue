@@ -75,32 +75,13 @@
             </table>
           </div>
 
-          <div v-if="sortedInvitations.length" class="pagination-bar">
-            <div class="pagination-left">
-              <span class="page-info">
-                {{ pageStart }}–{{ pageEnd }} of {{ sortedInvitations.length }}
-              </span>
-              <select v-model="pageSize" class="per-page-select">
-                <option v-for="n in pageSizeOptions" :key="n" :value="n">{{ n }} / page</option>
-              </select>
-            </div>
-            <div class="pagination-right">
-              <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
-              <button
-                v-for="p in visiblePages"
-                :key="p"
-                class="page-btn num"
-                :class="{ active: p === currentPage, ellipsis: p === '…' }"
-                :disabled="p === '…'"
-                @click="p !== '…' && (currentPage = p)"
-              >{{ p }}</button>
-              <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-            </div>
-          </div>
+          <Pagination
+            v-if="sortedInvitations.length"
+            v-model:currentPage="currentPage"
+            v-model:perPage="pageSize"
+            :totalPages="totalPages"
+            :total="sortedInvitations.length"
+          />
         </template>
       </div>
     </div>
@@ -111,6 +92,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { graphql } from '@/api'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import Pagination from '@/components/common/Pagination.vue'
 
 const props = defineProps({
   ownedStores: { type: Array, required: true },
@@ -125,7 +107,6 @@ const activeFilter = ref('ALL')
 const { sortCriteria, getSortInfo, sortRank, toggleSort, clearSort, sortItems } = useSortCriteria()
 const currentPage = ref(1)
 const pageSize = ref(20)
-const pageSizeOptions = [10, 20, 50, 100]
 
 const columns = [
   { key: 'invitee_email', label: 'Invitee' },
@@ -187,25 +168,10 @@ const sortedInvitations = computed(() =>
 )
 
 const totalPages = computed(() => Math.max(1, Math.ceil(sortedInvitations.value.length / pageSize.value)))
-const pageStart  = computed(() => (currentPage.value - 1) * pageSize.value + 1)
-const pageEnd    = computed(() => Math.min(currentPage.value * pageSize.value, sortedInvitations.value.length))
 
 const paginatedInvitations = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   return sortedInvitations.value.slice(start, start + pageSize.value)
-})
-
-const visiblePages = computed(() => {
-  const total = totalPages.value
-  const cur = currentPage.value
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-  const pages = []
-  pages.push(1)
-  if (cur > 3) pages.push('…')
-  for (let p = Math.max(2, cur - 1); p <= Math.min(total - 1, cur + 1); p++) pages.push(p)
-  if (cur < total - 2) pages.push('…')
-  pages.push(total)
-  return pages
 })
 
 const countByStatus = (status) =>
@@ -248,7 +214,7 @@ onMounted(fetchInvitations)
 
 <style scoped>
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; animation: overlay-in 0.2s ease; }
-.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 860px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,0.15); overflow: hidden; animation: modal-in 0.28s cubic-bezier(0.34, 1.4, 0.64, 1); }
+.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 860px; min-height: 520px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,0.15); overflow: hidden; animation: modal-in 0.28s cubic-bezier(0.34, 1.4, 0.64, 1); }
 @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modal-in { from { opacity: 0; transform: translateY(24px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
@@ -278,8 +244,14 @@ onMounted(fetchInvitations)
 .spinner { width: 18px; height: 18px; border: 2px solid #e5e7eb; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; }
 .empty-state { text-align: center; padding: 48px; font-size: 14px; color: #9ca3af; }
 
-.table-wrap { overflow-y: auto; flex: 1; }
-table { width: 100%; border-collapse: collapse; }
+.table-wrap { overflow-y: scroll; flex: 1; min-height: 280px; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.sortable-th:nth-child(1) { width: 26%; }
+.sortable-th:nth-child(2) { width: 18%; }
+.sortable-th:nth-child(3) { width: 11%; }
+.sortable-th:nth-child(4) { width: 12%; }
+.sortable-th:nth-child(5) { width: 16%; }
+.sortable-th:nth-child(6) { width: 17%; }
 thead { position: sticky; top: 0; background: #fff; z-index: 1; box-shadow: 0 1px 0 #f3f4f6; }
 
 .sortable-th { padding: 10px 16px; text-align: left; user-select: none; white-space: nowrap; }
@@ -292,13 +264,13 @@ thead { position: sticky; top: 0; background: #fff; z-index: 1; box-shadow: 0 1p
 .sort-arrow.active { color: #111; }
 .sort-rank { font-size: 10px; font-weight: 700; color: #fff; background: #111; border-radius: 50%; width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px; }
 
-td { padding: 12px 16px; font-size: 13px; color: #374151; border-bottom: 1px solid #f9fafb; vertical-align: middle; }
+td { padding: 12px 16px; font-size: 13px; color: #374151; border-bottom: 1px solid #f9fafb; vertical-align: middle; overflow: hidden; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: #fafafa; }
 
-.invitee-name { font-weight: 500; color: #111; }
-.invitee-email { font-size: 12px; color: #9ca3af; margin-top: 1px; }
-.store-cell { font-weight: 500; }
+.invitee-name { font-weight: 500; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.invitee-email { font-size: 12px; color: #9ca3af; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.store-cell { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .date-cell { white-space: nowrap; color: #6b7280; font-size: 12px; }
 
 .role-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 5px; }
@@ -312,19 +284,6 @@ tr:hover td { background: #fafafa; }
 .status-badge.declined  { color: #dc2626; background: #fef2f2; }
 .status-badge.cancelled { color: #6b7280; background: #f3f4f6; }
 .status-badge.expired   { color: #ea580c; background: #fff7ed; }
-
-.pagination-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid #f3f4f6; flex-shrink: 0; gap: 12px; flex-wrap: wrap; }
-.pagination-left { display: flex; align-items: center; gap: 12px; }
-.page-info { font-size: 13px; color: #6b7280; white-space: nowrap; }
-.per-page-select { font-size: 13px; padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 7px; color: #374151; background: #fff; outline: none; cursor: pointer; }
-.per-page-select:focus { border-color: #111; }
-
-.pagination-right { display: flex; align-items: center; gap: 4px; }
-.page-btn { display: flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 6px; border: 1px solid #e5e7eb; background: #fff; color: #374151; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-.page-btn:hover:not(:disabled):not(.ellipsis) { background: #f3f4f6; border-color: #d1d5db; }
-.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.page-btn.active { background: #111; color: #fff; border-color: #111; }
-.page-btn.ellipsis { border: none; background: none; cursor: default; color: #9ca3af; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

@@ -39,32 +39,25 @@
         <p>Actions performed in this store will appear here.</p>
       </div>
 
-      <div v-else class="log-feed">
+      <div v-else class="log-feed" :class="{ 'log-feed--fetching': fetching }">
         <div v-for="log in logs" :key="log.id" class="log-entry">
           <div class="log-left">
             <span class="badge" :class="badgeClass(log.object_type)">{{ log.object_type }}</span>
           </div>
           <div class="log-body">
-            <p class="log-message">{{ log.message }}</p>
-            <span class="log-time" :title="formatAbsolute(log.created_at)">{{ formatRelative(log.created_at) }}</span>
+            <p class="log-message" v-html="highlightMessage(log.message)"></p>
+            <span class="log-time">{{ formatDatetime(log.created_at) }}</span>
           </div>
         </div>
 
-        <div v-if="lastPage > 1" class="pagination">
-          <button class="page-btn" :disabled="currentPage === 1" @click="loadPage(currentPage - 1)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
-            Prev
-          </button>
-          <span class="page-info">Page {{ currentPage }} of {{ lastPage }}</span>
-          <button class="page-btn" :disabled="currentPage === lastPage" @click="loadPage(currentPage + 1)">
-            Next
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"/>
-            </svg>
-          </button>
-        </div>
+        <Pagination
+          :currentPage="currentPage"
+          :totalPages="lastPage"
+          :total="total"
+          :perPage="perPage"
+          @update:currentPage="loadPage"
+          @update:perPage="val => { perPage = val; loadPage(1) }"
+        />
       </div>
     </template>
   </div>
@@ -73,14 +66,18 @@
 <script setup>
 import { ref, watch, inject } from 'vue'
 import { graphql } from '@/api'
+import Pagination from '@/components/common/Pagination.vue'
 
 const currentStore = inject('currentStore')
 const showToast = inject('showToast')
 
 const logs = ref([])
 const loading = ref(false)
+const fetching = ref(false)
 const currentPage = ref(1)
 const lastPage = ref(1)
+const total = ref(0)
+const perPage = ref(20)
 
 const QUERY = `
   query AuditLogs($store_id: ID!, $page: Int, $per_page: Int) {
@@ -104,24 +101,60 @@ const QUERY = `
 
 const fetchLogs = async (page = 1) => {
   if (!currentStore.value?.id) return
-  loading.value = true
+  if (logs.value.length === 0) loading.value = true
+  else fetching.value = true
   try {
     const data = await graphql(QUERY, {
       store_id: currentStore.value.id,
       page,
-      per_page: 20,
+      per_page: perPage.value,
     })
     logs.value = data.auditLogs.data
     currentPage.value = data.auditLogs.current_page
     lastPage.value = data.auditLogs.last_page
+    total.value = data.auditLogs.total
   } catch (err) {
     showToast(err.message, 'error')
   } finally {
     loading.value = false
+    fetching.value = false
   }
 }
 
 const loadPage = (page) => fetchLogs(page)
+
+const ACTION_COLORS = {
+  CREATED: '#16a34a',
+  ACCEPTED: '#16a34a',
+  REACTIVATED: '#16a34a',
+  UPDATED: '#1d4ed8',
+  ASSIGNED: '#1d4ed8',
+  INVITED: '#7c3aed',
+  CANCELLED: '#b45309',
+  DEACTIVATED: '#b45309',
+  REMOVED: '#dc2626',
+  DECLINED: '#dc2626',
+}
+
+const highlightMessage = (msg) => {
+  const escaped = msg
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/^\[[\w]+\]\s*/, '') // strip legacy [ObjectType] prefix
+
+  // Bold name(email) patterns
+  const withNames = escaped.replace(
+    /(\S+\([^)]+\))/g,
+    '<strong>$1</strong>'
+  )
+
+  // Color known action verbs
+  return withNames.replace(
+    /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|INVITED|CANCELLED|ACCEPTED|DECLINED)\b/g,
+    (match) => `<span style="font-weight:700;color:${ACTION_COLORS[match] ?? '#374151'}">${match}</span>`
+  )
+}
 
 watch(
   () => currentStore.value?.id,
@@ -130,24 +163,15 @@ watch(
 )
 
 const badgeClass = (objectType) => {
-  const map = { Store: 'badge-store', User: 'badge-user', Invitation: 'badge-invitation' }
+  const map = { Business: 'badge-business', Store: 'badge-store', User: 'badge-user', Invitation: 'badge-invitation' }
   return map[objectType] ?? 'badge-default'
 }
 
-const formatRelative = (isoString) => {
-  const diff = Date.now() - new Date(isoString).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  const days = Math.floor(hrs / 24)
-  if (days < 30) return `${days}d ago`
-  return new Date(isoString).toLocaleDateString()
-}
-
-const formatAbsolute = (isoString) =>
-  new Date(isoString).toLocaleString()
+const formatDatetime = (isoString) =>
+  new Date(isoString).toLocaleString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
 </script>
 
 <style scoped>
@@ -165,15 +189,17 @@ const formatAbsolute = (isoString) =>
 .empty-state h3 { font-size: 16px; font-weight: 600; color: #111; margin-bottom: 6px; }
 .empty-state p { font-size: 14px; color: #6b7280; }
 
-.log-feed { display: flex; flex-direction: column; gap: 0; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
+.log-feed { display: flex; flex-direction: column; gap: 0; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; transition: opacity 0.15s; }
+.log-feed--fetching { opacity: 0.45; pointer-events: none; }
 
 .log-entry { display: flex; align-items: flex-start; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #f3f4f6; transition: background 0.12s; }
 .log-entry:last-of-type { border-bottom: none; }
 .log-entry:hover { background: #fafafa; }
 
-.log-left { padding-top: 1px; flex-shrink: 0; }
+.log-left { padding-top: 1px; flex-shrink: 0; width: 84px; }
 
 .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; }
+.badge-business   { background: #ffedd5; color: #c2410c; }
 .badge-store      { background: #dbeafe; color: #1d4ed8; }
 .badge-user       { background: #d1fae5; color: #065f46; }
 .badge-invitation { background: #ede9fe; color: #6d28d9; }
@@ -181,13 +207,9 @@ const formatAbsolute = (isoString) =>
 
 .log-body { flex: 1; min-width: 0; }
 .log-message { font-size: 13.5px; color: #111; line-height: 1.5; word-break: break-word; margin: 0 0 4px; }
+.log-message :deep(strong) { font-weight: 600; color: #111; }
+.log-message :deep(.action-verb) { font-weight: 700; color: #374151; }
 .log-time { font-size: 12px; color: #9ca3af; }
-
-.pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 20px; border-top: 1px solid #f3f4f6; }
-.page-btn { display: flex; align-items: center; gap: 4px; padding: 7px 14px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; color: #374151; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-.page-btn:hover:not(:disabled) { border-color: #d1d5db; background: #f9fafb; }
-.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.page-info { font-size: 13px; color: #6b7280; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

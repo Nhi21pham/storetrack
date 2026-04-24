@@ -23,24 +23,27 @@ class StoreService
     {
         $this->permissionService->authorizeBusiness(
             $user,
-            PermissionEnum::CreateStore,
+            PermissionEnum::CREATE_STORE,
             (int) $data['business_id']
         );
 
         $store = DB::transaction(function () use ($user, $data) {
             $store = $this->storeRepository->create(array_merge($data, ['is_active' => true]));
-            $store->users()->attach($user->id, ['role' => RoleEnum::Owner->value]);
+            $store->users()->attach($user->id, ['role' => RoleEnum::OWNER->value]);
             return $store;
         });
 
         $this->auditLogService->storeCreated($user, $store);
+
+        $business = $store->business;
+        $this->auditLogService->businessCreated($user, $business, $store, $business->created_at);
 
         return $store;
     }
 
     public function updateStore(User $user, int $storeId, array $data): Store
     {
-        $this->permissionService->authorizeStore($user, PermissionEnum::UpdateStore, $storeId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_STORE, $storeId);
         $store = $this->mustFind($storeId);
         $store = $this->storeRepository->update($store, $data);
 
@@ -51,7 +54,7 @@ class StoreService
 
     public function deactivateStore(User $user, int $storeId): Store
     {
-        $this->permissionService->authorizeStore($user, PermissionEnum::DeactivateStore, $storeId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::DEACTIVATE_STORE, $storeId);
         $store = $this->mustFind($storeId);
 
         $store = $this->storeRepository->update($store, [
@@ -66,7 +69,7 @@ class StoreService
 
     public function reactivateStore(User $user, int $storeId): Store
     {
-        $this->permissionService->authorizeStore($user, PermissionEnum::ReactivateStore, $storeId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::REACTIVATE_STORE, $storeId);
         $store = $this->mustFind($storeId);
 
         $store = $this->storeRepository->update($store, [
@@ -81,7 +84,7 @@ class StoreService
 
     public function deleteStore(User $user, int $storeId): void
     {
-        $this->permissionService->authorizeStore($user, PermissionEnum::DeactivateStore, $storeId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::DEACTIVATE_STORE, $storeId);
         $store = $this->mustFind($storeId);
 
         DB::transaction(function () use ($store) {
@@ -92,10 +95,10 @@ class StoreService
 
     public function assignUser(User $actor, int $storeId, int $userId, RoleEnum $role): Store
     {
-        $this->permissionService->authorizeStore($actor, PermissionEnum::AssignStoreUser, $storeId);
+        $this->permissionService->authorizeStore($actor, PermissionEnum::ASSIGN_STORE_USER, $storeId);
         $store = $this->mustFind($storeId);
 
-        if ($store->business->owner_id === $userId && $role !== RoleEnum::Owner) {
+        if ($store->business->owner_id === $userId && $role !== RoleEnum::OWNER) {
             throw new StoreException(ErrorCode::CANNOT_CHANGE_OWNER_ROLE, 'Cannot change the role of the business owner.');
         }
 
@@ -124,7 +127,7 @@ class StoreService
 
     public function removeUser(User $actor, int $storeId, int $userId): Store
     {
-        $this->permissionService->authorizeStore($actor, PermissionEnum::RemoveStoreUser, $storeId);
+        $this->permissionService->authorizeStore($actor, PermissionEnum::REMOVE_STORE_USER, $storeId);
         $store = $this->mustFind($storeId);
 
         if ($store->business->owner_id === $userId) {
