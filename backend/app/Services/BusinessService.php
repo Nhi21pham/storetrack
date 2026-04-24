@@ -60,7 +60,7 @@ class BusinessService
 
     public function getUserBusinesses(User $user)
     {
-        return $user->businesses()->with('stores')->get();
+        return $user->businesses()->with(['stores' => fn($q) => $q->latest()])->latest()->get();
     }
 
     private function mustFind(int $id): Business
@@ -82,7 +82,7 @@ class BusinessService
 
     public function getOwnedBusinesses(User $user): array
     {
-        $businesses = $user->businesses()->with('stores')->get();
+        $businesses = $user->businesses()->with(['stores' => fn($q) => $q->latest()])->latest()->get();
         $result = [];
 
         foreach ($businesses as $business) {
@@ -116,7 +116,7 @@ class BusinessService
 
     public function getAssignedBusinesses(User $user): array
     {
-        $stores = $user->stores()->with('business')->where('is_active', true)->get();
+        $stores = $user->stores()->with('business')->where('is_active', true)->latest()->get();
         $grouped = [];
 
         foreach ($stores as $store) {

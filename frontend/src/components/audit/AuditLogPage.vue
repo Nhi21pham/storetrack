@@ -21,6 +21,8 @@
     </div>
 
     <template v-else>
+      <SearchBar v-model="searchQuery" placeholder="Search activity..." />
+
       <div class="filter-bar">
         <div class="date-range">
           <label>From</label>
@@ -49,8 +51,13 @@
         <p>Actions performed in this store will appear here.</p>
       </div>
 
+      <div v-else-if="filteredLogs.length === 0" class="empty-state">
+        <h3>No results matching "{{ searchQuery }}"</h3>
+        <p>Try a different keyword.</p>
+      </div>
+
       <div v-else class="log-feed" :class="{ 'log-feed--fetching': fetching }">
-        <div v-for="log in logs" :key="log.id" class="log-entry">
+        <div v-for="log in filteredLogs" :key="log.id" class="log-entry">
           <div class="log-left">
             <span class="badge" :class="badgeClass(log.object_type)">{{ log.object_type }}</span>
           </div>
@@ -74,9 +81,10 @@
 </template>
 
 <script setup>
-import { ref, watch, inject } from 'vue'
+import { ref, computed, watch, inject } from 'vue'
 import { graphql } from '@/api'
 import Pagination from '@/components/common/Pagination.vue'
+import SearchBar from '@/components/common/SearchBar.vue'
 
 const currentStore = inject('currentStore')
 const showToast = inject('showToast')
@@ -91,6 +99,17 @@ const STORAGE_KEY = 'audit_log_per_page'
 const perPage = ref(Number(localStorage.getItem(STORAGE_KEY)) || 20)
 const startDate = ref('')
 const endDate = ref('')
+const searchQuery = ref('')
+
+const filteredLogs = computed(() => {
+  if (!searchQuery.value.trim()) return logs.value
+  const q = searchQuery.value.toLowerCase()
+  return logs.value.filter(l =>
+    l.message.toLowerCase().includes(q) ||
+    l.actor_name?.toLowerCase().includes(q) ||
+    l.actor_email?.toLowerCase().includes(q)
+  )
+})
 
 const QUERY = `
   query AuditLogs($store_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String) {
@@ -193,6 +212,7 @@ watch(
       currentPage.value = 1
       startDate.value = ''
       endDate.value = ''
+      searchQuery.value = ''
       fetchLogs(1)
     }
   },
@@ -200,8 +220,8 @@ watch(
 )
 
 const badgeClass = (objectType) => {
-  const map = { Business: 'badge-business', Store: 'badge-store', User: 'badge-user', Invitation: 'badge-invitation' }
-  return map[objectType] ?? 'badge-default'
+  const map = { business: 'badge-business', store: 'badge-store', user: 'badge-user', invitation: 'badge-invitation' }
+  return map[objectType?.toLowerCase()] ?? 'badge-default'
 }
 
 const formatDatetime = (isoString) =>

@@ -146,7 +146,7 @@ class StoreService
 
     public function getUserStores(User $user)
     {
-        return $user->stores()->with('business')->get();
+        return $user->stores()->with('business')->latest()->get();
     }
 
     private function mustFind(int $id): Store
@@ -168,7 +168,7 @@ class StoreService
 
     private function getOwnedStores(User $user): array
     {
-        $businesses = $user->businesses()->with('stores.users')->get();
+        $businesses = $user->businesses()->with(['stores' => fn($q) => $q->with('users')->latest()])->latest()->get();
         $result = [];
 
         foreach ($businesses as $business) {
@@ -202,6 +202,7 @@ class StoreService
     {
         $stores = $user->stores()
             ->with(['business', 'users'])
+            ->latest()
             ->get();
 
         $result = [];
