@@ -13,9 +13,9 @@ class ExpireInvitations extends Command
 
     public function handle(): void
     {
-        $count = Invitation::where('status', InvitationStatusEnum::Pending->value)
+        $count = Invitation::where('status', InvitationStatusEnum::PENDING->value)
             ->where('expires_at', '<=', now())
-            ->update(['status' => InvitationStatusEnum::Expired->value]);
+            ->update(['status' => InvitationStatusEnum::EXPIRED->value]);
 
         $this->info("Marked {$count} invitation(s) as expired.");
     }

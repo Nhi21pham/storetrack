@@ -28,12 +28,12 @@ class InvitationService
 
     public function sendInvitation(User $inviter, int $storeId, string $email, RoleEnum $role): Invitation
     {
-        $this->permissionService->authorizeStore($inviter, PermissionEnum::AssignStoreUser, $storeId);
+        $this->permissionService->authorizeStore($inviter, PermissionEnum::ASSIGN_STORE_USER, $storeId);
 
         $store = Store::findOrFail($storeId);
         $email = strtolower(trim($email));
 
-        if ($role === RoleEnum::Owner) {
+        if ($role === RoleEnum::OWNER) {
             throw new InvitationException(ErrorCode::INVITATION_CANNOT_INVITE_OWNER, 'Cannot invite a user as Owner.');
         }
 
@@ -49,7 +49,7 @@ class InvitationService
         $invitation = DB::transaction(function () use ($store, $inviter, $email, $role, $storeId) {
             $pendingExists = Invitation::where('store_id', $storeId)
                 ->where('invitee_email', $email)
-                ->where('status', InvitationStatusEnum::Pending->value)
+                ->where('status', InvitationStatusEnum::PENDING->value)
                 ->where('expires_at', '>', now())
                 ->lockForUpdate()
                 ->exists();
@@ -65,7 +65,7 @@ class InvitationService
                     'invitee_email' => $email,
                     'role'          => $role->value,
                     'token'         => Str::random(64),
-                    'status'        => InvitationStatusEnum::Pending,
+                    'status'        => InvitationStatusEnum::PENDING,
                     'expires_at'    => now()->addDay(),
                 ]);
             } catch (QueryException $e) {
@@ -100,11 +100,11 @@ class InvitationService
             throw new InvitationException(ErrorCode::INVITATION_NOT_FOUND, 'Invitation not found.');
         }
 
-        $this->permissionService->authorizeStore($actor, PermissionEnum::AssignStoreUser, $invitation->store_id);
+        $this->permissionService->authorizeStore($actor, PermissionEnum::ASSIGN_STORE_USER, $invitation->store_id);
 
         $updated = Invitation::whereKey($invitationId)
-            ->where('status', InvitationStatusEnum::Pending->value)
-            ->update(['status' => InvitationStatusEnum::Cancelled->value]);
+            ->where('status', InvitationStatusEnum::PENDING->value)
+            ->update(['status' => InvitationStatusEnum::CANCELLED->value]);
 
         if ($updated === 0) {
             throw new InvitationException(ErrorCode::INVITATION_NOT_CANCELLABLE, 'This invitation can no longer be cancelled.');
@@ -115,11 +115,11 @@ class InvitationService
 
     public function getStorePendingInvitations(User $actor, int $storeId): Collection
     {
-        $this->permissionService->authorizeStore($actor, PermissionEnum::AssignStoreUser, $storeId);
+        $this->permissionService->authorizeStore($actor, PermissionEnum::ASSIGN_STORE_USER, $storeId);
 
         return Invitation::with('inviter')
             ->where('store_id', $storeId)
-            ->where('status', InvitationStatusEnum::Pending->value)
+            ->where('status', InvitationStatusEnum::PENDING->value)
             ->where('expires_at', '>', now())
             ->orderByDesc('created_at')
             ->get();
@@ -127,7 +127,7 @@ class InvitationService
 
     public function getStoreAllInvitations(User $actor, int $storeId): Collection
     {
-        $this->permissionService->authorizeStore($actor, PermissionEnum::AssignStoreUser, $storeId);
+        $this->permissionService->authorizeStore($actor, PermissionEnum::ASSIGN_STORE_USER, $storeId);
 
         $invitations = Invitation::with(['store', 'inviter'])
             ->where('store_id', $storeId)
@@ -158,7 +158,7 @@ class InvitationService
             'store_name'         => $invitation->store->name,
             'role'               => $invitation->role,
             'is_expired'         => $invitation->isExpired() || $invitation->isTimedOut(),
-            'is_already_accepted' => $invitation->status === InvitationStatusEnum::Accepted,
+            'is_already_accepted' => $invitation->status === InvitationStatusEnum::ACCEPTED,
             'status'             => $invitation->status->value,
         ];
     }
@@ -176,16 +176,16 @@ class InvitationService
                 throw new InvitationException(ErrorCode::INVITATION_WRONG_EMAIL, 'This invitation was sent to a different email address.');
             }
 
-            if ($invitation->status === InvitationStatusEnum::Accepted) {
+            if ($invitation->status === InvitationStatusEnum::ACCEPTED) {
                 throw new InvitationException(ErrorCode::INVITATION_ALREADY_ACCEPTED, 'This invitation has already been accepted.');
             }
 
-            if ($invitation->status !== InvitationStatusEnum::Pending) {
+            if ($invitation->status !== InvitationStatusEnum::PENDING) {
                 throw new InvitationException(ErrorCode::INVITATION_EXPIRED, 'This invitation has expired or is no longer valid.');
             }
 
             if ($invitation->isTimedOut()) {
-                $invitation->update(['status' => InvitationStatusEnum::Expired]);
+                $invitation->update(['status' => InvitationStatusEnum::EXPIRED]);
                 return (object) ['timedOut' => true];
             }
 
@@ -205,7 +205,7 @@ class InvitationService
                 }
                 throw $e;
             }
-            $invitation->update(['status' => InvitationStatusEnum::Accepted, 'accepted_at' => now()]);
+            $invitation->update(['status' => InvitationStatusEnum::ACCEPTED, 'accepted_at' => now()]);
 
             return (object) [
                 'store'        => $store,
@@ -233,9 +233,9 @@ class InvitationService
 
     public function expirePendingInvitations(): int
     {
-        return Invitation::where('status', InvitationStatusEnum::Pending->value)
+        return Invitation::where('status', InvitationStatusEnum::PENDING->value)
             ->where('expires_at', '<=', now())
-            ->update(['status' => InvitationStatusEnum::Expired->value]);
+            ->update(['status' => InvitationStatusEnum::EXPIRED->value]);
     }
 
     public function declineInvitation(User $user, string $token): void
@@ -251,16 +251,16 @@ class InvitationService
                 throw new InvitationException(ErrorCode::INVITATION_WRONG_EMAIL, 'This invitation was sent to a different email address.');
             }
 
-            if ($invitation->status !== InvitationStatusEnum::Pending) {
+            if ($invitation->status !== InvitationStatusEnum::PENDING) {
                 throw new InvitationException(ErrorCode::INVITATION_EXPIRED, 'This invitation has expired or is no longer valid.');
             }
 
             if ($invitation->isTimedOut()) {
-                $invitation->update(['status' => InvitationStatusEnum::Expired]);
+                $invitation->update(['status' => InvitationStatusEnum::EXPIRED]);
                 return (object) ['timedOut' => true];
             }
 
-            $invitation->update(['status' => InvitationStatusEnum::Declined]);
+            $invitation->update(['status' => InvitationStatusEnum::DECLINED]);
 
             return (object) [
                 'invitation'   => $invitation,

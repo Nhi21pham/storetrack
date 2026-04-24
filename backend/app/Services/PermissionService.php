@@ -32,9 +32,9 @@ class PermissionService
     public function canOnBusiness(User $user, PermissionEnum $permission, int $businessId): bool
     {
         return match ($permission) {
-            PermissionEnum::UpdateBusiness,
-            PermissionEnum::DeleteBusiness,
-            PermissionEnum::CreateStore => $this->permissionRepository->isBusinessOwner($user->id, $businessId),
+            PermissionEnum::UPDATE_BUSINESS,
+            PermissionEnum::DELETE_BUSINESS,
+            PermissionEnum::CREATE_STORE => $this->permissionRepository->isBusinessOwner($user->id, $businessId),
             default => false,
         };
     }

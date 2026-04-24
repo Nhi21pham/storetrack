@@ -14,7 +14,8 @@ class BusinessService
 {
     public function __construct(
         private BusinessRepository $businessRepository,
-        private PermissionService $permissionService
+        private PermissionService $permissionService,
+        private AuditLogService $auditLogService
     ) {}
 
     public function createBusiness(User $user, array $data): Business
@@ -26,7 +27,7 @@ class BusinessService
 
     public function updateBusiness(User $user, int $businessId, array $data): Business
     {
-        $this->permissionService->authorizeBusiness($user, PermissionEnum::UpdateBusiness, $businessId);
+        $this->permissionService->authorizeBusiness($user, PermissionEnum::UPDATE_BUSINESS, $businessId);
         $business = $this->mustFind($businessId);
 
         if (!empty($data['tax_code']) && $data['tax_code'] !== $business->tax_code) {
@@ -38,12 +39,14 @@ class BusinessService
             }
         }
 
-        return $this->businessRepository->update($business, $data);
+        $business = $this->businessRepository->update($business, $data);
+        $this->auditLogService->businessUpdated($user, $business);
+        return $business;
     }
 
     public function deleteBusiness(User $user, int $businessId): void
     {
-        $this->permissionService->authorizeBusiness($user, PermissionEnum::DeleteBusiness, $businessId);
+        $this->permissionService->authorizeBusiness($user, PermissionEnum::DELETE_BUSINESS, $businessId);
         $business = $this->mustFind($businessId);
 
         DB::transaction(function () use ($business) {

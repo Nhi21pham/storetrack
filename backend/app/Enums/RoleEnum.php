@@ -4,33 +4,33 @@ namespace App\Enums;
 
 enum RoleEnum: string
 {
-    case Owner = 'owner';
-    case Accountant = 'accountant';
-    case Staff = 'staff';
+    case OWNER      = 'owner';
+    case ACCOUNTANT = 'accountant';
+    case STAFF      = 'staff';
 
     /** @return PermissionEnum[] */
     public function permissions(): array
     {
         return match ($this) {
-            self::Owner => [
-                PermissionEnum::UpdateStore,
-                PermissionEnum::DeactivateStore,
-                PermissionEnum::ReactivateStore,
-                PermissionEnum::AssignStoreUser,
-                PermissionEnum::RemoveStoreUser,
-                PermissionEnum::CreateInvoice,
-                PermissionEnum::UpdateInvoice,
-                PermissionEnum::DeleteInvoice,
+            self::OWNER => [
+                PermissionEnum::UPDATE_STORE,
+                PermissionEnum::DEACTIVATE_STORE,
+                PermissionEnum::REACTIVATE_STORE,
+                PermissionEnum::ASSIGN_STORE_USER,
+                PermissionEnum::REMOVE_STORE_USER,
+                PermissionEnum::CREATE_INVOICE,
+                PermissionEnum::UPDATE_INVOICE,
+                PermissionEnum::DELETE_INVOICE,
             ],
-            self::Accountant => [
-                PermissionEnum::UpdateStore,
-                PermissionEnum::CreateInvoice,
-                PermissionEnum::UpdateInvoice,
-                PermissionEnum::DeleteInvoice,
+            self::ACCOUNTANT => [
+                PermissionEnum::UPDATE_STORE,
+                PermissionEnum::CREATE_INVOICE,
+                PermissionEnum::UPDATE_INVOICE,
+                PermissionEnum::DELETE_INVOICE,
             ],
-            self::Staff => [
-                PermissionEnum::CreateInvoice,
-                PermissionEnum::UpdateInvoice,
+            self::STAFF => [
+                PermissionEnum::CREATE_INVOICE,
+                PermissionEnum::UPDATE_INVOICE,
             ],
         };
     }
@@ -43,9 +43,9 @@ enum RoleEnum: string
     public static function labels(): array
     {
         return [
-            self::Owner->value => 'Owner',
-            self::Accountant->value => 'Accountant',
-            self::Staff->value => 'Staff',
+            self::OWNER->value      => 'Owner',
+            self::ACCOUNTANT->value => 'Accountant',
+            self::STAFF->value      => 'Staff',
         ];
     }
 }

@@ -4,9 +4,9 @@ namespace App\Enums;
 
 enum InvitationStatusEnum: string
 {
-    case Pending   = 'pending';
-    case Accepted  = 'accepted';
-    case Declined  = 'declined';
-    case Cancelled = 'cancelled';
-    case Expired   = 'expired';
+    case PENDING   = 'pending';
+    case ACCEPTED  = 'accepted';
+    case DECLINED  = 'declined';
+    case CANCELLED = 'cancelled';
+    case EXPIRED   = 'expired';
 }
