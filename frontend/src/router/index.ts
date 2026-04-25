@@ -11,6 +11,7 @@ import StoreView from '@/views/StoreView.vue'
 import ErrorView from '@/views/ErrorView.vue'
 import AcceptInvitationView from '@/views/AcceptInvitationView.vue'
 import UserManagementView from '@/views/UserManagementView.vue'
+import AuditLogView from '@/views/AuditLogView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -85,6 +86,11 @@ const router = createRouter({
           path: 'users',
           name: 'users',
           component: UserManagementView
+        },
+        {
+          path: 'audit-log',
+          name: 'audit-log',
+          component: AuditLogView
         },
       ]
     },

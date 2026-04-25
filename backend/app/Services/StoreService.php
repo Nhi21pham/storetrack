@@ -15,56 +15,76 @@ class StoreService
 {
     public function __construct(
         private StoreRepository $storeRepository,
-        private PermissionService $permissionService
+        private PermissionService $permissionService,
+        private AuditLogService $auditLogService
     ) {}
 
     public function createStore(User $user, array $data): Store
     {
         $this->permissionService->authorizeBusiness(
             $user,
-            PermissionEnum::CreateStore,
+            PermissionEnum::CREATE_STORE,
             (int) $data['business_id']
         );
 
-        return DB::transaction(function () use ($user, $data) {
+        $store = DB::transaction(function () use ($user, $data) {
             $store = $this->storeRepository->create(array_merge($data, ['is_active' => true]));
-            $store->users()->attach($user->id, ['role' => RoleEnum::Owner->value]);
+            $store->users()->attach($user->id, ['role' => RoleEnum::OWNER->value]);
             return $store;
         });
+
+        $this->auditLogService->storeCreated($user, $store);
+
+        $business = $store->business;
+        $this->auditLogService->businessCreated($user, $business, $store, $business->created_at);
+
+        return $store;
     }
 
     public function updateStore(User $user, int $storeId, array $data): Store
     {
-        $this->permissionService->authorizeStore($user, PermissionEnum::UpdateStore, $storeId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_STORE, $storeId);
         $store = $this->mustFind($storeId);
-        return $this->storeRepository->update($store, $data);
+        $store = $this->storeRepository->update($store, $data);
+
+        $this->auditLogService->storeUpdated($user, $store);
+
+        return $store;
     }
 
     public function deactivateStore(User $user, int $storeId): Store
     {
-        $this->permissionService->authorizeStore($user, PermissionEnum::DeactivateStore, $storeId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::DEACTIVATE_STORE, $storeId);
         $store = $this->mustFind($storeId);
 
-        return $this->storeRepository->update($store, [
+        $store = $this->storeRepository->update($store, [
             'is_active' => false,
             'deactivated_at' => now(),
         ]);
+
+        $this->auditLogService->storeDeactivated($user, $store);
+
+        return $store;
     }
 
     public function reactivateStore(User $user, int $storeId): Store
     {
-        $this->permissionService->authorizeStore($user, PermissionEnum::ReactivateStore, $storeId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::REACTIVATE_STORE, $storeId);
         $store = $this->mustFind($storeId);
 
-        return $this->storeRepository->update($store, [
+        $store = $this->storeRepository->update($store, [
             'is_active' => true,
             'deactivated_at' => null,
         ]);
+
+        $this->auditLogService->storeReactivated($user, $store);
+
+        return $store;
     }
 
     public function deleteStore(User $user, int $storeId): void
     {
-        $this->permissionService->authorizeStore($user, PermissionEnum::DeactivateStore, $storeId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::DEACTIVATE_STORE, $storeId);
         $store = $this->mustFind($storeId);
 
         DB::transaction(function () use ($store) {
@@ -75,12 +95,15 @@ class StoreService
 
     public function assignUser(User $actor, int $storeId, int $userId, RoleEnum $role): Store
     {
-        $this->permissionService->authorizeStore($actor, PermissionEnum::AssignStoreUser, $storeId);
+        $this->permissionService->authorizeStore($actor, PermissionEnum::ASSIGN_STORE_USER, $storeId);
         $store = $this->mustFind($storeId);
 
-        if ($store->business->owner_id === $userId && $role !== RoleEnum::Owner) {
+        if ($store->business->owner_id === $userId && $role !== RoleEnum::OWNER) {
             throw new StoreException(ErrorCode::CANNOT_CHANGE_OWNER_ROLE, 'Cannot change the role of the business owner.');
         }
+
+        $existingMember = $store->users()->where('user_id', $userId)->first();
+        $oldRole = $existingMember?->pivot->role;
 
         DB::transaction(function () use ($store, $userId, $role) {
             $store->users()->syncWithoutDetaching([
@@ -88,25 +111,42 @@ class StoreService
             ]);
         });
 
-        return $store->fresh('users');
+        $result = $store->fresh('users');
+
+        $target = User::find($userId);
+        if ($target) {
+            if (!$existingMember) {
+                $this->auditLogService->userAssigned($actor, $store, $target, $role->value);
+            } elseif ($oldRole !== $role->value) {
+                $this->auditLogService->userRoleUpdated($actor, $store, $target, $oldRole, $role->value);
+            }
+        }
+
+        return $result;
     }
 
     public function removeUser(User $actor, int $storeId, int $userId): Store
     {
-        $this->permissionService->authorizeStore($actor, PermissionEnum::RemoveStoreUser, $storeId);
+        $this->permissionService->authorizeStore($actor, PermissionEnum::REMOVE_STORE_USER, $storeId);
         $store = $this->mustFind($storeId);
 
         if ($store->business->owner_id === $userId) {
             throw new StoreException(ErrorCode::CANNOT_REMOVE_OWNER, 'Cannot remove the business owner from their own store.');
         }
 
+        $target = User::find($userId);
         $store->users()->detach($userId);
+
+        if ($target) {
+            $this->auditLogService->userRemoved($actor, $store, $target);
+        }
+
         return $store->fresh('users');
     }
 
     public function getUserStores(User $user)
     {
-        return $user->stores()->with('business')->get();
+        return $user->stores()->with('business')->latest()->get();
     }
 
     private function mustFind(int $id): Store
@@ -128,7 +168,7 @@ class StoreService
 
     private function getOwnedStores(User $user): array
     {
-        $businesses = $user->businesses()->with('stores.users')->get();
+        $businesses = $user->businesses()->with(['stores' => fn($q) => $q->with('users')->latest()])->latest()->get();
         $result = [];
 
         foreach ($businesses as $business) {
@@ -162,6 +202,7 @@ class StoreService
     {
         $stores = $user->stores()
             ->with(['business', 'users'])
+            ->latest()
             ->get();
 
         $result = [];

@@ -5,21 +5,21 @@ namespace App\Enums;
 enum PermissionEnum: string
 {
     // Business
-    case UpdateBusiness = 'business.update';
-    case DeleteBusiness = 'business.delete';
-    case CreateStore = 'business.create_store';
+    case UPDATE_BUSINESS = 'business.update';
+    case DELETE_BUSINESS = 'business.delete';
+    case CREATE_STORE    = 'business.create_store';
 
     // Store
-    case UpdateStore = 'store.update';
-    case DeactivateStore = 'store.deactivate';
-    case ReactivateStore = 'store.reactivate';
+    case UPDATE_STORE     = 'store.update';
+    case DEACTIVATE_STORE = 'store.deactivate';
+    case REACTIVATE_STORE = 'store.reactivate';
 
     // Store members
-    case AssignStoreUser = 'store.assign_user';
-    case RemoveStoreUser = 'store.remove_user';
+    case ASSIGN_STORE_USER = 'store.assign_user';
+    case REMOVE_STORE_USER = 'store.remove_user';
 
     // Invoice (future)
-    case CreateInvoice = 'invoice.create';
-    case UpdateInvoice = 'invoice.update';
-    case DeleteInvoice = 'invoice.delete';
+    case CREATE_INVOICE = 'invoice.create';
+    case UPDATE_INVOICE = 'invoice.update';
+    case DELETE_INVOICE = 'invoice.delete';
 }

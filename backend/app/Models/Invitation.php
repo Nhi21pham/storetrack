@@ -41,12 +41,12 @@ class Invitation extends Model
 
     public function isPending(): bool
     {
-        return $this->status === InvitationStatusEnum::Pending;
+        return $this->status === InvitationStatusEnum::PENDING;
     }
 
     public function isExpired(): bool
     {
-        return $this->status === InvitationStatusEnum::Expired;
+        return $this->status === InvitationStatusEnum::EXPIRED;
     }
 
     public function isTimedOut(): bool

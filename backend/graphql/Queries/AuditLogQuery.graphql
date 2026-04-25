@@ -1,0 +1,5 @@
+extend type Query {
+    auditLogs(store_id: ID!, page: Int, per_page: Int, start_date: String, end_date: String): AuditLogPage!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\AuditLogResolver@index")
+}
