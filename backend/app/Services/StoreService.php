@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\PartyTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Enums\RoleEnum;
 use App\Models\Store;
 use App\Models\User;
+use App\Repositories\PartyRepository;
 use App\Repositories\StoreRepository;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\StoreException;
@@ -16,7 +18,8 @@ class StoreService
     public function __construct(
         private StoreRepository $storeRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService
+        private AuditLogService $auditLogService,
+        private PartyRepository $partyRepository
     ) {}
 
     public function createStore(User $user, array $data): Store
@@ -28,7 +31,11 @@ class StoreService
         );
 
         $store = DB::transaction(function () use ($user, $data) {
-            $store = $this->storeRepository->create(array_merge($data, ['is_active' => true]));
+            $party = $this->partyRepository->create(PartyTypeEnum::STORE);
+            $store = $this->storeRepository->create(array_merge($data, [
+                'is_active' => true,
+                'party_id'  => $party->id,
+            ]));
             $store->users()->attach($user->id, ['role' => RoleEnum::OWNER->value]);
             return $store;
         });
@@ -85,11 +92,20 @@ class StoreService
     public function deleteStore(User $user, int $storeId): void
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::DEACTIVATE_STORE, $storeId);
-        $store = $this->mustFind($storeId);
 
-        DB::transaction(function () use ($store) {
+        DB::transaction(function () use ($storeId) {
+            $store = Store::lockForUpdate()->find($storeId);
+            if (!$store) {
+                throw new StoreException(ErrorCode::STORE_NOT_FOUND, 'Store not found.');
+            }
+
+            $partyId = $store->party_id;
             $store->users()->detach();
             $store->delete();
+
+            if ($partyId) {
+                $this->partyRepository->delete($partyId);
+            }
         });
     }
 

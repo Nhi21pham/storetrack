@@ -21,6 +21,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'party_id',
         'name',
         'email',
         'password',
@@ -49,6 +50,11 @@ class User extends Authenticatable
             'password'          => 'hashed',
         ];
     }
+    public function party()
+    {
+        return $this->belongsTo(Party::class);
+    }
+
     public function businesses()
     {
         return $this->hasMany(Business::class, 'owner_id');
