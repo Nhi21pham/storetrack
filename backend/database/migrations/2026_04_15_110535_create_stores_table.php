@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('stores', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('party_id')->nullable()->constrained('parties')->nullOnDelete();
             $table->foreignId('business_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->string('address')->nullable();
