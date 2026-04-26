@@ -6,17 +6,19 @@ use App\Repositories\VerifyRepository;
 use App\Repositories\RegisterRepository;
 use App\Jobs\SendVerifyMailJob;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
-use App\Repositories\UserRepository;
-use App\Exceptions\AuthException;
 use App\Enums\ErrorCode;
+use App\Enums\PartyTypeEnum;
+use App\Exceptions\AuthException;
+use App\Repositories\PartyRepository;
+use App\Repositories\UserRepository;
 
 class VerifyService
 {
     public function __construct(
         private VerifyRepository $verifyRepository,
         private RegisterRepository $registerRepository,
-        private UserRepository $userRepository
+        private UserRepository $userRepository,
+        private PartyRepository $partyRepository
     ) {}
 
     public function verifyCode(string $email, string $code): bool
@@ -39,11 +41,13 @@ class VerifyService
             throw new AuthException(ErrorCode::REGISTRATION_EXPIRED, 'Registration session has expired. Please register again.');
         }
 
-        DB::transaction(function () use ($pendingUser, $email) {
-            $this->userRepository->create($pendingUser);
-            $this->verifyRepository->deleteCode('verification_code', $email);
-            $this->registerRepository->deletePendingUser($email);
+        DB::transaction(function () use ($pendingUser) {
+            $party = $this->partyRepository->create(PartyTypeEnum::USER);
+            $this->userRepository->create(array_merge($pendingUser, ['party_id' => $party->id]));
         });
+
+        $this->verifyRepository->deleteCode('verification_code', $email);
+        $this->registerRepository->deletePendingUser($email);
 
         return true;
     }

@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\PartyTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Models\Business;
 use App\Models\User;
 use App\Repositories\BusinessRepository;
+use App\Repositories\PartyRepository;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\BusinessException;
 
@@ -15,14 +17,19 @@ class BusinessService
     public function __construct(
         private BusinessRepository $businessRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService
+        private AuditLogService $auditLogService,
+        private PartyRepository $partyRepository
     ) {}
 
     public function createBusiness(User $user, array $data): Business
     {
-        return $this->businessRepository->create(array_merge($data, [
-            'owner_id' => $user->id,
-        ]));
+        return DB::transaction(function () use ($user, $data) {
+            $party = $this->partyRepository->create(PartyTypeEnum::BUSINESS);
+            return $this->businessRepository->create(array_merge($data, [
+                'owner_id' => $user->id,
+                'party_id' => $party->id,
+            ]));
+        });
     }
 
     public function updateBusiness(User $user, int $businessId, array $data): Business
@@ -47,14 +54,29 @@ class BusinessService
     public function deleteBusiness(User $user, int $businessId): void
     {
         $this->permissionService->authorizeBusiness($user, PermissionEnum::DELETE_BUSINESS, $businessId);
-        $business = $this->mustFind($businessId);
 
-        DB::transaction(function () use ($business) {
-            foreach ($business->stores as $store) {
-                $store->users()->detach();
+        DB::transaction(function () use ($businessId) {
+            $business = Business::lockForUpdate()->find($businessId);
+            if (!$business) {
+                throw new BusinessException(ErrorCode::BUSINESS_NOT_FOUND, 'Business not found.');
+            }
+
+            $stores   = $business->stores()->lockForUpdate()->get();
+            $storeIds = $stores->pluck('id')->all();
+            $partyIds = $stores->pluck('party_id')
+                ->push($business->party_id)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if (!empty($storeIds)) {
+                DB::table('store_user')->whereIn('store_id', $storeIds)->delete();
             }
             $business->stores()->delete();
             $business->delete();
+
+            $this->partyRepository->deleteMany($partyIds);
         });
     }
 

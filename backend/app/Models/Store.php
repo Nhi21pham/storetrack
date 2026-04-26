@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class Store extends Model
 {
     protected $fillable = [
+        'party_id',
         'business_id',
         'name',
         'address',
@@ -25,6 +26,11 @@ class Store extends Model
         'is_active'      => 'boolean',
         'deactivated_at' => 'datetime',
     ];
+
+    public function party()
+    {
+        return $this->belongsTo(Party::class);
+    }
 
     public function business()
     {

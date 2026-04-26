@@ -16,12 +16,14 @@ return new class extends Migration
             $table->string('role');
             $table->string('token', 64)->unique();
             $table->string('status')->default('pending'); // pending, accepted, declined, expired, cancelled
+            $table->tinyInteger('pending_marker')->nullable()->storedAs("IF(`status` = 'pending', 1, NULL)");
             $table->timestamp('expires_at');
             $table->timestamp('accepted_at')->nullable();
             $table->timestamps();
 
             $table->index(['store_id', 'status']);
             $table->index(['invitee_email', 'store_id']);
+            $table->unique(['store_id', 'invitee_email', 'pending_marker'], 'unique_active_invitation');
         });
     }
 

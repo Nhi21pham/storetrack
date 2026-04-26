@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Business extends Model
 {
     protected $fillable = [
+        'party_id',
         'owner_id',
         'name',
         'tax_code',
@@ -19,6 +20,11 @@ class Business extends Model
     protected $casts = [
         'email' => NormalizedEmail::class,
     ];
+
+    public function party()
+    {
+        return $this->belongsTo(Party::class);
+    }
 
     public function owner()
     {

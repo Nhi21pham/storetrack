@@ -1,0 +1,7 @@
+enum PartyType {
+    SUPPLIER @enum(value: "supplier")
+    CUSTOMER @enum(value: "customer")
+    USER     @enum(value: "user")
+    BUSINESS @enum(value: "business")
+    STORE    @enum(value: "store")
+}

@@ -1,0 +1,6 @@
+type Party {
+    id: ID!
+    type: PartyType!
+    created_at: DateTime!
+    updated_at: DateTime!
+}

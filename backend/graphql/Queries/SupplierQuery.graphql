@@ -1,0 +1,9 @@
+extend type Query {
+    suppliers: [Supplier!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\SupplierResolver@all")
+
+    supplier(id: ID!): Supplier
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\SupplierResolver@findById")
+}

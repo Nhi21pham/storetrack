@@ -18,6 +18,11 @@ enum PermissionEnum: string
     case ASSIGN_STORE_USER = 'store.assign_user';
     case REMOVE_STORE_USER = 'store.remove_user';
 
+    // Supplier
+    case CREATE_SUPPLIER = 'supplier.create';
+    case UPDATE_SUPPLIER = 'supplier.update';
+    case DELETE_SUPPLIER = 'supplier.delete';
+
     // Invoice (future)
     case CREATE_INVOICE = 'invoice.create';
     case UPDATE_INVOICE = 'invoice.update';
