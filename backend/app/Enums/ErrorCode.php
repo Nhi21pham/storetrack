@@ -26,6 +26,9 @@ enum ErrorCode: string
     case CANNOT_CHANGE_OWNER_ROLE = 'CANNOT_CHANGE_OWNER_ROLE';
     case CANNOT_REMOVE_OWNER = 'CANNOT_REMOVE_OWNER';
 
+    // Supplier
+    case SUPPLIER_NOT_FOUND = 'SUPPLIER_NOT_FOUND';
+
     // Invitation
     case INVITATION_NOT_FOUND = 'INVITATION_NOT_FOUND';
     case INVITATION_EXPIRED = 'INVITATION_EXPIRED';
@@ -74,6 +77,7 @@ enum ErrorCode: string
             self::ACCOUNT_NOT_FOUND,
             self::BUSINESS_NOT_FOUND,
             self::STORE_NOT_FOUND,
+            self::SUPPLIER_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
             self::NOT_FOUND => 404,
 

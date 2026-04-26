@@ -1,0 +1,11 @@
+type Supplier {
+    id: ID!
+    name: String!
+    email: String
+    phone: String
+    address: String
+    tax_code: String
+    party: Party! @belongsTo
+    created_at: DateTime!
+    updated_at: DateTime!
+}
