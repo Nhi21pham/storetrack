@@ -71,6 +71,19 @@ export const validators = {
         if (value.length > 255) return 'Store name is too long.'
         return null
     },
+
+    supplierName: (value) => {
+        if (!value || !value.trim()) return 'Supplier name is required.'
+        if (value.trim().length < 2) return 'Supplier name must be at least 2 characters.'
+        if (value.length > 255) return 'Supplier name is too long.'
+        return null
+    },
+
+    supplierTaxCode: (value) => {
+        if (!value || !value.trim()) return null
+        if (value.trim().length > 50) return 'Tax code is too long.'
+        return null
+    },
 }
 
 export const validate = (rules) => {
