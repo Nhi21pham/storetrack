@@ -46,13 +46,16 @@
 
         <div class="card-header" @click="toggleStore(store.id)">
           <div class="store-info">
-            <div class="store-icon">
+            <div class="store-icon" :class="{ inactive: !store.is_active }">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/>
               </svg>
             </div>
             <div class="store-text">
-              <h3>{{ store.name }}</h3>
+              <div class="store-name-row">
+                <h3>{{ store.name }}</h3>
+                <span v-if="!store.is_active" class="inactive-badge">inactive</span>
+              </div>
               <span class="biz-name">{{ store.business.name }}</span>
             </div>
           </div>
@@ -62,11 +65,15 @@
         </div>
 
         <div v-if="expandedStores.has(store.id)" class="card-body">
+          <div v-if="!store.is_active" class="inactive-banner">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            This store is deactivated. Member list is read-only.
+          </div>
           <StoreMembersPanel
             :ref="el => { if (el) panelRefs[store.id] = el }"
             :storeId="store.id"
-            :canInvite="true"
-            :canRemove="true"
+            :canInvite="store.is_active"
+            :canRemove="store.is_active"
             :search="searchQuery"
             @invite="openInvite(store)"
             @has-matches="storeMatchMap[store.id] = $event"
@@ -133,7 +140,7 @@ const fetchStores = async () => {
   try {
     const data = await graphql(`query {
       accessibleStores {
-        id name my_role
+        id name is_active my_role
         business { id name }
       }
     }`)
@@ -202,8 +209,13 @@ onMounted(fetchStores)
 
 .store-info { display: flex; align-items: center; gap: 12px; }
 .store-icon { width: 36px; height: 36px; background: #f3f4f6; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #6b7280; flex-shrink: 0; }
+.store-icon.inactive { background: #fee2e2; color: #dc2626; }
+.store-name-row { display: flex; align-items: center; gap: 8px; }
 .store-text h3 { font-size: 15px; font-weight: 600; color: #111; }
 .biz-name { font-size: 12px; color: #9ca3af; margin-top: 1px; display: block; }
+
+.inactive-badge { font-size: 10px; font-weight: 600; color: #dc2626; background: #fee2e2; padding: 2px 7px; border-radius: 4px; }
+.inactive-banner { display: flex; align-items: center; gap: 7px; padding: 8px 12px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; font-size: 13px; color: #92400e; margin-bottom: 12px; }
 
 .chevron { color: #9ca3af; transition: transform 0.2s; flex-shrink: 0; }
 .expanded .chevron { transform: rotate(180deg); }
