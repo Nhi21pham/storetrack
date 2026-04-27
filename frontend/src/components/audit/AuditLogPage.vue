@@ -8,7 +8,7 @@
           <strong>{{ viewMode === 'store' ? (currentStore?.name ?? '—') : (currentBusiness?.name ?? '—') }}</strong>
         </p>
       </div>
-      <div class="view-toggle">
+      <div v-if="isBusinessOwner" class="view-toggle">
         <button :class="{ active: viewMode === 'store' }" @click="switchMode('store')">Store</button>
         <button :class="{ active: viewMode === 'business' }" @click="switchMode('business')">Business</button>
       </div>
@@ -107,6 +107,8 @@ import SearchBar from '@/components/common/SearchBar.vue'
 const currentStore    = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 const showToast       = inject('showToast')
+
+const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 
 const viewMode = ref('store')
 
@@ -238,6 +240,9 @@ watch(() => currentStore.value?.id, (id) => {
 }, { immediate: true })
 
 watch(() => currentBusiness.value?.id, (id) => {
+  if (!isBusinessOwner.value && viewMode.value === 'business') {
+    viewMode.value = 'store'
+  }
   if (viewMode.value === 'business' && id) resetAndFetch()
 })
 
