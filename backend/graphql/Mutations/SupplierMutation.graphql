@@ -1,13 +1,13 @@
 extend type Mutation {
-    createSupplier(input: CreateSupplierInput! @spread): Supplier!
+    createSupplier(store_id: ID!, business_id: ID!, input: CreateSupplierInput! @spread): Supplier!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\SupplierResolver@create")
 
-    updateSupplier(id: ID!, input: UpdateSupplierInput! @spread): Supplier!
+    updateSupplier(id: ID!, store_id: ID!, business_id: ID!, input: UpdateSupplierInput! @spread): Supplier!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\SupplierResolver@update")
 
-    deleteSupplier(id: ID!): Boolean!
+    deleteSupplier(id: ID!, store_id: ID!, business_id: ID!): Boolean!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\SupplierResolver@delete")
 }
