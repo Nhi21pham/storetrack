@@ -1,0 +1,9 @@
+extend type Query {
+    customers: [Customer!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\CustomerResolver@all")
+
+    customer(id: ID!): Customer
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\CustomerResolver@findById")
+}
