@@ -23,6 +23,11 @@ enum PermissionEnum: string
     case UPDATE_SUPPLIER = 'supplier.update';
     case DELETE_SUPPLIER = 'supplier.delete';
 
+    // Customer
+    case CREATE_CUSTOMER = 'customer.create';
+    case UPDATE_CUSTOMER = 'customer.update';
+    case DELETE_CUSTOMER = 'customer.delete';
+
     // Invoice (future)
     case CREATE_INVOICE = 'invoice.create';
     case UPDATE_INVOICE = 'invoice.update';
