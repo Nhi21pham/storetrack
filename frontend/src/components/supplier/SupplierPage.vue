@@ -5,7 +5,7 @@
         <h1>Suppliers</h1>
         <p class="subtitle">Manage your supplier contacts and information.</p>
       </div>
-      <button class="btn-create" @click="openCreate">
+      <button v-if="currentBusiness && currentStore?.is_active" class="btn-create" @click="openCreate">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
@@ -13,6 +13,33 @@
       </button>
     </div>
 
+    <div v-if="!currentBusiness" class="empty-state">
+      <div class="empty-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <h3>No business found</h3>
+      <p>You need to create a business before managing suppliers.</p>
+    </div>
+
+    <div v-else-if="!currentStore" class="empty-state">
+      <div class="empty-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/>
+          <path d="M8 7v4"/><path d="M16 7v4"/>
+        </svg>
+      </div>
+      <h3>No store selected</h3>
+      <p>Select a store to manage suppliers.</p>
+    </div>
+
+    <template v-else-if="currentStore">
+    <div v-if="!currentStore.is_active" class="inactive-banner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      This store is deactivated. Data is read-only until the store is reactivated.
+    </div>
     <SearchBar v-model="searchQuery" placeholder="Search by name, email, tax code, phone or address..." />
 
     <div v-if="loading" class="loading-state">
@@ -69,7 +96,7 @@
               <span v-else class="empty-val">—</span>
             </td>
             <td>
-              <div class="row-actions">
+              <div v-if="currentStore?.is_active" class="row-actions">
                 <button class="action-btn" @click="openEdit(supplier)" title="Edit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
@@ -100,6 +127,7 @@
       @confirm="handleDelete"
       @cancel="deletingSupplier = null"
     />
+    </template>
   </div>
 </template>
 
@@ -111,6 +139,8 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SupplierFormModal from '@/components/supplier/SupplierFormModal.vue'
 
 const showToast = inject('showToast')
+const currentStore = inject('currentStore')
+const currentBusiness = inject('currentBusiness')
 
 const suppliers = ref([])
 const loading = ref(true)
@@ -204,8 +234,14 @@ const confirmDelete = (s) => { deletingSupplier.value = s }
 const handleDelete = async () => {
   try {
     await graphql(
-      `mutation DeleteSupplier($id: ID!) { deleteSupplier(id: $id) }`,
-      { id: deletingSupplier.value.id }
+      `mutation DeleteSupplier($id: ID!, $store_id: ID!, $business_id: ID!) {
+        deleteSupplier(id: $id, store_id: $store_id, business_id: $business_id)
+      }`,
+      {
+        id: deletingSupplier.value.id,
+        store_id: currentStore.value?.id,
+        business_id: currentBusiness.value?.id,
+      }
     )
     deletingSupplier.value = null
     fetchSuppliers()
@@ -220,6 +256,8 @@ onMounted(fetchSuppliers)
 
 <style scoped>
 .supplier-page { padding: 32px; max-width: 1100px; margin: 0 auto; }
+
+.inactive-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
 
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
 .page-header h1 { font-size: 22px; font-weight: 700; color: #111; }

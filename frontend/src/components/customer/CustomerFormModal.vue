@@ -67,10 +67,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { validators } from '@/utils/validators'
 import { graphql } from '@/api'
+
+const currentStore = inject('currentStore')
+const currentBusiness = inject('currentBusiness')
 
 const props = defineProps({
   customer: { type: Object, default: null }
@@ -121,12 +124,14 @@ const handleSubmit = async () => {
 
     if (isEdit.value) {
       query = `
-        mutation UpdateCustomer($id: ID!, $input: UpdateCustomerInput!) {
-          updateCustomer(id: $id, input: $input) { id name tax_code address email phone }
+        mutation UpdateCustomer($id: ID!, $store_id: ID!, $business_id: ID!, $input: UpdateCustomerInput!) {
+          updateCustomer(id: $id, store_id: $store_id, business_id: $business_id, input: $input) { id name tax_code address email phone }
         }
       `
       variables = {
         id: props.customer.id,
+        store_id: currentStore.value?.id,
+        business_id: currentBusiness.value?.id,
         input: {
           name: form.value.name,
           tax_code: form.value.tax_code || null,
@@ -137,11 +142,13 @@ const handleSubmit = async () => {
       }
     } else {
       query = `
-        mutation CreateCustomer($input: CreateCustomerInput!) {
-          createCustomer(input: $input) { id name tax_code address email phone }
+        mutation CreateCustomer($store_id: ID!, $business_id: ID!, $input: CreateCustomerInput!) {
+          createCustomer(store_id: $store_id, business_id: $business_id, input: $input) { id name tax_code address email phone }
         }
       `
       variables = {
+        store_id: currentStore.value?.id,
+        business_id: currentBusiness.value?.id,
         input: {
           name: form.value.name,
           tax_code: form.value.tax_code || null,

@@ -6,6 +6,7 @@
           <path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/>
           <path d="M8 7v4"/><path d="M16 7v4"/>
         </svg>
+        <span class="status-dot" :class="currentStore.is_active ? 'active' : 'inactive'"></span>
         <span class="switcher-text">
           <strong>{{ currentBusiness?.name }}</strong>
           <span class="divider">-</span>
@@ -38,23 +39,25 @@
             <span class="biz-role-tag">{{ biz.role }}</span>
           </div>
 
-          <button
+          <div
             v-for="store in biz.stores"
             :key="store.id"
             class="store-item"
-            :class="{ selected: currentStore?.id === store.id }"
-            @click="selectStore(biz, store)"
+            :class="{ selected: currentStore?.id === store.id, inactive: !store.is_active }"
+            @click="store.is_active ? selectStore(biz, store) : null"
           >
             <div class="store-info">
+              <span v-if="store.is_active" class="store-dot"></span>
               <span class="store-name">{{ store.name }}</span>
               <span class="store-role">{{ store.my_role }}</span>
+              <span v-if="!store.is_active" class="inactive-tag">inactive</span>
             </div>
-            <svg v-if="currentStore?.id === store.id" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
+            <svg v-if="currentStore?.id === store.id && store.is_active" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-          </button>
+          </div>
 
-          <div v-if="biz.stores.length === 0" class="no-stores">No active stores</div>
+          <div v-if="biz.stores.length === 0" class="no-stores">No stores</div>
         </div>
       </div>
 
@@ -94,6 +97,21 @@ const fetchBusinesses = async () => {
       }
     }`)
     businesses.value = data.accessibleBusinesses
+
+    // If a store is already selected, keep it — just refresh its data (e.g. is_active may have changed)
+    if (currentStore.value) {
+      for (const biz of businesses.value) {
+        const freshStore = biz.stores.find(s => s.id === currentStore.value.id)
+        if (freshStore) {
+          currentBusiness.value = biz
+          currentStore.value = freshStore
+          emit('switched', { business: biz, store: freshStore })
+          return
+        }
+      }
+      // Store was deleted entirely — fall through to restoreSelection
+    }
+
     restoreSelection()
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
@@ -105,7 +123,7 @@ const restoreSelection = () => {
   const savedStoreId = localStorage.getItem('currentStoreId')
   const savedBizId = localStorage.getItem('currentBusinessId')
 
-  // Try to restore saved selection
+  // Try to restore saved selection — active or inactive
   if (savedStoreId && savedBizId) {
     for (const biz of businesses.value) {
       if (biz.id === savedBizId) {
@@ -116,20 +134,28 @@ const restoreSelection = () => {
           emit('switched', { business: biz, store })
           return
         }
+        break
       }
     }
   }
 
-  // Fallback: pick the first store from the first business
+  // Fallback: pick the first active store from any business
   for (const biz of businesses.value) {
-    if (biz.stores.length > 0) {
+    const activeStore = biz.stores.find(s => s.is_active)
+    if (activeStore) {
       currentBusiness.value = biz
-      currentStore.value = biz.stores[0]
+      currentStore.value = activeStore
       saveSelection()
-      emit('switched', { business: biz, store: biz.stores[0] })
+      emit('switched', { business: biz, store: activeStore })
       return
     }
   }
+
+  // No stores anywhere — emit the business so the guard can show the right message
+  const firstBiz = businesses.value[0] ?? null
+  currentBusiness.value = firstBiz
+  currentStore.value = null
+  emit('switched', { business: firstBiz, store: null })
 }
 
 const selectStore = (biz, store) => {
@@ -207,8 +233,17 @@ defineExpose({ fetchBusinesses })
 .store-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 9px 10px 9px 28px; border: none; background: none; border-radius: 8px; cursor: pointer; transition: background 0.15s; text-align: left; }
 .store-item:hover { background: #f3f4f6; }
 .store-item.selected { background: #f0fdf4; }
+.store-item.inactive { cursor: default; opacity: 0.5; }
+.store-item.inactive:hover { background: none; }
+
+.inactive-tag { font-size: 10px; font-weight: 500; color: #dc2626; background: #fee2e2; padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.active { background: #16a34a; }
+.status-dot.inactive { background: #dc2626; }
 
 .store-info { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+.store-dot { width: 7px; height: 7px; border-radius: 50%; background: #16a34a; flex-shrink: 0; }
 .store-name { font-size: 13px; font-weight: 500; color: #111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .store-role { font-size: 10px; font-weight: 500; color: #6b7280; background: #f3f4f6; padding: 1px 6px; border-radius: 4px; text-transform: capitalize; white-space: nowrap; }
 
