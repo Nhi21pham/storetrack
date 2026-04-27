@@ -18,6 +18,11 @@ class Party extends Model
         return $this->hasOne(Supplier::class);
     }
 
+    public function customer()
+    {
+        return $this->hasOne(Customer::class);
+    }
+
     public function user()
     {
         return $this->hasOne(User::class);
