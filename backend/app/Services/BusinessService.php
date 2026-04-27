@@ -111,8 +111,6 @@ class BusinessService
             $stores = [];
 
             foreach ($business->stores as $store) {
-                if (!$store->is_active) continue;
-
                 $stores[] = [
                     'id' => (string) $store->id,
                     'name' => $store->name,
@@ -138,7 +136,7 @@ class BusinessService
 
     public function getAssignedBusinesses(User $user): array
     {
-        $stores = $user->stores()->with('business')->where('is_active', true)->latest()->get();
+        $stores = $user->stores()->with('business')->latest()->get();
         $grouped = [];
 
         foreach ($stores as $store) {
