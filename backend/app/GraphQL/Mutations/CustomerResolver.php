@@ -11,24 +11,34 @@ class CustomerResolver extends BaseResolver
 
     public function create($_, array $args)
     {
-        return $this->safe(fn() =>
-            $this->customerService->create($args)
-        );
+        return $this->safe(function () use ($args) {
+            $storeId    = (int) $args['store_id'];
+            $businessId = (int) $args['business_id'];
+            unset($args['store_id'], $args['business_id']);
+            return $this->customerService->create($this->user(), $storeId, $businessId, $args);
+        });
     }
 
     public function update($_, array $args)
     {
         return $this->safe(function () use ($args) {
-            $id = (int) $args['id'];
-            unset($args['id']);
-            return $this->customerService->update($id, $args);
+            $id         = (int) $args['id'];
+            $storeId    = (int) $args['store_id'];
+            $businessId = (int) $args['business_id'];
+            unset($args['id'], $args['store_id'], $args['business_id']);
+            return $this->customerService->update($this->user(), $storeId, $businessId, $id, $args);
         });
     }
 
     public function delete($_, array $args): bool
     {
         return $this->safe(function () use ($args) {
-            $this->customerService->delete((int) $args['id']);
+            $this->customerService->delete(
+                $this->user(),
+                (int) $args['store_id'],
+                (int) $args['business_id'],
+                (int) $args['id']
+            );
             return true;
         });
     }

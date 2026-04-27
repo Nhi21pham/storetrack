@@ -6,6 +6,7 @@ use App\Enums\ErrorCode;
 use App\Enums\PartyTypeEnum;
 use App\Exceptions\CustomerException;
 use App\Models\Customer;
+use App\Models\User;
 use App\Repositories\PartyRepository;
 use App\Repositories\CustomerRepository;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +15,8 @@ class CustomerService
 {
     public function __construct(
         private CustomerRepository $customerRepository,
-        private PartyRepository $partyRepository
+        private PartyRepository $partyRepository,
+        private AuditLogService $auditLogService
     ) {}
 
     public function getAll()
@@ -27,31 +29,44 @@ class CustomerService
         return $this->mustFind($id);
     }
 
-    public function create(array $data): Customer
+    public function create(User $actor, int $storeId, int $businessId, array $data): Customer
     {
-        return DB::transaction(function () use ($data) {
+        $customer = DB::transaction(function () use ($businessId, $data) {
             $party = $this->partyRepository->create(PartyTypeEnum::CUSTOMER);
             return $this->customerRepository->create(array_merge($data, [
-                'party_id' => $party->id,
+                'party_id'    => $party->id,
+                'business_id' => $businessId,
             ]));
         });
+
+        $this->auditLogService->customerCreated($actor, $storeId, $businessId, $customer);
+
+        return $customer;
     }
 
-    public function update(int $id, array $data): Customer
+    public function update(User $actor, int $storeId, int $businessId, int $id, array $data): Customer
     {
         $customer = $this->mustFind($id);
-        return $this->customerRepository->update($customer, $data);
+        $customer = $this->customerRepository->update($customer, $data);
+
+        $this->auditLogService->customerUpdated($actor, $storeId, $businessId, $customer);
+
+        return $customer;
     }
 
-    public function delete(int $id): void
+    public function delete(User $actor, int $storeId, int $businessId, int $id): void
     {
         $customer = $this->mustFind($id);
+        $customerId = $customer->id;
+        $customerName = $customer->name;
 
         DB::transaction(function () use ($customer) {
             $partyId = $customer->party_id;
             $this->customerRepository->delete($customer);
             $this->partyRepository->delete($partyId);
         });
+
+        $this->auditLogService->customerDeleted($actor, $storeId, $businessId, $customerId, $customerName);
     }
 
     private function mustFind(int $id): Customer

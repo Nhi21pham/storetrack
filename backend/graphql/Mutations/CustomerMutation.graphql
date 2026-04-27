@@ -1,13 +1,13 @@
 extend type Mutation {
-    createCustomer(input: CreateCustomerInput! @spread): Customer!
+    createCustomer(store_id: ID!, business_id: ID!, input: CreateCustomerInput! @spread): Customer!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@create")
 
-    updateCustomer(id: ID!, input: UpdateCustomerInput! @spread): Customer!
+    updateCustomer(id: ID!, store_id: ID!, business_id: ID!, input: UpdateCustomerInput! @spread): Customer!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@update")
 
-    deleteCustomer(id: ID!): Boolean!
+    deleteCustomer(id: ID!, store_id: ID!, business_id: ID!): Boolean!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@delete")
 }
