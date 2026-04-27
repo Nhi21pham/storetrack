@@ -84,6 +84,19 @@ export const validators = {
         if (value.trim().length > 50) return 'Tax code is too long.'
         return null
     },
+
+    customerName: (value) => {
+        if (!value || !value.trim()) return 'Customer name is required.'
+        if (value.trim().length < 2) return 'Customer name must be at least 2 characters.'
+        if (value.length > 255) return 'Customer name is too long.'
+        return null
+    },
+
+    customerTaxCode: (value) => {
+        if (!value || !value.trim()) return null
+        if (value.trim().length > 50) return 'Tax code is too long.'
+        return null
+    },
 }
 
 export const validate = (rules) => {
