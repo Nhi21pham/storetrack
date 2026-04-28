@@ -263,7 +263,9 @@ const fetchLogs = async (page = 1) => {
 const switchMode = (mode) => {
   if (viewMode.value === mode) return
   viewMode.value = mode
-  resetAndFetch()
+  logs.value        = []
+  currentPage.value = 1
+  fetchLogs(1)
 }
 
 const resetAndFetch = () => {
