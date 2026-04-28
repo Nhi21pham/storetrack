@@ -81,7 +81,16 @@
           </div>
           <div class="log-body">
             <p class="log-message" v-html="highlightMessage(log.message)"></p>
-            <span class="log-time">{{ formatDatetime(log.created_at) }}</span>
+            <div class="log-meta">
+              <span class="log-time">{{ formatDatetime(log.created_at) }}</span>
+              <template v-if="viewMode === 'business' && log.store_name">
+                <span class="log-sep">·</span>
+                <span class="log-store">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/></svg>
+                  {{ log.store_name }}
+                </span>
+              </template>
+            </div>
           </div>
         </div>
 
@@ -146,7 +155,7 @@ const STORE_QUERY = `
 const BUSINESS_QUERY = `
   query BusinessAuditLogs($business_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String) {
     businessAuditLogs(business_id: $business_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date) {
-      data { id actor_name actor_email object_type action message created_at }
+      data { id actor_name actor_email object_type action message store_name created_at }
       total current_page last_page per_page
     }
   }
@@ -316,6 +325,10 @@ const formatDatetime = (isoString) =>
 .log-body { flex: 1; min-width: 0; }
 .log-message { font-size: 13.5px; color: #111; line-height: 1.5; word-break: break-word; margin: 0 0 4px; }
 .log-message :deep(strong) { font-weight: 600; color: #111; }
+.log-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.log-sep { font-size: 12px; color: #d1d5db; }
+.log-store { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #6b7280; }
+.log-store svg { color: #9ca3af; }
 .log-time { font-size: 12px; color: #9ca3af; }
 
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\NormalizedEmail;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
@@ -25,4 +26,14 @@ class AuditLog extends Model
         'actor_email' => NormalizedEmail::class,
         'metadata'    => 'array',
     ];
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function getStoreNameAttribute(): ?string
+    {
+        return $this->store?->name ?? ($this->metadata['store_name'] ?? null);
+    }
 }
