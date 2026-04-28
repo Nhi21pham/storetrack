@@ -40,14 +40,21 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       This store is deactivated. Data is read-only until the store is reactivated.
     </div>
-    <SearchBar v-model="searchQuery" placeholder="Search by name, email, tax code, phone or address..." />
+
+    <div class="filter-bar">
+      <SearchBar v-model="searchQuery" placeholder="Search by name, email, tax code, phone or address..." />
+      <div class="store-filter">
+        <button :class="{ active: storeFilter === 'store' }" @click="storeFilter = 'store'">This store</button>
+        <button :class="{ active: storeFilter === 'all' }" @click="storeFilter = 'all'">All stores</button>
+      </div>
+    </div>
 
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <span>Loading suppliers...</span>
     </div>
 
-    <div v-else-if="suppliers.length === 0" class="empty-state">
+    <div v-else-if="baseSuppliers.length === 0 && suppliers.length === 0" class="empty-state">
       <div class="empty-icon">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
@@ -56,6 +63,16 @@
       </div>
       <h3>No suppliers yet</h3>
       <p>Add your first supplier to get started.</p>
+    </div>
+
+    <div v-else-if="baseSuppliers.length === 0 && storeFilter === 'store'" class="empty-state">
+      <div class="empty-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+        </svg>
+      </div>
+      <h3>No suppliers at this store</h3>
+      <p>No suppliers were created at {{ currentStore.name }}. Switch to "All stores" to see business-wide suppliers.</p>
     </div>
 
     <div v-else-if="filteredSuppliers.length === 0" class="empty-state">
@@ -132,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, inject } from 'vue'
 import { graphql } from '@/api'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -142,8 +159,10 @@ const showToast = inject('showToast')
 const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 
+const storeFilter = ref('store')
+
 const suppliers = ref([])
-const loading = ref(true)
+const loading = ref(false)
 const showForm = ref(false)
 const editingSupplier = ref(null)
 const deletingSupplier = ref(null)
@@ -194,10 +213,22 @@ onBeforeUnmount(() => {
   resizeState = null
 })
 
+const baseSuppliers = computed(() => {
+  const storeId = String(currentStore.value?.id)
+  if (storeFilter.value === 'store') {
+    return suppliers.value.filter(s => String(s.store_id) === storeId)
+  }
+  return [...suppliers.value].sort((a, b) => {
+    const aOwn = String(a.store_id) === storeId
+    const bOwn = String(b.store_id) === storeId
+    return aOwn === bOwn ? 0 : aOwn ? -1 : 1
+  })
+})
+
 const filteredSuppliers = computed(() => {
-  if (!searchQuery.value.trim()) return suppliers.value
+  if (!searchQuery.value.trim()) return baseSuppliers.value
   const q = searchQuery.value.toLowerCase()
-  return suppliers.value.filter(s =>
+  return baseSuppliers.value.filter(s =>
     s.name.toLowerCase().includes(q) ||
     s.email?.toLowerCase().includes(q) ||
     s.tax_code?.toLowerCase().includes(q) ||
@@ -207,11 +238,15 @@ const filteredSuppliers = computed(() => {
 })
 
 const fetchSuppliers = async () => {
+  if (!currentStore.value?.id || !currentBusiness.value?.id) return
   loading.value = true
   try {
-    const data = await graphql(`query {
-      suppliers { id name email phone address tax_code }
-    }`)
+    const data = await graphql(
+      `query Suppliers($store_id: ID!, $business_id: ID!) {
+        suppliers(store_id: $store_id, business_id: $business_id) { id store_id name email phone address tax_code }
+      }`,
+      { store_id: currentStore.value.id, business_id: currentBusiness.value.id }
+    )
     suppliers.value = data.suppliers
   } catch (err) {
     showToast(err.message, 'error')
@@ -251,13 +286,21 @@ const handleDelete = async () => {
   }
 }
 
-onMounted(fetchSuppliers)
+watch(() => currentStore.value?.id, (id) => {
+  if (id && currentBusiness.value?.id) fetchSuppliers()
+}, { immediate: true })
 </script>
 
 <style scoped>
 .supplier-page { padding: 32px; max-width: 1100px; margin: 0 auto; }
 
 .inactive-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
+
+.filter-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.filter-bar > :first-child { flex: 1; margin-bottom: 0; }
+.store-filter { display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; gap: 2px; flex-shrink: 0; }
+.store-filter button { padding: 5px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; background: none; color: #6b7280; transition: all 0.15s; white-space: nowrap; }
+.store-filter button.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
 .page-header h1 { font-size: 22px; font-weight: 700; color: #111; }

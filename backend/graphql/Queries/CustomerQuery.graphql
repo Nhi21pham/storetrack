@@ -1,5 +1,5 @@
 extend type Query {
-    customers: [Customer!]!
+    customers(store_id: ID!, business_id: ID!): [Customer!]!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\CustomerResolver@all")
 

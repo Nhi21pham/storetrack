@@ -40,14 +40,21 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       This store is deactivated. Data is read-only until the store is reactivated.
     </div>
-    <SearchBar v-model="searchQuery" placeholder="Search by name, email, tax code, phone or address..." />
+
+    <div class="filter-bar">
+      <SearchBar v-model="searchQuery" placeholder="Search by name, email, tax code, phone or address..." />
+      <div class="store-filter">
+        <button :class="{ active: storeFilter === 'store' }" @click="storeFilter = 'store'">This store</button>
+        <button :class="{ active: storeFilter === 'all' }" @click="storeFilter = 'all'">All stores</button>
+      </div>
+    </div>
 
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <span>Loading customers...</span>
     </div>
 
-    <div v-else-if="customers.length === 0" class="empty-state">
+    <div v-else-if="baseCustomers.length === 0 && customers.length === 0" class="empty-state">
       <div class="empty-icon">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -58,6 +65,17 @@
       </div>
       <h3>No customers yet</h3>
       <p>Add your first customer to get started.</p>
+    </div>
+
+    <div v-else-if="baseCustomers.length === 0 && storeFilter === 'store'" class="empty-state">
+      <div class="empty-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+        </svg>
+      </div>
+      <h3>No customers at this store</h3>
+      <p>No customers were created at {{ currentStore.name }}. Switch to "All stores" to see business-wide customers.</p>
     </div>
 
     <div v-else-if="filteredCustomers.length === 0" class="empty-state">
@@ -134,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, inject } from 'vue'
 import { graphql } from '@/api'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -145,11 +163,12 @@ const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 
 const customers = ref([])
-const loading = ref(true)
+const loading = ref(false)
 const showForm = ref(false)
 const editingCustomer = ref(null)
 const deletingCustomer = ref(null)
 const searchQuery = ref('')
+const storeFilter = ref('store')
 
 const columns = [
   { key: 'id',       label: 'ID'       },
@@ -196,10 +215,22 @@ onBeforeUnmount(() => {
   resizeState = null
 })
 
+const baseCustomers = computed(() => {
+  const storeId = String(currentStore.value?.id)
+  if (storeFilter.value === 'store') {
+    return customers.value.filter(c => String(c.store_id) === storeId)
+  }
+  return [...customers.value].sort((a, b) => {
+    const aOwn = String(a.store_id) === storeId
+    const bOwn = String(b.store_id) === storeId
+    return aOwn === bOwn ? 0 : aOwn ? -1 : 1
+  })
+})
+
 const filteredCustomers = computed(() => {
-  if (!searchQuery.value.trim()) return customers.value
+  if (!searchQuery.value.trim()) return baseCustomers.value
   const q = searchQuery.value.toLowerCase()
-  return customers.value.filter(c =>
+  return baseCustomers.value.filter(c =>
     c.name.toLowerCase().includes(q) ||
     c.email?.toLowerCase().includes(q) ||
     c.tax_code?.toLowerCase().includes(q) ||
@@ -209,11 +240,15 @@ const filteredCustomers = computed(() => {
 })
 
 const fetchCustomers = async () => {
+  if (!currentStore.value?.id || !currentBusiness.value?.id) return
   loading.value = true
   try {
-    const data = await graphql(`query {
-      customers { id name email phone address tax_code }
-    }`)
+    const data = await graphql(
+      `query Customers($store_id: ID!, $business_id: ID!) {
+        customers(store_id: $store_id, business_id: $business_id) { id store_id name email phone address tax_code }
+      }`,
+      { store_id: currentStore.value.id, business_id: currentBusiness.value.id }
+    )
     customers.value = data.customers
   } catch (err) {
     showToast(err.message, 'error')
@@ -253,13 +288,21 @@ const handleDelete = async () => {
   }
 }
 
-onMounted(fetchCustomers)
+watch(() => currentStore.value?.id, (id) => {
+  if (id && currentBusiness.value?.id) fetchCustomers()
+}, { immediate: true })
 </script>
 
 <style scoped>
 .customer-page { padding: 32px; max-width: 1100px; margin: 0 auto; }
 
 .inactive-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
+
+.filter-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.filter-bar > :first-child { flex: 1; margin-bottom: 0; }
+.store-filter { display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; gap: 2px; flex-shrink: 0; }
+.store-filter button { padding: 5px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; background: none; color: #6b7280; transition: all 0.15s; white-space: nowrap; }
+.store-filter button.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
 .page-header h1 { font-size: 22px; font-weight: 700; color: #111; }

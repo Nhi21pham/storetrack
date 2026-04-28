@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Enums\ErrorCode;
 use App\Enums\PartyTypeEnum;
 use App\Exceptions\SupplierException;
+use App\Exceptions\AuthorizationException;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Repositories\PartyRepository;
 use App\Repositories\SupplierRepository;
+use App\Repositories\PermissionRepository;
 use Illuminate\Support\Facades\DB;
 
 class SupplierService
@@ -16,12 +18,20 @@ class SupplierService
     public function __construct(
         private SupplierRepository $supplierRepository,
         private PartyRepository $partyRepository,
-        private AuditLogService $auditLogService
+        private AuditLogService $auditLogService,
+        private PermissionRepository $permissionRepository
     ) {}
 
-    public function getAll()
+    public function getAll(User $user, int $storeId, int $businessId)
     {
-        return $this->supplierRepository->all();
+        $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
+            || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
+
+        if (!$hasAccess) {
+            throw new AuthorizationException('You do not have access to this store.');
+        }
+
+        return $this->supplierRepository->all($businessId);
     }
 
     public function getById(int $id): Supplier
@@ -31,11 +41,12 @@ class SupplierService
 
     public function create(User $actor, int $storeId, int $businessId, array $data): Supplier
     {
-        $supplier = DB::transaction(function () use ($businessId, $data) {
+        $supplier = DB::transaction(function () use ($storeId, $businessId, $data) {
             $party = $this->partyRepository->create(PartyTypeEnum::SUPPLIER);
             return $this->supplierRepository->create(array_merge($data, [
                 'party_id'    => $party->id,
                 'business_id' => $businessId,
+                'store_id'    => $storeId,
             ]));
         });
 

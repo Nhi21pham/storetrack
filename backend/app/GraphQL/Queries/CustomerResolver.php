@@ -12,7 +12,11 @@ class CustomerResolver extends BaseResolver
     public function all($_, array $args)
     {
         return $this->safe(fn() =>
-            $this->customerService->getAll()
+            $this->customerService->getAll(
+                $this->user(),
+                (int) $args['store_id'],
+                (int) $args['business_id']
+            )
         );
     }
 

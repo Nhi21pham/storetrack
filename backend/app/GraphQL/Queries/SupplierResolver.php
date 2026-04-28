@@ -12,7 +12,11 @@ class SupplierResolver extends BaseResolver
     public function all($_, array $args)
     {
         return $this->safe(fn() =>
-            $this->supplierService->getAll()
+            $this->supplierService->getAll(
+                $this->user(),
+                (int) $args['store_id'],
+                (int) $args['business_id']
+            )
         );
     }
 

@@ -27,8 +27,8 @@ class CustomerRepository
         $customer->delete();
     }
 
-    public function all()
+    public function all(int $businessId)
     {
-        return Customer::with('party')->latest()->get();
+        return Customer::with('party')->where('business_id', $businessId)->latest()->get();
     }
 }

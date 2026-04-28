@@ -5,10 +5,12 @@ namespace App\Services;
 use App\Enums\ErrorCode;
 use App\Enums\PartyTypeEnum;
 use App\Exceptions\CustomerException;
+use App\Exceptions\AuthorizationException;
 use App\Models\Customer;
 use App\Models\User;
 use App\Repositories\PartyRepository;
 use App\Repositories\CustomerRepository;
+use App\Repositories\PermissionRepository;
 use Illuminate\Support\Facades\DB;
 
 class CustomerService
@@ -16,12 +18,20 @@ class CustomerService
     public function __construct(
         private CustomerRepository $customerRepository,
         private PartyRepository $partyRepository,
-        private AuditLogService $auditLogService
+        private AuditLogService $auditLogService,
+        private PermissionRepository $permissionRepository
     ) {}
 
-    public function getAll()
+    public function getAll(User $user, int $storeId, int $businessId)
     {
-        return $this->customerRepository->all();
+        $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
+            || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
+
+        if (!$hasAccess) {
+            throw new AuthorizationException('You do not have access to this store.');
+        }
+
+        return $this->customerRepository->all($businessId);
     }
 
     public function getById(int $id): Customer
@@ -31,11 +41,12 @@ class CustomerService
 
     public function create(User $actor, int $storeId, int $businessId, array $data): Customer
     {
-        $customer = DB::transaction(function () use ($businessId, $data) {
+        $customer = DB::transaction(function () use ($storeId, $businessId, $data) {
             $party = $this->partyRepository->create(PartyTypeEnum::CUSTOMER);
             return $this->customerRepository->create(array_merge($data, [
                 'party_id'    => $party->id,
                 'business_id' => $businessId,
+                'store_id'    => $storeId,
             ]));
         });
 

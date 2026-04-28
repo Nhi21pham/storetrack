@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('party_id')->constrained('parties')->cascadeOnDelete();
             $table->foreignId('business_id')->nullable()->constrained('businesses')->nullOnDelete();
+            $table->foreignId('store_id')->nullable()->constrained('stores')->nullOnDelete();
             $table->string('name');
             $table->string('email')->nullable();
             $table->string('phone', 20)->nullable();
