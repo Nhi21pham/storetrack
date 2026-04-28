@@ -174,6 +174,7 @@ const ACTION_OPTIONS = [
   { value: 'assigned',     label: 'Assigned' },
   { value: 'role_changed', label: 'Role Changed' },
   { value: 'removed',      label: 'Removed' },
+  { value: 'deleted',      label: 'Deleted' },
   { value: 'invited',      label: 'Invited' },
   { value: 'cancelled',    label: 'Cancelled' },
   { value: 'accepted',     label: 'Accepted' },
@@ -293,7 +294,7 @@ const ACTION_COLORS = {
   UPDATED: '#1d4ed8', ASSIGNED: '#1d4ed8',
   INVITED: '#7c3aed',
   CANCELLED: '#b45309', DEACTIVATED: '#b45309',
-  REMOVED: '#dc2626', DECLINED: '#dc2626',
+  REMOVED: '#dc2626', DELETED: '#dc2626', DECLINED: '#dc2626',
 }
 
 const escapeHtml = (s) =>
@@ -318,7 +319,7 @@ const renderAction = (log) => {
     .replace(/(\S+\([^)]+\))/g, '<strong>$1</strong>')
     .replace(/\b([A-Za-z][\w.+-]*@[\w.-]+\.[A-Za-z]{2,})\b/g, '<strong>$1</strong>')
   return escaped.replace(
-    /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|INVITED|CANCELLED|ACCEPTED|DECLINED)\b/g,
+    /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|DELETED|INVITED|CANCELLED|ACCEPTED|DECLINED)\b/g,
     (m) => `<span class="verb" style="color:${ACTION_COLORS[m] ?? '#374151'}">${m}</span>`
   )
 }

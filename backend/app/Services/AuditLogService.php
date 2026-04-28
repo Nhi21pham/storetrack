@@ -399,7 +399,7 @@ class AuditLogService
     public function supplierDeleted(User $actor, int $storeId, int $businessId, int $supplierId, string $supplierName): void
     {
         $storeName = Store::find($storeId)?->name;
-        $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::REMOVED,
+        $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::DELETED,
             self::actor($actor) . " has DELETED supplier {$supplierName}.",
             [
                 'supplier_id'   => $supplierId,
@@ -449,7 +449,7 @@ class AuditLogService
     public function customerDeleted(User $actor, int $storeId, int $businessId, int $customerId, string $customerName): void
     {
         $storeName = Store::find($storeId)?->name;
-        $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::REMOVED,
+        $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::DELETED,
             self::actor($actor) . " has DELETED customer {$customerName}.",
             [
                 'customer_id'   => $customerId,
