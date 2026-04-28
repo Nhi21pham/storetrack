@@ -18,8 +18,16 @@ class AuditLogService
 {
     public function __construct(private PermissionRepository $permissionRepository) {}
 
-    public function getStoreLogs(User $user, int $storeId, int $page = 1, int $perPage = 20, ?string $startDate = null, ?string $endDate = null): array
-    {
+    public function getStoreLogs(
+        User $user,
+        int $storeId,
+        int $page = 1,
+        int $perPage = 20,
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $objectType = null,
+        ?string $action = null
+    ): array {
         $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
             || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
 
@@ -35,6 +43,12 @@ class AuditLogService
         if ($endDate) {
             $query->whereDate('created_at', '<=', $endDate);
         }
+        if ($objectType) {
+            $query->where('object_type', $objectType);
+        }
+        if ($action) {
+            $query->where('action', $action);
+        }
 
         $paginator = $query->orderByDesc('created_at')
             ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
@@ -48,8 +62,17 @@ class AuditLogService
         ];
     }
 
-    public function getBusinessLogs(User $user, int $businessId, int $page = 1, int $perPage = 20, ?string $startDate = null, ?string $endDate = null): array
-    {
+    public function getBusinessLogs(
+        User $user,
+        int $businessId,
+        int $page = 1,
+        int $perPage = 20,
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $objectType = null,
+        ?string $action = null,
+        ?string $storeName = null
+    ): array {
         if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
             throw new AuthorizationException('You do not have access to this business.');
         }
@@ -61,6 +84,19 @@ class AuditLogService
         }
         if ($endDate) {
             $query->whereDate('created_at', '<=', $endDate);
+        }
+        if ($objectType) {
+            $query->where('object_type', $objectType);
+        }
+        if ($action) {
+            $query->where('action', $action);
+        }
+        if ($storeName !== null && $storeName !== '') {
+            $needle = '%' . $storeName . '%';
+            $query->where(function ($q) use ($needle) {
+                $q->whereHas('store', fn ($s) => $s->where('name', 'like', $needle))
+                  ->orWhere('metadata->store_name', 'like', $needle);
+            });
         }
 
         $paginator = $query->orderByDesc('created_at')
