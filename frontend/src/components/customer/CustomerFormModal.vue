@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Supplier' : 'New Supplier' }}</h2>
+        <h2>{{ isEdit ? 'Edit Customer' : 'New Customer' }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,8 +12,8 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label>Supplier Name <span class="required">*</span></label>
-          <input v-model="form.name" type="text" placeholder="Enter supplier name" :class="{ error: errors.name }" />
+          <label>Customer Name <span class="required">*</span></label>
+          <input v-model="form.name" type="text" placeholder="Enter customer name" :class="{ error: errors.name }" />
           <span v-if="errors.name" class="error-text">{{ errors.name }}</span>
         </div>
 
@@ -49,7 +49,7 @@
         <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Supplier' }}
+          {{ isEdit ? 'Save Changes' : 'Create Customer' }}
         </button>
       </div>
     </div>
@@ -76,12 +76,12 @@ const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 
 const props = defineProps({
-  supplier: { type: Object, default: null }
+  customer: { type: Object, default: null }
 })
 
 const emit = defineEmits(['close', 'saved'])
 
-const isEdit = computed(() => !!props.supplier)
+const isEdit = computed(() => !!props.customer)
 const loading = ref(false)
 const apiError = ref('')
 const showUnsavedWarning = ref(false)
@@ -89,11 +89,11 @@ const showUnsavedWarning = ref(false)
 const errors = ref({ name: '', tax_code: '', email: '', phone: '', address: '' })
 
 const initialForm = () => ({
-  name: props.supplier?.name || '',
-  tax_code: props.supplier?.tax_code || '',
-  address: props.supplier?.address || '',
-  email: props.supplier?.email || '',
-  phone: props.supplier?.phone || ''
+  name: props.customer?.name || '',
+  tax_code: props.customer?.tax_code || '',
+  address: props.customer?.address || '',
+  email: props.customer?.email || '',
+  phone: props.customer?.phone || ''
 })
 
 const form = ref(initialForm())
@@ -104,8 +104,8 @@ const isDirty = computed(() => JSON.stringify(form.value) !== originalForm.value
 const validateForm = () => {
   errors.value = { name: '', tax_code: '', email: '', phone: '', address: '' }
 
-  errors.value.name = validators.supplierName(form.value.name)
-  errors.value.tax_code = validators.supplierTaxCode(form.value.tax_code)
+  errors.value.name = validators.customerName(form.value.name)
+  errors.value.tax_code = validators.customerTaxCode(form.value.tax_code)
   errors.value.email = validators.businessEmail(form.value.email)
   errors.value.phone = validators.businessPhone(form.value.phone)
   errors.value.address = validators.businessAddress(form.value.address)
@@ -124,12 +124,12 @@ const handleSubmit = async () => {
 
     if (isEdit.value) {
       query = `
-        mutation UpdateSupplier($id: ID!, $store_id: ID!, $business_id: ID!, $input: UpdateSupplierInput!) {
-          updateSupplier(id: $id, store_id: $store_id, business_id: $business_id, input: $input) { id name tax_code address email phone }
+        mutation UpdateCustomer($id: ID!, $store_id: ID!, $business_id: ID!, $input: UpdateCustomerInput!) {
+          updateCustomer(id: $id, store_id: $store_id, business_id: $business_id, input: $input) { id name tax_code address email phone }
         }
       `
       variables = {
-        id: props.supplier.id,
+        id: props.customer.id,
         store_id: currentStore.value?.id,
         business_id: currentBusiness.value?.id,
         input: {
@@ -142,8 +142,8 @@ const handleSubmit = async () => {
       }
     } else {
       query = `
-        mutation CreateSupplier($store_id: ID!, $business_id: ID!, $input: CreateSupplierInput!) {
-          createSupplier(store_id: $store_id, business_id: $business_id, input: $input) { id name tax_code address email phone }
+        mutation CreateCustomer($store_id: ID!, $business_id: ID!, $input: CreateCustomerInput!) {
+          createCustomer(store_id: $store_id, business_id: $business_id, input: $input) { id name tax_code address email phone }
         }
       `
       variables = {
@@ -160,7 +160,7 @@ const handleSubmit = async () => {
     }
 
     const data = await graphql(query, variables)
-    const result = isEdit.value ? data.updateSupplier : data.createSupplier
+    const result = isEdit.value ? data.updateCustomer : data.createCustomer
     emit('saved', result)
   } catch (err) {
     apiError.value = err.message

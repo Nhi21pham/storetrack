@@ -1,15 +1,15 @@
 <template>
-  <div class="supplier-page">
+  <div class="customer-page">
     <div class="page-header">
       <div>
-        <h1>Suppliers</h1>
-        <p class="subtitle">Manage your supplier contacts and information.</p>
+        <h1>Customers</h1>
+        <p class="subtitle">Manage your customer contacts and information.</p>
       </div>
       <button v-if="currentBusiness && currentStore?.is_active" class="btn-create" @click="openCreate">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-        New Supplier
+        New Customer
       </button>
     </div>
 
@@ -21,7 +21,7 @@
         </svg>
       </div>
       <h3>No business found</h3>
-      <p>You need to create a business before managing suppliers.</p>
+      <p>You need to create a business before managing customers.</p>
     </div>
 
     <div v-else-if="!currentStore" class="empty-state">
@@ -32,7 +32,7 @@
         </svg>
       </div>
       <h3>No store selected</h3>
-      <p>Select a store to manage suppliers.</p>
+      <p>Select a store to manage customers.</p>
     </div>
 
     <template v-else-if="currentStore">
@@ -51,32 +51,35 @@
 
     <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
-      <span>Loading suppliers...</span>
+      <span>Loading customers...</span>
     </div>
 
-    <div v-else-if="baseSuppliers.length === 0 && suppliers.length === 0" class="empty-state">
+    <div v-else-if="baseCustomers.length === 0 && customers.length === 0" class="empty-state">
       <div class="empty-icon">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
       </div>
-      <h3>No suppliers yet</h3>
-      <p>Add your first supplier to get started.</p>
+      <h3>No customers yet</h3>
+      <p>Add your first customer to get started.</p>
     </div>
 
-    <div v-else-if="baseSuppliers.length === 0 && storeFilter === 'store'" class="empty-state">
+    <div v-else-if="baseCustomers.length === 0 && storeFilter === 'store'" class="empty-state">
       <div class="empty-icon">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
         </svg>
       </div>
-      <h3>No suppliers at this store</h3>
-      <p>No suppliers were created at {{ currentStore.name }}. Switch to "All stores" to see business-wide suppliers.</p>
+      <h3>No customers at this store</h3>
+      <p>No customers were created at {{ currentStore.name }}. Switch to "All stores" to see business-wide customers.</p>
     </div>
 
-    <div v-else-if="filteredSuppliers.length === 0" class="empty-state">
-      <p>No suppliers matching "{{ searchQuery }}"</p>
+    <div v-else-if="filteredCustomers.length === 0" class="empty-state">
+      <p>No customers matching "{{ searchQuery }}"</p>
     </div>
 
     <div v-else class="table-wrapper" :class="{ resizing: isResizing }">
@@ -93,31 +96,31 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="supplier in filteredSuppliers" :key="supplier.id">
-            <td><span class="id-badge">#{{ supplier.id }}</span></td>
-            <td><span class="name-text">{{ supplier.name }}</span></td>
+          <tr v-for="customer in filteredCustomers" :key="customer.id">
+            <td><span class="id-badge">#{{ customer.id }}</span></td>
+            <td><span class="name-text">{{ customer.name }}</span></td>
             <td>
-              <span v-if="supplier.tax_code" class="mono">{{ supplier.tax_code }}</span>
+              <span v-if="customer.tax_code" class="mono">{{ customer.tax_code }}</span>
               <span v-else class="empty-val">—</span>
             </td>
             <td>
-              <span v-if="supplier.email">{{ supplier.email }}</span>
+              <span v-if="customer.email">{{ customer.email }}</span>
               <span v-else class="empty-val">—</span>
             </td>
             <td>
-              <span v-if="supplier.phone" class="mono">{{ supplier.phone }}</span>
+              <span v-if="customer.phone" class="mono">{{ customer.phone }}</span>
               <span v-else class="empty-val">—</span>
             </td>
             <td>
-              <span v-if="supplier.address" :title="supplier.address" class="truncate">{{ supplier.address }}</span>
+              <span v-if="customer.address" :title="customer.address" class="truncate">{{ customer.address }}</span>
               <span v-else class="empty-val">—</span>
             </td>
             <td>
               <div v-if="currentStore?.is_active" class="row-actions">
-                <button class="action-btn" @click="openEdit(supplier)" title="Edit">
+                <button class="action-btn" @click="openEdit(customer)" title="Edit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
-                <button class="action-btn danger" @click="confirmDelete(supplier)" title="Delete">
+                <button class="action-btn danger" @click="confirmDelete(customer)" title="Delete">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
               </div>
@@ -127,22 +130,22 @@
       </table>
     </div>
 
-    <SupplierFormModal
+    <CustomerFormModal
       v-if="showForm"
-      :supplier="editingSupplier"
+      :customer="editingCustomer"
       @close="showForm = false"
       @saved="onSaved"
     />
 
     <ConfirmDialog
-      v-if="deletingSupplier"
-      title="Delete Supplier"
-      :message="`Are you sure you want to delete '${deletingSupplier.name}'? This action cannot be undone.`"
+      v-if="deletingCustomer"
+      title="Delete Customer"
+      :message="`Are you sure you want to delete '${deletingCustomer.name}'? This action cannot be undone.`"
       confirm-text="Yes, delete"
       cancel-text="Cancel"
       type="danger"
       @confirm="handleDelete"
-      @cancel="deletingSupplier = null"
+      @cancel="deletingCustomer = null"
     />
     </template>
   </div>
@@ -153,20 +156,19 @@ import { ref, computed, watch, onBeforeUnmount, inject } from 'vue'
 import { graphql } from '@/api'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
-import SupplierFormModal from '@/components/supplier/SupplierFormModal.vue'
+import CustomerFormModal from '@/components/customer/CustomerFormModal.vue'
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 
-const storeFilter = ref('store')
-
-const suppliers = ref([])
+const customers = ref([])
 const loading = ref(false)
 const showForm = ref(false)
-const editingSupplier = ref(null)
-const deletingSupplier = ref(null)
+const editingCustomer = ref(null)
+const deletingCustomer = ref(null)
 const searchQuery = ref('')
+const storeFilter = ref('store')
 
 const columns = [
   { key: 'id',       label: 'ID'       },
@@ -213,41 +215,41 @@ onBeforeUnmount(() => {
   resizeState = null
 })
 
-const baseSuppliers = computed(() => {
+const baseCustomers = computed(() => {
   const storeId = String(currentStore.value?.id)
   if (storeFilter.value === 'store') {
-    return suppliers.value.filter(s => String(s.store_id) === storeId)
+    return customers.value.filter(c => String(c.store_id) === storeId)
   }
-  return [...suppliers.value].sort((a, b) => {
+  return [...customers.value].sort((a, b) => {
     const aOwn = String(a.store_id) === storeId
     const bOwn = String(b.store_id) === storeId
     return aOwn === bOwn ? 0 : aOwn ? -1 : 1
   })
 })
 
-const filteredSuppliers = computed(() => {
-  if (!searchQuery.value.trim()) return baseSuppliers.value
+const filteredCustomers = computed(() => {
+  if (!searchQuery.value.trim()) return baseCustomers.value
   const q = searchQuery.value.toLowerCase()
-  return baseSuppliers.value.filter(s =>
-    s.name.toLowerCase().includes(q) ||
-    s.email?.toLowerCase().includes(q) ||
-    s.tax_code?.toLowerCase().includes(q) ||
-    s.address?.toLowerCase().includes(q) ||
-    s.phone?.includes(q)
+  return baseCustomers.value.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    c.email?.toLowerCase().includes(q) ||
+    c.tax_code?.toLowerCase().includes(q) ||
+    c.address?.toLowerCase().includes(q) ||
+    c.phone?.includes(q)
   )
 })
 
-const fetchSuppliers = async () => {
+const fetchCustomers = async () => {
   if (!currentStore.value?.id || !currentBusiness.value?.id) return
   loading.value = true
   try {
     const data = await graphql(
-      `query Suppliers($store_id: ID!, $business_id: ID!) {
-        suppliers(store_id: $store_id, business_id: $business_id) { id store_id name email phone address tax_code }
+      `query Customers($store_id: ID!, $business_id: ID!) {
+        customers(store_id: $store_id, business_id: $business_id) { id store_id name email phone address tax_code }
       }`,
       { store_id: currentStore.value.id, business_id: currentBusiness.value.id }
     )
-    suppliers.value = data.suppliers
+    customers.value = data.customers
   } catch (err) {
     showToast(err.message, 'error')
   } finally {
@@ -255,44 +257,44 @@ const fetchSuppliers = async () => {
   }
 }
 
-const openCreate = () => { editingSupplier.value = null; showForm.value = true }
-const openEdit = (s) => { editingSupplier.value = { ...s }; showForm.value = true }
+const openCreate = () => { editingCustomer.value = null; showForm.value = true }
+const openEdit = (c) => { editingCustomer.value = { ...c }; showForm.value = true }
 
 const onSaved = () => {
   showForm.value = false
-  fetchSuppliers()
-  showToast(editingSupplier.value ? 'Supplier updated successfully!' : 'Supplier created successfully!')
+  fetchCustomers()
+  showToast(editingCustomer.value ? 'Customer updated successfully!' : 'Customer created successfully!')
 }
 
-const confirmDelete = (s) => { deletingSupplier.value = s }
+const confirmDelete = (c) => { deletingCustomer.value = c }
 
 const handleDelete = async () => {
   try {
     await graphql(
-      `mutation DeleteSupplier($id: ID!, $store_id: ID!, $business_id: ID!) {
-        deleteSupplier(id: $id, store_id: $store_id, business_id: $business_id)
+      `mutation DeleteCustomer($id: ID!, $store_id: ID!, $business_id: ID!) {
+        deleteCustomer(id: $id, store_id: $store_id, business_id: $business_id)
       }`,
       {
-        id: deletingSupplier.value.id,
+        id: deletingCustomer.value.id,
         store_id: currentStore.value?.id,
         business_id: currentBusiness.value?.id,
       }
     )
-    deletingSupplier.value = null
-    fetchSuppliers()
-    showToast('Supplier deleted successfully!')
+    deletingCustomer.value = null
+    fetchCustomers()
+    showToast('Customer deleted successfully!')
   } catch (err) {
     showToast(err.message, 'error')
   }
 }
 
 watch(() => currentStore.value?.id, (id) => {
-  if (id && currentBusiness.value?.id) fetchSuppliers()
+  if (id && currentBusiness.value?.id) fetchCustomers()
 }, { immediate: true })
 </script>
 
 <style scoped>
-.supplier-page { padding: 32px; max-width: 1100px; margin: 0 auto; }
+.customer-page { padding: 32px; max-width: 1100px; margin: 0 auto; }
 
 .inactive-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
 

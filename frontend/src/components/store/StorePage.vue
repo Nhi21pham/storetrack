@@ -159,6 +159,7 @@ import { graphql } from '@/api'
 
 const emit = defineEmits(['store-updated'])
 const showToast = inject('showToast')
+const refreshStoreSwitcher = inject('refreshStoreSwitcher')
 
 const stores = ref([])
 const loading = ref(true)
@@ -218,6 +219,7 @@ const handleToggle = async () => {
     togglingStore.value = null
     fetchStores()
     emit('store-updated')
+    refreshStoreSwitcher()
     showToast(store.is_active ? 'Store deactivated!' : 'Store reactivated!')
   } catch (err) {
     showToast(err.message, 'error')
@@ -232,6 +234,7 @@ const handleDelete = async () => {
     deletingStore.value = null
     fetchStores()
     emit('store-updated')
+    refreshStoreSwitcher()
     showToast('Store deleted successfully!')
   } catch (err) {
     showToast(err.message, 'error')

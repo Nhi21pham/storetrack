@@ -12,13 +12,28 @@ class AuditLogResolver extends BaseResolver
     public function index($_, array $args): array
     {
         return $this->safe(function () use ($args) {
-            $storeId   = $args['store_id'];
-            $page      = $args['page'] ?? 1;
-            $perPage   = $args['per_page'] ?? 20;
-            $startDate = $args['start_date'] ?? null;
-            $endDate   = $args['end_date'] ?? null;
+            return $this->auditLogService->getStoreLogs(
+                $this->user(),
+                (int) $args['store_id'],
+                $args['page'] ?? 1,
+                $args['per_page'] ?? 20,
+                $args['start_date'] ?? null,
+                $args['end_date'] ?? null
+            );
+        });
+    }
 
-            return $this->auditLogService->getStoreLogs($this->user(), $storeId, $page, $perPage, $startDate, $endDate);
+    public function business($_, array $args): array
+    {
+        return $this->safe(function () use ($args) {
+            return $this->auditLogService->getBusinessLogs(
+                $this->user(),
+                (int) $args['business_id'],
+                $args['page'] ?? 1,
+                $args['per_page'] ?? 20,
+                $args['start_date'] ?? null,
+                $args['end_date'] ?? null
+            );
         });
     }
 }

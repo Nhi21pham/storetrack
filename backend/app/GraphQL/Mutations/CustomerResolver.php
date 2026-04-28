@@ -3,11 +3,11 @@
 namespace App\GraphQL\Mutations;
 
 use App\GraphQL\BaseResolver;
-use App\Services\SupplierService;
+use App\Services\CustomerService;
 
-class SupplierResolver extends BaseResolver
+class CustomerResolver extends BaseResolver
 {
-    public function __construct(private SupplierService $supplierService) {}
+    public function __construct(private CustomerService $customerService) {}
 
     public function create($_, array $args)
     {
@@ -15,7 +15,7 @@ class SupplierResolver extends BaseResolver
             $storeId    = (int) $args['store_id'];
             $businessId = (int) $args['business_id'];
             unset($args['store_id'], $args['business_id']);
-            return $this->supplierService->create($this->user(), $storeId, $businessId, $args);
+            return $this->customerService->create($this->user(), $storeId, $businessId, $args);
         });
     }
 
@@ -26,14 +26,14 @@ class SupplierResolver extends BaseResolver
             $storeId    = (int) $args['store_id'];
             $businessId = (int) $args['business_id'];
             unset($args['id'], $args['store_id'], $args['business_id']);
-            return $this->supplierService->update($this->user(), $storeId, $businessId, $id, $args);
+            return $this->customerService->update($this->user(), $storeId, $businessId, $id, $args);
         });
     }
 
     public function delete($_, array $args): bool
     {
         return $this->safe(function () use ($args) {
-            $this->supplierService->delete(
+            $this->customerService->delete(
                 $this->user(),
                 (int) $args['store_id'],
                 (int) $args['business_id'],

@@ -6,8 +6,10 @@ use App\Enums\AuditAction;
 use App\Enums\AuditObjectType;
 use App\Models\AuditLog;
 use App\Models\Business;
+use App\Models\Customer;
 use App\Models\Invitation;
 use App\Models\Store;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Exceptions\AuthorizationException;
 use App\Repositories\PermissionRepository;
@@ -46,16 +48,45 @@ class AuditLogService
         ];
     }
 
+    public function getBusinessLogs(User $user, int $businessId, int $page = 1, int $perPage = 20, ?string $startDate = null, ?string $endDate = null): array
+    {
+        if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
+            throw new AuthorizationException('You do not have access to this business.');
+        }
+
+        $query = AuditLog::where('business_id', $businessId)->with('store');
+
+        if ($startDate) {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
+
+        $paginator = $query->orderByDesc('created_at')
+            ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
+
+        return [
+            'data'         => $paginator->items(),
+            'total'        => $paginator->total(),
+            'current_page' => $paginator->currentPage(),
+            'last_page'    => $paginator->lastPage(),
+            'per_page'     => $paginator->perPage(),
+        ];
+    }
+
     public function log(
         ?int $storeId,
         ?User $actor,
         AuditObjectType $objectType,
         AuditAction $action,
         string $message,
-        array $metadata = []
+        array $metadata = [],
+        ?int $businessId = null
     ): void {
         AuditLog::create([
             'store_id'    => $storeId,
+            'business_id' => $businessId,
             'actor_id'    => $actor?->id,
             'actor_name'  => $actor?->name,
             'actor_email' => $actor?->email,
@@ -77,12 +108,19 @@ class AuditLogService
     {
         $entry = new AuditLog([
             'store_id'    => $store->id,
+            'business_id' => $business->id,
             'actor_id'    => $actor->id,
             'actor_name'  => $actor->name,
             'actor_email' => $actor->email,
             'object_type' => AuditObjectType::BUSINESS->value,
             'action'      => AuditAction::CREATED->value,
             'message'     => self::actor($actor) . " has CREATED business {$business->name}.",
+            'metadata'    => [
+                'business_id'   => $business->id,
+                'business_name' => $business->name,
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+            ],
         ]);
         $entry->created_at = $createdAt;
         $entry->save();
@@ -94,7 +132,14 @@ class AuditLogService
         foreach ($stores as $store) {
             $this->log(
                 $store->id, $actor, AuditObjectType::BUSINESS, AuditAction::UPDATED,
-                self::actor($actor) . " has UPDATED business {$business->name}."
+                self::actor($actor) . " has UPDATED business {$business->name}.",
+                [
+                    'business_id'   => $business->id,
+                    'business_name' => $business->name,
+                    'store_id'      => $store->id,
+                    'store_name'    => $store->name,
+                ],
+                $business->id
             );
         }
     }
@@ -105,7 +150,13 @@ class AuditLogService
     {
         $this->log(
             $store->id, $actor, AuditObjectType::STORE, AuditAction::CREATED,
-            self::actor($actor) . " has CREATED store {$store->name}."
+            self::actor($actor) . " has CREATED store {$store->name}.",
+            [
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
         );
     }
 
@@ -113,7 +164,13 @@ class AuditLogService
     {
         $this->log(
             $store->id, $actor, AuditObjectType::STORE, AuditAction::UPDATED,
-            self::actor($actor) . " has UPDATED store {$store->name}."
+            self::actor($actor) . " has UPDATED store {$store->name}.",
+            [
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
         );
     }
 
@@ -121,7 +178,13 @@ class AuditLogService
     {
         $this->log(
             $store->id, $actor, AuditObjectType::STORE, AuditAction::DEACTIVATED,
-            self::actor($actor) . " has DEACTIVATED store {$store->name}."
+            self::actor($actor) . " has DEACTIVATED store {$store->name}.",
+            [
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
         );
     }
 
@@ -129,7 +192,13 @@ class AuditLogService
     {
         $this->log(
             $store->id, $actor, AuditObjectType::STORE, AuditAction::REACTIVATED,
-            self::actor($actor) . " has REACTIVATED store {$store->name}."
+            self::actor($actor) . " has REACTIVATED store {$store->name}.",
+            [
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
         );
     }
 
@@ -139,7 +208,17 @@ class AuditLogService
     {
         $this->log(
             $store->id, $actor, AuditObjectType::USER, AuditAction::ASSIGNED,
-            self::actor($actor) . " has ASSIGNED {$target->name}({$target->email}) as " . ucfirst(strtolower($role)) . "."
+            self::actor($actor) . " has ASSIGNED {$target->name}({$target->email}) as " . ucfirst(strtolower($role)) . ".",
+            [
+                'user_id'       => $target->id,
+                'user_name'     => $target->name,
+                'user_email'    => $target->email,
+                'role'          => $role,
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
         );
     }
 
@@ -147,7 +226,18 @@ class AuditLogService
     {
         $this->log(
             $store->id, $actor, AuditObjectType::USER, AuditAction::ROLE_CHANGED,
-            self::actor($actor) . " has UPDATED role of {$target->name}({$target->email}) from " . ucfirst(strtolower($oldRole)) . " to " . ucfirst(strtolower($newRole)) . "."
+            self::actor($actor) . " has UPDATED role of {$target->name}({$target->email}) from " . ucfirst(strtolower($oldRole)) . " to " . ucfirst(strtolower($newRole)) . ".",
+            [
+                'user_id'       => $target->id,
+                'user_name'     => $target->name,
+                'user_email'    => $target->email,
+                'old_role'      => $oldRole,
+                'new_role'      => $newRole,
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
         );
     }
 
@@ -155,7 +245,16 @@ class AuditLogService
     {
         $this->log(
             $store->id, $actor, AuditObjectType::USER, AuditAction::REMOVED,
-            self::actor($actor) . " has REMOVED {$target->name}({$target->email}) from the store."
+            self::actor($actor) . " has REMOVED {$target->name}({$target->email}) from the store.",
+            [
+                'user_id'       => $target->id,
+                'user_name'     => $target->name,
+                'user_email'    => $target->email,
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
         );
     }
 
@@ -165,32 +264,165 @@ class AuditLogService
     {
         $this->log(
             $store->id, $actor, AuditObjectType::INVITATION, AuditAction::INVITED,
-            self::actor($actor) . " has INVITED {$inviteeEmail} as " . ucfirst(strtolower($role)) . "."
+            self::actor($actor) . " has INVITED {$inviteeEmail} as " . ucfirst(strtolower($role)) . ".",
+            [
+                'invitee_email' => $inviteeEmail,
+                'role'          => $role,
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
         );
     }
 
     public function invitationCancelled(User $actor, Invitation $invitation): void
     {
+        $store = Store::find($invitation->store_id);
         $this->log(
             $invitation->store_id, $actor, AuditObjectType::INVITATION, AuditAction::CANCELLED,
-            self::actor($actor) . " has CANCELLED invitation for {$invitation->invitee_email}."
+            self::actor($actor) . " has CANCELLED invitation for {$invitation->invitee_email}.",
+            [
+                'invitee_email' => $invitation->invitee_email,
+                'store_id'      => $invitation->store_id,
+                'store_name'    => $store?->name,
+                'business_id'   => $store?->business_id,
+            ],
+            $store?->business_id
         );
     }
 
     public function invitationAccepted(User $invitee, Invitation $invitation): void
     {
         $role = is_string($invitation->role) ? $invitation->role : $invitation->role->value;
+        $store = Store::find($invitation->store_id);
         $this->log(
             $invitation->store_id, $invitee, AuditObjectType::INVITATION, AuditAction::ACCEPTED,
-            "{$invitee->name}({$invitee->email}) has ACCEPTED the invitation as " . ucfirst(strtolower($role)) . "."
+            "{$invitee->name}({$invitee->email}) has ACCEPTED the invitation as " . ucfirst(strtolower($role)) . ".",
+            [
+                'invitee_email' => $invitee->email,
+                'role'          => $role,
+                'store_id'      => $invitation->store_id,
+                'store_name'    => $store?->name,
+                'business_id'   => $store?->business_id,
+            ],
+            $store?->business_id
         );
     }
 
     public function invitationDeclined(User $invitee, Invitation $invitation): void
     {
+        $store = Store::find($invitation->store_id);
         $this->log(
             $invitation->store_id, $invitee, AuditObjectType::INVITATION, AuditAction::DECLINED,
-            "{$invitee->name}({$invitee->email}) has DECLINED the invitation."
+            "{$invitee->name}({$invitee->email}) has DECLINED the invitation.",
+            [
+                'invitee_email' => $invitee->email,
+                'store_id'      => $invitation->store_id,
+                'store_name'    => $store?->name,
+                'business_id'   => $store?->business_id,
+            ],
+            $store?->business_id
+        );
+    }
+
+    // Supplier actions
+
+    public function supplierCreated(User $actor, int $storeId, int $businessId, Supplier $supplier): void
+    {
+        $storeName = Store::find($storeId)?->name;
+        $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::CREATED,
+            self::actor($actor) . " has CREATED supplier {$supplier->name}.",
+            [
+                'supplier_id'   => $supplier->id,
+                'supplier_name' => $supplier->name,
+                'business_id'   => $businessId,
+                'store_id'      => $storeId,
+                'store_name'    => $storeName,
+            ],
+            $businessId
+        );
+    }
+
+    public function supplierUpdated(User $actor, int $storeId, int $businessId, Supplier $supplier): void
+    {
+        $storeName = Store::find($storeId)?->name;
+        $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::UPDATED,
+            self::actor($actor) . " has UPDATED supplier {$supplier->name}.",
+            [
+                'supplier_id'    => $supplier->id,
+                'supplier_name'  => $supplier->name,
+                'business_id'    => $businessId,
+                'store_id'       => $storeId,
+                'store_name'     => $storeName,
+            ],
+            $businessId
+        );
+    }
+
+    public function supplierDeleted(User $actor, int $storeId, int $businessId, int $supplierId, string $supplierName): void
+    {
+        $storeName = Store::find($storeId)?->name;
+        $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::REMOVED,
+            self::actor($actor) . " has DELETED supplier {$supplierName}.",
+            [
+                'supplier_id'   => $supplierId,
+                'supplier_name' => $supplierName,
+                'business_id'   => $businessId,
+                'store_id'      => $storeId,
+                'store_name'    => $storeName,
+            ],
+            $businessId
+        );
+    }
+
+    // Customer actions
+
+    public function customerCreated(User $actor, int $storeId, int $businessId, Customer $customer): void
+    {
+        $storeName = Store::find($storeId)?->name;
+        $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::CREATED,
+            self::actor($actor) . " has CREATED customer {$customer->name}.",
+            [
+                'customer_id'   => $customer->id,
+                'customer_name' => $customer->name,
+                'business_id'   => $businessId,
+                'store_id'      => $storeId,
+                'store_name'    => $storeName,
+            ],
+            $businessId
+        );
+    }
+
+    public function customerUpdated(User $actor, int $storeId, int $businessId, Customer $customer): void
+    {
+        $storeName = Store::find($storeId)?->name;
+        $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::UPDATED,
+            self::actor($actor) . " has UPDATED customer {$customer->name}.",
+            [
+                'customer_id'   => $customer->id,
+                'customer_name' => $customer->name,
+                'business_id'   => $businessId,
+                'store_id'      => $storeId,
+                'store_name'    => $storeName,
+            ],
+            $businessId
+        );
+    }
+
+    public function customerDeleted(User $actor, int $storeId, int $businessId, int $customerId, string $customerName): void
+    {
+        $storeName = Store::find($storeId)?->name;
+        $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::REMOVED,
+            self::actor($actor) . " has DELETED customer {$customerName}.",
+            [
+                'customer_id'   => $customerId,
+                'customer_name' => $customerName,
+                'business_id'   => $businessId,
+                'store_id'      => $storeId,
+                'store_name'    => $storeName,
+            ],
+            $businessId
         );
     }
 }

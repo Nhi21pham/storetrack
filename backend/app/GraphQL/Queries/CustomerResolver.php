@@ -3,16 +3,16 @@
 namespace App\GraphQL\Queries;
 
 use App\GraphQL\BaseResolver;
-use App\Services\SupplierService;
+use App\Services\CustomerService;
 
-class SupplierResolver extends BaseResolver
+class CustomerResolver extends BaseResolver
 {
-    public function __construct(private SupplierService $supplierService) {}
+    public function __construct(private CustomerService $customerService) {}
 
     public function all($_, array $args)
     {
         return $this->safe(fn() =>
-            $this->supplierService->getAll(
+            $this->customerService->getAll(
                 $this->user(),
                 (int) $args['store_id'],
                 (int) $args['business_id']
@@ -23,7 +23,7 @@ class SupplierResolver extends BaseResolver
     public function findById($_, array $args)
     {
         return $this->safe(fn() =>
-            $this->supplierService->getById((int) $args['id'])
+            $this->customerService->getById((int) $args['id'])
         );
     }
 }

@@ -5,12 +5,16 @@
         <h1>Audit Log</h1>
         <p class="subtitle">
           Activity history for
-          <strong>{{ currentStore?.name ?? '—' }}</strong>
+          <strong>{{ viewMode === 'store' ? (currentStore?.name ?? '—') : (currentBusiness?.name ?? '—') }}</strong>
         </p>
+      </div>
+      <div v-if="isBusinessOwner" class="view-toggle">
+        <button :class="{ active: viewMode === 'store' }" @click="switchMode('store')">Store</button>
+        <button :class="{ active: viewMode === 'business' }" @click="switchMode('business')">Business</button>
       </div>
     </div>
 
-    <div v-if="!currentStore" class="empty-state">
+    <div v-if="viewMode === 'store' && !currentStore" class="empty-state">
       <div class="empty-icon">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/>
@@ -20,7 +24,21 @@
       <p>Select a store from the top bar to view its activity.</p>
     </div>
 
+    <div v-else-if="viewMode === 'business' && !currentBusiness" class="empty-state">
+      <div class="empty-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        </svg>
+      </div>
+      <h3>No business selected</h3>
+      <p>Select a business to view its activity.</p>
+    </div>
+
     <template v-else>
+      <div v-if="viewMode === 'store' && currentStore && !currentStore.is_active" class="inactive-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        This store is deactivated. Showing historical activity only.
+      </div>
       <SearchBar v-model="searchQuery" placeholder="Search activity..." />
 
       <div class="filter-bar">
@@ -48,7 +66,7 @@
           </svg>
         </div>
         <h3>No activity yet</h3>
-        <p>Actions performed in this store will appear here.</p>
+        <p>Actions performed will appear here.</p>
       </div>
 
       <div v-else-if="filteredLogs.length === 0" class="empty-state">
@@ -63,7 +81,16 @@
           </div>
           <div class="log-body">
             <p class="log-message" v-html="highlightMessage(log.message)"></p>
-            <span class="log-time">{{ formatDatetime(log.created_at) }}</span>
+            <div class="log-meta">
+              <span class="log-time">{{ formatDatetime(log.created_at) }}</span>
+              <template v-if="viewMode === 'business' && log.store_name">
+                <span class="log-sep">·</span>
+                <span class="log-store">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/></svg>
+                  {{ log.store_name }}
+                </span>
+              </template>
+            </div>
           </div>
         </div>
 
@@ -86,20 +113,25 @@ import { graphql } from '@/api'
 import Pagination from '@/components/common/Pagination.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 
-const currentStore = inject('currentStore')
-const showToast = inject('showToast')
+const currentStore    = inject('currentStore')
+const currentBusiness = inject('currentBusiness')
+const showToast       = inject('showToast')
 
-const logs = ref([])
-const loading = ref(false)
-const fetching = ref(false)
-const currentPage = ref(1)
-const lastPage = ref(1)
-const total = ref(0)
-const STORAGE_KEY = 'audit_log_per_page'
-const perPage = ref(Number(localStorage.getItem(STORAGE_KEY)) || 20)
-const startDate = ref('')
-const endDate = ref('')
-const searchQuery = ref('')
+const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
+
+const viewMode = ref('store')
+
+const logs         = ref([])
+const loading      = ref(false)
+const fetching     = ref(false)
+const currentPage  = ref(1)
+const lastPage     = ref(1)
+const total        = ref(0)
+const STORAGE_KEY  = 'audit_log_per_page'
+const perPage      = ref(Number(localStorage.getItem(STORAGE_KEY)) || 20)
+const startDate    = ref('')
+const endDate      = ref('')
+const searchQuery  = ref('')
 
 const filteredLogs = computed(() => {
   if (!searchQuery.value.trim()) return logs.value
@@ -111,116 +143,127 @@ const filteredLogs = computed(() => {
   )
 })
 
-const QUERY = `
+const STORE_QUERY = `
   query AuditLogs($store_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String) {
     auditLogs(store_id: $store_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date) {
-      data {
-        id
-        actor_name
-        actor_email
-        object_type
-        action
-        message
-        created_at
-      }
-      total
-      current_page
-      last_page
-      per_page
+      data { id actor_name actor_email object_type action message created_at }
+      total current_page last_page per_page
+    }
+  }
+`
+
+const BUSINESS_QUERY = `
+  query BusinessAuditLogs($business_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String) {
+    businessAuditLogs(business_id: $business_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date) {
+      data { id actor_name actor_email object_type action message store_name created_at }
+      total current_page last_page per_page
     }
   }
 `
 
 const fetchLogs = async (page = 1) => {
-  if (!currentStore.value?.id) return
+  if (viewMode.value === 'store' && !currentStore.value?.id) return
+  if (viewMode.value === 'business' && !currentBusiness.value?.id) return
+
   if (logs.value.length === 0) loading.value = true
   else fetching.value = true
+
   try {
-    const data = await graphql(QUERY, {
-      store_id: currentStore.value.id,
-      page,
-      per_page: perPage.value,
-      start_date: startDate.value || null,
-      end_date: endDate.value || null,
-    })
-    logs.value = data.auditLogs.data
-    currentPage.value = data.auditLogs.current_page
-    lastPage.value = data.auditLogs.last_page
-    total.value = data.auditLogs.total
+    let data
+    if (viewMode.value === 'store') {
+      data = await graphql(STORE_QUERY, {
+        store_id: currentStore.value.id,
+        page,
+        per_page: perPage.value,
+        start_date: startDate.value || null,
+        end_date: endDate.value || null,
+      })
+      logs.value        = data.auditLogs.data
+      currentPage.value = data.auditLogs.current_page
+      lastPage.value    = data.auditLogs.last_page
+      total.value       = data.auditLogs.total
+    } else {
+      data = await graphql(BUSINESS_QUERY, {
+        business_id: currentBusiness.value.id,
+        page,
+        per_page: perPage.value,
+        start_date: startDate.value || null,
+        end_date: endDate.value || null,
+      })
+      logs.value        = data.businessAuditLogs.data
+      currentPage.value = data.businessAuditLogs.current_page
+      lastPage.value    = data.businessAuditLogs.last_page
+      total.value       = data.businessAuditLogs.total
+    }
   } catch (err) {
     showToast(err.message, 'error')
   } finally {
-    loading.value = false
+    loading.value  = false
     fetching.value = false
   }
 }
 
-const loadPage = (page) => fetchLogs(page)
-
-const changePerPage = (val) => {
-  perPage.value = val
-  localStorage.setItem(STORAGE_KEY, val)
-  fetchLogs(1)
+const switchMode = (mode) => {
+  if (viewMode.value === mode) return
+  viewMode.value = mode
+  resetAndFetch()
 }
 
-const applyFilter = () => { currentPage.value = 1; fetchLogs(1) }
-
-const clearFilter = () => {
-  startDate.value = ''
-  endDate.value = ''
+const resetAndFetch = () => {
+  logs.value        = []
   currentPage.value = 1
+  startDate.value   = ''
+  endDate.value     = ''
+  searchQuery.value = ''
   fetchLogs(1)
 }
+
+const loadPage      = (page) => fetchLogs(page)
+const changePerPage = (val) => { perPage.value = val; localStorage.setItem(STORAGE_KEY, val); fetchLogs(1) }
+const applyFilter   = () => { currentPage.value = 1; fetchLogs(1) }
+const clearFilter   = () => { startDate.value = ''; endDate.value = ''; currentPage.value = 1; fetchLogs(1) }
 
 const ACTION_COLORS = {
-  CREATED: '#16a34a',
-  ACCEPTED: '#16a34a',
-  REACTIVATED: '#16a34a',
-  UPDATED: '#1d4ed8',
-  ASSIGNED: '#1d4ed8',
+  CREATED: '#16a34a', ACCEPTED: '#16a34a', REACTIVATED: '#16a34a',
+  UPDATED: '#1d4ed8', ASSIGNED: '#1d4ed8',
   INVITED: '#7c3aed',
-  CANCELLED: '#b45309',
-  DEACTIVATED: '#b45309',
-  REMOVED: '#dc2626',
-  DECLINED: '#dc2626',
+  CANCELLED: '#b45309', DEACTIVATED: '#b45309',
+  REMOVED: '#dc2626', DECLINED: '#dc2626',
 }
 
 const highlightMessage = (msg) => {
   const escaped = msg
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/^\[[\w]+\]\s*/, '') // strip legacy [ObjectType] prefix
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/^\[[\w]+\]\s*/, '')
 
-  // Bold name(email) patterns
-  const withNames = escaped.replace(
-    /(\S+\([^)]+\))/g,
-    '<strong>$1</strong>'
-  )
+  const withNames = escaped.replace(/(\S+\([^)]+\))/g, '<strong>$1</strong>')
 
-  // Color known action verbs
   return withNames.replace(
     /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|INVITED|CANCELLED|ACCEPTED|DECLINED)\b/g,
     (match) => `<span style="font-weight:700;color:${ACTION_COLORS[match] ?? '#374151'}">${match}</span>`
   )
 }
 
-watch(
-  () => currentStore.value?.id,
-  (id) => {
-    if (id) {
-      currentPage.value = 1
-      startDate.value = ''
-      endDate.value = ''
-      searchQuery.value = ''
-      fetchLogs(1)
-    }
-  },
-  { immediate: true }
-)
+watch(() => currentStore.value?.id, (id) => {
+  if (viewMode.value === 'store' && id) resetAndFetch()
+}, { immediate: true })
+
+watch(() => currentBusiness.value?.id, (id) => {
+  if (!isBusinessOwner.value && viewMode.value === 'business') {
+    viewMode.value = 'store'
+  }
+  if (viewMode.value === 'business' && id) resetAndFetch()
+})
 
 const badgeClass = (objectType) => {
-  const map = { business: 'badge-business', store: 'badge-store', user: 'badge-user', invitation: 'badge-invitation' }
+  const map = {
+    business:   'badge-business',
+    store:      'badge-store',
+    user:       'badge-user',
+    invitation: 'badge-invitation',
+    supplier:   'badge-supplier',
+    customer:   'badge-customer',
+  }
   return map[objectType?.toLowerCase()] ?? 'badge-default'
 }
 
@@ -234,9 +277,15 @@ const formatDatetime = (isoString) =>
 <style scoped>
 .audit-log-page { padding: 32px; max-width: 860px; margin: 0 auto; }
 
-.page-header { margin-bottom: 28px; }
+.inactive-banner { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
+
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
 .page-header h1 { font-size: 22px; font-weight: 700; color: #111; }
 .subtitle { font-size: 14px; color: #6b7280; margin-top: 4px; }
+
+.view-toggle { display: flex; background: #f3f4f6; border-radius: 10px; padding: 3px; gap: 2px; }
+.view-toggle button { padding: 7px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; background: none; color: #6b7280; transition: all 0.15s; }
+.view-toggle button.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
 .filter-bar { margin-bottom: 16px; }
 .date-range { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -269,12 +318,17 @@ const formatDatetime = (isoString) =>
 .badge-store      { background: #dbeafe; color: #1d4ed8; }
 .badge-user       { background: #d1fae5; color: #065f46; }
 .badge-invitation { background: #ede9fe; color: #6d28d9; }
+.badge-supplier   { background: #fef9c3; color: #854d0e; }
+.badge-customer   { background: #fce7f3; color: #9d174d; }
 .badge-default    { background: #f3f4f6; color: #6b7280; }
 
 .log-body { flex: 1; min-width: 0; }
 .log-message { font-size: 13.5px; color: #111; line-height: 1.5; word-break: break-word; margin: 0 0 4px; }
 .log-message :deep(strong) { font-weight: 600; color: #111; }
-.log-message :deep(.action-verb) { font-weight: 700; color: #374151; }
+.log-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.log-sep { font-size: 12px; color: #d1d5db; }
+.log-store { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #6b7280; }
+.log-store svg { color: #9ca3af; }
 .log-time { font-size: 12px; color: #9ca3af; }
 
 @keyframes spin { to { transform: rotate(360deg); } }

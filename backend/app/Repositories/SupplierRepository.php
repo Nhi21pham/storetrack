@@ -27,8 +27,8 @@ class SupplierRepository
         $supplier->delete();
     }
 
-    public function all()
+    public function all(int $businessId)
     {
-        return Supplier::with('party')->latest()->get();
+        return Supplier::with('party')->where('business_id', $businessId)->latest()->get();
     }
 }

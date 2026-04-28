@@ -29,6 +29,9 @@ enum ErrorCode: string
     // Supplier
     case SUPPLIER_NOT_FOUND = 'SUPPLIER_NOT_FOUND';
 
+    // Customer
+    case CUSTOMER_NOT_FOUND = 'CUSTOMER_NOT_FOUND';
+
     // Invitation
     case INVITATION_NOT_FOUND = 'INVITATION_NOT_FOUND';
     case INVITATION_EXPIRED = 'INVITATION_EXPIRED';
@@ -78,6 +81,7 @@ enum ErrorCode: string
             self::BUSINESS_NOT_FOUND,
             self::STORE_NOT_FOUND,
             self::SUPPLIER_NOT_FOUND,
+            self::CUSTOMER_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
             self::NOT_FOUND => 404,
 

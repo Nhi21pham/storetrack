@@ -1,4 +1,4 @@
-type Supplier {
+type Customer {
     id: ID!
     store_id: ID
     name: String!
