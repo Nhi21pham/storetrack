@@ -100,15 +100,14 @@
         <div v-for="log in filteredLogs" :key="log.id" class="log-entry">
           <span class="object-badge" :class="badgeClass(log.object_type)">{{ objectLabel(log.object_type) }}</span>
           <div class="log-body">
-            <div class="log-actor-block">
-              <span class="log-actor" :title="log.actor_email || ''">{{ log.actor_name || 'System' }}</span>
-              <span v-if="log.actor_email" class="log-actor-email">({{ log.actor_email }})</span>
+            <div class="log-actor-block" :title="actorTitle(log)">
+              <span class="log-actor">{{ log.actor_name || 'System' }}</span><span v-if="log.actor_email" class="log-actor-email">&nbsp;({{ log.actor_email }})</span>
             </div>
             <p class="log-action" :title="actionTitle(log)" v-html="renderAction(log)"></p>
             <div class="log-aside">
-              <span v-if="viewMode === 'business' && log.store_name" class="log-store">
+              <span v-if="viewMode === 'business' && log.store_name" class="log-store" :title="log.store_name">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/></svg>
-                {{ log.store_name }}
+                <span class="log-store-name">{{ log.store_name }}</span>
               </span>
               <span class="log-time">{{ formatDatetime(log.created_at) }}</span>
             </div>
@@ -314,6 +313,11 @@ const stripActorPrefix = (log) => {
 
 const actionTitle = (log) => stripActorPrefix(log)
 
+const actorTitle = (log) => {
+  const name = log.actor_name || 'System'
+  return log.actor_email ? `${name} (${log.actor_email})` : name
+}
+
 const renderAction = (log) => {
   const detail = stripActorPrefix(log)
   if (!detail) return ''
@@ -419,14 +423,15 @@ const formatDatetime = (isoString) =>
 
 .log-body { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; }
 
-.log-actor-block { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; max-width: 40%; }
-.log-actor { color: #111; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.log-actor-email { color: #6b7280; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-actor-block { flex-shrink: 0; max-width: 30%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-actor { color: #111; font-weight: 600; font-size: 14px; }
+.log-actor-email { color: #6b7280; font-size: 12.5px; }
 
-.log-aside { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.log-store { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: #1d4ed8; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 5px; padding: 2px 7px; font-weight: 500; white-space: nowrap; }
-.log-store svg { color: #1d4ed8; }
-.log-time { font-size: 12px; color: #9ca3af; white-space: nowrap; }
+.log-aside { display: flex; align-items: center; gap: 8px; flex-shrink: 0; max-width: 35%; }
+.log-store { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: #1d4ed8; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 5px; padding: 2px 7px; font-weight: 500; max-width: 160px; min-width: 0; }
+.log-store svg { color: #1d4ed8; flex-shrink: 0; }
+.log-store-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.log-time { font-size: 12px; color: #9ca3af; white-space: nowrap; flex-shrink: 0; }
 
 .log-action { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.5; margin: 0; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log-action :deep(strong) { font-weight: 600; color: #111; }
