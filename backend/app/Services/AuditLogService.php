@@ -370,6 +370,20 @@ class AuditLogService
         );
     }
 
+    public function storeDeleted(User $actor, Store $store): void
+    {
+        $this->log(
+            $store->id, $actor, AuditObjectType::STORE, AuditAction::DELETED,
+            self::actor($actor) . " has DELETED store {$store->name}.",
+            [
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
+        );
+    }
+
     // User assignment actions
 
     public function userAssigned(User $actor, Store $store, User $target, string $role): void
