@@ -32,6 +32,11 @@ enum ErrorCode: string
     // Customer
     case CUSTOMER_NOT_FOUND = 'CUSTOMER_NOT_FOUND';
 
+    // Export
+    case EXPORT_NOT_FOUND = 'EXPORT_NOT_FOUND';
+    case EXPORT_NOT_READY = 'EXPORT_NOT_READY';
+    case EXPORT_FILE_MISSING = 'EXPORT_FILE_MISSING';
+
     // Invitation
     case INVITATION_NOT_FOUND = 'INVITATION_NOT_FOUND';
     case INVITATION_EXPIRED = 'INVITATION_EXPIRED';
@@ -71,6 +76,7 @@ enum ErrorCode: string
             self::INVITATION_WRONG_EMAIL,
             self::INVITATION_CANNOT_INVITE_OWNER,
             self::INVITATION_NOT_CANCELLABLE,
+            self::EXPORT_NOT_READY,
             self::VALIDATION_ERROR => 400,
 
             self::SESSION_EXPIRED => 401,
@@ -83,6 +89,8 @@ enum ErrorCode: string
             self::SUPPLIER_NOT_FOUND,
             self::CUSTOMER_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
+            self::EXPORT_NOT_FOUND,
+            self::EXPORT_FILE_MISSING,
             self::NOT_FOUND => 404,
 
             self::RATE_LIMITED => 429,

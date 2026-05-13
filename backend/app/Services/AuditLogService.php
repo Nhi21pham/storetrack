@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Enums\AuditAction;
 use App\Enums\AuditObjectType;
+use App\Jobs\Exports\ExportAuditLogJob;
 use App\Models\AuditLog;
 use App\Models\Business;
 use App\Models\Customer;
+use App\Models\Export;
 use App\Models\Invitation;
 use App\Models\Store;
 use App\Models\Supplier;
@@ -16,7 +18,10 @@ use App\Repositories\PermissionRepository;
 
 class AuditLogService
 {
-    public function __construct(private PermissionRepository $permissionRepository) {}
+    public function __construct(
+        private PermissionRepository $permissionRepository,
+        private ExportService $exportService,
+    ) {}
 
     public function getStoreLogs(
         User $user,
@@ -109,6 +114,71 @@ class AuditLogService
             'last_page'    => $paginator->lastPage(),
             'per_page'     => $paginator->perPage(),
         ];
+    }
+
+    public function queueStoreExport(User $user, int $storeId, array $filters = []): Export
+    {
+        $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
+            || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
+
+        if (!$hasAccess) {
+            throw new AuthorizationException('You do not have access to this store.');
+        }
+
+        $store = Store::find($storeId);
+
+        $export = $this->exportService->createPending(
+            $user,
+            ExportAuditLogJob::TYPE_STORE,
+            [
+                'scope'      => 'store',
+                'scope_id'   => $storeId,
+                'scope_name' => $store?->name,
+                'filters'    => $this->normalizeFilters($filters),
+            ]
+        );
+
+        ExportAuditLogJob::dispatch($export->id);
+
+        return $export;
+    }
+
+    public function queueBusinessExport(User $user, int $businessId, array $filters = []): Export
+    {
+        if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
+            throw new AuthorizationException('You do not have access to this business.');
+        }
+
+        $business = Business::find($businessId);
+
+        $export = $this->exportService->createPending(
+            $user,
+            ExportAuditLogJob::TYPE_BUSINESS,
+            [
+                'scope'      => 'business',
+                'scope_id'   => $businessId,
+                'scope_name' => $business?->name,
+                'filters'    => $this->normalizeFilters($filters),
+            ]
+        );
+
+        ExportAuditLogJob::dispatch($export->id);
+
+        return $export;
+    }
+
+    private function normalizeFilters(array $filters): array
+    {
+        $allowed = ['start_date', 'end_date', 'object_type', 'action', 'store_name', 'search'];
+        $clean = [];
+        foreach ($allowed as $key) {
+            $value = $filters[$key] ?? null;
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $clean[$key] = (string) $value;
+        }
+        return $clean;
     }
 
     public function log(

@@ -70,6 +70,15 @@
             />
           </div>
           <button v-if="hasActiveFilter" class="btn-clear" @click="clearFilter">Clear</button>
+          <button
+            class="btn-export"
+            :disabled="exporting || total === 0"
+            :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
+            @click="startExport"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+          </button>
         </div>
       </div>
 
@@ -128,8 +137,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
-import { graphql } from '@/api'
+import { ref, computed, watch, inject, onBeforeUnmount } from 'vue'
+import { graphql, rest } from '@/api'
 import Pagination from '@/components/common/Pagination.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
@@ -178,6 +187,7 @@ const ACTION_OPTIONS = [
   { value: 'cancelled',    label: 'Cancelled' },
   { value: 'accepted',     label: 'Accepted' },
   { value: 'declined',     label: 'Declined' },
+  { value: 'exported',     label: 'Exported' },
 ]
 
 const hasActiveFilter = computed(() =>
@@ -290,10 +300,95 @@ const clearFilter   = () => {
   fetchLogs(1)
 }
 
+const exporting   = ref(false)
+const POLL_MS     = 1500
+const POLL_MAX_MS = 5 * 60 * 1000
+let pollTimer = null
+let pollStartAt = 0
+
+const cancelPoll = () => {
+  if (pollTimer) {
+    clearTimeout(pollTimer)
+    pollTimer = null
+  }
+}
+
+onBeforeUnmount(cancelPoll)
+
+const buildExportParams = () => ({
+  start_date:  startDate.value || undefined,
+  end_date:    endDate.value || undefined,
+  object_type: objectFilter.value || undefined,
+  action:      actionFilter.value || undefined,
+  search:      searchQuery.value.trim() || undefined,
+})
+
+const triggerBlobDownload = (blob, filename) => {
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
+}
+
+const downloadCompletedExport = async (exportId, filename) => {
+  const blob = await rest('get', `/api/exports/${exportId}/download`, { responseType: 'blob' })
+  triggerBlobDownload(blob, filename || `audit-log-${exportId}.xlsx`)
+}
+
+const pollExport = async (exportId) => {
+  try {
+    const status = await rest('get', `/api/exports/${exportId}`)
+    if (status.status === 'completed') {
+      await downloadCompletedExport(exportId, status.filename)
+      exporting.value = false
+      showToast('Audit log export ready.', 'success')
+      return
+    }
+    if (status.status === 'failed') {
+      exporting.value = false
+      showToast(status.error_message || 'Export failed. Please try again.', 'error')
+      return
+    }
+    if (Date.now() - pollStartAt > POLL_MAX_MS) {
+      exporting.value = false
+      showToast('Export is taking too long. Please try again later.', 'error')
+      return
+    }
+    pollTimer = setTimeout(() => pollExport(exportId), POLL_MS)
+  } catch (err) {
+    exporting.value = false
+    showToast(err.message, 'error')
+  }
+}
+
+const startExport = async () => {
+  if (exporting.value) return
+  if (viewMode.value === 'store' && !currentStore.value?.id) return
+  if (viewMode.value === 'business' && !currentBusiness.value?.id) return
+
+  exporting.value = true
+  pollStartAt = Date.now()
+
+  try {
+    const url = viewMode.value === 'store'
+      ? `/api/exports/audit-logs/store/${currentStore.value.id}`
+      : `/api/exports/audit-logs/business/${currentBusiness.value.id}`
+    const response = await rest('post', url, { params: buildExportParams() })
+    pollExport(response.id)
+  } catch (err) {
+    exporting.value = false
+    showToast(err.message, 'error')
+  }
+}
+
 const ACTION_COLORS = {
   CREATED: '#16a34a', ACCEPTED: '#16a34a', REACTIVATED: '#16a34a',
   UPDATED: '#1d4ed8', ASSIGNED: '#1d4ed8',
-  INVITED: '#7c3aed',
+  INVITED: '#7c3aed', EXPORTED: '#7c3aed',
   CANCELLED: '#b45309', DEACTIVATED: '#b45309',
   REMOVED: '#dc2626', DELETED: '#dc2626', DECLINED: '#dc2626',
 }
@@ -325,7 +420,7 @@ const renderAction = (log) => {
     .replace(/(\S+\([^)]+\))/g, '<strong>$1</strong>')
     .replace(/\b([A-Za-z][\w.+-]*@[\w.-]+\.[A-Za-z]{2,})\b/g, '<strong>$1</strong>')
   return escaped.replace(
-    /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|DELETED|INVITED|CANCELLED|ACCEPTED|DECLINED)\b/g,
+    /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|DELETED|INVITED|CANCELLED|ACCEPTED|DECLINED|EXPORTED)\b/g,
     (m) => `<span class="verb" style="color:${ACTION_COLORS[m] ?? '#374151'}">${m}</span>`
   )
 }
@@ -396,6 +491,9 @@ const formatDatetime = (isoString) =>
 .filter-group select:focus { background: #fff; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(156,163,175,0.12); }
 .btn-clear { padding: 7px 13px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 12.5px; font-weight: 500; font-family: inherit; color: #374151; background: #fff; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; height: 36px; align-self: flex-end; }
 .btn-clear:hover { background: #f3f4f6; border-color: #9ca3af; color: #111; }
+.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border: 1px solid #111; border-radius: 10px; font-size: 12.5px; font-weight: 600; font-family: inherit; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; height: 36px; align-self: flex-end; margin-left: auto; }
+.btn-export:hover:not(:disabled) { background: #000; }
+.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 60px 0; color: #6b7280; font-size: 14px; }
 .spinner { width: 20px; height: 20px; border: 2.5px solid #e5e7eb; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; }
