@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('invitations:expire')->hourly();
-Schedule::command('exports:cleanup')->hourly();
+Schedule::command('exports:cleanup')->everyFiveMinutes();
