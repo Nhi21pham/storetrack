@@ -14,6 +14,7 @@ use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Exceptions\AuthorizationException;
+use App\Repositories\ExportRepository;
 use App\Repositories\PermissionRepository;
 
 class AuditLogService
@@ -21,6 +22,7 @@ class AuditLogService
     public function __construct(
         private PermissionRepository $permissionRepository,
         private ExportService $exportService,
+        private ExportRepository $exportRepository,
     ) {}
 
     public function getStoreLogs(
@@ -125,16 +127,33 @@ class AuditLogService
             throw new AuthorizationException('You do not have access to this store.');
         }
 
+        $normalizedFilters = $this->normalizeFilters($filters);
+        $filterSignature   = $this->filterSignature($normalizedFilters);
+        $type              = ExportAuditLogJob::TYPE_STORE;
+
+        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $storeId, $filterSignature);
+        if ($inProgress) {
+            return $inProgress;
+        }
+
+        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $storeId, $filterSignature);
+        if ($reusable) {
+            return $reusable;
+        }
+
+        $this->deleteExistingFilesForScope($user->id, $type, $storeId);
+
         $store = Store::find($storeId);
 
         $export = $this->exportService->createPending(
             $user,
-            ExportAuditLogJob::TYPE_STORE,
+            $type,
             [
-                'scope'      => 'store',
-                'scope_id'   => $storeId,
-                'scope_name' => $store?->name,
-                'filters'    => $this->normalizeFilters($filters),
+                'scope'            => 'store',
+                'scope_id'         => $storeId,
+                'scope_name'       => $store?->name,
+                'filters'          => $normalizedFilters,
+                'filter_signature' => $filterSignature,
             ]
         );
 
@@ -149,16 +168,33 @@ class AuditLogService
             throw new AuthorizationException('You do not have access to this business.');
         }
 
+        $normalizedFilters = $this->normalizeFilters($filters);
+        $filterSignature   = $this->filterSignature($normalizedFilters);
+        $type              = ExportAuditLogJob::TYPE_BUSINESS;
+
+        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $businessId, $filterSignature);
+        if ($inProgress) {
+            return $inProgress;
+        }
+
+        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $businessId, $filterSignature);
+        if ($reusable) {
+            return $reusable;
+        }
+
+        $this->deleteExistingFilesForScope($user->id, $type, $businessId);
+
         $business = Business::find($businessId);
 
         $export = $this->exportService->createPending(
             $user,
-            ExportAuditLogJob::TYPE_BUSINESS,
+            $type,
             [
-                'scope'      => 'business',
-                'scope_id'   => $businessId,
-                'scope_name' => $business?->name,
-                'filters'    => $this->normalizeFilters($filters),
+                'scope'            => 'business',
+                'scope_id'         => $businessId,
+                'scope_name'       => $business?->name,
+                'filters'          => $normalizedFilters,
+                'filter_signature' => $filterSignature,
             ]
         );
 
@@ -179,6 +215,29 @@ class AuditLogService
             $clean[$key] = (string) $value;
         }
         return $clean;
+    }
+
+    /**
+     * Stable hash of the normalized filters so dedupe lookups can match
+     * spam-clicks of the exact same export regardless of array order.
+     */
+    private function filterSignature(array $filters): string
+    {
+        ksort($filters);
+        return sha1((string) json_encode($filters));
+    }
+
+    /**
+     * Wipe any prior orphan files for the same (user, type, scope) before
+     * we produce a fresh one — keeps the temp folder to at most one file
+     * per user/scope at any given moment.
+     */
+    private function deleteExistingFilesForScope(int $userId, string $type, int $scopeId): void
+    {
+        $existing = $this->exportRepository->findExistingFilesForScope($userId, $type, $scopeId);
+        foreach ($existing as $old) {
+            $this->exportService->deleteFile($old);
+        }
     }
 
     public function log(

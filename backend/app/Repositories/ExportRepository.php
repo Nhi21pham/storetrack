@@ -49,4 +49,73 @@ class ExportRepository
             })
             ->get();
     }
+
+    /**
+     * A pending or processing export for the same user, type, scope and
+     * filter signature — used to dedupe spam clicks before the first job
+     * has finished.
+     */
+    public function findInProgressDuplicate(
+        int $userId,
+        string $type,
+        int $scopeId,
+        string $filterSignature
+    ): ?Export {
+        return Export::query()
+            ->where('user_id', $userId)
+            ->where('type', $type)
+            ->where('metadata->scope_id', $scopeId)
+            ->where('metadata->filter_signature', $filterSignature)
+            ->whereIn('status', [Export::STATUS_PENDING, Export::STATUS_PROCESSING])
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * A previously-completed export with the same user, type, scope and
+     * filter signature whose file is still on disk and not expired — the
+     * caller can hand its id back to the client instead of rebuilding the
+     * same file.
+     */
+    public function findCompletedDuplicateWithFile(
+        int $userId,
+        string $type,
+        int $scopeId,
+        string $filterSignature
+    ): ?Export {
+        return Export::query()
+            ->where('user_id', $userId)
+            ->where('type', $type)
+            ->where('metadata->scope_id', $scopeId)
+            ->where('metadata->filter_signature', $filterSignature)
+            ->where('status', Export::STATUS_COMPLETED)
+            ->whereNotNull('disk')
+            ->whereNotNull('path')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    /**
+     * All exports for the same (user, type, scope) that still have a file
+     * on disk — used at queue time to wipe stale orphans before producing
+     * a fresh file for the same scope.
+     *
+     * @return Collection<int, Export>
+     */
+    public function findExistingFilesForScope(
+        int $userId,
+        string $type,
+        int $scopeId
+    ): Collection {
+        return Export::query()
+            ->where('user_id', $userId)
+            ->where('type', $type)
+            ->where('metadata->scope_id', $scopeId)
+            ->whereNotNull('disk')
+            ->whereNotNull('path')
+            ->get();
+    }
 }
