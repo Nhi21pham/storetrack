@@ -123,7 +123,7 @@ class ExportAuditLogJob extends BaseExportJob
         if ($isBusinessView) {
             $business = Business::find($scopeId);
             $scopeName = $metadata['scope_name'] ?? ($business?->name ?? '');
-            $query = $repository->businessExportQuery(
+            $query = $repository->businessQuery(
                 $scopeId,
                 $filters['start_date'] ?? null,
                 $filters['end_date'] ?? null,
@@ -135,7 +135,7 @@ class ExportAuditLogJob extends BaseExportJob
         } else {
             $store = Store::find($scopeId);
             $scopeName = $metadata['scope_name'] ?? ($store?->name ?? '');
-            $query = $repository->storeExportQuery(
+            $query = $repository->storeQuery(
                 $scopeId,
                 $filters['start_date'] ?? null,
                 $filters['end_date'] ?? null,

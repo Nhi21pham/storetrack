@@ -14,6 +14,7 @@ use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Exceptions\AuthorizationException;
+use App\Repositories\AuditLogRepository;
 use App\Repositories\ExportRepository;
 use App\Repositories\PermissionRepository;
 
@@ -23,6 +24,7 @@ class AuditLogService
         private PermissionRepository $permissionRepository,
         private ExportService $exportService,
         private ExportRepository $exportRepository,
+        private AuditLogRepository $auditLogRepository,
     ) {}
 
     public function getStoreLogs(
@@ -33,7 +35,8 @@ class AuditLogService
         ?string $startDate = null,
         ?string $endDate = null,
         ?string $objectType = null,
-        ?string $action = null
+        ?string $action = null,
+        ?string $search = null
     ): array {
         $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
             || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
@@ -42,22 +45,8 @@ class AuditLogService
             throw new AuthorizationException('You do not have access to this store.');
         }
 
-        $query = AuditLog::where('store_id', $storeId);
-
-        if ($startDate) {
-            $query->whereDate('created_at', '>=', $startDate);
-        }
-        if ($endDate) {
-            $query->whereDate('created_at', '<=', $endDate);
-        }
-        if ($objectType) {
-            $query->where('object_type', $objectType);
-        }
-        if ($action) {
-            $query->where('action', $action);
-        }
-
-        $paginator = $query->orderByDesc('created_at')
+        $paginator = $this->auditLogRepository
+            ->storeQuery($storeId, $startDate, $endDate, $objectType, $action, $search)
             ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
 
         return [
@@ -78,35 +67,15 @@ class AuditLogService
         ?string $endDate = null,
         ?string $objectType = null,
         ?string $action = null,
-        ?string $storeName = null
+        ?string $storeName = null,
+        ?string $search = null
     ): array {
         if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
             throw new AuthorizationException('You do not have access to this business.');
         }
 
-        $query = AuditLog::where('business_id', $businessId)->with('store');
-
-        if ($startDate) {
-            $query->whereDate('created_at', '>=', $startDate);
-        }
-        if ($endDate) {
-            $query->whereDate('created_at', '<=', $endDate);
-        }
-        if ($objectType) {
-            $query->where('object_type', $objectType);
-        }
-        if ($action) {
-            $query->where('action', $action);
-        }
-        if ($storeName !== null && $storeName !== '') {
-            $needle = '%' . $storeName . '%';
-            $query->where(function ($q) use ($needle) {
-                $q->whereHas('store', fn ($s) => $s->where('name', 'like', $needle))
-                  ->orWhere('metadata->store_name', 'like', $needle);
-            });
-        }
-
-        $paginator = $query->orderByDesc('created_at')
+        $paginator = $this->auditLogRepository
+            ->businessQuery($businessId, $startDate, $endDate, $objectType, $action, $storeName, $search)
             ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
 
         return [

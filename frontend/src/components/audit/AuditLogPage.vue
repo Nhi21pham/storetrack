@@ -87,7 +87,7 @@
         <span>Loading activity...</span>
       </div>
 
-      <div v-else-if="logs.length === 0" class="empty-state">
+      <div v-else-if="logs.length === 0 && !searchQuery.trim()" class="empty-state">
         <div class="empty-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -100,13 +100,13 @@
         <p>Actions performed will appear here.</p>
       </div>
 
-      <div v-else-if="filteredLogs.length === 0" class="empty-state">
+      <div v-else-if="logs.length === 0" class="empty-state">
         <h3>No results matching "{{ searchQuery }}"</h3>
         <p>Try a different keyword.</p>
       </div>
 
       <div v-else class="log-feed" :class="{ 'log-feed--fetching': fetching }">
-        <div v-for="log in filteredLogs" :key="log.id" class="log-entry">
+        <div v-for="log in logs" :key="log.id" class="log-entry">
           <span class="object-badge" :class="badgeClass(log.object_type)">{{ objectLabel(log.object_type) }}</span>
           <div class="log-body">
             <div class="log-actor-block" :title="actorTitle(log)">
@@ -194,20 +194,9 @@ const hasActiveFilter = computed(() =>
   !!(startDate.value || endDate.value || objectFilter.value || actionFilter.value)
 )
 
-const filteredLogs = computed(() => {
-  if (!searchQuery.value.trim()) return logs.value
-  const q = searchQuery.value.toLowerCase()
-  return logs.value.filter(l =>
-    l.message.toLowerCase().includes(q) ||
-    l.actor_name?.toLowerCase().includes(q) ||
-    l.actor_email?.toLowerCase().includes(q) ||
-    l.store_name?.toLowerCase().includes(q)
-  )
-})
-
 const STORE_QUERY = `
-  query AuditLogs($store_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String, $object_type: String, $action: String) {
-    auditLogs(store_id: $store_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date, object_type: $object_type, action: $action) {
+  query AuditLogs($store_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String, $object_type: String, $action: String, $search: String) {
+    auditLogs(store_id: $store_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date, object_type: $object_type, action: $action, search: $search) {
       data { id actor_name actor_email object_type action message created_at }
       total current_page last_page per_page
     }
@@ -215,8 +204,8 @@ const STORE_QUERY = `
 `
 
 const BUSINESS_QUERY = `
-  query BusinessAuditLogs($business_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String, $object_type: String, $action: String) {
-    businessAuditLogs(business_id: $business_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date, object_type: $object_type, action: $action) {
+  query BusinessAuditLogs($business_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String, $object_type: String, $action: String, $search: String) {
+    businessAuditLogs(business_id: $business_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date, object_type: $object_type, action: $action, search: $search) {
       data { id actor_name actor_email object_type action message store_name created_at }
       total current_page last_page per_page
     }
@@ -241,6 +230,7 @@ const fetchLogs = async (page = 1) => {
         end_date: endDate.value || null,
         object_type: objectFilter.value || null,
         action: actionFilter.value || null,
+        search: searchQuery.value.trim() || null,
       })
       logs.value        = data.auditLogs.data
       currentPage.value = data.auditLogs.current_page
@@ -255,6 +245,7 @@ const fetchLogs = async (page = 1) => {
         end_date: endDate.value || null,
         object_type: objectFilter.value || null,
         action: actionFilter.value || null,
+        search: searchQuery.value.trim() || null,
       })
       logs.value        = data.businessAuditLogs.data
       currentPage.value = data.businessAuditLogs.current_page
@@ -278,6 +269,7 @@ const switchMode = (mode) => {
 }
 
 const resetAndFetch = () => {
+  if (searchDebounce) clearTimeout(searchDebounce)
   logs.value        = []
   currentPage.value = 1
   startDate.value   = ''
@@ -439,6 +431,19 @@ const applyInitialMode = () => {
     resetAndFetch()
   }
 }
+
+let searchDebounce = null
+watch(searchQuery, () => {
+  if (searchDebounce) clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => {
+    currentPage.value = 1
+    fetchLogs(1)
+  }, 300)
+})
+
+onBeforeUnmount(() => {
+  if (searchDebounce) clearTimeout(searchDebounce)
+})
 
 watch(() => currentStore.value?.id, (id) => {
   applyInitialMode()

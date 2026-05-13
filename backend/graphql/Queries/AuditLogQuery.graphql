@@ -6,7 +6,8 @@ extend type Query {
         start_date: String,
         end_date: String,
         object_type: String,
-        action: String
+        action: String,
+        search: String
     ): AuditLogPage!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\AuditLogResolver@index")
@@ -19,7 +20,8 @@ extend type Query {
         end_date: String,
         object_type: String,
         action: String,
-        store_name: String
+        store_name: String,
+        search: String
     ): AuditLogPage!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\AuditLogResolver@business")

@@ -20,7 +20,8 @@ class AuditLogResolver extends BaseResolver
                 $args['start_date'] ?? null,
                 $args['end_date'] ?? null,
                 $args['object_type'] ?? null,
-                $args['action'] ?? null
+                $args['action'] ?? null,
+                $args['search'] ?? null
             );
         });
     }
@@ -37,7 +38,8 @@ class AuditLogResolver extends BaseResolver
                 $args['end_date'] ?? null,
                 $args['object_type'] ?? null,
                 $args['action'] ?? null,
-                $args['store_name'] ?? null
+                $args['store_name'] ?? null,
+                $args['search'] ?? null
             );
         });
     }
