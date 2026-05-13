@@ -44,6 +44,12 @@
           <span v-if="customer.address" class="detail-value">{{ customer.address }}</span>
           <span v-else class="detail-value empty-val">—</span>
         </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Created</span>
+          <span v-if="customer.created_at" class="detail-value">{{ formatDateTime(customer.created_at) }}</span>
+          <span v-else class="detail-value empty-val">—</span>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -64,6 +70,12 @@ defineProps({
 })
 
 defineEmits(['close', 'edit'])
+
+const formatDateTime = (iso) =>
+  new Date(iso).toLocaleString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
 </script>
 
 <style scoped>

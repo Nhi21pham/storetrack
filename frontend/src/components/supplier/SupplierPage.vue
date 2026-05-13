@@ -277,7 +277,7 @@ const fetchSuppliers = async () => {
   try {
     const data = await graphql(
       `query Suppliers($store_id: ID!, $business_id: ID!) {
-        suppliers(store_id: $store_id, business_id: $business_id) { id store_id name email phone address tax_code }
+        suppliers(store_id: $store_id, business_id: $business_id) { id store_id name email phone address tax_code created_at }
       }`,
       { store_id: currentStore.value.id, business_id: currentBusiness.value.id }
     )
