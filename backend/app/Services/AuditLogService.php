@@ -118,7 +118,7 @@ class AuditLogService
         ];
     }
 
-    public function queueStoreExport(User $user, int $storeId, array $filters = []): Export
+    public function queueStoreExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
     {
         $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
             || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
@@ -131,17 +131,17 @@ class AuditLogService
         $filterSignature   = $this->filterSignature($normalizedFilters);
         $type              = ExportAuditLogJob::TYPE_STORE;
 
-        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $storeId, $filterSignature);
+        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $storeId, $filterSignature, $clientId);
         if ($inProgress) {
             return $inProgress;
         }
 
-        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $storeId, $filterSignature);
+        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $storeId, $filterSignature, $clientId);
         if ($reusable) {
             return $reusable;
         }
 
-        $this->deleteExistingFilesForScope($user->id, $type, $storeId);
+        $this->deleteExistingFilesForScope($user->id, $type, $storeId, $clientId);
 
         $store = Store::find($storeId);
 
@@ -154,6 +154,7 @@ class AuditLogService
                 'scope_name'       => $store?->name,
                 'filters'          => $normalizedFilters,
                 'filter_signature' => $filterSignature,
+                'client_id'        => $clientId,
             ]
         );
 
@@ -162,7 +163,7 @@ class AuditLogService
         return $export;
     }
 
-    public function queueBusinessExport(User $user, int $businessId, array $filters = []): Export
+    public function queueBusinessExport(User $user, int $businessId, array $filters = [], ?string $clientId = null): Export
     {
         if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
             throw new AuthorizationException('You do not have access to this business.');
@@ -172,17 +173,17 @@ class AuditLogService
         $filterSignature   = $this->filterSignature($normalizedFilters);
         $type              = ExportAuditLogJob::TYPE_BUSINESS;
 
-        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $businessId, $filterSignature);
+        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $businessId, $filterSignature, $clientId);
         if ($inProgress) {
             return $inProgress;
         }
 
-        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $businessId, $filterSignature);
+        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $businessId, $filterSignature, $clientId);
         if ($reusable) {
             return $reusable;
         }
 
-        $this->deleteExistingFilesForScope($user->id, $type, $businessId);
+        $this->deleteExistingFilesForScope($user->id, $type, $businessId, $clientId);
 
         $business = Business::find($businessId);
 
@@ -195,6 +196,7 @@ class AuditLogService
                 'scope_name'       => $business?->name,
                 'filters'          => $normalizedFilters,
                 'filter_signature' => $filterSignature,
+                'client_id'        => $clientId,
             ]
         );
 
@@ -228,13 +230,14 @@ class AuditLogService
     }
 
     /**
-     * Wipe any prior orphan files for the same (user, type, scope) before
-     * we produce a fresh one — keeps the temp folder to at most one file
-     * per user/scope at any given moment.
+     * Wipe any prior orphan files for the same (user, type, scope, client)
+     * before producing a fresh one — keeps the temp folder to at most one
+     * file per user/scope/browser at any given moment. Other browsers/devices
+     * for the same user keep their own files.
      */
-    private function deleteExistingFilesForScope(int $userId, string $type, int $scopeId): void
+    private function deleteExistingFilesForScope(int $userId, string $type, int $scopeId, ?string $clientId): void
     {
-        $existing = $this->exportRepository->findExistingFilesForScope($userId, $type, $scopeId);
+        $existing = $this->exportRepository->findExistingFilesForScope($userId, $type, $scopeId, $clientId);
         foreach ($existing as $old) {
             $this->exportService->deleteFile($old);
         }

@@ -6,6 +6,19 @@ const api = axios.create({
   baseURL: 'http://localhost'
 })
 
+// Stable per-browser id used by the backend to dedupe export requests
+// without merging two devices (or two browsers) that share a login.
+const getClientId = () => {
+  let id = localStorage.getItem('client_id')
+  if (!id) {
+    id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    localStorage.setItem('client_id', id)
+  }
+  return id
+}
+
 const clearSession = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
@@ -90,6 +103,7 @@ export const rest = async (method, url, { params, data, responseType, headers: e
   const token = localStorage.getItem('token')
   const headers = { ...(extraHeaders || {}) }
   if (token) headers['Authorization'] = `Bearer ${token}`
+  headers['X-Client-Id'] = getClientId()
 
   let response
   try {

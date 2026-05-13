@@ -24,6 +24,7 @@ class ExportController extends Controller
                 $request->user(),
                 $storeId,
                 $this->extractFilters($request),
+                $this->extractClientId($request),
             );
 
             return $this->exportResponse($export, 202);
@@ -39,6 +40,7 @@ class ExportController extends Controller
                 $request->user(),
                 $businessId,
                 $this->extractFilters($request),
+                $this->extractClientId($request),
             );
 
             return $this->exportResponse($export, 202);
@@ -83,6 +85,21 @@ class ExportController extends Controller
         } catch (AppException $e) {
             return $this->appExceptionResponse($e);
         }
+    }
+
+    /**
+     * The per-browser id the frontend mints into localStorage and sends on
+     * every request. Used as a dedup dimension so two devices/browsers
+     * sharing a login each get their own export instead of colliding on
+     * the same in-flight row.
+     */
+    private function extractClientId(Request $request): ?string
+    {
+        $clientId = $request->header('X-Client-Id');
+        if (! is_string($clientId) || $clientId === '') {
+            return null;
+        }
+        return $clientId;
     }
 
     private function extractFilters(Request $request): array
