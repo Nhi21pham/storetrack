@@ -14,6 +14,16 @@
           <span class="role-tag">{{ currentStore.my_role }}</span>
         </span>
       </div>
+      <div class="switcher-content" v-else-if="currentBusiness">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <span class="switcher-text">
+          <strong>{{ currentBusiness.name }}</strong>
+          <span class="role-tag">Business</span>
+        </span>
+      </div>
       <div class="switcher-content placeholder" v-else>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/>
@@ -30,13 +40,28 @@
       <div class="dropdown-header">Switch Store</div>
       <div class="dropdown-list">
         <div v-for="biz in businesses" :key="biz.id" class="biz-group">
-          <div class="biz-label">
+          <div
+            class="biz-label"
+            :class="{
+              clickable: biz.role === 'owner',
+              selected: biz.role === 'owner' && !currentStore && currentBusiness?.id === biz.id,
+            }"
+            @click="biz.role === 'owner' ? selectBusiness(biz) : null"
+          >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            {{ biz.name }}
+            <span class="biz-name">{{ biz.name }}</span>
             <span class="biz-role-tag">{{ biz.role }}</span>
+            <span v-if="biz.role === 'owner'" class="biz-level-tag">Business level</span>
+            <svg
+              v-if="biz.role === 'owner' && !currentStore && currentBusiness?.id === biz.id"
+              class="biz-check"
+              width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"
+            >
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
           </div>
 
           <div
@@ -123,7 +148,19 @@ const restoreSelection = () => {
   const savedStoreId = localStorage.getItem('currentStoreId')
   const savedBizId = localStorage.getItem('currentBusinessId')
 
-  // Try to restore saved selection — active or inactive
+  // Business-level restore: a saved business with no store means the user
+  // last selected the business itself in the switcher.
+  if (savedBizId && !savedStoreId) {
+    const biz = businesses.value.find(b => b.id === savedBizId)
+    if (biz) {
+      currentBusiness.value = biz
+      currentStore.value = null
+      emit('switched', { business: biz, store: null })
+      return
+    }
+  }
+
+  // Try to restore saved store selection — active or inactive
   if (savedStoreId && savedBizId) {
     for (const biz of businesses.value) {
       if (biz.id === savedBizId) {
@@ -166,10 +203,25 @@ const selectStore = (biz, store) => {
   emit('switched', { business: biz, store })
 }
 
+const selectBusiness = (biz) => {
+  currentBusiness.value = biz
+  currentStore.value = null
+  open.value = false
+  saveBusinessLevelSelection()
+  emit('switched', { business: biz, store: null })
+}
+
 const saveSelection = () => {
   if (currentStore.value && currentBusiness.value) {
     localStorage.setItem('currentStoreId', currentStore.value.id)
     localStorage.setItem('currentBusinessId', currentBusiness.value.id)
+  }
+}
+
+const saveBusinessLevelSelection = () => {
+  if (currentBusiness.value) {
+    localStorage.setItem('currentBusinessId', currentBusiness.value.id)
+    localStorage.removeItem('currentStoreId')
   }
 }
 
@@ -226,9 +278,16 @@ defineExpose({ fetchBusinesses })
 .biz-group { margin-bottom: 8px; }
 .biz-group:last-child { margin-bottom: 0; }
 
-.biz-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #374151; padding: 6px 8px; }
+.biz-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #374151; padding: 6px 8px; border-radius: 8px; transition: background 0.15s; }
+.biz-label.clickable { cursor: pointer; }
+.biz-label.clickable:hover { background: #f3f4f6; }
+.biz-label.clickable:hover .biz-role-tag { background: #fff; }
+.biz-label.selected { background: #f0fdf4; }
+.biz-label .biz-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.biz-label .biz-check { flex-shrink: 0; }
 
 .biz-role-tag { font-size: 10px; font-weight: 500; color: #9ca3af; background: #f3f4f6; padding: 1px 6px; border-radius: 4px; text-transform: capitalize; }
+.biz-level-tag { font-size: 10px; font-weight: 500; color: #1d4ed8; background: #eff6ff; border: 1px solid #dbeafe; padding: 1px 6px; border-radius: 4px; }
 
 .store-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 9px 10px 9px 28px; border: none; background: none; border-radius: 8px; cursor: pointer; transition: background 0.15s; text-align: left; }
 .store-item:hover { background: #f3f4f6; }

@@ -425,11 +425,28 @@ const renderAction = (log) => {
   )
 }
 
+// Run once after the first time we see the injected business data —
+// owners who landed here with no store (business-level selection or a
+// business with zero stores) get dropped straight into the business view
+// instead of being stranded on "No store selected".
+let initialModeResolved = false
+const applyInitialMode = () => {
+  if (initialModeResolved) return
+  if (!currentBusiness.value) return
+  initialModeResolved = true
+  if (!currentStore.value && currentBusiness.value.role === 'owner') {
+    viewMode.value = 'business'
+    resetAndFetch()
+  }
+}
+
 watch(() => currentStore.value?.id, (id) => {
+  applyInitialMode()
   if (viewMode.value === 'store' && id) resetAndFetch()
 }, { immediate: true })
 
 watch(() => currentBusiness.value?.id, (id) => {
+  applyInitialMode()
   if (!isBusinessOwner.value && viewMode.value === 'business') {
     viewMode.value = 'store'
   }
