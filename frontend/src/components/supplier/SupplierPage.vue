@@ -51,6 +51,15 @@
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         Clear sort
       </button>
+      <button
+        class="btn-export"
+        :disabled="exporting || sortedSuppliers.length === 0"
+        :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
+        @click="startExport"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+      </button>
     </div>
 
     <div v-if="loading" class="loading-state">
@@ -169,7 +178,7 @@
 
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, inject } from 'vue'
-import { graphql } from '@/api'
+import { graphql, rest } from '@/api'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -325,6 +334,81 @@ const handleDelete = async () => {
 watch(() => currentStore.value?.id, (id) => {
   if (id && currentBusiness.value?.id) fetchSuppliers()
 }, { immediate: true })
+
+const exporting   = ref(false)
+const POLL_MS     = 1500
+const POLL_MAX_MS = 5 * 60 * 1000
+let pollTimer = null
+let pollStartAt = 0
+
+const cancelPoll = () => {
+  if (pollTimer) {
+    clearTimeout(pollTimer)
+    pollTimer = null
+  }
+}
+
+onBeforeUnmount(cancelPoll)
+
+const triggerBlobDownload = (blob, filename) => {
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
+}
+
+const pollExport = async (exportId) => {
+  try {
+    const status = await rest('get', `/api/exports/${exportId}`)
+    if (status.status === 'completed') {
+      const blob = await rest('get', `/api/exports/${exportId}/download`, { responseType: 'blob' })
+      triggerBlobDownload(blob, status.filename || `suppliers-${exportId}.xlsx`)
+      exporting.value = false
+      showToast('Supplier export ready.', 'success')
+      return
+    }
+    if (status.status === 'failed') {
+      exporting.value = false
+      showToast(status.error_message || 'Export failed. Please try again.', 'error')
+      return
+    }
+    if (Date.now() - pollStartAt > POLL_MAX_MS) {
+      exporting.value = false
+      showToast('Export is taking too long. Please try again later.', 'error')
+      return
+    }
+    pollTimer = setTimeout(() => pollExport(exportId), POLL_MS)
+  } catch (err) {
+    exporting.value = false
+    showToast(err.message, 'error')
+  }
+}
+
+const startExport = async () => {
+  if (exporting.value) return
+  if (!currentBusiness.value?.id) return
+
+  exporting.value = true
+  pollStartAt = Date.now()
+
+  try {
+    const params = {
+      search: searchQuery.value.trim() || undefined,
+    }
+    if (storeFilter.value === 'store' && currentStore.value?.id) {
+      params.store_id = currentStore.value.id
+    }
+    const response = await rest('post', `/api/exports/suppliers/${currentBusiness.value.id}`, { params })
+    pollExport(response.id)
+  } catch (err) {
+    exporting.value = false
+    showToast(err.message, 'error')
+  }
+}
 </script>
 
 <style scoped>
@@ -344,6 +428,10 @@ watch(() => currentStore.value?.id, (id) => {
 
 .btn-create { padding: 10px 18px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; white-space: nowrap; }
 .btn-create:hover { background: #333; }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #111; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
+.btn-export:hover:not(:disabled) { background: #000; }
+.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 60px 0; color: #6b7280; font-size: 14px; }
 .spinner { width: 20px; height: 20px; border: 2.5px solid #e5e7eb; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; }
