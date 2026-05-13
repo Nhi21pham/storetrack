@@ -6,8 +6,12 @@ use App\Enums\ErrorCode;
 use App\Enums\PartyTypeEnum;
 use App\Exceptions\CustomerException;
 use App\Exceptions\AuthorizationException;
+use App\Jobs\Exports\ExportCustomerJob;
+use App\Models\Business;
 use App\Models\Customer;
+use App\Models\Export;
 use App\Models\User;
+use App\Repositories\ExportRepository;
 use App\Repositories\PartyRepository;
 use App\Repositories\CustomerRepository;
 use App\Repositories\PermissionRepository;
@@ -19,7 +23,9 @@ class CustomerService
         private CustomerRepository $customerRepository,
         private PartyRepository $partyRepository,
         private AuditLogService $auditLogService,
-        private PermissionRepository $permissionRepository
+        private PermissionRepository $permissionRepository,
+        private ExportService $exportService,
+        private ExportRepository $exportRepository,
     ) {}
 
     public function getAll(User $user, int $storeId, int $businessId)
@@ -87,5 +93,85 @@ class CustomerService
             throw new CustomerException(ErrorCode::CUSTOMER_NOT_FOUND, 'Customer not found.');
         }
         return $customer;
+    }
+
+    public function queueExport(User $user, int $businessId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->assertExportAccess($user, $businessId, $filters['store_id'] ?? null);
+
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        $filterSignature   = $this->filterSignature($normalizedFilters);
+        $type              = ExportCustomerJob::TYPE;
+
+        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $businessId, $filterSignature, $clientId);
+        if ($inProgress) {
+            return $inProgress;
+        }
+
+        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $businessId, $filterSignature, $clientId);
+        if ($reusable) {
+            return $reusable;
+        }
+
+        $existing = $this->exportRepository->findExistingFilesForScope($user->id, $type, $businessId, $clientId);
+        foreach ($existing as $old) {
+            $this->exportService->deleteFile($old);
+        }
+
+        $business = Business::find($businessId);
+
+        $export = $this->exportService->createPending(
+            $user,
+            $type,
+            [
+                'scope'            => 'business',
+                'scope_id'         => $businessId,
+                'scope_name'       => $business?->name,
+                'filters'          => $normalizedFilters,
+                'filter_signature' => $filterSignature,
+                'client_id'        => $clientId,
+            ]
+        );
+
+        ExportCustomerJob::dispatch($export->id);
+
+        return $export;
+    }
+
+    private function assertExportAccess(User $user, int $businessId, $storeId): void
+    {
+        if ($storeId !== null && $storeId !== '') {
+            $storeId = (int) $storeId;
+            $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
+                || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
+            if (!$hasAccess) {
+                throw new AuthorizationException('You do not have access to this store.');
+            }
+            return;
+        }
+
+        if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
+            throw new AuthorizationException('You do not have access to this business.');
+        }
+    }
+
+    private function normalizeExportFilters(array $filters): array
+    {
+        $allowed = ['store_id', 'search'];
+        $clean = [];
+        foreach ($allowed as $key) {
+            $value = $filters[$key] ?? null;
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $clean[$key] = (string) $value;
+        }
+        return $clean;
+    }
+
+    private function filterSignature(array $filters): string
+    {
+        ksort($filters);
+        return sha1((string) json_encode($filters));
     }
 }
