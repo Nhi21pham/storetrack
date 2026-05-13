@@ -576,4 +576,60 @@ class AuditLogService
             $businessId
         );
     }
+
+    public function customerExported(User $actor, int $businessId, ?int $storeId, Export $export, string $scopeName): void
+    {
+        $metadata = $export->metadata ?? [];
+        $auditStoreId = $storeId;
+        $auditStoreName = $storeId ? Store::find($storeId)?->name : null;
+
+        $scopeLabel = $storeId
+            ? "store {$auditStoreName}"
+            : "business {$scopeName}";
+
+        $this->log(
+            $auditStoreId,
+            $actor,
+            AuditObjectType::CUSTOMER,
+            AuditAction::EXPORTED,
+            self::actor($actor) . " has EXPORTED customers of {$scopeLabel}.",
+            [
+                'business_id' => $businessId,
+                'store_id'    => $auditStoreId,
+                'store_name'  => $auditStoreName,
+                'export_id'   => $export->id,
+                'filename'    => $export->filename,
+                'filters'     => $metadata['filters'] ?? null,
+            ],
+            $businessId
+        );
+    }
+
+    public function supplierExported(User $actor, int $businessId, ?int $storeId, Export $export, string $scopeName): void
+    {
+        $metadata = $export->metadata ?? [];
+        $auditStoreId = $storeId;
+        $auditStoreName = $storeId ? Store::find($storeId)?->name : null;
+
+        $scopeLabel = $storeId
+            ? "store {$auditStoreName}"
+            : "business {$scopeName}";
+
+        $this->log(
+            $auditStoreId,
+            $actor,
+            AuditObjectType::SUPPLIER,
+            AuditAction::EXPORTED,
+            self::actor($actor) . " has EXPORTED suppliers of {$scopeLabel}.",
+            [
+                'business_id' => $businessId,
+                'store_id'    => $auditStoreId,
+                'store_name'  => $auditStoreName,
+                'export_id'   => $export->id,
+                'filename'    => $export->filename,
+                'filters'     => $metadata['filters'] ?? null,
+            ],
+            $businessId
+        );
+    }
 }
