@@ -48,14 +48,12 @@
               <thead>
                 <tr>
                   <th v-for="col in columns" :key="col.key" class="sortable-th">
-                    <span class="th-content" :class="{ 'th-active': !!getSortInfo(col.key) }">
-                      {{ col.label }}
-                      <span class="sort-icons">
-                        <svg @click="toggleSort(col.key, 'asc')" class="sort-arrow" :class="{ active: getSortInfo(col.key)?.dir === 'asc' }" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="getSortInfo(col.key)?.dir === 'asc' ? 3 : 1.5"><polyline points="18 15 12 9 6 15"/></svg>
-                        <svg @click="toggleSort(col.key, 'desc')" class="sort-arrow" :class="{ active: getSortInfo(col.key)?.dir === 'desc' }" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" :stroke-width="getSortInfo(col.key)?.dir === 'desc' ? 3 : 1.5"><polyline points="6 9 12 15 18 9"/></svg>
-                      </span>
-                      <span v-if="sortCriteria.length > 1 && getSortInfo(col.key)" class="sort-rank">{{ sortRank(col.key) }}</span>
-                    </span>
+                    <SortableHeader
+                      :label="col.label"
+                      :sort-info="getSortInfo(col.key)"
+                      :rank="sortCriteria.length > 1 && getSortInfo(col.key) ? sortRank(col.key) : null"
+                      @sort="(dir) => toggleSort(col.key, dir)"
+                    />
                   </th>
                 </tr>
               </thead>
@@ -93,6 +91,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { graphql } from '@/api'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import Pagination from '@/components/common/Pagination.vue'
+import SortableHeader from '@/components/common/SortableHeader.vue'
 
 const props = defineProps({
   ownedStores: { type: Array, required: true },
@@ -254,15 +253,7 @@ table { width: 100%; min-width: 820px; border-collapse: collapse; table-layout: 
 .sortable-th:nth-child(6) { min-width: 155px; }
 thead { position: sticky; top: 0; background: #fff; z-index: 1; box-shadow: 0 1px 0 #f3f4f6; }
 
-.sortable-th { padding: 10px 16px; text-align: left; user-select: none; white-space: nowrap; }
-.sort-arrow { cursor: pointer; }
-.sortable-th:hover .th-content { color: #111; }
-.th-content { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.15s; }
-.th-content.th-active { color: #111; font-weight: 700; }
-.sort-icons { display: flex; flex-direction: column; gap: 1px; }
-.sort-arrow { color: #e5e7eb; transition: color 0.12s; }
-.sort-arrow.active { color: #111; }
-.sort-rank { font-size: 10px; font-weight: 700; color: #fff; background: #111; border-radius: 50%; width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px; }
+.sortable-th { padding: 10px 16px; text-align: left; user-select: none; white-space: nowrap; font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
 
 td { padding: 12px 16px; font-size: 13px; color: #374151; border-bottom: 1px solid #f9fafb; vertical-align: middle; overflow: hidden; }
 tr:last-child td { border-bottom: none; }

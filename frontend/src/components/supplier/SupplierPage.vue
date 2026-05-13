@@ -47,6 +47,10 @@
         <button :class="{ active: storeFilter === 'store' }" @click="storeFilter = 'store'">This store</button>
         <button :class="{ active: storeFilter === 'all' }" @click="storeFilter = 'all'">All stores</button>
       </div>
+      <button v-if="sortCriteria.length" class="btn-clear-sort" @click="clearSort">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Clear sort
+      </button>
     </div>
 
     <div v-if="loading" class="loading-state">
@@ -87,13 +91,20 @@
         <thead>
           <tr>
             <th v-for="(col, i) in columns" :key="col.key">
-              {{ col.label }}
+              <SortableHeader
+                v-if="col.sortable"
+                :label="col.label"
+                :sort-info="getSortInfo(col.key)"
+                :rank="sortCriteria.length > 1 && getSortInfo(col.key) ? sortRank(col.key) : null"
+                @sort="(dir) => toggleSort(col.key, dir)"
+              />
+              <template v-else>{{ col.label }}</template>
               <div class="resize-handle" @mousedown.prevent="startResize($event, i)"></div>
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="supplier in filteredSuppliers" :key="supplier.id">
+          <tr v-for="supplier in sortedSuppliers" :key="supplier.id">
             <td><span class="id-badge">#{{ supplier.id }}</span></td>
             <td><button class="name-link" @click="openDetail(supplier)">{{ supplier.name }}</button></td>
             <td>
@@ -159,10 +170,12 @@
 <script setup>
 import { ref, computed, watch, onBeforeUnmount, inject } from 'vue'
 import { graphql } from '@/api'
+import { useSortCriteria } from '@/composables/useSortCriteria'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SupplierFormModal from '@/components/supplier/SupplierFormModal.vue'
 import SupplierDetailModal from '@/components/supplier/SupplierDetailModal.vue'
+import SortableHeader from '@/components/common/SortableHeader.vue'
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -179,14 +192,22 @@ const deletingSupplier = ref(null)
 const searchQuery = ref('')
 
 const columns = [
-  { key: 'id',       label: 'ID'       },
-  { key: 'name',     label: 'Name'     },
-  { key: 'tax_code', label: 'Tax Code' },
-  { key: 'email',    label: 'Email'    },
-  { key: 'phone',    label: 'Phone'    },
-  { key: 'address',  label: 'Address'  },
-  { key: 'actions',  label: ''         },
+  { key: 'id',       label: 'ID',       sortable: true  },
+  { key: 'name',     label: 'Name',     sortable: true  },
+  { key: 'tax_code', label: 'Tax Code', sortable: true  },
+  { key: 'email',    label: 'Email',    sortable: true  },
+  { key: 'phone',    label: 'Phone',    sortable: true  },
+  { key: 'address',  label: 'Address',  sortable: true  },
+  { key: 'actions',  label: '',         sortable: false },
 ]
+
+const { sortCriteria, getSortInfo, sortRank, toggleSort, clearSort, sortItems } = useSortCriteria()
+
+const getSortValue = (s, key) => {
+  if (key === 'id') return Number(s.id)
+  const v = s[key]
+  return v == null ? '' : String(v).toLowerCase()
+}
 
 const colWidths = ref([70, 160, 120, 190, 130, 220, 80])
 
@@ -231,7 +252,8 @@ const baseSuppliers = computed(() => {
   return [...suppliers.value].sort((a, b) => {
     const aOwn = String(a.store_id) === storeId
     const bOwn = String(b.store_id) === storeId
-    return aOwn === bOwn ? 0 : aOwn ? -1 : 1
+    if (aOwn !== bOwn) return aOwn ? -1 : 1
+    return Number(a.id) - Number(b.id)
   })
 })
 
@@ -246,6 +268,8 @@ const filteredSuppliers = computed(() => {
     s.phone?.includes(q)
   )
 })
+
+const sortedSuppliers = computed(() => sortItems(filteredSuppliers.value, getSortValue))
 
 const fetchSuppliers = async () => {
   if (!currentStore.value?.id || !currentBusiness.value?.id) return
@@ -340,6 +364,9 @@ th { position: relative; padding: 11px 16px; text-align: left; font-size: 11.5px
 td { padding: 13px 16px; color: #374151; border-bottom: 1px solid #f3f4f6; vertical-align: middle; overflow: hidden; }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: #fafafa; }
+
+.btn-clear-sort { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid #e5e7eb; background: #fff; color: #6b7280; border-radius: 7px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0; }
+.btn-clear-sort:hover { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
 
 .resize-handle { position: absolute; top: 0; right: -6px; width: 12px; height: 100%; cursor: col-resize; z-index: 1; display: flex; align-items: stretch; justify-content: center; }
 .resize-handle::after { content: ''; width: 2px; border-radius: 2px; background: #d1d5db; transition: background 0.15s; }
