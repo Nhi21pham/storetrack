@@ -42,12 +42,43 @@
       <SearchBar v-model="searchQuery" placeholder="Search activity..." />
 
       <div class="filter-bar">
-        <div class="date-range">
-          <label>From</label>
-          <input type="date" v-model="startDate" :max="endDate || undefined" @change="applyFilter" />
-          <label>To</label>
-          <input type="date" v-model="endDate" :min="startDate || undefined" @change="applyFilter" />
-          <button v-if="startDate || endDate" class="btn-clear" @click="clearFilter">Clear</button>
+        <div class="filter-row">
+          <div class="filter-group">
+            <label>From</label>
+            <input type="date" v-model="startDate" :max="endDate || undefined" @change="applyFilter" />
+          </div>
+          <div class="filter-group">
+            <label>To</label>
+            <input type="date" v-model="endDate" :min="startDate || undefined" @change="applyFilter" />
+          </div>
+          <div class="filter-group">
+            <label>Type</label>
+            <SearchableSelect
+              v-model="objectFilter"
+              :options="OBJECT_OPTIONS"
+              search-placeholder="Search type..."
+              @change="applyFilter"
+            />
+          </div>
+          <div class="filter-group">
+            <label>Action</label>
+            <SearchableSelect
+              v-model="actionFilter"
+              :options="ACTION_OPTIONS"
+              search-placeholder="Search action..."
+              @change="applyFilter"
+            />
+          </div>
+          <button v-if="hasActiveFilter" class="btn-clear" @click="clearFilter">Clear</button>
+          <button
+            class="btn-export"
+            :disabled="exporting || total === 0"
+            :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
+            @click="startExport"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+          </button>
         </div>
       </div>
 
@@ -76,20 +107,18 @@
 
       <div v-else class="log-feed" :class="{ 'log-feed--fetching': fetching }">
         <div v-for="log in filteredLogs" :key="log.id" class="log-entry">
-          <div class="log-left">
-            <span class="badge" :class="badgeClass(log.object_type)">{{ log.object_type }}</span>
-          </div>
+          <span class="object-badge" :class="badgeClass(log.object_type)">{{ objectLabel(log.object_type) }}</span>
           <div class="log-body">
-            <p class="log-message" v-html="highlightMessage(log.message)"></p>
-            <div class="log-meta">
+            <div class="log-actor-block" :title="actorTitle(log)">
+              <span class="log-actor">{{ log.actor_name || 'System' }}</span><span v-if="log.actor_email" class="log-actor-email">&nbsp;({{ log.actor_email }})</span>
+            </div>
+            <p class="log-action" :title="actionTitle(log)" v-html="renderAction(log)"></p>
+            <div class="log-aside">
+              <span v-if="viewMode === 'business' && log.store_name" class="log-store" :title="log.store_name">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/></svg>
+                <span class="log-store-name">{{ log.store_name }}</span>
+              </span>
               <span class="log-time">{{ formatDatetime(log.created_at) }}</span>
-              <template v-if="viewMode === 'business' && log.store_name">
-                <span class="log-sep">·</span>
-                <span class="log-store">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/></svg>
-                  {{ log.store_name }}
-                </span>
-              </template>
             </div>
           </div>
         </div>
@@ -108,10 +137,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
-import { graphql } from '@/api'
+import { ref, computed, watch, inject, onBeforeUnmount } from 'vue'
+import { graphql, rest } from '@/api'
 import Pagination from '@/components/common/Pagination.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
+import SearchableSelect from '@/components/common/SearchableSelect.vue'
 
 const currentStore    = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
@@ -132,6 +162,37 @@ const perPage      = ref(Number(localStorage.getItem(STORAGE_KEY)) || 20)
 const startDate    = ref('')
 const endDate      = ref('')
 const searchQuery  = ref('')
+const objectFilter = ref('')
+const actionFilter = ref('')
+
+const OBJECT_OPTIONS = [
+  { value: 'business',   label: 'Business' },
+  { value: 'store',      label: 'Store' },
+  { value: 'user',       label: 'User' },
+  { value: 'invitation', label: 'Invitation' },
+  { value: 'supplier',   label: 'Supplier' },
+  { value: 'customer',   label: 'Customer' },
+]
+
+const ACTION_OPTIONS = [
+  { value: 'created',      label: 'Created' },
+  { value: 'updated',      label: 'Updated' },
+  { value: 'deactivated',  label: 'Deactivated' },
+  { value: 'reactivated',  label: 'Reactivated' },
+  { value: 'assigned',     label: 'Assigned' },
+  { value: 'role_changed', label: 'Role Changed' },
+  { value: 'removed',      label: 'Removed' },
+  { value: 'deleted',      label: 'Deleted' },
+  { value: 'invited',      label: 'Invited' },
+  { value: 'cancelled',    label: 'Cancelled' },
+  { value: 'accepted',     label: 'Accepted' },
+  { value: 'declined',     label: 'Declined' },
+  { value: 'exported',     label: 'Exported' },
+]
+
+const hasActiveFilter = computed(() =>
+  !!(startDate.value || endDate.value || objectFilter.value || actionFilter.value)
+)
 
 const filteredLogs = computed(() => {
   if (!searchQuery.value.trim()) return logs.value
@@ -139,13 +200,14 @@ const filteredLogs = computed(() => {
   return logs.value.filter(l =>
     l.message.toLowerCase().includes(q) ||
     l.actor_name?.toLowerCase().includes(q) ||
-    l.actor_email?.toLowerCase().includes(q)
+    l.actor_email?.toLowerCase().includes(q) ||
+    l.store_name?.toLowerCase().includes(q)
   )
 })
 
 const STORE_QUERY = `
-  query AuditLogs($store_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String) {
-    auditLogs(store_id: $store_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date) {
+  query AuditLogs($store_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String, $object_type: String, $action: String) {
+    auditLogs(store_id: $store_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date, object_type: $object_type, action: $action) {
       data { id actor_name actor_email object_type action message created_at }
       total current_page last_page per_page
     }
@@ -153,8 +215,8 @@ const STORE_QUERY = `
 `
 
 const BUSINESS_QUERY = `
-  query BusinessAuditLogs($business_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String) {
-    businessAuditLogs(business_id: $business_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date) {
+  query BusinessAuditLogs($business_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String, $object_type: String, $action: String) {
+    businessAuditLogs(business_id: $business_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date, object_type: $object_type, action: $action) {
       data { id actor_name actor_email object_type action message store_name created_at }
       total current_page last_page per_page
     }
@@ -177,6 +239,8 @@ const fetchLogs = async (page = 1) => {
         per_page: perPage.value,
         start_date: startDate.value || null,
         end_date: endDate.value || null,
+        object_type: objectFilter.value || null,
+        action: actionFilter.value || null,
       })
       logs.value        = data.auditLogs.data
       currentPage.value = data.auditLogs.current_page
@@ -189,6 +253,8 @@ const fetchLogs = async (page = 1) => {
         per_page: perPage.value,
         start_date: startDate.value || null,
         end_date: endDate.value || null,
+        object_type: objectFilter.value || null,
+        action: actionFilter.value || null,
       })
       logs.value        = data.businessAuditLogs.data
       currentPage.value = data.businessAuditLogs.current_page
@@ -206,7 +272,9 @@ const fetchLogs = async (page = 1) => {
 const switchMode = (mode) => {
   if (viewMode.value === mode) return
   viewMode.value = mode
-  resetAndFetch()
+  logs.value        = []
+  currentPage.value = 1
+  fetchLogs(1)
 }
 
 const resetAndFetch = () => {
@@ -215,40 +283,170 @@ const resetAndFetch = () => {
   startDate.value   = ''
   endDate.value     = ''
   searchQuery.value = ''
+  objectFilter.value = ''
+  actionFilter.value = ''
   fetchLogs(1)
 }
 
 const loadPage      = (page) => fetchLogs(page)
 const changePerPage = (val) => { perPage.value = val; localStorage.setItem(STORAGE_KEY, val); fetchLogs(1) }
 const applyFilter   = () => { currentPage.value = 1; fetchLogs(1) }
-const clearFilter   = () => { startDate.value = ''; endDate.value = ''; currentPage.value = 1; fetchLogs(1) }
+const clearFilter   = () => {
+  startDate.value = ''
+  endDate.value = ''
+  objectFilter.value = ''
+  actionFilter.value = ''
+  currentPage.value = 1
+  fetchLogs(1)
+}
+
+const exporting   = ref(false)
+const POLL_MS     = 1500
+const POLL_MAX_MS = 5 * 60 * 1000
+let pollTimer = null
+let pollStartAt = 0
+
+const cancelPoll = () => {
+  if (pollTimer) {
+    clearTimeout(pollTimer)
+    pollTimer = null
+  }
+}
+
+onBeforeUnmount(cancelPoll)
+
+const buildExportParams = () => ({
+  start_date:  startDate.value || undefined,
+  end_date:    endDate.value || undefined,
+  object_type: objectFilter.value || undefined,
+  action:      actionFilter.value || undefined,
+  search:      searchQuery.value.trim() || undefined,
+})
+
+const triggerBlobDownload = (blob, filename) => {
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(url)
+}
+
+const downloadCompletedExport = async (exportId, filename) => {
+  const blob = await rest('get', `/api/exports/${exportId}/download`, { responseType: 'blob' })
+  triggerBlobDownload(blob, filename || `audit-log-${exportId}.xlsx`)
+}
+
+const pollExport = async (exportId) => {
+  try {
+    const status = await rest('get', `/api/exports/${exportId}`)
+    if (status.status === 'completed') {
+      await downloadCompletedExport(exportId, status.filename)
+      exporting.value = false
+      showToast('Audit log export ready.', 'success')
+      return
+    }
+    if (status.status === 'failed') {
+      exporting.value = false
+      showToast(status.error_message || 'Export failed. Please try again.', 'error')
+      return
+    }
+    if (Date.now() - pollStartAt > POLL_MAX_MS) {
+      exporting.value = false
+      showToast('Export is taking too long. Please try again later.', 'error')
+      return
+    }
+    pollTimer = setTimeout(() => pollExport(exportId), POLL_MS)
+  } catch (err) {
+    exporting.value = false
+    showToast(err.message, 'error')
+  }
+}
+
+const startExport = async () => {
+  if (exporting.value) return
+  if (viewMode.value === 'store' && !currentStore.value?.id) return
+  if (viewMode.value === 'business' && !currentBusiness.value?.id) return
+
+  exporting.value = true
+  pollStartAt = Date.now()
+
+  try {
+    const url = viewMode.value === 'store'
+      ? `/api/exports/audit-logs/store/${currentStore.value.id}`
+      : `/api/exports/audit-logs/business/${currentBusiness.value.id}`
+    const response = await rest('post', url, { params: buildExportParams() })
+    pollExport(response.id)
+  } catch (err) {
+    exporting.value = false
+    showToast(err.message, 'error')
+  }
+}
 
 const ACTION_COLORS = {
   CREATED: '#16a34a', ACCEPTED: '#16a34a', REACTIVATED: '#16a34a',
   UPDATED: '#1d4ed8', ASSIGNED: '#1d4ed8',
-  INVITED: '#7c3aed',
+  INVITED: '#7c3aed', EXPORTED: '#7c3aed',
   CANCELLED: '#b45309', DEACTIVATED: '#b45309',
-  REMOVED: '#dc2626', DECLINED: '#dc2626',
+  REMOVED: '#dc2626', DELETED: '#dc2626', DECLINED: '#dc2626',
 }
 
-const highlightMessage = (msg) => {
-  const escaped = msg
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/^\[[\w]+\]\s*/, '')
+const escapeHtml = (s) =>
+  String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-  const withNames = escaped.replace(/(\S+\([^)]+\))/g, '<strong>$1</strong>')
+const stripActorPrefix = (log) => {
+  const actor = log.actor_name && log.actor_email ? `${log.actor_name}(${log.actor_email})` : null
+  let detail = log.message
+  if (actor) {
+    const prefix = `${actor} has `
+    if (detail.startsWith(prefix)) detail = detail.slice(prefix.length)
+  }
+  return detail.replace(/\.$/, '').trim()
+}
 
-  return withNames.replace(
-    /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|INVITED|CANCELLED|ACCEPTED|DECLINED)\b/g,
-    (match) => `<span style="font-weight:700;color:${ACTION_COLORS[match] ?? '#374151'}">${match}</span>`
+const actionTitle = (log) => stripActorPrefix(log)
+
+const actorTitle = (log) => {
+  const name = log.actor_name || 'System'
+  return log.actor_email ? `${name} (${log.actor_email})` : name
+}
+
+const renderAction = (log) => {
+  const detail = stripActorPrefix(log)
+  if (!detail) return ''
+  const escaped = escapeHtml(detail)
+    .replace(/(\S+\([^)]+\))/g, '<strong>$1</strong>')
+    .replace(/\b([A-Za-z][\w.+-]*@[\w.-]+\.[A-Za-z]{2,})\b/g, '<strong>$1</strong>')
+  return escaped.replace(
+    /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|DELETED|INVITED|CANCELLED|ACCEPTED|DECLINED|EXPORTED)\b/g,
+    (m) => `<span class="verb" style="color:${ACTION_COLORS[m] ?? '#374151'}">${m}</span>`
   )
 }
 
+// Run once after the first time we see the injected business data —
+// owners who landed here with no store (business-level selection or a
+// business with zero stores) get dropped straight into the business view
+// instead of being stranded on "No store selected".
+let initialModeResolved = false
+const applyInitialMode = () => {
+  if (initialModeResolved) return
+  if (!currentBusiness.value) return
+  initialModeResolved = true
+  if (!currentStore.value && currentBusiness.value.role === 'owner') {
+    viewMode.value = 'business'
+    resetAndFetch()
+  }
+}
+
 watch(() => currentStore.value?.id, (id) => {
+  applyInitialMode()
   if (viewMode.value === 'store' && id) resetAndFetch()
 }, { immediate: true })
 
 watch(() => currentBusiness.value?.id, (id) => {
+  applyInitialMode()
   if (!isBusinessOwner.value && viewMode.value === 'business') {
     viewMode.value = 'store'
   }
@@ -266,6 +464,17 @@ const badgeClass = (objectType) => {
   }
   return map[objectType?.toLowerCase()] ?? 'badge-default'
 }
+
+const OBJECT_LABELS = {
+  business:   'Business',
+  store:      'Store',
+  user:       'User',
+  invitation: 'Invitation',
+  supplier:   'Supplier',
+  customer:   'Customer',
+}
+
+const objectLabel = (objectType) => OBJECT_LABELS[objectType?.toLowerCase()] ?? (objectType || 'Other')
 
 const formatDatetime = (isoString) =>
   new Date(isoString).toLocaleString('en-US', {
@@ -288,13 +497,20 @@ const formatDatetime = (isoString) =>
 .view-toggle button.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
 .filter-bar { margin-bottom: 16px; }
-.date-range { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.date-range label { font-size: 12.5px; font-weight: 400; color: #9ca3af; letter-spacing: 0.01em; }
-.date-range input[type="date"] { padding: 7px 11px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13.5px; font-family: inherit; color: #374151; background: #fafafa; cursor: pointer; outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; }
-.date-range input[type="date"]:hover { background: #fff; border-color: #d1d5db; }
-.date-range input[type="date"]:focus { background: #fff; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(156,163,175,0.12); }
-.btn-clear { padding: 7px 13px; border: 1px solid #f3f4f6; border-radius: 10px; font-size: 12.5px; font-family: inherit; color: #c0c4cc; background: #fafafa; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
-.btn-clear:hover { background: #f3f4f6; border-color: #e5e7eb; color: #6b7280; }
+.filter-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-group label { font-size: 11.5px; font-weight: 500; color: #9ca3af; letter-spacing: 0.02em; text-transform: uppercase; }
+.filter-group input,
+.filter-group select { padding: 7px 11px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13.5px; font-family: inherit; color: #374151; background: #fafafa; cursor: pointer; outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; min-height: 36px; }
+.filter-group input:hover,
+.filter-group select:hover { background: #fff; border-color: #d1d5db; }
+.filter-group input:focus,
+.filter-group select:focus { background: #fff; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(156,163,175,0.12); }
+.btn-clear { padding: 7px 13px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 12.5px; font-weight: 500; font-family: inherit; color: #374151; background: #fff; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; height: 36px; align-self: flex-end; }
+.btn-clear:hover { background: #f3f4f6; border-color: #9ca3af; color: #111; }
+.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border: 1px solid #111; border-radius: 10px; font-size: 12.5px; font-weight: 600; font-family: inherit; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; height: 36px; align-self: flex-end; margin-left: auto; }
+.btn-export:hover:not(:disabled) { background: #000; }
+.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .loading-state { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 60px 0; color: #6b7280; font-size: 14px; }
 .spinner { width: 20px; height: 20px; border: 2.5px solid #e5e7eb; border-top-color: #111; border-radius: 50%; animation: spin 0.6s linear infinite; }
@@ -307,29 +523,34 @@ const formatDatetime = (isoString) =>
 .log-feed { display: flex; flex-direction: column; gap: 0; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; transition: opacity 0.15s; }
 .log-feed--fetching { opacity: 0.45; pointer-events: none; }
 
-.log-entry { display: flex; align-items: flex-start; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #f3f4f6; transition: background 0.12s; }
+.log-entry { display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #f3f4f6; transition: background 0.12s; }
 .log-entry:last-of-type { border-bottom: none; }
 .log-entry:hover { background: #fafafa; }
 
-.log-left { padding-top: 1px; flex-shrink: 0; width: 84px; }
+.object-badge { flex-shrink: 0; align-self: flex-start; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; line-height: 1.4; min-width: 78px; text-align: center; }
+.object-badge.badge-business   { background: #ffedd5; color: #c2410c; }
+.object-badge.badge-store      { background: #dbeafe; color: #1d4ed8; }
+.object-badge.badge-user       { background: #d1fae5; color: #065f46; }
+.object-badge.badge-invitation { background: #ede9fe; color: #6d28d9; }
+.object-badge.badge-supplier   { background: #fef9c3; color: #854d0e; }
+.object-badge.badge-customer   { background: #fce7f3; color: #9d174d; }
+.object-badge.badge-default    { background: #f3f4f6; color: #6b7280; }
 
-.badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; }
-.badge-business   { background: #ffedd5; color: #c2410c; }
-.badge-store      { background: #dbeafe; color: #1d4ed8; }
-.badge-user       { background: #d1fae5; color: #065f46; }
-.badge-invitation { background: #ede9fe; color: #6d28d9; }
-.badge-supplier   { background: #fef9c3; color: #854d0e; }
-.badge-customer   { background: #fce7f3; color: #9d174d; }
-.badge-default    { background: #f3f4f6; color: #6b7280; }
+.log-body { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; }
 
-.log-body { flex: 1; min-width: 0; }
-.log-message { font-size: 13.5px; color: #111; line-height: 1.5; word-break: break-word; margin: 0 0 4px; }
-.log-message :deep(strong) { font-weight: 600; color: #111; }
-.log-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.log-sep { font-size: 12px; color: #d1d5db; }
-.log-store { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #6b7280; }
-.log-store svg { color: #9ca3af; }
-.log-time { font-size: 12px; color: #9ca3af; }
+.log-actor-block { flex-shrink: 0; max-width: 30%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-actor { color: #111; font-weight: 600; font-size: 14px; }
+.log-actor-email { color: #6b7280; font-size: 12.5px; }
+
+.log-aside { display: flex; align-items: center; gap: 8px; flex-shrink: 0; max-width: 35%; }
+.log-store { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: #1d4ed8; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 5px; padding: 2px 7px; font-weight: 500; max-width: 160px; min-width: 0; }
+.log-store svg { color: #1d4ed8; flex-shrink: 0; }
+.log-store-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.log-time { font-size: 12px; color: #9ca3af; white-space: nowrap; flex-shrink: 0; }
+
+.log-action { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.5; margin: 0; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-action :deep(strong) { font-weight: 600; color: #111; }
+.log-action :deep(.verb) { font-weight: 700; letter-spacing: 0.02em; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

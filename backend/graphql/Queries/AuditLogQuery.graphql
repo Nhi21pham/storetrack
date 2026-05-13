@@ -1,9 +1,26 @@
 extend type Query {
-    auditLogs(store_id: ID!, page: Int, per_page: Int, start_date: String, end_date: String): AuditLogPage!
+    auditLogs(
+        store_id: ID!,
+        page: Int,
+        per_page: Int,
+        start_date: String,
+        end_date: String,
+        object_type: String,
+        action: String
+    ): AuditLogPage!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\AuditLogResolver@index")
 
-    businessAuditLogs(business_id: ID!, page: Int, per_page: Int, start_date: String, end_date: String): AuditLogPage!
+    businessAuditLogs(
+        business_id: ID!,
+        page: Int,
+        per_page: Int,
+        start_date: String,
+        end_date: String,
+        object_type: String,
+        action: String,
+        store_name: String
+    ): AuditLogPage!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\AuditLogResolver@business")
 }

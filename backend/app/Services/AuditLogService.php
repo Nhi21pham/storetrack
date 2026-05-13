@@ -4,22 +4,37 @@ namespace App\Services;
 
 use App\Enums\AuditAction;
 use App\Enums\AuditObjectType;
+use App\Jobs\Exports\ExportAuditLogJob;
 use App\Models\AuditLog;
 use App\Models\Business;
 use App\Models\Customer;
+use App\Models\Export;
 use App\Models\Invitation;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Exceptions\AuthorizationException;
+use App\Repositories\ExportRepository;
 use App\Repositories\PermissionRepository;
 
 class AuditLogService
 {
-    public function __construct(private PermissionRepository $permissionRepository) {}
+    public function __construct(
+        private PermissionRepository $permissionRepository,
+        private ExportService $exportService,
+        private ExportRepository $exportRepository,
+    ) {}
 
-    public function getStoreLogs(User $user, int $storeId, int $page = 1, int $perPage = 20, ?string $startDate = null, ?string $endDate = null): array
-    {
+    public function getStoreLogs(
+        User $user,
+        int $storeId,
+        int $page = 1,
+        int $perPage = 20,
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $objectType = null,
+        ?string $action = null
+    ): array {
         $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
             || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
 
@@ -35,6 +50,12 @@ class AuditLogService
         if ($endDate) {
             $query->whereDate('created_at', '<=', $endDate);
         }
+        if ($objectType) {
+            $query->where('object_type', $objectType);
+        }
+        if ($action) {
+            $query->where('action', $action);
+        }
 
         $paginator = $query->orderByDesc('created_at')
             ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
@@ -48,8 +69,17 @@ class AuditLogService
         ];
     }
 
-    public function getBusinessLogs(User $user, int $businessId, int $page = 1, int $perPage = 20, ?string $startDate = null, ?string $endDate = null): array
-    {
+    public function getBusinessLogs(
+        User $user,
+        int $businessId,
+        int $page = 1,
+        int $perPage = 20,
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $objectType = null,
+        ?string $action = null,
+        ?string $storeName = null
+    ): array {
         if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
             throw new AuthorizationException('You do not have access to this business.');
         }
@@ -62,6 +92,19 @@ class AuditLogService
         if ($endDate) {
             $query->whereDate('created_at', '<=', $endDate);
         }
+        if ($objectType) {
+            $query->where('object_type', $objectType);
+        }
+        if ($action) {
+            $query->where('action', $action);
+        }
+        if ($storeName !== null && $storeName !== '') {
+            $needle = '%' . $storeName . '%';
+            $query->where(function ($q) use ($needle) {
+                $q->whereHas('store', fn ($s) => $s->where('name', 'like', $needle))
+                  ->orWhere('metadata->store_name', 'like', $needle);
+            });
+        }
 
         $paginator = $query->orderByDesc('created_at')
             ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
@@ -73,6 +116,131 @@ class AuditLogService
             'last_page'    => $paginator->lastPage(),
             'per_page'     => $paginator->perPage(),
         ];
+    }
+
+    public function queueStoreExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
+    {
+        $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
+            || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
+
+        if (!$hasAccess) {
+            throw new AuthorizationException('You do not have access to this store.');
+        }
+
+        $normalizedFilters = $this->normalizeFilters($filters);
+        $filterSignature   = $this->filterSignature($normalizedFilters);
+        $type              = ExportAuditLogJob::TYPE_STORE;
+
+        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $storeId, $filterSignature, $clientId);
+        if ($inProgress) {
+            return $inProgress;
+        }
+
+        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $storeId, $filterSignature, $clientId);
+        if ($reusable) {
+            return $reusable;
+        }
+
+        $this->deleteExistingFilesForScope($user->id, $type, $storeId, $clientId);
+
+        $store = Store::find($storeId);
+
+        $export = $this->exportService->createPending(
+            $user,
+            $type,
+            [
+                'scope'            => 'store',
+                'scope_id'         => $storeId,
+                'scope_name'       => $store?->name,
+                'filters'          => $normalizedFilters,
+                'filter_signature' => $filterSignature,
+                'client_id'        => $clientId,
+            ]
+        );
+
+        ExportAuditLogJob::dispatch($export->id);
+
+        return $export;
+    }
+
+    public function queueBusinessExport(User $user, int $businessId, array $filters = [], ?string $clientId = null): Export
+    {
+        if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
+            throw new AuthorizationException('You do not have access to this business.');
+        }
+
+        $normalizedFilters = $this->normalizeFilters($filters);
+        $filterSignature   = $this->filterSignature($normalizedFilters);
+        $type              = ExportAuditLogJob::TYPE_BUSINESS;
+
+        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $businessId, $filterSignature, $clientId);
+        if ($inProgress) {
+            return $inProgress;
+        }
+
+        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $businessId, $filterSignature, $clientId);
+        if ($reusable) {
+            return $reusable;
+        }
+
+        $this->deleteExistingFilesForScope($user->id, $type, $businessId, $clientId);
+
+        $business = Business::find($businessId);
+
+        $export = $this->exportService->createPending(
+            $user,
+            $type,
+            [
+                'scope'            => 'business',
+                'scope_id'         => $businessId,
+                'scope_name'       => $business?->name,
+                'filters'          => $normalizedFilters,
+                'filter_signature' => $filterSignature,
+                'client_id'        => $clientId,
+            ]
+        );
+
+        ExportAuditLogJob::dispatch($export->id);
+
+        return $export;
+    }
+
+    private function normalizeFilters(array $filters): array
+    {
+        $allowed = ['start_date', 'end_date', 'object_type', 'action', 'store_name', 'search'];
+        $clean = [];
+        foreach ($allowed as $key) {
+            $value = $filters[$key] ?? null;
+            if ($value === null || $value === '') {
+                continue;
+            }
+            $clean[$key] = (string) $value;
+        }
+        return $clean;
+    }
+
+    /**
+     * Stable hash of the normalized filters so dedupe lookups can match
+     * spam-clicks of the exact same export regardless of array order.
+     */
+    private function filterSignature(array $filters): string
+    {
+        ksort($filters);
+        return sha1((string) json_encode($filters));
+    }
+
+    /**
+     * Wipe any prior orphan files for the same (user, type, scope, client)
+     * before producing a fresh one — keeps the temp folder to at most one
+     * file per user/scope/browser at any given moment. Other browsers/devices
+     * for the same user keep their own files.
+     */
+    private function deleteExistingFilesForScope(int $userId, string $type, int $scopeId, ?string $clientId): void
+    {
+        $existing = $this->exportRepository->findExistingFilesForScope($userId, $type, $scopeId, $clientId);
+        foreach ($existing as $old) {
+            $this->exportService->deleteFile($old);
+        }
     }
 
     public function log(
@@ -193,6 +361,20 @@ class AuditLogService
         $this->log(
             $store->id, $actor, AuditObjectType::STORE, AuditAction::REACTIVATED,
             self::actor($actor) . " has REACTIVATED store {$store->name}.",
+            [
+                'store_id'      => $store->id,
+                'store_name'    => $store->name,
+                'business_id'   => $store->business_id,
+            ],
+            $store->business_id
+        );
+    }
+
+    public function storeDeleted(User $actor, Store $store): void
+    {
+        $this->log(
+            $store->id, $actor, AuditObjectType::STORE, AuditAction::DELETED,
+            self::actor($actor) . " has DELETED store {$store->name}.",
             [
                 'store_id'      => $store->id,
                 'store_name'    => $store->name,
@@ -363,7 +545,7 @@ class AuditLogService
     public function supplierDeleted(User $actor, int $storeId, int $businessId, int $supplierId, string $supplierName): void
     {
         $storeName = Store::find($storeId)?->name;
-        $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::REMOVED,
+        $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::DELETED,
             self::actor($actor) . " has DELETED supplier {$supplierName}.",
             [
                 'supplier_id'   => $supplierId,
@@ -413,7 +595,7 @@ class AuditLogService
     public function customerDeleted(User $actor, int $storeId, int $businessId, int $customerId, string $customerName): void
     {
         $storeName = Store::find($storeId)?->name;
-        $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::REMOVED,
+        $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::DELETED,
             self::actor($actor) . " has DELETED customer {$customerName}.",
             [
                 'customer_id'   => $customerId,

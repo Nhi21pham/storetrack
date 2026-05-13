@@ -18,7 +18,9 @@ class AuditLogResolver extends BaseResolver
                 $args['page'] ?? 1,
                 $args['per_page'] ?? 20,
                 $args['start_date'] ?? null,
-                $args['end_date'] ?? null
+                $args['end_date'] ?? null,
+                $args['object_type'] ?? null,
+                $args['action'] ?? null
             );
         });
     }
@@ -32,7 +34,10 @@ class AuditLogResolver extends BaseResolver
                 $args['page'] ?? 1,
                 $args['per_page'] ?? 20,
                 $args['start_date'] ?? null,
-                $args['end_date'] ?? null
+                $args['end_date'] ?? null,
+                $args['object_type'] ?? null,
+                $args['action'] ?? null,
+                $args['store_name'] ?? null
             );
         });
     }

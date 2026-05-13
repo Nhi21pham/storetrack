@@ -6,6 +6,19 @@ const api = axios.create({
   baseURL: 'http://localhost'
 })
 
+// Stable per-browser id used by the backend to dedupe export requests
+// without merging two devices (or two browsers) that share a login.
+const getClientId = () => {
+  let id = localStorage.getItem('client_id')
+  if (!id) {
+    id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    localStorage.setItem('client_id', id)
+  }
+  return id
+}
+
 const clearSession = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('user')
@@ -84,6 +97,51 @@ export const graphql = async (query, variables = {}) => {
   }
 
   return response.data.data
+}
+
+export const rest = async (method, url, { params, data, responseType, headers: extraHeaders } = {}) => {
+  const token = localStorage.getItem('token')
+  const headers = { ...(extraHeaders || {}) }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  headers['X-Client-Id'] = getClientId()
+
+  let response
+  try {
+    response = await api.request({ method, url, params, data, headers, responseType })
+  } catch (err) {
+    if (!err.response) {
+      throw new AppError(ErrorCode.NETWORK_ERROR, 'Network error. Please check your connection.')
+    }
+
+    const status = err.response.status
+    let body = err.response.data
+    if (body instanceof Blob) {
+      try { body = JSON.parse(await body.text()) } catch (e) { body = {} }
+    }
+
+    if (status === 401) {
+      clearSession()
+      throw new AppError(ErrorCode.SESSION_EXPIRED, 'Session expired. Please log in again.', 401)
+    }
+    if (status === 419) {
+      clearSession()
+      throw new AppError(ErrorCode.SESSION_EXPIRED, 'Session expired. Please refresh the page.', 419)
+    }
+    if (status === 429) {
+      throw new AppError(ErrorCode.RATE_LIMITED, 'Too many requests. Please wait a moment.', 429)
+    }
+    if (status >= 500) {
+      throw new AppError(ErrorCode.SERVER_ERROR, body?.message || 'Server error. Please try again later.', status)
+    }
+
+    throw new AppError(
+      body?.code || ErrorCode.SERVER_ERROR,
+      body?.message || 'Something went wrong. Please try again.',
+      status,
+    )
+  }
+
+  return response.data
 }
 
 export default api

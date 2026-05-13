@@ -93,11 +93,13 @@ class StoreService
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::DEACTIVATE_STORE, $storeId);
 
-        DB::transaction(function () use ($storeId) {
+        DB::transaction(function () use ($user, $storeId) {
             $store = Store::lockForUpdate()->find($storeId);
             if (!$store) {
                 throw new StoreException(ErrorCode::STORE_NOT_FOUND, 'Store not found.');
             }
+
+            $this->auditLogService->storeDeleted($user, $store);
 
             $partyId = $store->party_id;
             $store->users()->detach();
