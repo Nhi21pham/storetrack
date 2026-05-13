@@ -98,7 +98,7 @@
         <tbody>
           <tr v-for="customer in filteredCustomers" :key="customer.id">
             <td><span class="id-badge">#{{ customer.id }}</span></td>
-            <td><span class="name-text">{{ customer.name }}</span></td>
+            <td><button class="name-link" @click="openDetail(customer)">{{ customer.name }}</button></td>
             <td>
               <span v-if="customer.tax_code" class="mono">{{ customer.tax_code }}</span>
               <span v-else class="empty-val">—</span>
@@ -137,6 +137,14 @@
       @saved="onSaved"
     />
 
+    <CustomerDetailModal
+      v-if="detailCustomer"
+      :customer="detailCustomer"
+      :can-edit="!!currentStore?.is_active"
+      @close="detailCustomer = null"
+      @edit="onDetailEdit"
+    />
+
     <ConfirmDialog
       v-if="deletingCustomer"
       title="Delete Customer"
@@ -157,6 +165,7 @@ import { graphql } from '@/api'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import CustomerFormModal from '@/components/customer/CustomerFormModal.vue'
+import CustomerDetailModal from '@/components/customer/CustomerDetailModal.vue'
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -166,6 +175,7 @@ const customers = ref([])
 const loading = ref(false)
 const showForm = ref(false)
 const editingCustomer = ref(null)
+const detailCustomer = ref(null)
 const deletingCustomer = ref(null)
 const searchQuery = ref('')
 const storeFilter = ref('store')
@@ -259,6 +269,8 @@ const fetchCustomers = async () => {
 
 const openCreate = () => { editingCustomer.value = null; showForm.value = true }
 const openEdit = (c) => { editingCustomer.value = { ...c }; showForm.value = true }
+const openDetail = (c) => { detailCustomer.value = c }
+const onDetailEdit = (c) => { detailCustomer.value = null; openEdit(c) }
 
 const onSaved = () => {
   showForm.value = false
@@ -338,6 +350,8 @@ tbody tr:hover { background: #fafafa; }
 
 .id-badge { font-size: 12px; font-weight: 600; color: #9ca3af; font-family: monospace; }
 .name-text { font-weight: 600; color: #111; }
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; }
+.name-link:hover { color: #2563eb; text-decoration: underline; }
 .mono { font-family: monospace; font-size: 13px; }
 .empty-val { color: #d1d5db; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

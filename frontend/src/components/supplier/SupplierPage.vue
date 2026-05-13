@@ -95,7 +95,7 @@
         <tbody>
           <tr v-for="supplier in filteredSuppliers" :key="supplier.id">
             <td><span class="id-badge">#{{ supplier.id }}</span></td>
-            <td><span class="name-text">{{ supplier.name }}</span></td>
+            <td><button class="name-link" @click="openDetail(supplier)">{{ supplier.name }}</button></td>
             <td>
               <span v-if="supplier.tax_code" class="mono">{{ supplier.tax_code }}</span>
               <span v-else class="empty-val">—</span>
@@ -134,6 +134,14 @@
       @saved="onSaved"
     />
 
+    <SupplierDetailModal
+      v-if="detailSupplier"
+      :supplier="detailSupplier"
+      :can-edit="!!currentStore?.is_active"
+      @close="detailSupplier = null"
+      @edit="onDetailEdit"
+    />
+
     <ConfirmDialog
       v-if="deletingSupplier"
       title="Delete Supplier"
@@ -154,6 +162,7 @@ import { graphql } from '@/api'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SupplierFormModal from '@/components/supplier/SupplierFormModal.vue'
+import SupplierDetailModal from '@/components/supplier/SupplierDetailModal.vue'
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -165,6 +174,7 @@ const suppliers = ref([])
 const loading = ref(false)
 const showForm = ref(false)
 const editingSupplier = ref(null)
+const detailSupplier = ref(null)
 const deletingSupplier = ref(null)
 const searchQuery = ref('')
 
@@ -257,6 +267,8 @@ const fetchSuppliers = async () => {
 
 const openCreate = () => { editingSupplier.value = null; showForm.value = true }
 const openEdit = (s) => { editingSupplier.value = { ...s }; showForm.value = true }
+const openDetail = (s) => { detailSupplier.value = s }
+const onDetailEdit = (s) => { detailSupplier.value = null; openEdit(s) }
 
 const onSaved = () => {
   showForm.value = false
@@ -336,6 +348,8 @@ tbody tr:hover { background: #fafafa; }
 
 .id-badge { font-size: 12px; font-weight: 600; color: #9ca3af; font-family: monospace; }
 .name-text { font-weight: 600; color: #111; }
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; }
+.name-link:hover { color: #2563eb; text-decoration: underline; }
 .mono { font-family: monospace; font-size: 13px; }
 .empty-val { color: #d1d5db; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
