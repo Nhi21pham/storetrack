@@ -46,9 +46,9 @@ class ExportAuditLogJob extends BaseExportJob
         $metadata = $export->metadata ?? [];
         $scopeName = $metadata['scope_name'] ?? 'unknown';
         $slug = BaseExport::slugForFilename((string) $scopeName);
-        $date = now()->format('Y-m-d');
+        $datetime = now()->format('YmdHis');
 
-        return "audit-log-{$slug}-{$date}.xlsx";
+        return "auditlog-{$slug}-{$datetime}.xlsx";
     }
 
     protected function onCompleted(Export $export): void
