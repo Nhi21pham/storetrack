@@ -151,6 +151,7 @@
           <tr v-for="supplier in sortedSuppliers" :key="supplier.id" :class="{ 'row-selected': isSelected(supplier.id) }">
             <td>
               <input
+                v-if="canManageRow(supplier)"
                 type="checkbox"
                 class="row-check"
                 :checked="isSelected(supplier.id)"
@@ -176,7 +177,7 @@
               <span v-else class="empty-val">—</span>
             </td>
             <td>
-              <div v-if="currentStore?.is_active" class="row-actions">
+              <div v-if="currentStore?.is_active && canManageRow(supplier)" class="row-actions">
                 <button class="action-btn" @click="openEdit(supplier)" title="Edit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
@@ -336,6 +337,11 @@ const filteredSuppliers = computed(() => {
 
 const sortedSuppliers = computed(() => sortItems(filteredSuppliers.value, getSortValue))
 
+const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
+const canManageRow = (supplier) =>
+  isBusinessOwner.value ||
+  (currentStore.value?.id && String(supplier.store_id) === String(currentStore.value.id))
+
 const selectedIds = ref(new Set())
 const isSelected = (id) => selectedIds.value.has(String(id))
 const toggleRow = (id) => {
@@ -346,7 +352,9 @@ const toggleRow = (id) => {
   selectedIds.value = next
 }
 
-const visibleIds = computed(() => sortedSuppliers.value.map(s => String(s.id)))
+const visibleIds = computed(() =>
+  sortedSuppliers.value.filter(canManageRow).map(s => String(s.id))
+)
 const selectedVisibleCount = computed(() => visibleIds.value.filter(id => selectedIds.value.has(id)).length)
 const allVisibleSelected = computed(() =>
   visibleIds.value.length > 0 && selectedVisibleCount.value === visibleIds.value.length
@@ -407,12 +415,11 @@ const confirmDelete = (s) => { deletingSupplier.value = s }
 const handleDelete = async () => {
   try {
     await graphql(
-      `mutation DeleteSupplier($id: ID!, $store_id: ID!, $business_id: ID!) {
-        deleteSupplier(id: $id, store_id: $store_id, business_id: $business_id)
+      `mutation DeleteSupplier($id: ID!, $business_id: ID!) {
+        deleteSupplier(id: $id, business_id: $business_id)
       }`,
       {
         id: deletingSupplier.value.id,
-        store_id: currentStore.value?.id,
         business_id: currentBusiness.value?.id,
       }
     )

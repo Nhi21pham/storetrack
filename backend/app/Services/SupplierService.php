@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ErrorCode;
 use App\Enums\PartyTypeEnum;
+use App\Enums\PermissionEnum;
 use App\Exceptions\SupplierException;
 use App\Exceptions\AuthorizationException;
 use App\Jobs\Exports\ExportSupplierJob;
@@ -24,6 +25,7 @@ class SupplierService
         private PartyRepository $partyRepository,
         private AuditLogService $auditLogService,
         private PermissionRepository $permissionRepository,
+        private PermissionService $permissionService,
         private ExportService $exportService,
         private ExportRepository $exportRepository,
     ) {}
@@ -73,7 +75,7 @@ class SupplierService
 
     public function deleteMany(User $actor, int $businessId, ?int $storeId, array $ids): int
     {
-        $this->assertScopedAccess($actor, $businessId, $storeId);
+        $this->authorizeSupplierDelete($actor, $businessId, $storeId);
 
         if (empty($ids)) {
             return 0;
@@ -130,11 +132,16 @@ class SupplierService
         });
     }
 
-    public function delete(User $actor, int $storeId, int $businessId, int $id): void
+    public function delete(User $actor, int $businessId, int $id): void
     {
         $supplier = $this->mustFind($id);
-        $supplierId = $supplier->id;
-        $supplierName = $supplier->name;
+        $this->permissionService->assertSameBusiness((int) $supplier->business_id, $businessId);
+
+        $supplierStoreId = $supplier->store_id !== null ? (int) $supplier->store_id : null;
+        $this->authorizeSupplierDelete($actor, $businessId, $supplierStoreId);
+
+        $supplierId = (int) $supplier->id;
+        $supplierName = (string) $supplier->name;
 
         DB::transaction(function () use ($supplier) {
             $partyId = $supplier->party_id;
@@ -142,7 +149,16 @@ class SupplierService
             $this->partyRepository->delete($partyId);
         });
 
-        $this->auditLogService->supplierDeleted($actor, $storeId, $businessId, $supplierId, $supplierName);
+        $this->auditLogService->supplierDeleted($actor, $supplierStoreId, $businessId, $supplierId, $supplierName);
+    }
+
+    private function authorizeSupplierDelete(User $actor, int $businessId, ?int $storeId): void
+    {
+        if ($storeId !== null) {
+            $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_SUPPLIER, $storeId);
+            return;
+        }
+        $this->permissionService->authorizeBusiness($actor, PermissionEnum::DELETE_SUPPLIER, $businessId);
     }
 
     private function mustFind(int $id): Supplier
