@@ -17,11 +17,11 @@ class PartyRepository
         Party::destroy($id);
     }
 
-    public function deleteMany(array $ids): void
+    public function deleteMany(array $ids): int
     {
         if (empty($ids)) {
-            return;
+            return 0;
         }
-        Party::whereIn('id', array_unique($ids))->delete();
+        return Party::whereIn('id', array_unique($ids))->delete();
     }
 }
