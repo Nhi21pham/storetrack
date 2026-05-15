@@ -10,6 +10,10 @@ extend type Mutation {
     deleteCustomer(id: ID!, store_id: ID!, business_id: ID!): Boolean!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@delete")
+
+    deleteCustomers(ids: [ID!]!, business_id: ID!, store_id: ID): Int!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@deleteMany")
 }
 
 input CreateCustomerInput {

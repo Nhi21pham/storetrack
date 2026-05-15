@@ -79,6 +79,7 @@ class ExportCustomerJob extends BaseExportJob
         $filters = $metadata['filters'] ?? [];
         $storeId = isset($filters['store_id']) ? (int) $filters['store_id'] : null;
         $search = $filters['search'] ?? null;
+        $ids = isset($filters['ids']) && is_array($filters['ids']) ? $filters['ids'] : null;
 
         $business = Business::find($businessId);
         $businessName = $metadata['scope_name'] ?? ($business?->name ?? '');
@@ -87,7 +88,7 @@ class ExportCustomerJob extends BaseExportJob
             ? 'Customers of store '.(Store::find($storeId)?->name ?? '')
             : 'Customers of business '.$businessName;
 
-        $query = app(CustomerRepository::class)->listQuery($businessId, $storeId, $search);
+        $query = app(CustomerRepository::class)->listQuery($businessId, $storeId, $search, $ids);
 
         return [$user, $title, $query];
     }

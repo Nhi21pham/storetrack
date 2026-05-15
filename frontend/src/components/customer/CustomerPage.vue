@@ -95,7 +95,32 @@
       <p>No customers matching "{{ searchQuery }}"</p>
     </div>
 
-    <div v-else class="table-wrapper" :class="{ resizing: isResizing }">
+    <template v-else>
+    <div v-if="selectedIds.size > 0" class="selection-bar">
+      <span class="selection-count">{{ selectedIds.size }} selected</span>
+      <div class="selection-actions">
+        <button class="btn-selection-action" @click="clearSelection">Clear</button>
+        <button
+          class="btn-selection-action"
+          :disabled="exporting"
+          @click="startExport"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          {{ exporting ? 'Exporting...' : 'Export selected' }}
+        </button>
+        <button
+          v-if="currentStore?.is_active"
+          class="btn-selection-action danger"
+          :disabled="bulkDeleting"
+          @click="confirmBulkDelete"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          Delete selected
+        </button>
+      </div>
+    </div>
+
+    <div class="table-wrapper" :class="{ resizing: isResizing }">
       <table>
         <colgroup>
           <col v-for="(w, i) in colWidths" :key="i" :style="{ width: w + 'px' }" />
@@ -103,20 +128,38 @@
         <thead>
           <tr>
             <th v-for="(col, i) in columns" :key="col.key">
+              <template v-if="col.key === 'select'">
+                <input
+                  type="checkbox"
+                  class="row-check"
+                  :checked="allVisibleSelected"
+                  :indeterminate.prop="someVisibleSelected"
+                  @change="toggleSelectAll"
+                  title="Select all on this page"
+                />
+              </template>
               <SortableHeader
-                v-if="col.sortable"
+                v-else-if="col.sortable"
                 :label="col.label"
                 :sort-info="getSortInfo(col.key)"
                 :rank="sortCriteria.length > 1 && getSortInfo(col.key) ? sortRank(col.key) : null"
                 @sort="(dir) => toggleSort(col.key, dir)"
               />
               <template v-else>{{ col.label }}</template>
-              <div class="resize-handle" @mousedown.prevent="startResize($event, i)"></div>
+              <div v-if="col.key !== 'select'" class="resize-handle" @mousedown.prevent="startResize($event, i)"></div>
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="customer in sortedCustomers" :key="customer.id">
+          <tr v-for="customer in sortedCustomers" :key="customer.id" :class="{ 'row-selected': isSelected(customer.id) }">
+            <td>
+              <input
+                type="checkbox"
+                class="row-check"
+                :checked="isSelected(customer.id)"
+                @change="toggleRow(customer.id)"
+              />
+            </td>
             <td><span class="id-badge">#{{ customer.id }}</span></td>
             <td><button class="name-link" @click="openDetail(customer)">{{ customer.name }}</button></td>
             <td>
@@ -149,6 +192,7 @@
         </tbody>
       </table>
     </div>
+    </template>
 
     <CustomerFormModal
       v-if="showForm"
@@ -174,6 +218,17 @@
       type="danger"
       @confirm="handleDelete"
       @cancel="deletingCustomer = null"
+    />
+
+    <ConfirmDialog
+      v-if="showBulkDeleteConfirm"
+      title="Delete Customers"
+      :message="`Are you sure you want to delete ${selectedIds.size} customer${selectedIds.size === 1 ? '' : 's'}? This action cannot be undone.`"
+      confirm-text="Yes, delete"
+      cancel-text="Cancel"
+      type="danger"
+      @confirm="handleBulkDelete"
+      @cancel="showBulkDeleteConfirm = false"
     />
     </template>
   </div>
@@ -203,6 +258,7 @@ const searchQuery = ref('')
 const storeFilter = ref('store')
 
 const columns = [
+  { key: 'select',   label: '',         sortable: false },
   { key: 'id',       label: 'ID',       sortable: true  },
   { key: 'name',     label: 'Name',     sortable: true  },
   { key: 'tax_code', label: 'Tax Code', sortable: true  },
@@ -220,7 +276,7 @@ const getSortValue = (c, key) => {
   return v == null ? '' : String(v).toLowerCase()
 }
 
-const colWidths = ref([70, 160, 120, 190, 130, 220, 80])
+const colWidths = ref([40, 70, 160, 120, 190, 130, 220, 80])
 
 const isResizing = ref(false)
 let resizeState = null
@@ -281,6 +337,43 @@ const filteredCustomers = computed(() => {
 })
 
 const sortedCustomers = computed(() => sortItems(filteredCustomers.value, getSortValue))
+
+const selectedIds = ref(new Set())
+const isSelected = (id) => selectedIds.value.has(String(id))
+const toggleRow = (id) => {
+  const key = String(id)
+  const next = new Set(selectedIds.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  selectedIds.value = next
+}
+
+const visibleIds = computed(() => sortedCustomers.value.map(c => String(c.id)))
+const selectedVisibleCount = computed(() => visibleIds.value.filter(id => selectedIds.value.has(id)).length)
+const allVisibleSelected = computed(() =>
+  visibleIds.value.length > 0 && selectedVisibleCount.value === visibleIds.value.length
+)
+const someVisibleSelected = computed(() =>
+  selectedVisibleCount.value > 0 && selectedVisibleCount.value < visibleIds.value.length
+)
+
+const toggleSelectAll = () => {
+  if (allVisibleSelected.value) {
+    const next = new Set(selectedIds.value)
+    for (const id of visibleIds.value) next.delete(id)
+    selectedIds.value = next
+  } else {
+    const next = new Set(selectedIds.value)
+    for (const id of visibleIds.value) next.add(id)
+    selectedIds.value = next
+  }
+}
+
+const clearSelection = () => { selectedIds.value = new Set() }
+
+watch([storeFilter, searchQuery, () => currentStore.value?.id], () => {
+  clearSelection()
+})
 
 const fetchCustomers = async () => {
   if (!currentStore.value?.id || !currentBusiness.value?.id) return
@@ -404,11 +497,48 @@ const startExport = async () => {
     if (storeFilter.value === 'store' && currentStore.value?.id) {
       params.store_id = currentStore.value.id
     }
+    if (selectedIds.value.size > 0) {
+      params.ids = Array.from(selectedIds.value)
+    }
     const response = await rest('post', `/api/exports/customers/${currentBusiness.value.id}`, { params })
     pollExport(response.id)
   } catch (err) {
     exporting.value = false
     showToast(err.message, 'error')
+  }
+}
+
+const bulkDeleting = ref(false)
+const showBulkDeleteConfirm = ref(false)
+
+const confirmBulkDelete = () => { showBulkDeleteConfirm.value = true }
+
+const handleBulkDelete = async () => {
+  if (bulkDeleting.value) return
+  bulkDeleting.value = true
+  try {
+    const variables = {
+      ids: Array.from(selectedIds.value),
+      business_id: currentBusiness.value?.id,
+    }
+    if (storeFilter.value === 'store' && currentStore.value?.id) {
+      variables.store_id = currentStore.value.id
+    }
+    const data = await graphql(
+      `mutation DeleteCustomers($ids: [ID!]!, $business_id: ID!, $store_id: ID) {
+        deleteCustomers(ids: $ids, business_id: $business_id, store_id: $store_id)
+      }`,
+      variables
+    )
+    const count = data.deleteCustomers ?? 0
+    showBulkDeleteConfirm.value = false
+    clearSelection()
+    fetchCustomers()
+    showToast(`Deleted ${count} customer${count === 1 ? '' : 's'}.`)
+  } catch (err) {
+    showToast(err.message, 'error')
+  } finally {
+    bulkDeleting.value = false
   }
 }
 </script>
@@ -470,6 +600,18 @@ tbody tr:hover { background: #fafafa; }
 .mono { font-family: monospace; font-size: 13px; }
 .empty-val { color: #d1d5db; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.row-check { width: 15px; height: 15px; cursor: pointer; accent-color: #111; }
+tbody tr.row-selected { background: #f0f7ff; }
+tbody tr.row-selected:hover { background: #e6f0fb; }
+
+.selection-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; margin-bottom: 12px; background: #111; color: #fff; border-radius: 10px; font-size: 13px; }
+.selection-count { font-weight: 600; }
+.selection-actions { display: flex; gap: 8px; }
+.btn-selection-action { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 7px; font-size: 12.5px; font-weight: 500; color: #fff; background: transparent; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.btn-selection-action:hover:not(:disabled) { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.4); }
+.btn-selection-action.danger:hover:not(:disabled) { background: #dc2626; border-color: #dc2626; }
+.btn-selection-action:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
 .action-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: none; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; }

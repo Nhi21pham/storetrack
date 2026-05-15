@@ -71,6 +71,65 @@ class CustomerService
         return $customer;
     }
 
+    public function deleteMany(User $actor, int $businessId, ?int $storeId, array $ids): int
+    {
+        $this->assertScopedAccess($actor, $businessId, $storeId);
+
+        if (empty($ids)) {
+            return 0;
+        }
+
+        return DB::transaction(function () use ($actor, $businessId, $storeId, $ids) {
+            $customers = $this->customerRepository
+                ->listQuery($businessId, $storeId, null, $ids)
+                ->lockForUpdate()
+                ->get();
+
+            if ($customers->isEmpty()) {
+                return 0;
+            }
+
+            $snapshots = $customers->map(fn ($c) => [
+                'id'       => (int) $c->id,
+                'name'     => (string) $c->name,
+                'store_id' => $c->store_id !== null ? (int) $c->store_id : null,
+                'party_id' => (int) $c->party_id,
+            ])->all();
+
+            $customerIds = array_column($snapshots, 'id');
+            $partyIds    = array_column($snapshots, 'party_id');
+            $expected    = count($snapshots);
+
+            $deletedCustomers = $this->customerRepository->deleteMany($customerIds);
+            if ($deletedCustomers !== $expected) {
+                throw new CustomerException(
+                    ErrorCode::SERVER_ERROR,
+                    "Bulk customer delete affected {$deletedCustomers} rows; expected {$expected}."
+                );
+            }
+
+            $deletedParties = $this->partyRepository->deleteMany($partyIds);
+            if ($deletedParties !== $expected) {
+                throw new CustomerException(
+                    ErrorCode::SERVER_ERROR,
+                    "Bulk party delete affected {$deletedParties} rows; expected {$expected}."
+                );
+            }
+
+            foreach ($snapshots as $snap) {
+                $this->auditLogService->customerDeleted(
+                    $actor,
+                    $snap['store_id'],
+                    $businessId,
+                    $snap['id'],
+                    $snap['name']
+                );
+            }
+
+            return $expected;
+        });
+    }
+
     public function delete(User $actor, int $storeId, int $businessId, int $id): void
     {
         $customer = $this->mustFind($id);
@@ -97,7 +156,7 @@ class CustomerService
 
     public function queueExport(User $user, int $businessId, array $filters = [], ?string $clientId = null): Export
     {
-        $this->assertExportAccess($user, $businessId, $filters['store_id'] ?? null);
+        $this->assertScopedAccess($user, $businessId, $filters['store_id'] ?? null);
 
         $normalizedFilters = $this->normalizeExportFilters($filters);
         $filterSignature   = $this->filterSignature($normalizedFilters);
@@ -138,7 +197,7 @@ class CustomerService
         return $export;
     }
 
-    private function assertExportAccess(User $user, int $businessId, $storeId): void
+    private function assertScopedAccess(User $user, int $businessId, $storeId): void
     {
         if ($storeId !== null && $storeId !== '') {
             $storeId = (int) $storeId;
@@ -157,15 +216,22 @@ class CustomerService
 
     private function normalizeExportFilters(array $filters): array
     {
-        $allowed = ['store_id', 'search'];
         $clean = [];
-        foreach ($allowed as $key) {
-            $value = $filters[$key] ?? null;
-            if ($value === null || $value === '') {
-                continue;
-            }
-            $clean[$key] = (string) $value;
+
+        if (!empty($filters['store_id'])) {
+            $clean['store_id'] = (string) $filters['store_id'];
         }
+        if (!empty($filters['search'])) {
+            $clean['search'] = (string) $filters['search'];
+        }
+        if (!empty($filters['ids']) && is_array($filters['ids'])) {
+            $ids = array_values(array_unique(array_map('intval', $filters['ids'])));
+            sort($ids);
+            if (count($ids) > 0) {
+                $clean['ids'] = $ids;
+            }
+        }
+
         return $clean;
     }
 
