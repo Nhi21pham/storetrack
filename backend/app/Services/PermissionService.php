@@ -34,7 +34,9 @@ class PermissionService
         return match ($permission) {
             PermissionEnum::UPDATE_BUSINESS,
             PermissionEnum::DELETE_BUSINESS,
-            PermissionEnum::CREATE_STORE => $this->permissionRepository->isBusinessOwner($user->id, $businessId),
+            PermissionEnum::CREATE_STORE,
+            PermissionEnum::DELETE_CUSTOMER,
+            PermissionEnum::DELETE_SUPPLIER => $this->permissionRepository->isBusinessOwner($user->id, $businessId),
             default => false,
         };
     }
@@ -54,6 +56,14 @@ class PermissionService
             throw new AuthorizationException(
                 "You do not have permission to perform '{$permission->value}' on this business."
             );
+        }
+    }
+
+    /** Guard against cross-business spoofing: row's actual business must match the claimed one. */
+    public function assertSameBusiness(int $rowBusinessId, int $claimedBusinessId): void
+    {
+        if ($rowBusinessId !== $claimedBusinessId) {
+            throw new AuthorizationException('You do not have access to this resource.');
         }
     }
 
