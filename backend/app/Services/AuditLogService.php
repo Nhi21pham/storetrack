@@ -511,9 +511,9 @@ class AuditLogService
         );
     }
 
-    public function supplierDeleted(User $actor, int $storeId, int $businessId, int $supplierId, string $supplierName): void
+    public function supplierDeleted(User $actor, ?int $storeId, int $businessId, int $supplierId, string $supplierName): void
     {
-        $storeName = Store::find($storeId)?->name;
+        $storeName = $storeId !== null ? Store::find($storeId)?->name : null;
         $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::DELETED,
             self::actor($actor) . " has DELETED supplier {$supplierName}.",
             [
@@ -561,9 +561,9 @@ class AuditLogService
         );
     }
 
-    public function customerDeleted(User $actor, int $storeId, int $businessId, int $customerId, string $customerName): void
+    public function customerDeleted(User $actor, ?int $storeId, int $businessId, int $customerId, string $customerName): void
     {
-        $storeName = Store::find($storeId)?->name;
+        $storeName = $storeId !== null ? Store::find($storeId)?->name : null;
         $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::DELETED,
             self::actor($actor) . " has DELETED customer {$customerName}.",
             [
