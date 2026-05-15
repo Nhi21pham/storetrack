@@ -152,9 +152,15 @@ class ExportController extends Controller
 
     private function extractPartyExportFilters(Request $request): array
     {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
         return [
             'store_id' => $request->query('store_id'),
             'search'   => $request->query('search'),
+            'ids'      => $ids,
         ];
     }
 
