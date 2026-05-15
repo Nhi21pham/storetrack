@@ -35,7 +35,6 @@ class CustomerResolver extends BaseResolver
         return $this->safe(function () use ($args) {
             $this->customerService->delete(
                 $this->user(),
-                (int) $args['store_id'],
                 (int) $args['business_id'],
                 (int) $args['id']
             );

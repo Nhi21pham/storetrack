@@ -154,6 +154,7 @@
           <tr v-for="customer in sortedCustomers" :key="customer.id" :class="{ 'row-selected': isSelected(customer.id) }">
             <td>
               <input
+                v-if="canManageRow(customer)"
                 type="checkbox"
                 class="row-check"
                 :checked="isSelected(customer.id)"
@@ -179,7 +180,7 @@
               <span v-else class="empty-val">—</span>
             </td>
             <td>
-              <div v-if="currentStore?.is_active" class="row-actions">
+              <div v-if="currentStore?.is_active && canManageRow(customer)" class="row-actions">
                 <button class="action-btn" @click="openEdit(customer)" title="Edit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
@@ -338,6 +339,11 @@ const filteredCustomers = computed(() => {
 
 const sortedCustomers = computed(() => sortItems(filteredCustomers.value, getSortValue))
 
+const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
+const canManageRow = (customer) =>
+  isBusinessOwner.value ||
+  (currentStore.value?.id && String(customer.store_id) === String(currentStore.value.id))
+
 const selectedIds = ref(new Set())
 const isSelected = (id) => selectedIds.value.has(String(id))
 const toggleRow = (id) => {
@@ -348,7 +354,9 @@ const toggleRow = (id) => {
   selectedIds.value = next
 }
 
-const visibleIds = computed(() => sortedCustomers.value.map(c => String(c.id)))
+const visibleIds = computed(() =>
+  sortedCustomers.value.filter(canManageRow).map(c => String(c.id))
+)
 const selectedVisibleCount = computed(() => visibleIds.value.filter(id => selectedIds.value.has(id)).length)
 const allVisibleSelected = computed(() =>
   visibleIds.value.length > 0 && selectedVisibleCount.value === visibleIds.value.length
@@ -409,12 +417,11 @@ const confirmDelete = (c) => { deletingCustomer.value = c }
 const handleDelete = async () => {
   try {
     await graphql(
-      `mutation DeleteCustomer($id: ID!, $store_id: ID!, $business_id: ID!) {
-        deleteCustomer(id: $id, store_id: $store_id, business_id: $business_id)
+      `mutation DeleteCustomer($id: ID!, $business_id: ID!) {
+        deleteCustomer(id: $id, business_id: $business_id)
       }`,
       {
         id: deletingCustomer.value.id,
-        store_id: currentStore.value?.id,
         business_id: currentBusiness.value?.id,
       }
     )

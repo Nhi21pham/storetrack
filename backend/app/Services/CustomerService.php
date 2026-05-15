@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ErrorCode;
 use App\Enums\PartyTypeEnum;
+use App\Enums\PermissionEnum;
 use App\Exceptions\CustomerException;
 use App\Exceptions\AuthorizationException;
 use App\Jobs\Exports\ExportCustomerJob;
@@ -24,6 +25,7 @@ class CustomerService
         private PartyRepository $partyRepository,
         private AuditLogService $auditLogService,
         private PermissionRepository $permissionRepository,
+        private PermissionService $permissionService,
         private ExportService $exportService,
         private ExportRepository $exportRepository,
     ) {}
@@ -73,7 +75,7 @@ class CustomerService
 
     public function deleteMany(User $actor, int $businessId, ?int $storeId, array $ids): int
     {
-        $this->assertScopedAccess($actor, $businessId, $storeId);
+        $this->authorizeCustomerDelete($actor, $businessId, $storeId);
 
         if (empty($ids)) {
             return 0;
@@ -130,11 +132,16 @@ class CustomerService
         });
     }
 
-    public function delete(User $actor, int $storeId, int $businessId, int $id): void
+    public function delete(User $actor, int $businessId, int $id): void
     {
         $customer = $this->mustFind($id);
-        $customerId = $customer->id;
-        $customerName = $customer->name;
+        $this->permissionService->assertSameBusiness((int) $customer->business_id, $businessId);
+
+        $customerStoreId = $customer->store_id !== null ? (int) $customer->store_id : null;
+        $this->authorizeCustomerDelete($actor, $businessId, $customerStoreId);
+
+        $customerId = (int) $customer->id;
+        $customerName = (string) $customer->name;
 
         DB::transaction(function () use ($customer) {
             $partyId = $customer->party_id;
@@ -142,7 +149,16 @@ class CustomerService
             $this->partyRepository->delete($partyId);
         });
 
-        $this->auditLogService->customerDeleted($actor, $storeId, $businessId, $customerId, $customerName);
+        $this->auditLogService->customerDeleted($actor, $customerStoreId, $businessId, $customerId, $customerName);
+    }
+
+    private function authorizeCustomerDelete(User $actor, int $businessId, ?int $storeId): void
+    {
+        if ($storeId !== null) {
+            $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_CUSTOMER, $storeId);
+            return;
+        }
+        $this->permissionService->authorizeBusiness($actor, PermissionEnum::DELETE_CUSTOMER, $businessId);
     }
 
     private function mustFind(int $id): Customer

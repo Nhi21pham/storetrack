@@ -7,7 +7,7 @@ extend type Mutation {
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@update")
 
-    deleteCustomer(id: ID!, store_id: ID!, business_id: ID!): Boolean!
+    deleteCustomer(id: ID!, business_id: ID!): Boolean!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@delete")
 
