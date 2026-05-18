@@ -12,6 +12,11 @@ class CustomerRepository
         return Customer::create($data);
     }
 
+    public function attachStore(Customer $customer, int $storeId): void
+    {
+        $customer->stores()->attach($storeId);
+    }
+
     public function findById(int $id): ?Customer
     {
         return Customer::find($id);
@@ -46,7 +51,7 @@ class CustomerRepository
         $query = Customer::query()->where('business_id', $businessId);
 
         if ($storeId !== null) {
-            $query->where('store_id', $storeId);
+            $query->whereHas('stores', fn ($q) => $q->where('stores.id', $storeId));
         }
 
         if ($ids !== null && count($ids) > 0) {

@@ -49,33 +49,49 @@ class CustomerService
 
     public function create(User $actor, int $storeId, int $businessId, array $data): Customer
     {
-        $customer = DB::transaction(function () use ($storeId, $businessId, $data) {
+        return DB::transaction(function () use ($actor, $storeId, $businessId, $data) {
             $party = $this->partyRepository->create(PartyTypeEnum::CUSTOMER);
-            return $this->customerRepository->create(array_merge($data, [
+            $customer = $this->customerRepository->create(array_merge($data, [
                 'party_id'    => $party->id,
                 'business_id' => $businessId,
                 'store_id'    => $storeId,
             ]));
+            $this->customerRepository->attachStore($customer, $storeId);
+
+            $this->auditLogService->customerCreated($actor, $storeId, $businessId, $customer);
+
+            return $customer;
         });
-
-        $this->auditLogService->customerCreated($actor, $storeId, $businessId, $customer);
-
-        return $customer;
     }
 
     public function update(User $actor, int $storeId, int $businessId, int $id, array $data): Customer
     {
         $customer = $this->mustFind($id);
+        $this->permissionService->assertSameBusiness((int) $customer->business_id, $businessId);
+
+        $linkedStoreIds = $customer->stores->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->authorizeCustomerUpdate($actor, $businessId, $linkedStoreIds);
+
         $customer = $this->customerRepository->update($customer, $data);
 
-        $this->auditLogService->customerUpdated($actor, $storeId, $businessId, $customer);
+        $auditStoreId = $customer->store_id !== null ? (int) $customer->store_id : null;
+        $this->auditLogService->customerUpdated($actor, $auditStoreId, $businessId, $customer);
 
         return $customer;
     }
 
+    private function authorizeCustomerUpdate(User $actor, int $businessId, ?array $storeIds): void
+    {
+        if ($storeIds === null || empty($storeIds)) {
+            $this->permissionService->authorizeBusiness($actor, PermissionEnum::UPDATE_CUSTOMER, $businessId);
+            return;
+        }
+        $this->permissionService->authorizeAnyStore($actor, PermissionEnum::UPDATE_CUSTOMER, $storeIds);
+    }
+
     public function deleteMany(User $actor, int $businessId, ?int $storeId, array $ids): int
     {
-        $this->authorizeCustomerDelete($actor, $businessId, $storeId);
+        $this->authorizeCustomerDelete($actor, $businessId, $storeId !== null ? [$storeId] : null);
 
         if (empty($ids)) {
             return 0;
@@ -138,7 +154,8 @@ class CustomerService
         $this->permissionService->assertSameBusiness((int) $customer->business_id, $businessId);
 
         $customerStoreId = $customer->store_id !== null ? (int) $customer->store_id : null;
-        $this->authorizeCustomerDelete($actor, $businessId, $customerStoreId);
+        $linkedStoreIds = $customer->stores->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->authorizeCustomerDelete($actor, $businessId, $linkedStoreIds);
 
         $customerId = (int) $customer->id;
         $customerName = (string) $customer->name;
@@ -152,13 +169,13 @@ class CustomerService
         $this->auditLogService->customerDeleted($actor, $customerStoreId, $businessId, $customerId, $customerName);
     }
 
-    private function authorizeCustomerDelete(User $actor, int $businessId, ?int $storeId): void
+    private function authorizeCustomerDelete(User $actor, int $businessId, ?array $storeIds): void
     {
-        if ($storeId !== null) {
-            $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_CUSTOMER, $storeId);
+        if ($storeIds === null || empty($storeIds)) {
+            $this->permissionService->authorizeBusiness($actor, PermissionEnum::DELETE_CUSTOMER, $businessId);
             return;
         }
-        $this->permissionService->authorizeBusiness($actor, PermissionEnum::DELETE_CUSTOMER, $businessId);
+        $this->permissionService->authorizeAnyStore($actor, PermissionEnum::DELETE_CUSTOMER, $storeIds);
     }
 
     private function mustFind(int $id): Customer
