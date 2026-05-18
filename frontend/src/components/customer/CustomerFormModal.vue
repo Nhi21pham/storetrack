@@ -36,7 +36,7 @@
             <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
           </div>
           <div class="form-group">
-            <label>Phone</label>
+            <label>Phone <span class="required">*</span></label>
             <input v-model="form.phone" type="tel" placeholder="Enter phone number" :class="{ error: errors.phone }" />
             <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
           </div>
@@ -107,7 +107,7 @@ const validateForm = () => {
   errors.value.name = validators.customerName(form.value.name)
   errors.value.tax_code = validators.customerTaxCode(form.value.tax_code)
   errors.value.email = validators.businessEmail(form.value.email)
-  errors.value.phone = validators.businessPhone(form.value.phone)
+  errors.value.phone = validators.customerPhone(form.value.phone)
   errors.value.address = validators.businessAddress(form.value.address)
 
   return !Object.values(errors.value).some(e => e !== null)
@@ -137,7 +137,7 @@ const handleSubmit = async () => {
           tax_code: form.value.tax_code || null,
           address: form.value.address || null,
           email: form.value.email || null,
-          phone: form.value.phone || null
+          phone: form.value.phone
         }
       }
     } else {
@@ -154,7 +154,7 @@ const handleSubmit = async () => {
           tax_code: form.value.tax_code || null,
           address: form.value.address || null,
           email: form.value.email || null,
-          phone: form.value.phone || null
+          phone: form.value.phone
         }
       }
     }

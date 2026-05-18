@@ -22,6 +22,17 @@ class CustomerRepository
         return Customer::find($id);
     }
 
+    public function findByPhone(int $businessId, string $phone, ?int $excludeId = null): ?Customer
+    {
+        $query = Customer::query()
+            ->where('business_id', $businessId)
+            ->where('phone', $phone);
+        if ($excludeId !== null) {
+            $query->where('id', '!=', $excludeId);
+        }
+        return $query->first();
+    }
+
     public function update(Customer $customer, array $data): Customer
     {
         $customer->update($data);

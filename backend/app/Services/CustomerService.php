@@ -50,6 +50,10 @@ class CustomerService
     public function create(User $actor, int $storeId, int $businessId, array $data): Customer
     {
         return DB::transaction(function () use ($actor, $storeId, $businessId, $data) {
+            if ($this->customerRepository->findByPhone($businessId, (string) $data['phone']) !== null) {
+                throw new CustomerException(ErrorCode::CUSTOMER_PHONE_TAKEN, 'This phone number is already in use.');
+            }
+
             $party = $this->partyRepository->create(PartyTypeEnum::CUSTOMER);
             $customer = $this->customerRepository->create(array_merge($data, [
                 'party_id'    => $party->id,
@@ -71,6 +75,13 @@ class CustomerService
 
         $linkedStoreIds = $customer->stores->pluck('id')->map(fn ($v) => (int) $v)->all();
         $this->authorizeCustomerUpdate($actor, $businessId, $linkedStoreIds);
+
+        if (array_key_exists('phone', $data) && $data['phone'] !== $customer->phone) {
+            $exists = $this->customerRepository->findByPhone($businessId, (string) $data['phone'], (int) $customer->id);
+            if ($exists !== null) {
+                throw new CustomerException(ErrorCode::CUSTOMER_PHONE_TAKEN, 'This phone number is already in use.');
+            }
+        }
 
         $customer = $this->customerRepository->update($customer, $data);
 
