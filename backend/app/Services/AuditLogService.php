@@ -495,9 +495,9 @@ class AuditLogService
         );
     }
 
-    public function supplierUpdated(User $actor, int $storeId, int $businessId, Supplier $supplier): void
+    public function supplierUpdated(User $actor, ?int $storeId, int $businessId, Supplier $supplier): void
     {
-        $storeName = Store::find($storeId)?->name;
+        $storeName = $storeId !== null ? Store::find($storeId)?->name : null;
         $this->log($storeId, $actor, AuditObjectType::SUPPLIER, AuditAction::UPDATED,
             self::actor($actor) . " has UPDATED supplier {$supplier->name}.",
             [
@@ -545,9 +545,9 @@ class AuditLogService
         );
     }
 
-    public function customerUpdated(User $actor, int $storeId, int $businessId, Customer $customer): void
+    public function customerUpdated(User $actor, ?int $storeId, int $businessId, Customer $customer): void
     {
-        $storeName = Store::find($storeId)?->name;
+        $storeName = $storeId !== null ? Store::find($storeId)?->name : null;
         $this->log($storeId, $actor, AuditObjectType::CUSTOMER, AuditAction::UPDATED,
             self::actor($actor) . " has UPDATED customer {$customer->name}.",
             [
