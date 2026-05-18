@@ -15,10 +15,11 @@ return new class extends Migration
             $table->foreignId('store_id')->nullable()->constrained('stores')->nullOnDelete();
             $table->string('name');
             $table->string('email')->nullable();
-            $table->string('phone', 20)->nullable();
+            $table->string('phone', 20);
             $table->string('address')->nullable();
             $table->string('tax_code', 50)->nullable();
             $table->timestamps();
+            $table->unique(['business_id', 'phone']);
         });
     }
 
