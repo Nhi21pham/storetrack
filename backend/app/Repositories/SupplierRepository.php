@@ -22,6 +22,17 @@ class SupplierRepository
         return Supplier::find($id);
     }
 
+    public function findByName(int $businessId, string $name, ?int $excludeId = null): ?Supplier
+    {
+        $query = Supplier::query()
+            ->where('business_id', $businessId)
+            ->where('name', $name);
+        if ($excludeId !== null) {
+            $query->where('id', '!=', $excludeId);
+        }
+        return $query->first();
+    }
+
     public function update(Supplier $supplier, array $data): Supplier
     {
         $supplier->update($data);

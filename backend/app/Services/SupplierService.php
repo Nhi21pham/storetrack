@@ -50,6 +50,10 @@ class SupplierService
     public function create(User $actor, int $storeId, int $businessId, array $data): Supplier
     {
         return DB::transaction(function () use ($actor, $storeId, $businessId, $data) {
+            if ($this->supplierRepository->findByName($businessId, (string) $data['name']) !== null) {
+                throw new SupplierException(ErrorCode::SUPPLIER_NAME_TAKEN, 'This supplier name is already in use.');
+            }
+
             $party = $this->partyRepository->create(PartyTypeEnum::SUPPLIER);
             $supplier = $this->supplierRepository->create(array_merge($data, [
                 'party_id'    => $party->id,
@@ -71,6 +75,13 @@ class SupplierService
 
         $linkedStoreIds = $supplier->stores->pluck('id')->map(fn ($v) => (int) $v)->all();
         $this->authorizeSupplierUpdate($actor, $businessId, $linkedStoreIds);
+
+        if (array_key_exists('name', $data) && $data['name'] !== $supplier->name) {
+            $exists = $this->supplierRepository->findByName($businessId, (string) $data['name'], (int) $supplier->id);
+            if ($exists !== null) {
+                throw new SupplierException(ErrorCode::SUPPLIER_NAME_TAKEN, 'This supplier name is already in use.');
+            }
+        }
 
         $supplier = $this->supplierRepository->update($supplier, $data);
 
