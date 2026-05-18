@@ -7,15 +7,19 @@ extend type Mutation {
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@update")
 
-    deleteCustomer(id: ID!, store_id: ID!, business_id: ID!): Boolean!
+    deleteCustomer(id: ID!, business_id: ID!): Boolean!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@delete")
+
+    deleteCustomers(ids: [ID!]!, business_id: ID!, store_id: ID): Int!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\CustomerResolver@deleteMany")
 }
 
 input CreateCustomerInput {
     name: String! @rules(apply: ["required", "string", "min:2", "max:255"])
     email: String @rules(apply: ["nullable", "email", "max:255"])
-    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10}$/"])
+    phone: String! @rules(apply: ["required", "string", "regex:/^\\d{10}$/"])
     address: String @rules(apply: ["nullable", "string", "max:500"])
     tax_code: String @rules(apply: ["nullable", "string", "max:50"])
 }
@@ -23,7 +27,7 @@ input CreateCustomerInput {
 input UpdateCustomerInput {
     name: String @rules(apply: ["sometimes", "string", "min:2", "max:255"])
     email: String @rules(apply: ["nullable", "email", "max:255"])
-    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10}$/"])
+    phone: String @rules(apply: ["sometimes", "required", "string", "regex:/^\\d{10}$/"])
     address: String @rules(apply: ["nullable", "string", "max:500"])
     tax_code: String @rules(apply: ["nullable", "string", "max:50"])
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AuditLogRepository
 {
-    public function storeExportQuery(
+    public function storeQuery(
         int $storeId,
         ?string $startDate = null,
         ?string $endDate = null,
@@ -22,7 +22,7 @@ class AuditLogRepository
         return $query->orderByDesc('created_at');
     }
 
-    public function businessExportQuery(
+    public function businessQuery(
         int $businessId,
         ?string $startDate = null,
         ?string $endDate = null,

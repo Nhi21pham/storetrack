@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('tax_code', 50)->nullable();
             $table->timestamps();
+            $table->unique(['business_id', 'name']);
         });
     }
 

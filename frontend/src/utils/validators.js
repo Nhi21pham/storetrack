@@ -97,6 +97,12 @@ export const validators = {
         if (value.trim().length > 50) return 'Tax code is too long.'
         return null
     },
+
+    customerPhone: (value) => {
+        if (!value || !value.trim()) return 'Phone number is required.'
+        if (!/^\d{10}$/.test(value.trim())) return 'Invalid phone number. Must be exactly 10 digits.'
+        return null
+    },
 }
 
 export const validate = (rules) => {

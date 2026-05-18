@@ -7,9 +7,13 @@ extend type Mutation {
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\SupplierResolver@update")
 
-    deleteSupplier(id: ID!, store_id: ID!, business_id: ID!): Boolean!
+    deleteSupplier(id: ID!, business_id: ID!): Boolean!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\SupplierResolver@delete")
+
+    deleteSuppliers(ids: [ID!]!, business_id: ID!, store_id: ID): Int!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\SupplierResolver@deleteMany")
 }
 
 input CreateSupplierInput {

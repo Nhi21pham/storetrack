@@ -34,7 +34,11 @@ class PermissionService
         return match ($permission) {
             PermissionEnum::UPDATE_BUSINESS,
             PermissionEnum::DELETE_BUSINESS,
-            PermissionEnum::CREATE_STORE => $this->permissionRepository->isBusinessOwner($user->id, $businessId),
+            PermissionEnum::CREATE_STORE,
+            PermissionEnum::UPDATE_CUSTOMER,
+            PermissionEnum::DELETE_CUSTOMER,
+            PermissionEnum::UPDATE_SUPPLIER,
+            PermissionEnum::DELETE_SUPPLIER => $this->permissionRepository->isBusinessOwner($user->id, $businessId),
             default => false,
         };
     }
@@ -53,6 +57,33 @@ class PermissionService
         if (!$this->canOnBusiness($user, $permission, $businessId)) {
             throw new AuthorizationException(
                 "You do not have permission to perform '{$permission->value}' on this business."
+            );
+        }
+    }
+
+    /** Guard against cross-business spoofing: row's actual business must match the claimed one. */
+    public function assertSameBusiness(int $rowBusinessId, int $claimedBusinessId): void
+    {
+        if ($rowBusinessId !== $claimedBusinessId) {
+            throw new AuthorizationException('You do not have access to this resource.');
+        }
+    }
+
+    public function canOnAnyStore(User $user, PermissionEnum $permission, array $storeIds): bool
+    {
+        foreach ($storeIds as $storeId) {
+            if ($this->canOnStore($user, $permission, (int) $storeId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function authorizeAnyStore(User $user, PermissionEnum $permission, array $storeIds): void
+    {
+        if (!$this->canOnAnyStore($user, $permission, $storeIds)) {
+            throw new AuthorizationException(
+                "You do not have permission to perform '{$permission->value}' on this resource."
             );
         }
     }

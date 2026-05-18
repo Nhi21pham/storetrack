@@ -35,11 +35,24 @@ class CustomerResolver extends BaseResolver
         return $this->safe(function () use ($args) {
             $this->customerService->delete(
                 $this->user(),
-                (int) $args['store_id'],
                 (int) $args['business_id'],
                 (int) $args['id']
             );
             return true;
+        });
+    }
+
+    public function deleteMany($_, array $args): int
+    {
+        return $this->safe(function () use ($args) {
+            $storeId = isset($args['store_id']) ? (int) $args['store_id'] : null;
+            $ids = array_map('intval', $args['ids'] ?? []);
+            return $this->customerService->deleteMany(
+                $this->user(),
+                (int) $args['business_id'],
+                $storeId,
+                $ids
+            );
         });
     }
 }

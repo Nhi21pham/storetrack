@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Exceptions\AppException;
 use App\Models\Export;
 use App\Services\AuditLogService;
+use App\Services\CustomerService;
 use App\Services\ExportService;
+use App\Services\SupplierService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -15,6 +17,8 @@ class ExportController extends Controller
     public function __construct(
         private AuditLogService $auditLogService,
         private ExportService $exportService,
+        private CustomerService $customerService,
+        private SupplierService $supplierService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -40,6 +44,38 @@ class ExportController extends Controller
                 $request->user(),
                 $businessId,
                 $this->extractFilters($request),
+                $this->extractClientId($request),
+            );
+
+            return $this->exportResponse($export, 202);
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    public function queueCustomers(Request $request, int $businessId): JsonResponse
+    {
+        try {
+            $export = $this->customerService->queueExport(
+                $request->user(),
+                $businessId,
+                $this->extractPartyExportFilters($request),
+                $this->extractClientId($request),
+            );
+
+            return $this->exportResponse($export, 202);
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    public function queueSuppliers(Request $request, int $businessId): JsonResponse
+    {
+        try {
+            $export = $this->supplierService->queueExport(
+                $request->user(),
+                $businessId,
+                $this->extractPartyExportFilters($request),
                 $this->extractClientId($request),
             );
 
@@ -111,6 +147,20 @@ class ExportController extends Controller
             'action' => $request->query('action'),
             'store_name' => $request->query('store_name'),
             'search' => $request->query('search'),
+        ];
+    }
+
+    private function extractPartyExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        return [
+            'store_id' => $request->query('store_id'),
+            'search'   => $request->query('search'),
+            'ids'      => $ids,
         ];
     }
 
