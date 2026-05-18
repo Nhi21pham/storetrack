@@ -28,9 +28,11 @@ enum ErrorCode: string
 
     // Supplier
     case SUPPLIER_NOT_FOUND = 'SUPPLIER_NOT_FOUND';
+    case SUPPLIER_NAME_TAKEN = 'SUPPLIER_NAME_TAKEN';
 
     // Customer
     case CUSTOMER_NOT_FOUND = 'CUSTOMER_NOT_FOUND';
+    case CUSTOMER_PHONE_TAKEN = 'CUSTOMER_PHONE_TAKEN';
 
     // Export
     case EXPORT_NOT_FOUND = 'EXPORT_NOT_FOUND';
@@ -66,6 +68,8 @@ enum ErrorCode: string
             self::CODE_EXPIRED,
             self::REGISTRATION_EXPIRED,
             self::TAX_CODE_TAKEN,
+            self::SUPPLIER_NAME_TAKEN,
+            self::CUSTOMER_PHONE_TAKEN,
             self::CANNOT_CHANGE_OWNER_ROLE,
             self::CANNOT_REMOVE_OWNER,
             self::INVITATION_EXPIRED,
