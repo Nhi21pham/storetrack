@@ -49,33 +49,49 @@ class SupplierService
 
     public function create(User $actor, int $storeId, int $businessId, array $data): Supplier
     {
-        $supplier = DB::transaction(function () use ($storeId, $businessId, $data) {
+        return DB::transaction(function () use ($actor, $storeId, $businessId, $data) {
             $party = $this->partyRepository->create(PartyTypeEnum::SUPPLIER);
-            return $this->supplierRepository->create(array_merge($data, [
+            $supplier = $this->supplierRepository->create(array_merge($data, [
                 'party_id'    => $party->id,
                 'business_id' => $businessId,
                 'store_id'    => $storeId,
             ]));
+            $this->supplierRepository->attachStore($supplier, $storeId);
+
+            $this->auditLogService->supplierCreated($actor, $storeId, $businessId, $supplier);
+
+            return $supplier;
         });
-
-        $this->auditLogService->supplierCreated($actor, $storeId, $businessId, $supplier);
-
-        return $supplier;
     }
 
     public function update(User $actor, int $storeId, int $businessId, int $id, array $data): Supplier
     {
         $supplier = $this->mustFind($id);
+        $this->permissionService->assertSameBusiness((int) $supplier->business_id, $businessId);
+
+        $linkedStoreIds = $supplier->stores->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->authorizeSupplierUpdate($actor, $businessId, $linkedStoreIds);
+
         $supplier = $this->supplierRepository->update($supplier, $data);
 
-        $this->auditLogService->supplierUpdated($actor, $storeId, $businessId, $supplier);
+        $auditStoreId = $supplier->store_id !== null ? (int) $supplier->store_id : null;
+        $this->auditLogService->supplierUpdated($actor, $auditStoreId, $businessId, $supplier);
 
         return $supplier;
     }
 
+    private function authorizeSupplierUpdate(User $actor, int $businessId, ?array $storeIds): void
+    {
+        if ($storeIds === null || empty($storeIds)) {
+            $this->permissionService->authorizeBusiness($actor, PermissionEnum::UPDATE_SUPPLIER, $businessId);
+            return;
+        }
+        $this->permissionService->authorizeAnyStore($actor, PermissionEnum::UPDATE_SUPPLIER, $storeIds);
+    }
+
     public function deleteMany(User $actor, int $businessId, ?int $storeId, array $ids): int
     {
-        $this->authorizeSupplierDelete($actor, $businessId, $storeId);
+        $this->authorizeSupplierDelete($actor, $businessId, $storeId !== null ? [$storeId] : null);
 
         if (empty($ids)) {
             return 0;
@@ -138,7 +154,8 @@ class SupplierService
         $this->permissionService->assertSameBusiness((int) $supplier->business_id, $businessId);
 
         $supplierStoreId = $supplier->store_id !== null ? (int) $supplier->store_id : null;
-        $this->authorizeSupplierDelete($actor, $businessId, $supplierStoreId);
+        $linkedStoreIds = $supplier->stores->pluck('id')->map(fn ($v) => (int) $v)->all();
+        $this->authorizeSupplierDelete($actor, $businessId, $linkedStoreIds);
 
         $supplierId = (int) $supplier->id;
         $supplierName = (string) $supplier->name;
@@ -152,13 +169,13 @@ class SupplierService
         $this->auditLogService->supplierDeleted($actor, $supplierStoreId, $businessId, $supplierId, $supplierName);
     }
 
-    private function authorizeSupplierDelete(User $actor, int $businessId, ?int $storeId): void
+    private function authorizeSupplierDelete(User $actor, int $businessId, ?array $storeIds): void
     {
-        if ($storeId !== null) {
-            $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_SUPPLIER, $storeId);
+        if ($storeIds === null || empty($storeIds)) {
+            $this->permissionService->authorizeBusiness($actor, PermissionEnum::DELETE_SUPPLIER, $businessId);
             return;
         }
-        $this->permissionService->authorizeBusiness($actor, PermissionEnum::DELETE_SUPPLIER, $businessId);
+        $this->permissionService->authorizeAnyStore($actor, PermissionEnum::DELETE_SUPPLIER, $storeIds);
     }
 
     private function mustFind(int $id): Supplier

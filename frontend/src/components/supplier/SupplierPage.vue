@@ -106,7 +106,7 @@
           {{ exporting ? 'Exporting...' : 'Export selected' }}
         </button>
         <button
-          v-if="currentStore?.is_active"
+          v-if="currentStore?.is_active && canDelete"
           class="btn-selection-action danger"
           :disabled="bulkDeleting"
           @click="confirmBulkDelete"
@@ -181,7 +181,7 @@
                 <button class="action-btn" @click="openEdit(supplier)" title="Edit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
-                <button class="action-btn danger" @click="confirmDelete(supplier)" title="Delete">
+                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(supplier)" title="Delete">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
               </div>
@@ -338,9 +338,17 @@ const filteredSuppliers = computed(() => {
 const sortedSuppliers = computed(() => sortItems(filteredSuppliers.value, getSortValue))
 
 const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
-const canManageRow = (supplier) =>
-  isBusinessOwner.value ||
-  (currentStore.value?.id && String(supplier.store_id) === String(currentStore.value.id))
+const canDelete = computed(() => {
+  if (isBusinessOwner.value) return true
+  const role = currentStore.value?.my_role
+  return role === 'owner' || role === 'accountant'
+})
+const canManageRow = (supplier) => {
+  if (isBusinessOwner.value) return true
+  if (!currentStore.value?.id) return false
+  const storeIdStr = String(currentStore.value.id)
+  return (supplier.stores || []).some(s => String(s.id) === storeIdStr)
+}
 
 const selectedIds = ref(new Set())
 const isSelected = (id) => selectedIds.value.has(String(id))
@@ -387,7 +395,7 @@ const fetchSuppliers = async () => {
   try {
     const data = await graphql(
       `query Suppliers($store_id: ID!, $business_id: ID!) {
-        suppliers(store_id: $store_id, business_id: $business_id) { id store_id name email phone address tax_code created_at }
+        suppliers(store_id: $store_id, business_id: $business_id) { id store_id name email phone address tax_code created_at stores { id name } }
       }`,
       { store_id: currentStore.value.id, business_id: currentBusiness.value.id }
     )

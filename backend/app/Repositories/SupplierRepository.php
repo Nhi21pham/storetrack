@@ -12,6 +12,11 @@ class SupplierRepository
         return Supplier::create($data);
     }
 
+    public function attachStore(Supplier $supplier, int $storeId): void
+    {
+        $supplier->stores()->attach($storeId);
+    }
+
     public function findById(int $id): ?Supplier
     {
         return Supplier::find($id);
@@ -46,7 +51,7 @@ class SupplierRepository
         $query = Supplier::query()->where('business_id', $businessId);
 
         if ($storeId !== null) {
-            $query->where('store_id', $storeId);
+            $query->whereHas('stores', fn ($q) => $q->where('stores.id', $storeId));
         }
 
         if ($ids !== null && count($ids) > 0) {
