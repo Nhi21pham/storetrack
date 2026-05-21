@@ -11,7 +11,7 @@ import StoreView from '@/views/StoreView.vue'
 import ErrorView from '@/views/ErrorView.vue'
 import AcceptInvitationView from '@/views/AcceptInvitationView.vue'
 import UserManagementView from '@/views/UserManagementView.vue'
-import AuditLogView from '@/views/AuditLogView.vue'
+import AuditLogPage from '@/features/audit/pages/AuditLogPage.vue'
 import SupplierView from '@/views/SupplierView.vue'
 import CustomerView from '@/views/CustomerView.vue'
 
@@ -92,7 +92,7 @@ const router = createRouter({
         {
           path: 'audit-log',
           name: 'audit-log',
-          component: AuditLogView
+          component: AuditLogPage
         },
         {
           path: 'suppliers',
