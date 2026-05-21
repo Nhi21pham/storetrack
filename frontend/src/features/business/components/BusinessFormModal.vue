@@ -69,8 +69,8 @@
 <script setup>
 import { ref, computed } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
-import { validators, validate } from '@/utils/validators'
-import { graphql } from '@/api'
+import { validators } from '@/utils/validators'
+import { createBusiness, updateBusiness } from '@/features/business/services/businessService'
 
 const props = defineProps({
   business: { type: Object, default: null }
@@ -116,44 +116,18 @@ const handleSubmit = async () => {
   loading.value = true
   apiError.value = ''
 
+  const input = {
+    name: form.value.name,
+    tax_code: form.value.tax_code,
+    address: form.value.address || null,
+    email: form.value.email || null,
+    phone: form.value.phone || null,
+  }
+
   try {
-    let query, variables
-
-    if (isEdit.value) {
-      query = `
-        mutation UpdateBusiness($id: ID!, $input: UpdateBusinessInput!) {
-          updateBusiness(id: $id, input: $input) { id name tax_code address email phone }
-        }
-      `
-      variables = {
-        id: props.business.id,
-        input: {
-          name: form.value.name,
-          tax_code: form.value.tax_code,
-          address: form.value.address || null,
-          email: form.value.email || null,
-          phone: form.value.phone || null
-        }
-      }
-    } else {
-      query = `
-        mutation CreateBusiness($input: CreateBusinessInput!) {
-          createBusiness(input: $input) { id name tax_code address email phone }
-        }
-      `
-      variables = {
-        input: {
-          name: form.value.name,
-          tax_code: form.value.tax_code,
-          address: form.value.address || null,
-          email: form.value.email || null,
-          phone: form.value.phone || null
-        }
-      }
-    }
-
-    const data = await graphql(query, variables)
-    const result = isEdit.value ? data.updateBusiness : data.createBusiness
+    const result = isEdit.value
+      ? await updateBusiness(props.business.id, input)
+      : await createBusiness(input)
     emit('saved', result)
   } catch (err) {
     apiError.value = err.message
