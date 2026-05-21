@@ -10,10 +10,10 @@
 </template>
 
 <script setup>
-import StatCards from '@/components/dashboard/StatCards.vue'
-import SalesTrend from '@/components/dashboard/SalesTrend.vue'
-import TopProducts from '@/components/dashboard/TopProducts.vue'
-import RecentOrders from '@/components/dashboard/RecentOrders.vue'
+import StatCards from '@/features/dashboard/components/StatCards.vue'
+import SalesTrend from '@/features/dashboard/components/SalesTrend.vue'
+import TopProducts from '@/features/dashboard/components/TopProducts.vue'
+import RecentOrders from '@/features/dashboard/components/RecentOrders.vue'
 </script>
 
 <style scoped>

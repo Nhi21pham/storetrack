@@ -5,7 +5,7 @@ import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import VerifyCodeView from '@/views/VerifyCodeView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import AppLayout from '@/layouts/AppLayout.vue'
-import DashboardView from '@/views/DashboardView.vue'
+import DashboardPage from '@/features/dashboard/pages/DashboardPage.vue'
 import BusinessView from '@/views/BusinessView.vue'
 import StoreView from '@/views/StoreView.vue'
 import ErrorView from '@/views/ErrorView.vue'
@@ -72,7 +72,7 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: DashboardView
+          component: DashboardPage
         },
         {
           path: 'business',
