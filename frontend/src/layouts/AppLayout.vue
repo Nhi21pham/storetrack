@@ -31,7 +31,7 @@ import SideBar from '@/components/layout/SideBar.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
 import AccountModal from '@/components/layout/AccountModal.vue'
-import BusinessFormModal from '@/components/business/BusinessFormModal.vue'
+import BusinessFormModal from '@/features/business/components/BusinessFormModal.vue'
 import Toast from '@/components/common/Toast.vue'
 
 const router = useRouter()

@@ -5,15 +5,15 @@ import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import VerifyCodeView from '@/views/VerifyCodeView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import AppLayout from '@/layouts/AppLayout.vue'
-import DashboardView from '@/views/DashboardView.vue'
-import BusinessView from '@/views/BusinessView.vue'
-import StoreView from '@/views/StoreView.vue'
+import DashboardPage from '@/features/dashboard/pages/DashboardPage.vue'
+import BusinessPage from '@/features/business/pages/BusinessPage.vue'
+import StorePage from '@/features/stores/pages/StorePage.vue'
 import ErrorView from '@/views/ErrorView.vue'
 import AcceptInvitationView from '@/views/AcceptInvitationView.vue'
-import UserManagementView from '@/views/UserManagementView.vue'
-import AuditLogView from '@/views/AuditLogView.vue'
-import SupplierView from '@/views/SupplierView.vue'
-import CustomerView from '@/views/CustomerView.vue'
+import UserManagementPage from '@/features/users/pages/UserManagementPage.vue'
+import AuditLogPage from '@/features/audit/pages/AuditLogPage.vue'
+import SupplierPage from '@/features/suppliers/pages/SupplierPage.vue'
+import CustomerPage from '@/features/customers/pages/CustomerPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -72,37 +72,37 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: DashboardView
+          component: DashboardPage
         },
         {
           path: 'business',
           name: 'business',
-          component: BusinessView
+          component: BusinessPage
         },
         {
           path: 'stores',
           name: 'stores',
-          component: StoreView
+          component: StorePage
         },
         {
           path: 'users',
           name: 'users',
-          component: UserManagementView
+          component: UserManagementPage
         },
         {
           path: 'audit-log',
           name: 'audit-log',
-          component: AuditLogView
+          component: AuditLogPage
         },
         {
           path: 'suppliers',
           name: 'suppliers',
-          component: SupplierView
+          component: SupplierPage
         },
         {
           path: 'customers',
           name: 'customers',
-          component: CustomerView
+          component: CustomerPage
         },
       ]
     },
