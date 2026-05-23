@@ -1,0 +1,9 @@
+type Bank {
+    id: ID!
+    short_name: String!
+    full_name_vi: String!
+    full_name_en: String!
+    is_active: Boolean!
+    created_at: DateTime!
+    updated_at: DateTime!
+}

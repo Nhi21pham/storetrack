@@ -1,6 +1,7 @@
 type Party {
     id: ID!
     type: PartyType!
+    bank_accounts: [BankAccount!]! @hasMany(relation: "bankAccounts")
     created_at: DateTime!
     updated_at: DateTime!
 }
