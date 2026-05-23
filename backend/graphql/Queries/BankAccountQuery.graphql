@@ -1,0 +1,13 @@
+extend type Query {
+    bankAccountsForParty(party_id: ID!): [BankAccount!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BankAccountResolver@listForParty")
+
+    bankAccounts(business_id: ID!, search: String): [BankAccount!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BankAccountResolver@listForBusiness")
+
+    bankAccount(id: ID!): BankAccount
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BankAccountResolver@findById")
+}

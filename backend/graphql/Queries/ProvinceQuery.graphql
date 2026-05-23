@@ -1,0 +1,5 @@
+extend type Query {
+    provinces: [Province!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\ProvinceResolver@all")
+}

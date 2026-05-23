@@ -1,0 +1,13 @@
+extend type Query {
+    banks(include_inactive: Boolean): [Bank!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BankResolver@all")
+
+    bank(id: ID!): Bank
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BankResolver@findById")
+
+    searchBanks(q: String!, include_inactive: Boolean, limit: Int): [Bank!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\BankResolver@search")
+}
