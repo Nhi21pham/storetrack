@@ -37,4 +37,9 @@ class Party extends Model
     {
         return $this->hasOne(Store::class);
     }
+
+    public function bankAccounts()
+    {
+        return $this->hasMany(BankAccount::class);
+    }
 }
