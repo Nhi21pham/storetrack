@@ -34,6 +34,19 @@ enum ErrorCode: string
     case CUSTOMER_NOT_FOUND = 'CUSTOMER_NOT_FOUND';
     case CUSTOMER_PHONE_TAKEN = 'CUSTOMER_PHONE_TAKEN';
 
+    // Bank
+    case BANK_NOT_FOUND = 'BANK_NOT_FOUND';
+    case BANK_NAME_TAKEN = 'BANK_NAME_TAKEN';
+    case BANK_IN_USE = 'BANK_IN_USE';
+    case BANK_INACTIVE = 'BANK_INACTIVE';
+
+    // Bank account
+    case BANK_ACCOUNT_NOT_FOUND = 'BANK_ACCOUNT_NOT_FOUND';
+    case BANK_ACCOUNT_NUMBER_TAKEN = 'BANK_ACCOUNT_NUMBER_TAKEN';
+
+    // Province
+    case PROVINCE_NOT_FOUND = 'PROVINCE_NOT_FOUND';
+
     // Export
     case EXPORT_NOT_FOUND = 'EXPORT_NOT_FOUND';
     case EXPORT_NOT_READY = 'EXPORT_NOT_READY';
@@ -70,6 +83,10 @@ enum ErrorCode: string
             self::TAX_CODE_TAKEN,
             self::SUPPLIER_NAME_TAKEN,
             self::CUSTOMER_PHONE_TAKEN,
+            self::BANK_NAME_TAKEN,
+            self::BANK_IN_USE,
+            self::BANK_INACTIVE,
+            self::BANK_ACCOUNT_NUMBER_TAKEN,
             self::CANNOT_CHANGE_OWNER_ROLE,
             self::CANNOT_REMOVE_OWNER,
             self::INVITATION_EXPIRED,
@@ -92,6 +109,9 @@ enum ErrorCode: string
             self::STORE_NOT_FOUND,
             self::SUPPLIER_NOT_FOUND,
             self::CUSTOMER_NOT_FOUND,
+            self::BANK_NOT_FOUND,
+            self::BANK_ACCOUNT_NOT_FOUND,
+            self::PROVINCE_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
             self::EXPORT_NOT_FOUND,
             self::EXPORT_FILE_MISSING,
