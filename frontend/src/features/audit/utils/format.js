@@ -5,11 +5,7 @@ import {
   OBJECT_LABELS,
 } from '@/features/audit/constants'
 
-export const formatDatetime = (isoString) =>
-  new Date(isoString).toLocaleString('en-US', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
+export { formatDateTime } from '@/utils/datetime'
 
 export const badgeClass = (objectType) =>
   OBJECT_BADGE_CLASSES[objectType?.toLowerCase()] ?? 'badge-default'

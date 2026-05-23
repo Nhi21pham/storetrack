@@ -12,7 +12,7 @@
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/></svg>
             <span class="log-store-name">{{ log.store_name }}</span>
           </span>
-          <span class="log-time">{{ formatDatetime(log.created_at) }}</span>
+          <span class="log-time">{{ formatDateTime(log.created_at) }}</span>
         </div>
       </div>
     </div>
@@ -31,7 +31,7 @@
 <script setup>
 import Pagination from '@/components/common/Pagination.vue'
 import {
-  badgeClass, objectLabel, actorTitle, actionTitle, renderAction, formatDatetime,
+  badgeClass, objectLabel, actorTitle, actionTitle, renderAction, formatDateTime,
 } from '@/features/audit/utils/format'
 
 defineProps({

@@ -3,18 +3,13 @@ import {
   INVITATION_STATUS,
   INVITATION_STATUS_LABELS,
 } from '@/features/users/constants'
+import { formatDateTime } from '@/utils/datetime'
+
+export { formatDateTime }
 
 export const roleLabel = (role) => ROLE_LABELS[role] ?? role
 
 export const statusLabel = (status) => INVITATION_STATUS_LABELS[status] ?? status
-
-export const formatDateTime = (dt) => {
-  if (!dt) return '—'
-  return new Date(dt).toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
 
 // An invitation's "resolved" timestamp is whenever it left the PENDING state.
 // Accepted invitations record their own `accepted_at`; everything else uses

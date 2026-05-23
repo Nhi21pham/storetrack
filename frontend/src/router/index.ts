@@ -13,7 +13,7 @@ import AcceptInvitationView from '@/views/AcceptInvitationView.vue'
 import UserManagementPage from '@/features/users/pages/UserManagementPage.vue'
 import AuditLogPage from '@/features/audit/pages/AuditLogPage.vue'
 import SupplierView from '@/views/SupplierView.vue'
-import CustomerView from '@/views/CustomerView.vue'
+import CustomerPage from '@/features/customers/pages/CustomerPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -102,7 +102,7 @@ const router = createRouter({
         {
           path: 'customers',
           name: 'customers',
-          component: CustomerView
+          component: CustomerPage
         },
       ]
     },

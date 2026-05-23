@@ -1,0 +1,12 @@
+export const CUSTOMER_COLUMNS = [
+  { key: 'select',   label: '',         sortable: false },
+  { key: 'id',       label: 'ID',       sortable: true  },
+  { key: 'name',     label: 'Name',     sortable: true  },
+  { key: 'tax_code', label: 'Tax Code', sortable: true  },
+  { key: 'email',    label: 'Email',    sortable: true  },
+  { key: 'phone',    label: 'Phone',    sortable: true  },
+  { key: 'address',  label: 'Address',  sortable: true  },
+  { key: 'actions',  label: '',         sortable: false },
+]
+
+export const CUSTOMER_INITIAL_COL_WIDTHS = [40, 70, 160, 120, 190, 130, 220, 80]
