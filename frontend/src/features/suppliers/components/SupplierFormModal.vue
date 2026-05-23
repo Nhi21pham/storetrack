@@ -70,7 +70,7 @@
 import { ref, computed, inject } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { validators } from '@/utils/validators'
-import { graphql } from '@/api'
+import { createSupplier, updateSupplier } from '@/features/suppliers/services/supplierService'
 
 const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
@@ -119,48 +119,23 @@ const handleSubmit = async () => {
   loading.value = true
   apiError.value = ''
 
+  const input = {
+    name: form.value.name,
+    tax_code: form.value.tax_code || null,
+    address: form.value.address || null,
+    email: form.value.email || null,
+    phone: form.value.phone || null,
+  }
+  const ctx = {
+    storeId: currentStore.value?.id,
+    businessId: currentBusiness.value?.id,
+    input,
+  }
+
   try {
-    let query, variables
-
-    if (isEdit.value) {
-      query = `
-        mutation UpdateSupplier($id: ID!, $store_id: ID!, $business_id: ID!, $input: UpdateSupplierInput!) {
-          updateSupplier(id: $id, store_id: $store_id, business_id: $business_id, input: $input) { id name tax_code address email phone }
-        }
-      `
-      variables = {
-        id: props.supplier.id,
-        store_id: currentStore.value?.id,
-        business_id: currentBusiness.value?.id,
-        input: {
-          name: form.value.name,
-          tax_code: form.value.tax_code || null,
-          address: form.value.address || null,
-          email: form.value.email || null,
-          phone: form.value.phone || null
-        }
-      }
-    } else {
-      query = `
-        mutation CreateSupplier($store_id: ID!, $business_id: ID!, $input: CreateSupplierInput!) {
-          createSupplier(store_id: $store_id, business_id: $business_id, input: $input) { id name tax_code address email phone }
-        }
-      `
-      variables = {
-        store_id: currentStore.value?.id,
-        business_id: currentBusiness.value?.id,
-        input: {
-          name: form.value.name,
-          tax_code: form.value.tax_code || null,
-          address: form.value.address || null,
-          email: form.value.email || null,
-          phone: form.value.phone || null
-        }
-      }
-    }
-
-    const data = await graphql(query, variables)
-    const result = isEdit.value ? data.updateSupplier : data.createSupplier
+    const result = isEdit.value
+      ? await updateSupplier({ id: props.supplier.id, ...ctx })
+      : await createSupplier(ctx)
     emit('saved', result)
   } catch (err) {
     apiError.value = err.message

@@ -64,18 +64,14 @@
 </template>
 
 <script setup>
+import { formatDateTime } from '@/utils/datetime'
+
 defineProps({
   supplier: { type: Object, required: true },
   canEdit: { type: Boolean, default: true }
 })
 
 defineEmits(['close', 'edit'])
-
-const formatDateTime = (iso) =>
-  new Date(iso).toLocaleString('en-US', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
 </script>
 
 <style scoped>

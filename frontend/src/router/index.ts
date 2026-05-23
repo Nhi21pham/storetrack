@@ -12,7 +12,7 @@ import ErrorView from '@/views/ErrorView.vue'
 import AcceptInvitationView from '@/views/AcceptInvitationView.vue'
 import UserManagementPage from '@/features/users/pages/UserManagementPage.vue'
 import AuditLogPage from '@/features/audit/pages/AuditLogPage.vue'
-import SupplierView from '@/views/SupplierView.vue'
+import SupplierPage from '@/features/suppliers/pages/SupplierPage.vue'
 import CustomerPage from '@/features/customers/pages/CustomerPage.vue'
 
 const router = createRouter({
@@ -97,7 +97,7 @@ const router = createRouter({
         {
           path: 'suppliers',
           name: 'suppliers',
-          component: SupplierView
+          component: SupplierPage
         },
         {
           path: 'customers',
