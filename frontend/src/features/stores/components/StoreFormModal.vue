@@ -84,7 +84,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { validators } from '@/utils/validators'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
-import { graphql } from '@/api'
+import {
+  fetchMyBusinesses,
+  createStore,
+  updateStore,
+} from '@/features/stores/services/storeService'
 
 const props = defineProps({
   store: { type: Object, default: null }
@@ -115,10 +119,8 @@ const isDirty = computed(() => JSON.stringify(form.value) !== originalForm.value
 
 const fetchOwnedBusinesses = async () => {
   try {
-    const data = await graphql(`query { myBusinesses { id name } }`)
-    ownedBusinesses.value = data.myBusinesses
+    ownedBusinesses.value = await fetchMyBusinesses()
   } catch (err) {
-    console.error('Failed to fetch businesses:', err)
     apiError.value = err.message
   }
 }
@@ -144,47 +146,17 @@ const handleSubmit = async () => {
   loading.value = true
   apiError.value = ''
 
+  const baseInput = {
+    name: form.value.name,
+    address: form.value.address || null,
+    email: form.value.email || null,
+    phone: form.value.phone || null,
+  }
+
   try {
-    let query, variables
-
-    if (isEdit.value) {
-      query = `
-        mutation UpdateStore($id: ID!, $input: UpdateStoreInput!) {
-          updateStore(id: $id, input: $input) {
-            id name address email phone is_active
-          }
-        }
-      `
-      variables = {
-        id: props.store.id,
-        input: {
-          name: form.value.name,
-          address: form.value.address || null,
-          email: form.value.email || null,
-          phone: form.value.phone || null
-        }
-      }
-    } else {
-      query = `
-        mutation CreateStore($input: CreateStoreInput!) {
-          createStore(input: $input) {
-            id name address email phone is_active
-          }
-        }
-      `
-      variables = {
-        input: {
-          business_id: form.value.business_id,
-          name: form.value.name,
-          address: form.value.address || null,
-          email: form.value.email || null,
-          phone: form.value.phone || null
-        }
-      }
-    }
-
-    const data = await graphql(query, variables)
-    const result = isEdit.value ? data.updateStore : data.createStore
+    const result = isEdit.value
+      ? await updateStore(props.store.id, baseInput)
+      : await createStore({ business_id: form.value.business_id, ...baseInput })
     emit('saved', result)
   } catch (err) {
     apiError.value = err.message

@@ -60,25 +60,23 @@
 
 <script setup>
 import { ref } from 'vue'
-import { graphql } from '@/api'
+import { inviteUserToStore } from '@/features/users/services/userService'
+import { ASSIGNABLE_ROLE_OPTIONS, ROLE } from '@/features/users/constants'
 
 const props = defineProps({
-  storeId: { type: String, required: true },
+  storeId:   { type: String, required: true },
   storeName: { type: String, required: true },
 })
 
 const emit = defineEmits(['close', 'invited'])
 
-const loading = ref(false)
+const loading  = ref(false)
 const apiError = ref('')
-const errors = ref({ email: '', role: '' })
+const errors   = ref({ email: '', role: '' })
 
-const form = ref({ email: '', role: 'ACCOUNTANT' })
+const form = ref({ email: '', role: ROLE.ACCOUNTANT })
 
-const roleOptions = [
-  { value: 'ACCOUNTANT', label: 'Accountant', description: 'Can edit store info and manage invoices' },
-  { value: 'STAFF', label: 'Staff', description: 'Can create and update invoices only' },
-]
+const roleOptions = ASSIGNABLE_ROLE_OPTIONS
 
 const validateForm = () => {
   errors.value = { email: '', role: '' }
@@ -100,17 +98,7 @@ const handleSubmit = async () => {
   apiError.value = ''
 
   try {
-    await graphql(`
-      mutation InviteUser($store_id: ID!, $email: String!, $role: Role!) {
-        inviteUserToStore(store_id: $store_id, email: $email, role: $role) {
-          id invitee_email role status
-        }
-      }
-    `, {
-      store_id: props.storeId,
-      email: form.value.email,
-      role: form.value.role,
-    })
+    await inviteUserToStore(props.storeId, form.value.email, form.value.role)
     emit('invited', form.value.email)
   } catch (err) {
     apiError.value = err.message

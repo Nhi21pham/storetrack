@@ -7,10 +7,10 @@ import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import AppLayout from '@/layouts/AppLayout.vue'
 import DashboardPage from '@/features/dashboard/pages/DashboardPage.vue'
 import BusinessPage from '@/features/business/pages/BusinessPage.vue'
-import StoreView from '@/views/StoreView.vue'
+import StorePage from '@/features/stores/pages/StorePage.vue'
 import ErrorView from '@/views/ErrorView.vue'
 import AcceptInvitationView from '@/views/AcceptInvitationView.vue'
-import UserManagementView from '@/views/UserManagementView.vue'
+import UserManagementPage from '@/features/users/pages/UserManagementPage.vue'
 import AuditLogPage from '@/features/audit/pages/AuditLogPage.vue'
 import SupplierView from '@/views/SupplierView.vue'
 import CustomerView from '@/views/CustomerView.vue'
@@ -82,12 +82,12 @@ const router = createRouter({
         {
           path: 'stores',
           name: 'stores',
-          component: StoreView
+          component: StorePage
         },
         {
           path: 'users',
           name: 'users',
-          component: UserManagementView
+          component: UserManagementPage
         },
         {
           path: 'audit-log',

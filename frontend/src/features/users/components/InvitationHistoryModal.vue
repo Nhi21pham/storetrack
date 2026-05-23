@@ -20,17 +20,17 @@
       <div class="modal-filters">
         <div class="filter-tabs">
           <button
-            v-for="f in statusFilters"
+            v-for="f in INVITATION_STATUS_FILTERS"
             :key="f.value"
             class="filter-tab"
             :class="{ active: activeFilter === f.value }"
-            @click="setFilter(f.value)"
+            @click="activeFilter = f.value"
           >
             {{ f.label }}
             <span class="tab-count">{{ countByStatus(f.value) }}</span>
           </button>
         </div>
-        <button v-if="sortCriteria.length" class="btn-clear-sort" @click="clearSort">
+        <button v-if="sort.sortCriteria.length" class="btn-clear-sort" @click="sort.clearSort">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           Clear sort
         </button>
@@ -47,12 +47,12 @@
             <table>
               <thead>
                 <tr>
-                  <th v-for="col in columns" :key="col.key" class="sortable-th">
+                  <th v-for="col in INVITATION_HISTORY_COLUMNS" :key="col.key" class="sortable-th">
                     <SortableHeader
                       :label="col.label"
-                      :sort-info="getSortInfo(col.key)"
-                      :rank="sortCriteria.length > 1 && getSortInfo(col.key) ? sortRank(col.key) : null"
-                      @sort="(dir) => toggleSort(col.key, dir)"
+                      :sort-info="sort.getSortInfo(col.key)"
+                      :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(col.key) ? sort.sortRank(col.key) : null"
+                      @sort="(dir) => sort.toggleSort(col.key, dir)"
                     />
                   </th>
                 </tr>
@@ -64,7 +64,7 @@
                     <div class="invitee-email">{{ inv.invitee_email }}</div>
                   </td>
                   <td class="store-cell">{{ inv.store.name }}</td>
-                  <td><span class="role-badge" :class="inv.role">{{ roleLabel(inv.role) }}</span></td>
+                  <td><RoleBadge :role="inv.role" /></td>
                   <td><span class="status-badge" :class="inv.status?.toLowerCase()">{{ statusLabel(inv.status) }}</span></td>
                   <td class="date-cell">{{ formatDateTime(inv.created_at) }}</td>
                   <td class="date-cell">{{ resolvedDateTime(inv) }}</td>
@@ -87,11 +87,16 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { graphql } from '@/api'
-import { useSortCriteria } from '@/composables/useSortCriteria'
+import { onMounted, toRef } from 'vue'
 import Pagination from '@/components/common/Pagination.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
+import RoleBadge from '@/features/users/components/RoleBadge.vue'
+import { useInvitationHistory } from '@/features/users/composables/useInvitationHistory'
+import { statusLabel, formatDateTime, resolvedDateTime } from '@/features/users/utils/format'
+import {
+  INVITATION_STATUS_FILTERS,
+  INVITATION_HISTORY_COLUMNS,
+} from '@/features/users/constants'
 
 const props = defineProps({
   ownedStores: { type: Array, required: true },
@@ -99,114 +104,13 @@ const props = defineProps({
 
 defineEmits(['close'])
 
-const loading = ref(true)
-const refreshing = ref(false)
-const allInvitations = ref([])
-const activeFilter = ref('ALL')
-const { sortCriteria, getSortInfo, sortRank, toggleSort, clearSort, sortItems } = useSortCriteria()
-const currentPage = ref(1)
-const pageSize = ref(20)
-
-const columns = [
-  { key: 'invitee_email', label: 'Invitee' },
-  { key: 'store_name',    label: 'Store' },
-  { key: 'role',          label: 'Role' },
-  { key: 'status',        label: 'Status' },
-  { key: 'created_at',    label: 'Sent' },
-  { key: 'resolved_at',   label: 'Resolved' },
-]
-
-const statusFilters = [
-  { value: 'ALL',       label: 'All' },
-  { value: 'PENDING',   label: 'Pending' },
-  { value: 'ACCEPTED',  label: 'Accepted' },
-  { value: 'DECLINED',  label: 'Declined' },
-  { value: 'CANCELLED', label: 'Cancelled' },
-  { value: 'EXPIRED',   label: 'Expired' },
-]
-
-const roleLabel   = (r) => ({ OWNER: 'Owner', ACCOUNTANT: 'Accountant', STAFF: 'Staff' }[r] ?? r)
-const statusLabel = (s) => ({ PENDING: 'Pending', ACCEPTED: 'Accepted', DECLINED: 'Declined', CANCELLED: 'Cancelled', EXPIRED: 'Expired' }[s] ?? s)
-
-const resolvedTimestamp = (inv) => {
-  if (inv.status === 'PENDING') return ''
-  if (inv.status === 'ACCEPTED' && inv.accepted_at) return inv.accepted_at
-  return inv.updated_at
-}
-
-const formatDateTime = (dt) => {
-  if (!dt) return '—'
-  return new Date(dt).toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
-
-const resolvedDateTime = (inv) => {
-  const ts = resolvedTimestamp(inv)
-  return ts ? formatDateTime(ts) : '—'
-}
-
-const getSortValue = (inv, key) => {
-  if (key === 'store_name')  return inv.store.name.toLowerCase()
-  if (key === 'invitee_email') return (inv.invitee_name || inv.invitee_email).toLowerCase()
-  if (key === 'resolved_at') return resolvedTimestamp(inv) || ''
-  if (key === 'role')   return inv.role
-  if (key === 'status') return inv.status
-  return inv[key] ?? ''
-}
-
-const filteredInvitations = computed(() =>
-  activeFilter.value === 'ALL'
-    ? allInvitations.value
-    : allInvitations.value.filter(i => i.status === activeFilter.value)
-)
-
-const sortedInvitations = computed(() =>
-  sortItems(filteredInvitations.value, getSortValue)
-)
-
-const totalPages = computed(() => Math.max(1, Math.ceil(sortedInvitations.value.length / pageSize.value)))
-
-const paginatedInvitations = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return sortedInvitations.value.slice(start, start + pageSize.value)
-})
-
-const countByStatus = (status) =>
-  status === 'ALL' ? allInvitations.value.length : allInvitations.value.filter(i => i.status === status).length
-
-const setFilter = (val) => { activeFilter.value = val }
-
-watch([activeFilter, pageSize], () => { currentPage.value = 1 })
-watch(sortCriteria, () => { currentPage.value = 1 }, { deep: true })
-
-const fetchInvitations = async () => {
-  if (!loading.value) refreshing.value = true
-  try {
-    const results = await Promise.all(
-      props.ownedStores.map(store =>
-        graphql(`
-          query StoreAllInvitations($store_id: ID!) {
-            storeAllInvitations(store_id: $store_id) {
-              id invitee_email invitee_name role status
-              created_at accepted_at updated_at
-              store { id name }
-              inviter { id name email }
-            }
-          }
-        `, { store_id: store.id })
-      )
-    )
-    allInvitations.value = results
-      .flatMap(r => r.storeAllInvitations)
-      .map(inv => ({ ...inv, status: inv.status?.toUpperCase(), role: inv.role?.toUpperCase() }))
-      .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-  } finally {
-    loading.value = false
-    refreshing.value = false
-  }
-}
+const {
+  loading, refreshing,
+  activeFilter, currentPage, pageSize,
+  sortedInvitations, paginatedInvitations, totalPages,
+  countByStatus, sort,
+  fetchInvitations,
+} = useInvitationHistory({ ownedStores: toRef(props, 'ownedStores') })
 
 onMounted(fetchInvitations)
 </script>
@@ -263,11 +167,6 @@ tr:hover td { background: #fafafa; }
 .invitee-email { font-size: 12px; color: #9ca3af; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .store-cell { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .date-cell { white-space: nowrap; color: #6b7280; font-size: 12px; }
-
-.role-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 5px; }
-.role-badge.OWNER { color: #16a34a; background: #f0fdf4; }
-.role-badge.ACCOUNTANT { color: #2563eb; background: #eff6ff; }
-.role-badge.STAFF { color: #6b7280; background: #f3f4f6; }
 
 .status-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
 .status-badge.pending   { color: #d97706; background: #fffbeb; }
