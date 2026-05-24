@@ -121,6 +121,7 @@ class BusinessService
 
             $result[] = [
                 'id' => (string) $business->id,
+                'party_id' => (string) $business->party_id,
                 'name' => $business->name,
                 'tax_code' => $business->tax_code,
                 'address' => $business->address,
@@ -147,6 +148,7 @@ class BusinessService
             if (!isset($grouped[$bizId])) {
                 $grouped[$bizId] = [
                     'id' => (string) $store->business->id,
+                    'party_id' => (string) $store->business->party_id,
                     'name' => $store->business->name,
                     'tax_code' => $store->business->tax_code,
                     'address' => $store->business->address,

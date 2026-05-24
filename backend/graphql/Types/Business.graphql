@@ -5,6 +5,7 @@ type Business {
     address: String
     email: String
     phone: String
+    party: Party! @belongsTo
     owner: User! @belongsTo
     stores: [Store!]! @hasMany
     active_stores: [Store!]! @hasMany(relation: "activeStores")

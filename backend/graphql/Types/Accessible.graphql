@@ -1,5 +1,6 @@
 type AccessibleBusiness {
     id: ID!
+    party_id: ID!
     name: String!
     tax_code: String!
     address: String
