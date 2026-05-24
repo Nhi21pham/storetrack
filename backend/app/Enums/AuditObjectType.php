@@ -10,4 +10,6 @@ enum AuditObjectType: string
     case INVITATION = 'invitation';
     case SUPPLIER   = 'supplier';
     case CUSTOMER   = 'customer';
+    case BANK         = 'bank';
+    case BANK_ACCOUNT = 'bank_account';
 }
