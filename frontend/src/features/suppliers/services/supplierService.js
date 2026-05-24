@@ -4,6 +4,7 @@ const SUPPLIERS_QUERY = `
   query Suppliers($store_id: ID!, $business_id: ID!) {
     suppliers(store_id: $store_id, business_id: $business_id) {
       id store_id name email phone address tax_code created_at
+      party { id }
       stores { id name }
     }
   }
@@ -12,7 +13,7 @@ const SUPPLIERS_QUERY = `
 const CREATE_SUPPLIER_MUTATION = `
   mutation CreateSupplier($store_id: ID!, $business_id: ID!, $input: CreateSupplierInput!) {
     createSupplier(store_id: $store_id, business_id: $business_id, input: $input) {
-      id name tax_code address email phone
+      id name tax_code address email phone party { id }
     }
   }
 `
@@ -20,7 +21,7 @@ const CREATE_SUPPLIER_MUTATION = `
 const UPDATE_SUPPLIER_MUTATION = `
   mutation UpdateSupplier($id: ID!, $store_id: ID!, $business_id: ID!, $input: UpdateSupplierInput!) {
     updateSupplier(id: $id, store_id: $store_id, business_id: $business_id, input: $input) {
-      id name tax_code address email phone
+      id name tax_code address email phone party { id }
     }
   }
 `

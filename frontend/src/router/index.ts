@@ -14,6 +14,8 @@ import UserManagementPage from '@/features/users/pages/UserManagementPage.vue'
 import AuditLogPage from '@/features/audit/pages/AuditLogPage.vue'
 import SupplierPage from '@/features/suppliers/pages/SupplierPage.vue'
 import CustomerPage from '@/features/customers/pages/CustomerPage.vue'
+import BanksPage from '@/features/banking/pages/BanksPage.vue'
+import BankAccountsPage from '@/features/banking/pages/BankAccountsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -103,6 +105,16 @@ const router = createRouter({
           path: 'customers',
           name: 'customers',
           component: CustomerPage
+        },
+        {
+          path: 'banking/banks',
+          name: 'banking-banks',
+          component: BanksPage
+        },
+        {
+          path: 'banking/bank-accounts',
+          name: 'banking-bank-accounts',
+          component: BankAccountsPage
         },
       ]
     },

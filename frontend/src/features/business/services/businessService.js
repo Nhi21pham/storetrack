@@ -11,13 +11,13 @@ const ACCESSIBLE_BUSINESSES_QUERY = `
 
 const CREATE_BUSINESS_MUTATION = `
   mutation CreateBusiness($input: CreateBusinessInput!) {
-    createBusiness(input: $input) { id name tax_code address email phone }
+    createBusiness(input: $input) { id name tax_code address email phone party { id } }
   }
 `
 
 const UPDATE_BUSINESS_MUTATION = `
   mutation UpdateBusiness($id: ID!, $input: UpdateBusinessInput!) {
-    updateBusiness(id: $id, input: $input) { id name tax_code address email phone }
+    updateBusiness(id: $id, input: $input) { id name tax_code address email phone party { id } }
   }
 `
 

@@ -4,6 +4,7 @@ const CUSTOMERS_QUERY = `
   query Customers($store_id: ID!, $business_id: ID!) {
     customers(store_id: $store_id, business_id: $business_id) {
       id store_id name email phone address tax_code created_at
+      party { id }
       stores { id name }
     }
   }
@@ -12,7 +13,7 @@ const CUSTOMERS_QUERY = `
 const CREATE_CUSTOMER_MUTATION = `
   mutation CreateCustomer($store_id: ID!, $business_id: ID!, $input: CreateCustomerInput!) {
     createCustomer(store_id: $store_id, business_id: $business_id, input: $input) {
-      id name tax_code address email phone
+      id name tax_code address email phone party { id }
     }
   }
 `
@@ -20,7 +21,7 @@ const CREATE_CUSTOMER_MUTATION = `
 const UPDATE_CUSTOMER_MUTATION = `
   mutation UpdateCustomer($id: ID!, $store_id: ID!, $business_id: ID!, $input: UpdateCustomerInput!) {
     updateCustomer(id: $id, store_id: $store_id, business_id: $business_id, input: $input) {
-      id name tax_code address email phone
+      id name tax_code address email phone party { id }
     }
   }
 `

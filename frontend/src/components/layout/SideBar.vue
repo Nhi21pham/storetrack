@@ -83,6 +83,26 @@
         </svg>
         Suppliers
       </router-link>
+
+      <div class="menu-item has-sub" @mouseenter="openOthers" @mouseleave="closeOthersSoon">
+        <div class="menu-item-inner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+          </svg>
+          Others
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+        </div>
+        <div class="submenu" :class="{ open: othersOpen }">
+          <div class="submenu-item has-nested" @mouseenter="openBanking" @mouseleave="closeBankingSoon">
+            <span>Banking</span>
+            <svg class="chevron-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+            <div class="submenu submenu-nested" :class="{ open: bankingOpen }">
+              <router-link to="/banking/banks" class="submenu-item" :class="{ active: isActive('/banking/banks') }" @click="$emit('close')">Banks</router-link>
+              <router-link to="/banking/bank-accounts" class="submenu-item" :class="{ active: isActive('/banking/bank-accounts') }" @click="$emit('close')">Bank Accounts</router-link>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -98,8 +118,40 @@ defineEmits(['close'])
 
 const route = useRoute()
 const reportsOpen = ref(false)
+const othersOpen = ref(false)
+const bankingOpen = ref(false)
 
 const isActive = (path) => route.path.startsWith(path)
+
+const CLOSE_DELAY_MS = 150
+let othersCloseTimer = null
+let bankingCloseTimer = null
+
+const openOthers = () => {
+  if (othersCloseTimer) { clearTimeout(othersCloseTimer); othersCloseTimer = null }
+  othersOpen.value = true
+}
+
+const closeOthersSoon = () => {
+  if (othersCloseTimer) clearTimeout(othersCloseTimer)
+  othersCloseTimer = setTimeout(() => {
+    othersOpen.value = false
+    bankingOpen.value = false
+  }, CLOSE_DELAY_MS)
+}
+
+const openBanking = () => {
+  if (bankingCloseTimer) { clearTimeout(bankingCloseTimer); bankingCloseTimer = null }
+  if (othersCloseTimer) { clearTimeout(othersCloseTimer); othersCloseTimer = null }
+  bankingOpen.value = true
+}
+
+const closeBankingSoon = () => {
+  if (bankingCloseTimer) clearTimeout(bankingCloseTimer)
+  bankingCloseTimer = setTimeout(() => {
+    bankingOpen.value = false
+  }, CLOSE_DELAY_MS)
+}
 </script>
 
 <style scoped>
@@ -119,8 +171,12 @@ const isActive = (path) => route.path.startsWith(path)
 .menu-item.has-sub { position: relative; }
 .submenu { display: none; position: absolute; left: 100%; top: 0; width: 180px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-direction: column; padding: 6px; margin-left: 8px; z-index: 999; }
 .submenu.open { display: flex; }
-.submenu-item { padding: 10px 12px; font-size: 13px; color: #6b7280; border-radius: 6px; cursor: pointer; }
+.submenu-item { padding: 10px 12px; font-size: 13px; color: #6b7280; border-radius: 6px; cursor: pointer; text-decoration: none; display: block; }
+.submenu-item.active { background: #f3f4f6; color: #111; }
 .submenu-item:hover { background: #f9fafb; color: #111; }
+.submenu-item.has-nested { position: relative; display: flex; align-items: center; justify-content: space-between; }
+.submenu-nested { left: 100%; top: -6px; margin-left: 8px; width: 200px; }
+.chevron-sm { flex-shrink: 0; }
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; }
 .overlay.show { display: block; }
 </style>
