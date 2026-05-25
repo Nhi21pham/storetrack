@@ -46,39 +46,28 @@
       />
 
       <div v-else class="table-wrap">
-        <table class="bank-table">
-          <thead>
-            <tr>
-              <th>Short Name</th>
-              <th>Vietnamese Name</th>
-              <th>English Name</th>
-              <th>Status</th>
-              <th class="actions-col"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
-              <td class="short">{{ bank.short_name }}</td>
-              <td>{{ bank.full_name_vi }}</td>
-              <td>{{ bank.full_name_en }}</td>
-              <td>
-                <ToggleSwitch
-                  :model-value="bank.is_active"
-                  :title="bank.is_active ? 'Click to deactivate' : 'Click to activate'"
-                  @change="onToggleActive(bank)"
-                />
-              </td>
-              <td class="actions-col">
-                <button class="action-btn" @click="openEdit(bank)" title="Edit">
-                  <Icon name="edit" :size="14" />
-                </button>
-                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(bank)" title="Delete">
-                  <Icon name="delete" :size="14" />
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <ResizableTable :columns="BANK_COLUMNS" :initial-widths="BANK_INITIAL_COL_WIDTHS">
+          <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
+            <td><span class="short">{{ bank.short_name }}</span></td>
+            <td><span class="truncate" :title="bank.full_name_vi">{{ bank.full_name_vi }}</span></td>
+            <td><span class="truncate" :title="bank.full_name_en">{{ bank.full_name_en }}</span></td>
+            <td>
+              <ToggleSwitch
+                :model-value="bank.is_active"
+                :title="bank.is_active ? 'Click to deactivate' : 'Click to activate'"
+                @change="onToggleActive(bank)"
+              />
+            </td>
+            <td class="actions-col">
+              <button class="action-btn" @click="openEdit(bank)" title="Edit">
+                <Icon name="edit" :size="14" />
+              </button>
+              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(bank)" title="Delete">
+                <Icon name="delete" :size="14" />
+              </button>
+            </td>
+          </tr>
+        </ResizableTable>
         <Pagination
           v-if="total > 0"
           :current-page="currentPage"
@@ -146,9 +135,11 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import ResizableTable from '@/components/common/ResizableTable.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { fetchBanks, deleteBank, updateBank } from '@/features/banking/services/bankService'
+import { BANK_COLUMNS, BANK_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 
@@ -296,15 +287,11 @@ const handleToggle = async () => {
 .btn-create { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-create:hover { background: #333; }
 
-.table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
-.bank-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.bank-table thead { background: #f9fafb; }
-.bank-table th { text-align: left; font-weight: 600; color: #374151; padding: 12px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; }
-.bank-table td { padding: 12px 16px; color: #111; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
-.bank-table tbody tr:last-child td { border-bottom: none; }
-.bank-table tbody tr.inactive { background: #fafafa; color: #6b7280; }
-.bank-table tbody tr.inactive td { color: #6b7280; }
-.bank-table td.short { font-weight: 600; }
+.table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
+tbody tr.inactive { background: #fafafa; }
+tbody tr.inactive td { color: #6b7280; }
+.short { font-weight: 600; color: #111; }
+.truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .actions-col { text-align: right; white-space: nowrap; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: none; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; margin-left: 4px; }

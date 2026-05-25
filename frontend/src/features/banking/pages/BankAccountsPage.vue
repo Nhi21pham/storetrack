@@ -42,39 +42,26 @@
       />
 
       <div v-else class="table-wrap">
-        <table class="account-table">
-          <thead>
-            <tr>
-              <th>Owner</th>
-              <th>Bank</th>
-              <th>Account Number</th>
-              <th>Holder Name</th>
-              <th>Branch</th>
-              <th>Province</th>
-              <th class="actions-col"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="a in paginatedAccounts" :key="a.id">
-              <td>
-                <span class="type-badge" :class="a.party?.type">{{ ownerLabel(a) }}</span>
-              </td>
-              <td class="bank-cell">{{ a.bank?.short_name }}</td>
-              <td class="mono">{{ a.account_number }}</td>
-              <td>{{ a.account_holder_name || '—' }}</td>
-              <td>{{ a.branch || '—' }}</td>
-              <td>{{ a.province?.name_vi || '—' }}</td>
-              <td class="actions-col">
-                <button class="action-btn" @click="openEdit(a)" title="Edit">
-                  <Icon name="edit" :size="14" />
-                </button>
-                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(a)" title="Delete">
-                  <Icon name="delete" :size="14" />
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <ResizableTable :columns="BANK_ACCOUNT_COLUMNS" :initial-widths="BANK_ACCOUNT_INITIAL_COL_WIDTHS">
+          <tr v-for="a in paginatedAccounts" :key="a.id">
+            <td>
+              <span class="type-badge" :class="a.party?.type">{{ ownerLabel(a) }}</span>
+            </td>
+            <td><span class="bank-cell">{{ a.bank?.short_name }}</span></td>
+            <td><span class="mono">{{ a.account_number }}</span></td>
+            <td><span class="truncate" :title="a.account_holder_name || ''">{{ a.account_holder_name || '—' }}</span></td>
+            <td><span class="truncate" :title="a.branch || ''">{{ a.branch || '—' }}</span></td>
+            <td><span class="truncate" :title="a.province?.name_vi || ''">{{ a.province?.name_vi || '—' }}</span></td>
+            <td class="actions-col">
+              <button class="action-btn" @click="openEdit(a)" title="Edit">
+                <Icon name="edit" :size="14" />
+              </button>
+              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(a)" title="Delete">
+                <Icon name="delete" :size="14" />
+              </button>
+            </td>
+          </tr>
+        </ResizableTable>
         <Pagination
           v-if="total > 0"
           :current-page="currentPage"
@@ -116,9 +103,11 @@ import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import ResizableTable from '@/components/common/ResizableTable.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { fetchBankAccounts, deleteBankAccount } from '@/features/banking/services/bankAccountService'
+import { BANK_ACCOUNT_COLUMNS, BANK_ACCOUNT_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
@@ -222,12 +211,10 @@ const performDelete = async () => {
 .btn-create { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-create:hover { background: #333; }
 
-.table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
-.account-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.account-table thead { background: #f9fafb; }
-.account-table th { text-align: left; font-weight: 600; color: #374151; padding: 12px 16px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; }
-.account-table td { padding: 12px 16px; color: #111; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
-.account-table tbody tr:last-child td { border-bottom: none; }
+.table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
+.truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bank-cell { font-weight: 600; color: #111; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 
 .type-badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: #f3f4f6; color: #374151; }
 .type-badge.business { background: #e0f2fe; color: #0369a1; }
