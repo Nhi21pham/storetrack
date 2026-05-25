@@ -94,7 +94,10 @@
         </div>
         <div class="submenu" :class="{ open: othersOpen }">
           <div class="submenu-item has-nested" @mouseenter="openBanking" @mouseleave="closeBankingSoon">
-            <span>Banking</span>
+            <span class="submenu-item-label">
+              <Icon name="bank" :size="15" color="currentColor" />
+              Banking
+            </span>
             <svg class="chevron-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
             <div class="submenu submenu-nested" :class="{ open: bankingOpen }">
               <router-link to="/banking/banks" class="submenu-item" :class="{ active: isActive('/banking/banks') }" @click="$emit('close')">Banks</router-link>
@@ -112,6 +115,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
+import Icon from '@/components/common/Icon.vue'
 
 defineProps({ open: Boolean })
 defineEmits(['close'])
@@ -169,14 +173,17 @@ const closeBankingSoon = () => {
 .menu-item-inner { display: flex; align-items: center; gap: 10px; }
 .chevron { margin-left: auto; }
 .menu-item.has-sub { position: relative; }
-.submenu { display: none; position: absolute; left: 100%; top: 0; width: 180px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-direction: column; padding: 6px; margin-left: 8px; z-index: 999; }
-.submenu.open { display: flex; }
-.submenu-item { padding: 10px 12px; font-size: 13px; color: #6b7280; border-radius: 6px; cursor: pointer; text-decoration: none; display: block; }
-.submenu-item.active { background: #f3f4f6; color: #111; }
-.submenu-item:hover { background: #f9fafb; color: #111; }
+.submenu { display: none; position: absolute; left: 100%; top: -4px; min-width: 200px; background: #f7f7f8; border: 1px solid #ececef; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 10px 25px -5px rgba(0,0,0,0.12); flex-direction: column; padding: 8px; margin-left: 10px; z-index: 999; opacity: 0; transform: translateX(-4px); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
+.submenu.open { display: flex; opacity: 1; transform: translateX(0); pointer-events: auto; }
+.submenu::before { content: ''; position: absolute; top: 0; left: -10px; width: 10px; height: 100%; }
+.submenu-item { padding: 9px 12px; font-size: 13.5px; font-weight: 500; color: #4b5563; border-radius: 8px; cursor: pointer; text-decoration: none; display: block; transition: background 0.12s, color 0.12s; }
+.submenu-item-label { display: inline-flex; align-items: center; gap: 10px; }
+.submenu-item:hover { background: #ebebef; color: #111; }
+.submenu-item.active { background: #eef2ff; color: #1d4ed8; font-weight: 600; }
 .submenu-item.has-nested { position: relative; display: flex; align-items: center; justify-content: space-between; }
-.submenu-nested { left: 100%; top: -6px; margin-left: 8px; width: 200px; }
-.chevron-sm { flex-shrink: 0; }
+.submenu-item.has-nested:hover .chevron-sm { color: #111; }
+.submenu-nested { left: calc(100% - 4px); top: -8px; margin-left: 6px; min-width: 220px; }
+.chevron-sm { flex-shrink: 0; color: #9ca3af; transition: color 0.12s; }
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; }
 .overlay.show { display: block; }
 </style>

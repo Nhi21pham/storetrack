@@ -36,6 +36,12 @@
       <circle cx="11" cy="11" r="8"/>
       <line x1="21" y1="21" x2="16.65" y2="16.65"/>
     </template>
+    <template v-else-if="name === 'bank'">
+      <line x1="3" y1="21" x2="21" y2="21"/>
+      <path d="M5 21V11l7-4 7 4v10"/>
+      <line x1="9" y1="21" x2="9" y2="15"/>
+      <line x1="15" y1="21" x2="15" y2="15"/>
+    </template>
   </svg>
 </template>
 
