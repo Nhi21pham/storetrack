@@ -99,8 +99,6 @@
         <SupplierTable
           :suppliers="paginatedSuppliers"
           :columns="SUPPLIER_COLUMNS"
-          :colWidths="colWidths"
-          :isResizing="isResizing"
           :sort="sort"
           :isSelected="isSelected"
           :canManageRow="canManageRow"
@@ -108,7 +106,6 @@
           :rowActionsEnabled="!!currentStore?.is_active"
           :allVisibleSelected="allVisibleSelected"
           :someVisibleSelected="someVisibleSelected"
-          @startResize="startResize"
           @toggleSelectAll="toggleSelectAll"
           @toggleRow="toggleRow"
           @openDetail="openDetail"
@@ -183,10 +180,9 @@ import SupplierDetailModal from '@/features/suppliers/components/SupplierDetailM
 import { useSuppliers } from '@/features/suppliers/composables/useSuppliers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
-import { useColumnResize } from '@/composables/useColumnResize'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { startSupplierExport } from '@/features/suppliers/services/supplierService'
-import { SUPPLIER_COLUMNS, SUPPLIER_INITIAL_COL_WIDTHS } from '@/features/suppliers/constants'
+import { SUPPLIER_COLUMNS } from '@/features/suppliers/constants'
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -221,8 +217,6 @@ const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
 } = useRowSelection({ eligibleIds: visibleIds })
-
-const { colWidths, isResizing, startResize } = useColumnResize(SUPPLIER_INITIAL_COL_WIDTHS)
 
 const showForm        = ref(false)
 const editingSupplier = ref(null)

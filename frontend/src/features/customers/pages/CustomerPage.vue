@@ -102,8 +102,6 @@
         <CustomerTable
           :customers="paginatedCustomers"
           :columns="CUSTOMER_COLUMNS"
-          :colWidths="colWidths"
-          :isResizing="isResizing"
           :sort="sort"
           :isSelected="isSelected"
           :canManageRow="canManageRow"
@@ -111,7 +109,6 @@
           :rowActionsEnabled="!!currentStore?.is_active"
           :allVisibleSelected="allVisibleSelected"
           :someVisibleSelected="someVisibleSelected"
-          @startResize="startResize"
           @toggleSelectAll="toggleSelectAll"
           @toggleRow="toggleRow"
           @openDetail="openDetail"
@@ -186,10 +183,9 @@ import CustomerDetailModal from '@/features/customers/components/CustomerDetailM
 import { useCustomers } from '@/features/customers/composables/useCustomers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
-import { useColumnResize } from '@/composables/useColumnResize'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { startCustomerExport } from '@/features/customers/services/customerService'
-import { CUSTOMER_COLUMNS, CUSTOMER_INITIAL_COL_WIDTHS } from '@/features/customers/constants'
+import { CUSTOMER_COLUMNS } from '@/features/customers/constants'
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -224,8 +220,6 @@ const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
 } = useRowSelection({ eligibleIds: visibleIds })
-
-const { colWidths, isResizing, startResize } = useColumnResize(CUSTOMER_INITIAL_COL_WIDTHS)
 
 const showForm        = ref(false)
 const editingCustomer = ref(null)
