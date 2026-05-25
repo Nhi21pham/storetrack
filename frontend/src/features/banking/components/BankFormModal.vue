@@ -23,7 +23,7 @@
           />
           <span v-if="errors.short_name" class="error-text">{{ errors.short_name }}</span>
           <SuggestionList
-            v-if="!isEdit && showSuggestions && activeField === 'short_name'"
+            v-if="showSuggestions && activeField === 'short_name'"
             :items="suggestions"
             @pick="onPickSuggestion"
           />
@@ -41,7 +41,7 @@
           />
           <span v-if="errors.full_name_vi" class="error-text">{{ errors.full_name_vi }}</span>
           <SuggestionList
-            v-if="!isEdit && showSuggestions && activeField === 'full_name_vi'"
+            v-if="showSuggestions && activeField === 'full_name_vi'"
             :items="suggestions"
             @pick="onPickSuggestion"
           />
@@ -59,7 +59,7 @@
           />
           <span v-if="errors.full_name_en" class="error-text">{{ errors.full_name_en }}</span>
           <SuggestionList
-            v-if="!isEdit && showSuggestions && activeField === 'full_name_en'"
+            v-if="showSuggestions && activeField === 'full_name_en'"
             :items="suggestions"
             @pick="onPickSuggestion"
           />
@@ -143,27 +143,34 @@ const runSearch = async (value) => {
   }
   try {
     const results = await searchBanks({ businessId: props.businessId, q, includeInactive: true, limit: 8 })
-    suggestions.value = results || []
+    const currentId = props.bank?.id ? String(props.bank.id) : null
+    suggestions.value = (results || []).filter(r => String(r.id) !== currentId)
   } catch (e) {
     suggestions.value = []
   }
 }
 
-if (!isEdit.value) {
-  watch(
-    () => [form.value.short_name, form.value.full_name_vi, form.value.full_name_en, activeField.value],
-    () => {
-      if (searchTimer) clearTimeout(searchTimer)
-      const field = activeField.value
-      if (!field) {
-        suggestions.value = []
-        return
-      }
-      const value = form.value[field]
-      searchTimer = setTimeout(() => runSearch(value), 250)
+watch(
+  () => [form.value.short_name, form.value.full_name_vi, form.value.full_name_en, activeField.value],
+  () => {
+    if (searchTimer) clearTimeout(searchTimer)
+    const field = activeField.value
+    if (!field) {
+      suggestions.value = []
+      return
     }
-  )
-}
+    const value = form.value[field]
+    searchTimer = setTimeout(() => runSearch(value), 250)
+  }
+)
+
+watch(() => props.bank, () => {
+  form.value = initialForm()
+  originalForm.value = JSON.stringify(initialForm())
+  errors.value = { short_name: '', full_name_vi: '', full_name_en: '' }
+  apiError.value = ''
+  suggestions.value = []
+})
 
 const onBlurField = () => {
   setTimeout(() => {
