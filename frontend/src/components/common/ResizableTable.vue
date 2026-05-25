@@ -1,6 +1,6 @@
 <template>
   <div class="table-wrapper" :class="{ resizing: isResizing }">
-    <table>
+    <table :style="{ width: totalWidth + 'px' }">
       <colgroup>
         <col v-for="(w, i) in colWidths" :key="i" :style="{ width: w + 'px' }" />
       </colgroup>
@@ -24,6 +24,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const props = defineProps({
@@ -33,6 +34,8 @@ const props = defineProps({
 
 const { colWidths, isResizing, startResize } = useColumnResize(props.initialWidths)
 
+const totalWidth = computed(() => colWidths.value.reduce((sum, w) => sum + w, 0))
+
 defineExpose({ colWidths, isResizing, startResize })
 </script>
 
@@ -40,7 +43,7 @@ defineExpose({ colWidths, isResizing, startResize })
 .table-wrapper { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow-x: auto; }
 .table-wrapper.resizing { cursor: col-resize; user-select: none; }
 
-table { width: 100%; border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
+table { border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
 
 thead { background: #f9fafb; }
 th { position: relative; padding: 11px 16px; text-align: left; font-size: 11.5px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e5e7eb; white-space: nowrap; overflow: hidden; }

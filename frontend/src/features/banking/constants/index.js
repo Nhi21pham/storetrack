@@ -6,7 +6,7 @@ export const BANK_COLUMNS = [
   { key: 'actions',      label: '' },
 ]
 
-export const BANK_INITIAL_COL_WIDTHS = [140, 280, 280, 100, 100]
+export const BANK_INITIAL_COL_WIDTHS = [160, 330, 330, 110, 110]
 
 export const BANK_ACCOUNT_COLUMNS = [
   { key: 'owner',          label: 'Owner' },
@@ -18,4 +18,4 @@ export const BANK_ACCOUNT_COLUMNS = [
   { key: 'actions',        label: '' },
 ]
 
-export const BANK_ACCOUNT_INITIAL_COL_WIDTHS = [110, 130, 160, 160, 140, 130, 100]
+export const BANK_ACCOUNT_INITIAL_COL_WIDTHS = [130, 150, 180, 220, 180, 160, 120]
