@@ -42,6 +42,10 @@
       <line x1="9" y1="21" x2="9" y2="15"/>
       <line x1="15" y1="21" x2="15" y2="15"/>
     </template>
+    <template v-else-if="name === 'home'">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </template>
   </svg>
 </template>
 

@@ -82,7 +82,7 @@ const router = createRouter({
           component: BusinessPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Business' },
             ],
           },
@@ -93,7 +93,7 @@ const router = createRouter({
           component: StorePage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Stores' },
             ],
           },
@@ -104,7 +104,7 @@ const router = createRouter({
           component: UserManagementPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Users' },
             ],
           },
@@ -115,7 +115,7 @@ const router = createRouter({
           component: AuditLogPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Audit Log' },
             ],
           },
@@ -126,7 +126,7 @@ const router = createRouter({
           component: SupplierPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Suppliers' },
             ],
           },
@@ -137,7 +137,7 @@ const router = createRouter({
           component: CustomerPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Customers' },
             ],
           },
@@ -148,9 +148,9 @@ const router = createRouter({
           component: BanksPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Others' },
-              { label: 'Banking' },
+              { label: 'Banking', icon: 'bank' },
               { label: 'Banks' },
             ],
           },
@@ -161,9 +161,9 @@ const router = createRouter({
           component: BankAccountsPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Others' },
-              { label: 'Banking' },
+              { label: 'Banking', icon: 'bank' },
               { label: 'Bank Accounts' },
             ],
           },
