@@ -4,7 +4,7 @@
     :height="size"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="currentColor"
+    :stroke="resolvedColor"
     :stroke-width="strokeWidth"
     stroke-linecap="round"
     stroke-linejoin="round"
@@ -40,9 +40,21 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const COLOR_BY_NAME = {
+  edit: '#2563eb',
+  delete: '#dc2626',
+}
+
+const props = defineProps({
   name: { type: String, required: true },
   size: { type: [Number, String], default: 16 },
   strokeWidth: { type: [Number, String], default: 2 },
+  color: { type: String, default: null },
 })
+
+const resolvedColor = computed(
+  () => props.color || COLOR_BY_NAME[props.name] || 'currentColor'
+)
 </script>
