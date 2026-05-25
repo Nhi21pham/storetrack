@@ -97,7 +97,7 @@
         />
 
         <SupplierTable
-          :suppliers="sortedSuppliers"
+          :suppliers="paginatedSuppliers"
           :columns="SUPPLIER_COLUMNS"
           :colWidths="colWidths"
           :isResizing="isResizing"
@@ -114,6 +114,15 @@
           @openDetail="openDetail"
           @edit="openEdit"
           @delete="confirmDelete"
+        />
+        <Pagination
+          v-if="total > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total="total"
+          :per-page="perPage"
+          @update:current-page="currentPage = $event"
+          @update:per-page="setPerPage"
         />
       </template>
 
@@ -165,6 +174,7 @@ import LoadingState from '@/components/common/LoadingState.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import InactiveBanner from '@/components/common/InactiveBanner.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import SupplierFilterBar from '@/features/suppliers/components/SupplierFilterBar.vue'
 import SupplierSelectionBar from '@/features/suppliers/components/SupplierSelectionBar.vue'
 import SupplierTable from '@/features/suppliers/components/SupplierTable.vue'
@@ -174,6 +184,7 @@ import { useSuppliers } from '@/features/suppliers/composables/useSuppliers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useClientPagination } from '@/composables/useClientPagination'
 import { startSupplierExport } from '@/features/suppliers/services/supplierService'
 import { SUPPLIER_COLUMNS, SUPPLIER_INITIAL_COL_WIDTHS } from '@/features/suppliers/constants'
 
@@ -193,8 +204,18 @@ const {
   onError: (msg) => showToast(msg, 'error'),
 })
 
+const {
+  currentPage,
+  perPage,
+  total,
+  totalPages,
+  paginated: paginatedSuppliers,
+  setPerPage,
+  resetPage,
+} = useClientPagination(sortedSuppliers)
+
 const visibleIds = computed(() =>
-  sortedSuppliers.value.filter(canManageRow).map((s) => String(s.id)),
+  paginatedSuppliers.value.filter(canManageRow).map((s) => String(s.id)),
 )
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
@@ -269,6 +290,7 @@ const { exporting, run } = useExport({
 
 watch([storeFilter, searchQuery, () => currentStore.value?.id], () => {
   clearSelection()
+  resetPage()
 })
 </script>
 

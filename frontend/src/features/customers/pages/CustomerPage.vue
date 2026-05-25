@@ -100,7 +100,7 @@
         />
 
         <CustomerTable
-          :customers="sortedCustomers"
+          :customers="paginatedCustomers"
           :columns="CUSTOMER_COLUMNS"
           :colWidths="colWidths"
           :isResizing="isResizing"
@@ -117,6 +117,15 @@
           @openDetail="openDetail"
           @edit="openEdit"
           @delete="confirmDelete"
+        />
+        <Pagination
+          v-if="total > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total="total"
+          :per-page="perPage"
+          @update:current-page="currentPage = $event"
+          @update:per-page="setPerPage"
         />
       </template>
 
@@ -168,6 +177,7 @@ import LoadingState from '@/components/common/LoadingState.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import InactiveBanner from '@/components/common/InactiveBanner.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import CustomerFilterBar from '@/features/customers/components/CustomerFilterBar.vue'
 import CustomerSelectionBar from '@/features/customers/components/CustomerSelectionBar.vue'
 import CustomerTable from '@/features/customers/components/CustomerTable.vue'
@@ -177,6 +187,7 @@ import { useCustomers } from '@/features/customers/composables/useCustomers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useColumnResize } from '@/composables/useColumnResize'
+import { useClientPagination } from '@/composables/useClientPagination'
 import { startCustomerExport } from '@/features/customers/services/customerService'
 import { CUSTOMER_COLUMNS, CUSTOMER_INITIAL_COL_WIDTHS } from '@/features/customers/constants'
 
@@ -196,8 +207,18 @@ const {
   onError: (msg) => showToast(msg, 'error'),
 })
 
+const {
+  currentPage,
+  perPage,
+  total,
+  totalPages,
+  paginated: paginatedCustomers,
+  setPerPage,
+  resetPage,
+} = useClientPagination(sortedCustomers)
+
 const visibleIds = computed(() =>
-  sortedCustomers.value.filter(canManageRow).map((c) => String(c.id)),
+  paginatedCustomers.value.filter(canManageRow).map((c) => String(c.id)),
 )
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
@@ -272,6 +293,7 @@ const { exporting, run } = useExport({
 
 watch([storeFilter, searchQuery, () => currentStore.value?.id], () => {
   clearSelection()
+  resetPage()
 })
 </script>
 
