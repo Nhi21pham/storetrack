@@ -66,7 +66,7 @@
               <td>{{ a.province?.name_vi || '—' }}</td>
               <td class="actions-col">
                 <button class="row-action" @click="openEdit(a)">Edit</button>
-                <button class="row-action danger" @click="confirmDelete(a)">Delete</button>
+                <button v-if="canDelete" class="row-action danger" @click="confirmDelete(a)">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -94,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, watch, inject, onMounted } from 'vue'
+import { ref, computed, watch, inject, onMounted } from 'vue'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -114,6 +114,11 @@ const searchQuery = ref('')
 const showForm = ref(false)
 const editingAccount = ref(null)
 const deleteTarget = ref(null)
+
+const canDelete = computed(() => {
+  const role = currentStore?.value?.my_role
+  return role === 'owner' || role === 'accountant'
+})
 
 let searchTimer = null
 

@@ -39,7 +39,7 @@
           </div>
           <div class="row-actions">
             <button type="button" class="row-btn" @click="startEdit(account)">Edit</button>
-            <button type="button" class="row-btn danger" @click="removeAccount(account, index)">Remove</button>
+            <button v-if="canRemove" type="button" class="row-btn danger" @click="removeAccount(account, index)">Remove</button>
           </div>
         </template>
       </li>
@@ -62,12 +62,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, inject, onMounted, watch } from 'vue'
 import BankAccountForm from '@/features/banking/components/BankAccountForm.vue'
 import {
   fetchBankAccountsForParty,
   deleteBankAccount,
 } from '@/features/banking/services/bankAccountService'
+
+const currentStore = inject('currentStore', null)
 
 const props = defineProps({
   partyId: { type: [String, Number], default: null },
@@ -78,6 +80,13 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const isDraftMode = computed(() => !props.partyId)
+
+const canRemove = computed(() => {
+  // Drafts can always be removed locally; persistent rows respect role.
+  if (isDraftMode.value) return true
+  const role = currentStore?.value?.my_role
+  return role === 'owner' || role === 'accountant'
+})
 
 const accounts = ref([])
 const loading = ref(false)

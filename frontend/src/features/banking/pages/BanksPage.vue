@@ -1,7 +1,7 @@
 <template>
   <PageContainer :maxWidth="1100">
     <PageHeader title="Banks" subtitle="Manage the master list of banks used across bank accounts.">
-      <template #actions>
+      <template v-if="currentBusiness && currentStore" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -11,60 +11,75 @@
       </template>
     </PageHeader>
 
-    <div class="toolbar">
-      <SearchBar v-model="searchQuery" placeholder="Search by name..." />
-      <label class="toggle">
-        <input v-model="includeInactive" type="checkbox" />
-        Show inactive
-      </label>
-    </div>
-
-    <LoadingState v-if="loading">Loading banks...</LoadingState>
-
     <EmptyState
-      v-else-if="filteredBanks.length === 0 && banks.length === 0"
-      title="No banks yet"
-      description="Add your first bank to get started."
+      v-if="!currentBusiness"
+      title="No business found"
+      description="You need to create or select a business before managing banks."
     />
 
     <EmptyState
-      v-else-if="filteredBanks.length === 0"
-      :description="`No banks matching &quot;${searchQuery}&quot;`"
+      v-else-if="!currentStore"
+      title="No store selected"
+      description="Select a store to manage banks."
     />
 
-    <div v-else class="table-wrap">
-      <table class="bank-table">
-        <thead>
-          <tr>
-            <th>Short Name</th>
-            <th>Vietnamese Name</th>
-            <th>English Name</th>
-            <th>Status</th>
-            <th class="actions-col"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="bank in filteredBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
-            <td class="short">{{ bank.short_name }}</td>
-            <td>{{ bank.full_name_vi }}</td>
-            <td>{{ bank.full_name_en }}</td>
-            <td>
-              <span class="status" :class="bank.is_active ? 'active' : 'inactive'">
-                {{ bank.is_active ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-            <td class="actions-col">
-              <button class="row-action" @click="openEdit(bank)">Edit</button>
-              <button class="row-action danger" @click="confirmDelete(bank)">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <template v-else>
+      <div class="toolbar">
+        <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <label class="toggle">
+          <input v-model="includeInactive" type="checkbox" />
+          Show inactive
+        </label>
+      </div>
+
+      <LoadingState v-if="loading">Loading banks...</LoadingState>
+
+      <EmptyState
+        v-else-if="filteredBanks.length === 0 && banks.length === 0"
+        title="No banks yet"
+        description="Add your first bank to get started."
+      />
+
+      <EmptyState
+        v-else-if="filteredBanks.length === 0"
+        :description="`No banks matching &quot;${searchQuery}&quot;`"
+      />
+
+      <div v-else class="table-wrap">
+        <table class="bank-table">
+          <thead>
+            <tr>
+              <th>Short Name</th>
+              <th>Vietnamese Name</th>
+              <th>English Name</th>
+              <th>Status</th>
+              <th class="actions-col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="bank in filteredBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
+              <td class="short">{{ bank.short_name }}</td>
+              <td>{{ bank.full_name_vi }}</td>
+              <td>{{ bank.full_name_en }}</td>
+              <td>
+                <span class="status" :class="bank.is_active ? 'active' : 'inactive'">
+                  {{ bank.is_active ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="actions-col">
+                <button class="row-action" @click="openEdit(bank)">Edit</button>
+                <button v-if="canDelete" class="row-action danger" @click="confirmDelete(bank)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </template>
 
     <BankFormModal
       v-if="showForm"
       :bank="editingBank"
+      :business-id="currentBusiness?.id"
       @close="closeForm"
       @saved="onSaved"
       @pick-existing="onPickExisting"
@@ -93,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, inject, onMounted } from 'vue'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -105,8 +120,11 @@ import { fetchBanks, deleteBank, updateBank } from '@/features/banking/services/
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 
+const currentBusiness = inject('currentBusiness')
+const currentStore = inject('currentStore')
+
 const banks = ref([])
-const loading = ref(true)
+const loading = ref(false)
 const searchQuery = ref('')
 const includeInactive = ref(true)
 
@@ -114,6 +132,11 @@ const showForm = ref(false)
 const editingBank = ref(null)
 const deleteTarget = ref(null)
 const deactivateTarget = ref(null)
+
+const canDelete = computed(() => {
+  const role = currentStore?.value?.my_role
+  return role === 'owner' || role === 'accountant'
+})
 
 const filteredBanks = computed(() => {
   const needle = normalizeText(searchQuery.value)
@@ -129,15 +152,21 @@ const filteredBanks = computed(() => {
 })
 
 const load = async () => {
+  if (!currentBusiness?.value?.id) {
+    banks.value = []
+    return
+  }
   loading.value = true
   try {
-    banks.value = await fetchBanks({ includeInactive: true })
+    banks.value = await fetchBanks({ businessId: currentBusiness.value.id, includeInactive: true })
   } finally {
     loading.value = false
   }
 }
 
 onMounted(load)
+
+watch(() => currentBusiness?.value?.id, load)
 
 const openCreate = () => {
   editingBank.value = null

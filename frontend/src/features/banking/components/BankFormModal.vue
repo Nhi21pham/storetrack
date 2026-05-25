@@ -105,7 +105,8 @@ import { createBank, updateBank, searchBanks } from '@/features/banking/services
 import { normalizeText } from '@/utils/textNormalizer'
 
 const props = defineProps({
-  bank: { type: Object, default: null }
+  bank: { type: Object, default: null },
+  businessId: { type: [String, Number], default: null },
 })
 
 const emit = defineEmits(['close', 'saved', 'pick-existing'])
@@ -136,12 +137,12 @@ let searchTimer = null
 
 const runSearch = async (value) => {
   const q = value.trim()
-  if (q.length < 2) {
+  if (q.length < 2 || !props.businessId) {
     suggestions.value = []
     return
   }
   try {
-    const results = await searchBanks({ q, includeInactive: true, limit: 8 })
+    const results = await searchBanks({ businessId: props.businessId, q, includeInactive: true, limit: 8 })
     suggestions.value = results || []
   } catch (e) {
     suggestions.value = []
@@ -224,7 +225,7 @@ const handleSubmit = async () => {
         full_name_vi: form.value.full_name_vi,
         full_name_en: form.value.full_name_en,
       }
-      const result = await createBank({ input })
+      const result = await createBank({ businessId: props.businessId, input })
       emit('saved', result)
     }
   } catch (err) {

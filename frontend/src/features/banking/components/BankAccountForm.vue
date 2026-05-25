@@ -75,11 +75,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, inject, onMounted, watch } from 'vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import { fetchBanks } from '@/features/banking/services/bankService'
 import { fetchProvinces } from '@/features/banking/services/provinceService'
 import { createBankAccount, updateBankAccount } from '@/features/banking/services/bankAccountService'
+
+const currentBusiness = inject('currentBusiness', null)
 
 const props = defineProps({
   partyId: { type: [String, Number], default: null },
@@ -123,8 +125,13 @@ const provinceOptions = computed(() =>
 )
 
 onMounted(async () => {
+  const businessId = currentBusiness?.value?.id
+  if (!businessId) {
+    provinces.value = await fetchProvinces()
+    return
+  }
   const [bankList, provinceList] = await Promise.all([
-    fetchBanks({ includeInactive: true }),
+    fetchBanks({ businessId, includeInactive: true }),
     fetchProvinces(),
   ])
   banks.value = bankList
