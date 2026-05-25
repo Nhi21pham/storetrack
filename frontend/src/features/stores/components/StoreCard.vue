@@ -44,20 +44,17 @@
     </div>
 
     <div v-if="store.my_role === 'OWNER'" class="card-actions">
-      <button class="action-btn" @click="$emit('edit', store)">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Edit
+      <button class="action-btn" @click="$emit('edit', store)" title="Edit">
+        <Icon name="edit" :size="15" />
       </button>
-      <button class="action-btn danger" @click="$emit('delete', store)">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-        Delete
+      <button class="action-btn danger" @click="$emit('delete', store)" title="Delete">
+        <Icon name="delete" :size="15" />
       </button>
     </div>
 
     <div v-else-if="store.my_role === 'ACCOUNTANT'" class="card-actions">
-      <button class="action-btn" @click="$emit('edit', store)">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        Edit
+      <button class="action-btn" @click="$emit('edit', store)" title="Edit">
+        <Icon name="edit" :size="15" />
       </button>
     </div>
 
@@ -68,6 +65,8 @@
 </template>
 
 <script setup>
+import Icon from '@/components/common/Icon.vue'
+
 defineProps({
   store: { type: Object, required: true },
 })
@@ -112,7 +111,7 @@ const roleLabel = (role) => ROLE_LABELS[role] ?? role
 .detail-item { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #6b7280; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .card-actions { display: flex; flex-direction: column; border-left: 1px solid #f3f4f6; }
-.action-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 18px; background: none; border: none; font-size: 13px; font-weight: 500; color: #6b7280; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.action-btn { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 14px; background: none; border: none; color: #6b7280; cursor: pointer; transition: all 0.15s; }
 .action-btn:first-child:not(:last-child) { border-bottom: 1px solid #f3f4f6; }
 .action-btn:hover { background: #f9fafb; color: #111; }
 .action-btn.danger:hover { background: #fef2f2; color: #dc2626; }

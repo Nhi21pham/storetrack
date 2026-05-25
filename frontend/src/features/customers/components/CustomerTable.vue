@@ -61,10 +61,10 @@
           <td>
             <div v-if="rowActionsEnabled && canManageRow(customer)" class="row-actions">
               <button class="action-btn" @click="$emit('edit', customer)" title="Edit">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <Icon name="edit" :size="14" />
               </button>
               <button v-if="canDelete" class="action-btn danger" @click="$emit('delete', customer)" title="Delete">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                <Icon name="delete" :size="14" />
               </button>
             </div>
           </td>
@@ -76,6 +76,7 @@
 
 <script setup>
 import SortableHeader from '@/components/common/SortableHeader.vue'
+import Icon from '@/components/common/Icon.vue'
 
 defineProps({
   customers:           { type: Array,   required: true },
