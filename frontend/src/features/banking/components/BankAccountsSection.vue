@@ -38,8 +38,12 @@
             </div>
           </div>
           <div class="row-actions">
-            <button type="button" class="row-btn" @click="startEdit(account)">Edit</button>
-            <button v-if="canRemove" type="button" class="row-btn danger" @click="removeAccount(account, index)">Remove</button>
+            <button type="button" class="action-btn" @click="startEdit(account)" title="Edit">
+              <Icon name="edit" :size="14" />
+            </button>
+            <button v-if="canRemove" type="button" class="action-btn danger" @click="removeAccount(account, index)" title="Remove">
+              <Icon name="delete" :size="14" />
+            </button>
           </div>
         </template>
       </li>
@@ -64,6 +68,7 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
 import BankAccountForm from '@/features/banking/components/BankAccountForm.vue'
+import Icon from '@/components/common/Icon.vue'
 import {
   fetchBankAccountsForParty,
   deleteBankAccount,
@@ -84,7 +89,7 @@ const isDraftMode = computed(() => !props.partyId)
 const canRemove = computed(() => {
   // Drafts can always be removed locally; persistent rows respect role.
   if (isDraftMode.value) return true
-  const role = currentStore?.value?.my_role
+  const role = String(currentStore?.value?.my_role || '').toLowerCase()
   return role === 'owner' || role === 'accountant'
 })
 
@@ -213,10 +218,9 @@ const removeAccount = async (account, index) => {
 .dot-sep { margin-left: 4px; }
 
 .row-actions { display: flex; gap: 4px; flex-shrink: 0; }
-.row-btn { background: none; border: none; padding: 4px 8px; font-size: 12px; color: #374151; cursor: pointer; border-radius: 6px; }
-.row-btn:hover { background: #fff; color: #111; }
-.row-btn.danger { color: #b91c1c; }
-.row-btn.danger:hover { background: #fef2f2; }
+.action-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; }
+.action-btn:hover { background: #f3f4f6; color: #111; border-color: #d1d5db; }
+.action-btn.danger:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
 
 .empty { font-size: 13px; color: #9ca3af; padding: 6px 0; margin: 0; }
 </style>

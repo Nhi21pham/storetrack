@@ -65,8 +65,12 @@
               <td>{{ a.branch || '—' }}</td>
               <td>{{ a.province?.name_vi || '—' }}</td>
               <td class="actions-col">
-                <button class="row-action" @click="openEdit(a)">Edit</button>
-                <button v-if="canDelete" class="row-action danger" @click="confirmDelete(a)">Delete</button>
+                <button class="action-btn" @click="openEdit(a)" title="Edit">
+                  <Icon name="edit" :size="14" />
+                </button>
+                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(a)" title="Delete">
+                  <Icon name="delete" :size="14" />
+                </button>
               </td>
             </tr>
           </tbody>
@@ -101,6 +105,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Icon from '@/components/common/Icon.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
 import { fetchBankAccounts, deleteBankAccount } from '@/features/banking/services/bankAccountService'
 
@@ -116,7 +121,7 @@ const editingAccount = ref(null)
 const deleteTarget = ref(null)
 
 const canDelete = computed(() => {
-  const role = currentStore?.value?.my_role
+  const role = String(currentStore?.value?.my_role || '').toLowerCase()
   return role === 'owner' || role === 'accountant'
 })
 
@@ -210,8 +215,7 @@ const performDelete = async () => {
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 
 .actions-col { text-align: right; white-space: nowrap; }
-.row-action { background: none; border: none; padding: 6px 10px; font-size: 13px; color: #374151; cursor: pointer; border-radius: 6px; }
-.row-action:hover { background: #f3f4f6; color: #111; }
-.row-action.danger { color: #b91c1c; }
-.row-action.danger:hover { background: #fef2f2; color: #b91c1c; }
+.action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: none; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; margin-left: 4px; }
+.action-btn:hover { background: #f3f4f6; color: #111; border-color: #d1d5db; }
+.action-btn.danger:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
 </style>
