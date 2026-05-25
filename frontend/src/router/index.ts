@@ -74,47 +74,104 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: DashboardPage
+          component: DashboardPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard' },
+            ],
+          },
         },
         {
           path: 'business',
           name: 'business',
-          component: BusinessPage
+          component: BusinessPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Business' },
+            ],
+          },
         },
         {
           path: 'stores',
           name: 'stores',
-          component: StorePage
+          component: StorePage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Stores' },
+            ],
+          },
         },
         {
           path: 'users',
           name: 'users',
-          component: UserManagementPage
+          component: UserManagementPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Users' },
+            ],
+          },
         },
         {
           path: 'audit-log',
           name: 'audit-log',
-          component: AuditLogPage
+          component: AuditLogPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Audit Log' },
+            ],
+          },
         },
         {
           path: 'suppliers',
           name: 'suppliers',
-          component: SupplierPage
+          component: SupplierPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Suppliers' },
+            ],
+          },
         },
         {
           path: 'customers',
           name: 'customers',
-          component: CustomerPage
+          component: CustomerPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Customers' },
+            ],
+          },
         },
         {
           path: 'banking/banks',
           name: 'banking-banks',
-          component: BanksPage
+          component: BanksPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Others' },
+              { label: 'Banking' },
+              { label: 'Banks' },
+            ],
+          },
         },
         {
           path: 'banking/bank-accounts',
           name: 'banking-bank-accounts',
-          component: BankAccountsPage
+          component: BankAccountsPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard' },
+              { label: 'Others' },
+              { label: 'Banking' },
+              { label: 'Bank Accounts' },
+            ],
+          },
         },
       ]
     },
