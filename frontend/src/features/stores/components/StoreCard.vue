@@ -11,15 +11,12 @@
         <div class="card-info">
           <div class="card-title-row">
             <h3>{{ store.name }}</h3>
-            <label
+            <ToggleSwitch
               v-if="store.my_role === 'OWNER'"
-              class="toggle-switch"
-              :class="{ active: store.is_active }"
-              @click.prevent="$emit('toggle', store)"
+              :model-value="store.is_active"
               title="Click to toggle active status"
-            >
-              <span class="toggle-slider"></span>
-            </label>
+              @change="$emit('toggle', store)"
+            />
             <span v-else class="status-dot" :class="store.is_active ? 'active' : 'inactive'"></span>
             <span class="role-badge" :class="store.my_role">{{ roleLabel(store.my_role) }}</span>
           </div>
@@ -66,6 +63,7 @@
 
 <script setup>
 import Icon from '@/components/common/Icon.vue'
+import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 
 defineProps({
   store: { type: Object, required: true },
@@ -91,10 +89,6 @@ const roleLabel = (role) => ROLE_LABELS[role] ?? role
 .card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .card-info h3 { font-size: 15px; font-weight: 600; color: #111; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.toggle-switch { position: relative; width: 36px; height: 20px; background: #d1d5db; border-radius: 10px; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
-.toggle-switch.active { background: #16a34a; }
-.toggle-slider { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
-.toggle-switch.active .toggle-slider { transform: translateX(16px); }
 
 .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .status-dot.active   { background: #16a34a; }

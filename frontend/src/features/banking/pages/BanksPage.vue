@@ -62,9 +62,11 @@
               <td>{{ bank.full_name_vi }}</td>
               <td>{{ bank.full_name_en }}</td>
               <td>
-                <span class="status" :class="bank.is_active ? 'active' : 'inactive'">
-                  {{ bank.is_active ? 'Active' : 'Inactive' }}
-                </span>
+                <ToggleSwitch
+                  :model-value="bank.is_active"
+                  :title="bank.is_active ? 'Click to deactivate' : 'Click to activate'"
+                  @change="onToggleActive(bank)"
+                />
               </td>
               <td class="actions-col">
                 <button class="action-btn" @click="openEdit(bank)" title="Edit">
@@ -108,6 +110,19 @@
       @confirm="performDeactivate"
       @cancel="deactivateTarget = null"
     />
+
+    <ConfirmDialog
+      v-if="togglingBank"
+      :title="togglingBank.is_active ? 'Deactivate Bank' : 'Reactivate Bank'"
+      :message="togglingBank.is_active
+        ? `Are you sure you want to deactivate '${togglingBank.short_name}'? Existing bank accounts will stay linked, but this bank won't appear in new-account pickers.`
+        : `Are you sure you want to reactivate '${togglingBank.short_name}'?`"
+      :confirm-text="togglingBank.is_active ? 'Yes, deactivate' : 'Yes, reactivate'"
+      cancel-text="Cancel"
+      :type="togglingBank.is_active ? 'warning' : 'success'"
+      @confirm="handleToggle"
+      @cancel="togglingBank = null"
+    />
   </PageContainer>
 </template>
 
@@ -120,6 +135,7 @@ import LoadingState from '@/components/common/LoadingState.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
+import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import { fetchBanks, deleteBank, updateBank } from '@/features/banking/services/bankService'
 import { ErrorCode } from '@/utils/errorCodes'
@@ -137,6 +153,7 @@ const showForm = ref(false)
 const editingBank = ref(null)
 const deleteTarget = ref(null)
 const deactivateTarget = ref(null)
+const togglingBank = ref(null)
 
 const canDelete = computed(() => {
   const role = String(currentStore?.value?.my_role || '').toLowerCase()
@@ -227,6 +244,25 @@ const performDeactivate = async () => {
     alert(err.message)
   }
 }
+
+const onToggleActive = (bank) => {
+  togglingBank.value = bank
+}
+
+const handleToggle = async () => {
+  const bank = togglingBank.value
+  togglingBank.value = null
+  if (!bank) return
+  const nextValue = !bank.is_active
+  const previous = bank.is_active
+  bank.is_active = nextValue
+  try {
+    await updateBank({ id: bank.id, input: { is_active: nextValue } })
+  } catch (err) {
+    bank.is_active = previous
+    alert(err.message)
+  }
+}
 </script>
 
 <style scoped>
@@ -245,10 +281,6 @@ const performDeactivate = async () => {
 .bank-table tbody tr.inactive { background: #fafafa; color: #6b7280; }
 .bank-table tbody tr.inactive td { color: #6b7280; }
 .bank-table td.short { font-weight: 600; }
-
-.status { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-.status.active { background: #ecfdf5; color: #047857; }
-.status.inactive { background: #fef3c7; color: #92400e; }
 
 .actions-col { text-align: right; white-space: nowrap; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: none; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; margin-left: 4px; }
