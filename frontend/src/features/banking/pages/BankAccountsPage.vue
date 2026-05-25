@@ -55,7 +55,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="a in accounts" :key="a.id">
+            <tr v-for="a in paginatedAccounts" :key="a.id">
               <td>
                 <span class="type-badge" :class="a.party?.type">{{ ownerLabel(a) }}</span>
               </td>
@@ -75,6 +75,15 @@
             </tr>
           </tbody>
         </table>
+        <Pagination
+          v-if="total > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total="total"
+          :per-page="perPage"
+          @update:current-page="currentPage = $event"
+          @update:per-page="setPerPage"
+        />
       </div>
     </template>
 
@@ -106,7 +115,9 @@ import LoadingState from '@/components/common/LoadingState.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
+import { useClientPagination } from '@/composables/useClientPagination'
 import { fetchBankAccounts, deleteBankAccount } from '@/features/banking/services/bankAccountService'
 
 const currentBusiness = inject('currentBusiness')
@@ -124,6 +135,18 @@ const canDelete = computed(() => {
   const role = String(currentStore?.value?.my_role || '').toLowerCase()
   return role === 'owner' || role === 'accountant'
 })
+
+const {
+  currentPage,
+  perPage,
+  total,
+  totalPages,
+  paginated: paginatedAccounts,
+  setPerPage,
+  resetPage,
+} = useClientPagination(accounts)
+
+watch(searchQuery, resetPage)
 
 let searchTimer = null
 

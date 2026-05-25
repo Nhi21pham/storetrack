@@ -57,7 +57,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="bank in filteredBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
+            <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
               <td class="short">{{ bank.short_name }}</td>
               <td>{{ bank.full_name_vi }}</td>
               <td>{{ bank.full_name_en }}</td>
@@ -79,6 +79,15 @@
             </tr>
           </tbody>
         </table>
+        <Pagination
+          v-if="total > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total="total"
+          :per-page="perPage"
+          @update:current-page="currentPage = $event"
+          @update:per-page="setPerPage"
+        />
       </div>
     </template>
 
@@ -136,7 +145,9 @@ import SearchBar from '@/components/common/SearchBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
+import { useClientPagination } from '@/composables/useClientPagination'
 import { fetchBanks, deleteBank, updateBank } from '@/features/banking/services/bankService'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
@@ -172,6 +183,18 @@ const filteredBanks = computed(() => {
     )
   })
 })
+
+const {
+  currentPage,
+  perPage,
+  total,
+  totalPages,
+  paginated: paginatedBanks,
+  setPerPage,
+  resetPage,
+} = useClientPagination(filteredBanks)
+
+watch([searchQuery, includeInactive], resetPage)
 
 const load = async () => {
   if (!currentBusiness?.value?.id) {
