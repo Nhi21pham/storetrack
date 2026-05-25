@@ -1,5 +1,6 @@
 type Bank {
     id: ID!
+    business_id: ID!
     short_name: String!
     full_name_vi: String!
     full_name_en: String!

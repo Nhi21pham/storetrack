@@ -12,14 +12,18 @@ class BankResolver extends BaseResolver
     public function all($_, array $args)
     {
         return $this->safe(fn() =>
-            $this->bankService->getAll((bool) ($args['include_inactive'] ?? false))
+            $this->bankService->getAll(
+                $this->user(),
+                (int) $args['business_id'],
+                (bool) ($args['include_inactive'] ?? false)
+            )
         );
     }
 
     public function findById($_, array $args)
     {
         return $this->safe(fn() =>
-            $this->bankService->getById((int) $args['id'])
+            $this->bankService->getById($this->user(), (int) $args['id'])
         );
     }
 
@@ -27,6 +31,8 @@ class BankResolver extends BaseResolver
     {
         return $this->safe(fn() =>
             $this->bankService->search(
+                $this->user(),
+                (int) $args['business_id'],
                 (string) $args['q'],
                 (bool) ($args['include_inactive'] ?? false),
                 (int) ($args['limit'] ?? 10)

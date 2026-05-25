@@ -13,27 +13,33 @@ class BankRepository
         return Bank::find($id);
     }
 
-    public function findByShortNameNormalized(string $normalized, ?int $excludeId = null): ?Bank
+    public function findByShortNameNormalized(int $businessId, string $normalized, ?int $excludeId = null): ?Bank
     {
-        $query = Bank::query()->where('short_name_normalized', $normalized);
+        $query = Bank::query()
+            ->where('business_id', $businessId)
+            ->where('short_name_normalized', $normalized);
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);
         }
         return $query->first();
     }
 
-    public function findByFullNameViNormalized(string $normalized, ?int $excludeId = null): ?Bank
+    public function findByFullNameViNormalized(int $businessId, string $normalized, ?int $excludeId = null): ?Bank
     {
-        $query = Bank::query()->where('full_name_vi_normalized', $normalized);
+        $query = Bank::query()
+            ->where('business_id', $businessId)
+            ->where('full_name_vi_normalized', $normalized);
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);
         }
         return $query->first();
     }
 
-    public function findByFullNameEnNormalized(string $normalized, ?int $excludeId = null): ?Bank
+    public function findByFullNameEnNormalized(int $businessId, string $normalized, ?int $excludeId = null): ?Bank
     {
-        $query = Bank::query()->where('full_name_en_normalized', $normalized);
+        $query = Bank::query()
+            ->where('business_id', $businessId)
+            ->where('full_name_en_normalized', $normalized);
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);
         }
@@ -67,18 +73,18 @@ class BankRepository
         return Bank::where('id', $bankId)->whereHas('bankAccounts')->exists();
     }
 
-    public function all(bool $includeInactive = false): Collection
+    public function all(int $businessId, bool $includeInactive = false): Collection
     {
-        $query = Bank::query();
+        $query = Bank::query()->where('business_id', $businessId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
         return $query->orderBy('short_name')->get();
     }
 
-    public function searchQuery(string $needle, bool $includeInactive = false, ?int $limit = null): Builder
+    public function searchQuery(int $businessId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder
     {
-        $query = Bank::query();
+        $query = Bank::query()->where('business_id', $businessId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }

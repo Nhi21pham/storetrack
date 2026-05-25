@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('banks', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('business_id')->constrained('businesses')->cascadeOnDelete();
             $table->string('short_name', 50);
             $table->string('full_name_vi', 255);
             $table->string('full_name_en', 255);
@@ -19,9 +20,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->unique('short_name_normalized');
-            $table->unique('full_name_vi_normalized');
-            $table->unique('full_name_en_normalized');
+            $table->unique(['business_id', 'short_name_normalized']);
+            $table->unique(['business_id', 'full_name_vi_normalized']);
+            $table->unique(['business_id', 'full_name_en_normalized']);
         });
     }
 

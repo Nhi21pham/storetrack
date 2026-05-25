@@ -30,4 +30,14 @@ class PermissionRepository
             ->whereHas('business', fn($q) => $q->where('owner_id', $userId))
             ->exists();
     }
+
+    /** @return int[] */
+    public function getUserStoreIdsInBusiness(int $userId, int $businessId): array
+    {
+        return Store::where('business_id', $businessId)
+            ->whereHas('users', fn($q) => $q->where('user_id', $userId))
+            ->pluck('id')
+            ->map(fn($v) => (int) $v)
+            ->all();
+    }
 }

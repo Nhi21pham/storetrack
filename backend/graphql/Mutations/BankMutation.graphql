@@ -1,5 +1,5 @@
 extend type Mutation {
-    createBank(input: CreateBankInput! @spread): Bank!
+    createBank(business_id: ID!, input: CreateBankInput! @spread): Bank!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\BankResolver@create")
 

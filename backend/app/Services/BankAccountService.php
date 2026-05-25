@@ -27,13 +27,13 @@ class BankAccountService
     public function listForParty(User $actor, int $partyId): Collection
     {
         $context = $this->resolvePartyContext($partyId);
-        $this->authorizeView($actor, $context);
+        $this->authorize($actor, $context, PermissionEnum::UPDATE_BANK_ACCOUNT);
         return $this->bankAccountRepository->listForParty($partyId);
     }
 
     public function listForBusiness(User $actor, int $businessId, ?string $search = null): Collection
     {
-        $this->permissionService->authorizeBusiness($actor, PermissionEnum::UPDATE_BUSINESS, $businessId);
+        $this->permissionService->authorizeAnyStoreInBusiness($actor, PermissionEnum::UPDATE_BANK_ACCOUNT, $businessId);
         return $this->bankAccountRepository->businessScopedQuery($businessId, $search)->get();
     }
 
@@ -41,19 +41,22 @@ class BankAccountService
     {
         $account = $this->mustFind($id);
         $context = $this->resolvePartyContext((int) $account->party_id);
-        $this->authorizeView($actor, $context);
+        $this->authorize($actor, $context, PermissionEnum::UPDATE_BANK_ACCOUNT);
         return $account;
     }
 
     public function create(User $actor, int $partyId, array $data): BankAccount
     {
         $context = $this->resolvePartyContext($partyId);
-        $this->authorizeMutation($actor, $context);
+        $this->authorize($actor, $context, PermissionEnum::CREATE_BANK_ACCOUNT);
 
         return DB::transaction(function () use ($actor, $partyId, $data, $context) {
             $bank = $this->bankRepository->findById((int) $data['bank_id']);
             if (!$bank) {
                 throw new BankException(ErrorCode::BANK_NOT_FOUND, 'Bank not found.');
+            }
+            if ((int) $bank->business_id !== (int) $context['business_id']) {
+                throw new BankException(ErrorCode::BANK_NOT_FOUND, 'Bank not found in this business.');
             }
             if (!$bank->is_active) {
                 throw new BankException(ErrorCode::BANK_INACTIVE, "Bank {$bank->short_name} is inactive and cannot be used for new accounts.");
@@ -87,7 +90,7 @@ class BankAccountService
     {
         $account = $this->mustFind($id);
         $context = $this->resolvePartyContext((int) $account->party_id);
-        $this->authorizeMutation($actor, $context);
+        $this->authorize($actor, $context, PermissionEnum::UPDATE_BANK_ACCOUNT);
 
         return DB::transaction(function () use ($actor, $account, $data, $context) {
             $patch = [];
@@ -98,6 +101,9 @@ class BankAccountService
                 $bank = $this->bankRepository->findById($targetBankId);
                 if (!$bank) {
                     throw new BankException(ErrorCode::BANK_NOT_FOUND, 'Bank not found.');
+                }
+                if ((int) $bank->business_id !== (int) $context['business_id']) {
+                    throw new BankException(ErrorCode::BANK_NOT_FOUND, 'Bank not found in this business.');
                 }
                 if (!$bank->is_active) {
                     throw new BankException(ErrorCode::BANK_INACTIVE, "Bank {$bank->short_name} is inactive and cannot be selected.");
@@ -151,7 +157,7 @@ class BankAccountService
     {
         $account = $this->mustFind($id);
         $context = $this->resolvePartyContext((int) $account->party_id);
-        $this->authorizeMutation($actor, $context);
+        $this->authorize($actor, $context, PermissionEnum::DELETE_BANK_ACCOUNT);
 
         $accountId     = (int) $account->id;
         $accountNumber = (string) $account->account_number;
@@ -184,13 +190,10 @@ class BankAccountService
         return $account;
     }
 
-    /**
-     * Returns the party's classification used for authorization + audit logging.
-     * Shape: ['party_type' => 'supplier'|'customer'|'business', 'business_id' => int, 'update_permission' => PermissionEnum]
-     */
+    
     private function resolvePartyContext(int $partyId): array
     {
-        $party = Party::with(['supplier', 'customer', 'business'])->find($partyId);
+        $party = Party::with(['supplier.stores', 'customer.stores', 'business'])->find($partyId);
         if (!$party) {
             throw new BankAccountException(ErrorCode::BANK_ACCOUNT_NOT_FOUND, 'Owning party not found.');
         }
@@ -199,19 +202,22 @@ class BankAccountService
 
         return match ($type) {
             PartyTypeEnum::SUPPLIER => [
-                'party_type'        => 'supplier',
-                'business_id'       => (int) $party->supplier?->business_id,
-                'update_permission' => PermissionEnum::UPDATE_SUPPLIER,
+                'party_type'  => 'supplier',
+                'business_id' => (int) $party->supplier?->business_id,
+                'scope'       => 'store',
+                'store_ids'   => $party->supplier?->stores->pluck('id')->map(fn ($v) => (int) $v)->all() ?? [],
             ],
             PartyTypeEnum::CUSTOMER => [
-                'party_type'        => 'customer',
-                'business_id'       => (int) $party->customer?->business_id,
-                'update_permission' => PermissionEnum::UPDATE_CUSTOMER,
+                'party_type'  => 'customer',
+                'business_id' => (int) $party->customer?->business_id,
+                'scope'       => 'store',
+                'store_ids'   => $party->customer?->stores->pluck('id')->map(fn ($v) => (int) $v)->all() ?? [],
             ],
             PartyTypeEnum::BUSINESS => [
-                'party_type'        => 'business',
-                'business_id'       => (int) $party->business?->id,
-                'update_permission' => PermissionEnum::UPDATE_BUSINESS,
+                'party_type'  => 'business',
+                'business_id' => (int) $party->business?->id,
+                'scope'       => 'business_owner',
+                'store_ids'   => [],
             ],
             default => throw new BankAccountException(
                 ErrorCode::BANK_ACCOUNT_NOT_FOUND,
@@ -220,13 +226,19 @@ class BankAccountService
         };
     }
 
-    private function authorizeView(User $actor, array $context): void
+    private function authorize(User $actor, array $context, PermissionEnum $permission): void
     {
-        $this->permissionService->authorizeBusiness($actor, $context['update_permission'], $context['business_id']);
-    }
+        if ($context['scope'] === 'business_owner') {
+            
+            $this->permissionService->authorizeBusiness($actor, $permission, $context['business_id']);
+            return;
+        }
 
-    private function authorizeMutation(User $actor, array $context): void
-    {
-        $this->permissionService->authorizeBusiness($actor, $context['update_permission'], $context['business_id']);
+        
+        if (empty($context['store_ids'])) {
+            $this->permissionService->authorizeBusiness($actor, $permission, $context['business_id']);
+            return;
+        }
+        $this->permissionService->authorizeAnyStore($actor, $permission, $context['store_ids']);
     }
 }

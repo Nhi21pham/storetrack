@@ -12,7 +12,9 @@ class BankResolver extends BaseResolver
     public function create($_, array $args)
     {
         return $this->safe(function () use ($args) {
-            return $this->bankService->create($this->user(), $args);
+            $businessId = (int) $args['business_id'];
+            unset($args['business_id']);
+            return $this->bankService->create($this->user(), $businessId, $args);
         });
     }
 

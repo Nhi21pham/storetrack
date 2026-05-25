@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\PermissionEnum;
 use App\Exceptions\BankException;
 use App\Models\Bank;
 use App\Models\User;
@@ -15,31 +16,38 @@ class BankService
 {
     public function __construct(
         private BankRepository $bankRepository,
+        private PermissionService $permissionService,
         private AuditLogService $auditLogService,
     ) {}
 
-    public function getAll(bool $includeInactive = false): Collection
+    public function getAll(User $user, int $businessId, bool $includeInactive = false): Collection
     {
-        return $this->bankRepository->all($includeInactive);
+        $this->authorizeView($user, $businessId);
+        return $this->bankRepository->all($businessId, $includeInactive);
     }
 
-    public function search(string $query, bool $includeInactive = false, int $limit = 10): Collection
+    public function search(User $user, int $businessId, string $query, bool $includeInactive = false, int $limit = 10): Collection
     {
+        $this->authorizeView($user, $businessId);
         $needle = TextNormalizer::normalize($query);
         if ($needle === '') {
-            return $this->bankRepository->all($includeInactive)->take($limit);
+            return $this->bankRepository->all($businessId, $includeInactive)->take($limit);
         }
-        return $this->bankRepository->searchQuery($needle, $includeInactive, $limit)->get();
+        return $this->bankRepository->searchQuery($businessId, $needle, $includeInactive, $limit)->get();
     }
 
-    public function getById(int $id): Bank
+    public function getById(User $user, int $id): Bank
     {
-        return $this->mustFind($id);
+        $bank = $this->mustFind($id);
+        $this->authorizeView($user, (int) $bank->business_id);
+        return $bank;
     }
 
-    public function create(User $actor, array $data): Bank
+    public function create(User $actor, int $businessId, array $data): Bank
     {
-        return DB::transaction(function () use ($actor, $data) {
+        $this->permissionService->authorizeAnyStoreInBusiness($actor, PermissionEnum::CREATE_BANK, $businessId);
+
+        return DB::transaction(function () use ($actor, $businessId, $data) {
             $shortName  = (string) $data['short_name'];
             $fullVi     = (string) $data['full_name_vi'];
             $fullEn     = (string) $data['full_name_en'];
@@ -48,9 +56,10 @@ class BankService
             $viNorm    = TextNormalizer::normalize($fullVi);
             $enNorm    = TextNormalizer::normalize($fullEn);
 
-            $this->assertNameUnique($shortNorm, $viNorm, $enNorm);
+            $this->assertNameUnique($businessId, $shortNorm, $viNorm, $enNorm);
 
             $bank = $this->bankRepository->create([
+                'business_id'             => $businessId,
                 'short_name'              => $shortName,
                 'full_name_vi'            => $fullVi,
                 'full_name_en'            => $fullEn,
@@ -70,6 +79,8 @@ class BankService
     {
         return DB::transaction(function () use ($actor, $id, $data) {
             $bank = $this->mustFind($id);
+            $businessId = (int) $bank->business_id;
+            $this->permissionService->authorizeAnyStoreInBusiness($actor, PermissionEnum::UPDATE_BANK, $businessId);
 
             $patch = [];
 
@@ -77,7 +88,7 @@ class BankService
                 $shortName  = (string) $data['short_name'];
                 $shortNorm  = TextNormalizer::normalize($shortName);
                 if ($shortNorm !== $bank->short_name_normalized) {
-                    $existing = $this->bankRepository->findByShortNameNormalized($shortNorm, (int) $bank->id);
+                    $existing = $this->bankRepository->findByShortNameNormalized($businessId, $shortNorm, (int) $bank->id);
                     if ($existing !== null) {
                         throw new BankException(ErrorCode::BANK_NAME_TAKEN, "A bank with this short name already exists: {$existing->short_name}.");
                     }
@@ -90,7 +101,7 @@ class BankService
                 $fullVi = (string) $data['full_name_vi'];
                 $viNorm = TextNormalizer::normalize($fullVi);
                 if ($viNorm !== $bank->full_name_vi_normalized) {
-                    $existing = $this->bankRepository->findByFullNameViNormalized($viNorm, (int) $bank->id);
+                    $existing = $this->bankRepository->findByFullNameViNormalized($businessId, $viNorm, (int) $bank->id);
                     if ($existing !== null) {
                         throw new BankException(ErrorCode::BANK_NAME_TAKEN, "A bank with this Vietnamese name already exists: {$existing->short_name}.");
                     }
@@ -103,7 +114,7 @@ class BankService
                 $fullEn = (string) $data['full_name_en'];
                 $enNorm = TextNormalizer::normalize($fullEn);
                 if ($enNorm !== $bank->full_name_en_normalized) {
-                    $existing = $this->bankRepository->findByFullNameEnNormalized($enNorm, (int) $bank->id);
+                    $existing = $this->bankRepository->findByFullNameEnNormalized($businessId, $enNorm, (int) $bank->id);
                     if ($existing !== null) {
                         throw new BankException(ErrorCode::BANK_NAME_TAKEN, "A bank with this English name already exists: {$existing->short_name}.");
                     }
@@ -140,6 +151,8 @@ class BankService
     public function delete(User $actor, int $id): void
     {
         $bank = $this->mustFind($id);
+        $businessId = (int) $bank->business_id;
+        $this->permissionService->authorizeAnyStoreInBusiness($actor, PermissionEnum::DELETE_BANK, $businessId);
 
         if ($this->bankRepository->hasBankAccounts((int) $bank->id)) {
             throw new BankException(
@@ -155,20 +168,26 @@ class BankService
             $this->bankRepository->delete($bank);
         });
 
-        $this->auditLogService->bankDeleted($actor, $bankId, $shortName);
+        $this->auditLogService->bankDeleted($actor, $bankId, $shortName, $businessId);
     }
 
-    private function assertNameUnique(string $shortNorm, string $viNorm, string $enNorm): void
+    private function authorizeView(User $user, int $businessId): void
     {
-        $existing = $this->bankRepository->findByShortNameNormalized($shortNorm);
+        // Viewing a bank requires being able to update it (anyone with any role in the business).
+        $this->permissionService->authorizeAnyStoreInBusiness($user, PermissionEnum::UPDATE_BANK, $businessId);
+    }
+
+    private function assertNameUnique(int $businessId, string $shortNorm, string $viNorm, string $enNorm): void
+    {
+        $existing = $this->bankRepository->findByShortNameNormalized($businessId, $shortNorm);
         if ($existing !== null) {
             throw new BankException(ErrorCode::BANK_NAME_TAKEN, "A bank with this short name already exists: {$existing->short_name}.");
         }
-        $existing = $this->bankRepository->findByFullNameViNormalized($viNorm);
+        $existing = $this->bankRepository->findByFullNameViNormalized($businessId, $viNorm);
         if ($existing !== null) {
             throw new BankException(ErrorCode::BANK_NAME_TAKEN, "A bank with this Vietnamese name already exists: {$existing->short_name}.");
         }
-        $existing = $this->bankRepository->findByFullNameEnNormalized($enNorm);
+        $existing = $this->bankRepository->findByFullNameEnNormalized($businessId, $enNorm);
         if ($existing !== null) {
             throw new BankException(ErrorCode::BANK_NAME_TAKEN, "A bank with this English name already exists: {$existing->short_name}.");
         }
