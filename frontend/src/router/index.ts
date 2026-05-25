@@ -75,11 +75,6 @@ const router = createRouter({
           path: 'dashboard',
           name: 'dashboard',
           component: DashboardPage,
-          meta: {
-            breadcrumb: [
-              { label: 'Dashboard' },
-            ],
-          },
         },
         {
           path: 'business',
