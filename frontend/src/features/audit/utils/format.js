@@ -1,17 +1,9 @@
 import {
   ACTION_COLORS,
   ACTION_VERB_REGEX,
-  OBJECT_BADGE_CLASSES,
-  OBJECT_LABELS,
 } from '@/features/audit/constants'
 
 export { formatDateTime } from '@/utils/datetime'
-
-export const badgeClass = (objectType) =>
-  OBJECT_BADGE_CLASSES[objectType?.toLowerCase()] ?? 'badge-default'
-
-export const objectLabel = (objectType) =>
-  OBJECT_LABELS[objectType?.toLowerCase()] ?? (objectType || 'Other')
 
 export const actorTitle = (log) => {
   const name = log.actor_name || 'System'

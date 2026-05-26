@@ -6,6 +6,8 @@ use App\Enums\AuditAction;
 use App\Enums\AuditObjectType;
 use App\Jobs\Exports\ExportAuditLogJob;
 use App\Models\AuditLog;
+use App\Models\Bank;
+use App\Models\BankAccount;
 use App\Models\Business;
 use App\Models\Customer;
 use App\Models\Export;
@@ -631,5 +633,158 @@ class AuditLogService
             ],
             $businessId
         );
+    }
+
+    // Bank actions (per-business reference table)
+
+    public function bankCreated(User $actor, Bank $bank): void
+    {
+        $businessId = (int) $bank->business_id;
+        $this->log(null, $actor, AuditObjectType::BANK, AuditAction::CREATED,
+            self::actor($actor) . " has CREATED bank {$bank->short_name}.",
+            [
+                'bank_id'      => $bank->id,
+                'short_name'   => $bank->short_name,
+                'full_name_vi' => $bank->full_name_vi,
+                'full_name_en' => $bank->full_name_en,
+                'business_id'  => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function bankUpdated(User $actor, Bank $bank): void
+    {
+        $businessId = (int) $bank->business_id;
+        $this->log(null, $actor, AuditObjectType::BANK, AuditAction::UPDATED,
+            self::actor($actor) . " has UPDATED bank {$bank->short_name}.",
+            [
+                'bank_id'      => $bank->id,
+                'short_name'   => $bank->short_name,
+                'full_name_vi' => $bank->full_name_vi,
+                'full_name_en' => $bank->full_name_en,
+                'is_active'    => (bool) $bank->is_active,
+                'business_id'  => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function bankDeactivated(User $actor, Bank $bank): void
+    {
+        $businessId = (int) $bank->business_id;
+        $this->log(null, $actor, AuditObjectType::BANK, AuditAction::DEACTIVATED,
+            self::actor($actor) . " has DEACTIVATED bank {$bank->short_name}.",
+            [
+                'bank_id'     => $bank->id,
+                'short_name'  => $bank->short_name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function bankReactivated(User $actor, Bank $bank): void
+    {
+        $businessId = (int) $bank->business_id;
+        $this->log(null, $actor, AuditObjectType::BANK, AuditAction::REACTIVATED,
+            self::actor($actor) . " has REACTIVATED bank {$bank->short_name}.",
+            [
+                'bank_id'     => $bank->id,
+                'short_name'  => $bank->short_name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function bankDeleted(User $actor, int $bankId, string $shortName, int $businessId): void
+    {
+        $this->log(null, $actor, AuditObjectType::BANK, AuditAction::DELETED,
+            self::actor($actor) . " has DELETED bank {$shortName}.",
+            [
+                'bank_id'     => $bankId,
+                'short_name'  => $shortName,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    // Bank account actions (scoped to owning party's business)
+
+    public function bankAccountCreated(User $actor, BankAccount $account, string $partyType, ?int $businessId, array $storeIds = []): void
+    {
+        $shortName = $account->bank?->short_name;
+        $message = self::actor($actor) . " has CREATED bank account {$account->account_number} ({$shortName}) for {$partyType}.";
+        $baseMetadata = [
+            'bank_account_id' => $account->id,
+            'account_number'  => $account->account_number,
+            'bank_id'         => $account->bank_id,
+            'bank_short_name' => $shortName,
+            'party_id'        => $account->party_id,
+            'party_type'      => $partyType,
+            'business_id'     => $businessId,
+        ];
+        $this->logBankAccountEvent(
+            $actor, AuditAction::CREATED, $message, $baseMetadata, $businessId, $storeIds
+        );
+    }
+
+    public function bankAccountUpdated(User $actor, BankAccount $account, string $partyType, ?int $businessId, array $storeIds = []): void
+    {
+        $shortName = $account->bank?->short_name;
+        $message = self::actor($actor) . " has UPDATED bank account {$account->account_number} ({$shortName}).";
+        $baseMetadata = [
+            'bank_account_id' => $account->id,
+            'account_number'  => $account->account_number,
+            'bank_id'         => $account->bank_id,
+            'bank_short_name' => $shortName,
+            'party_id'        => $account->party_id,
+            'party_type'      => $partyType,
+            'business_id'     => $businessId,
+        ];
+        $this->logBankAccountEvent(
+            $actor, AuditAction::UPDATED, $message, $baseMetadata, $businessId, $storeIds
+        );
+    }
+
+    public function bankAccountDeleted(User $actor, int $bankAccountId, string $accountNumber, ?string $bankShortName, int $partyId, string $partyType, ?int $businessId, array $storeIds = []): void
+    {
+        $message = self::actor($actor) . " has DELETED bank account {$accountNumber} ({$bankShortName}).";
+        $baseMetadata = [
+            'bank_account_id' => $bankAccountId,
+            'account_number'  => $accountNumber,
+            'bank_short_name' => $bankShortName,
+            'party_id'        => $partyId,
+            'party_type'      => $partyType,
+            'business_id'     => $businessId,
+        ];
+        $this->logBankAccountEvent(
+            $actor, AuditAction::DELETED, $message, $baseMetadata, $businessId, $storeIds
+        );
+    }
+
+    private function logBankAccountEvent(
+        User $actor,
+        AuditAction $action,
+        string $message,
+        array $baseMetadata,
+        ?int $businessId,
+        array $storeIds
+    ): void {
+        if (empty($storeIds)) {
+            $this->log(null, $actor, AuditObjectType::BANK_ACCOUNT, $action, $message, $baseMetadata, $businessId);
+            return;
+        }
+
+        $storeNames = Store::whereIn('id', $storeIds)->pluck('name', 'id');
+        foreach ($storeIds as $storeId) {
+            $metadata = $baseMetadata + [
+                'store_id'   => (int) $storeId,
+                'store_name' => $storeNames[$storeId] ?? null,
+            ];
+            $this->log((int) $storeId, $actor, AuditObjectType::BANK_ACCOUNT, $action, $message, $metadata, $businessId);
+        }
     }
 }

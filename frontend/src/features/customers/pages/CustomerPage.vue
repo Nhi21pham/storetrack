@@ -50,7 +50,16 @@
         :canExport="sortedCustomers.length > 0"
         @clearSort="sort.clearSort"
         @export="run"
-      />
+      >
+        <template #extra>
+          <ColumnSelector
+            :togglable-columns="columnVisibility.togglableColumns"
+            :is-visible="columnVisibility.isVisible"
+            :toggle-column="columnVisibility.toggleColumn"
+            :reset-columns="columnVisibility.resetColumns"
+          />
+        </template>
+      </CustomerFilterBar>
 
       <LoadingState v-if="loading">Loading customers...</LoadingState>
 
@@ -100,10 +109,11 @@
         />
 
         <CustomerTable
-          :customers="sortedCustomers"
-          :columns="CUSTOMER_COLUMNS"
-          :colWidths="colWidths"
-          :isResizing="isResizing"
+          :key="tableKey"
+          :customers="paginatedCustomers"
+          :columns="columnVisibility.visibleColumns.value"
+          :initial-widths="visibleWidths"
+          :is-visible="columnVisibility.isVisible"
           :sort="sort"
           :isSelected="isSelected"
           :canManageRow="canManageRow"
@@ -111,12 +121,20 @@
           :rowActionsEnabled="!!currentStore?.is_active"
           :allVisibleSelected="allVisibleSelected"
           :someVisibleSelected="someVisibleSelected"
-          @startResize="startResize"
           @toggleSelectAll="toggleSelectAll"
           @toggleRow="toggleRow"
           @openDetail="openDetail"
           @edit="openEdit"
           @delete="confirmDelete"
+        />
+        <Pagination
+          v-if="total > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total="total"
+          :per-page="perPage"
+          @update:current-page="currentPage = $event"
+          @update:per-page="setPerPage"
         />
       </template>
 
@@ -168,6 +186,7 @@ import LoadingState from '@/components/common/LoadingState.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import InactiveBanner from '@/components/common/InactiveBanner.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import CustomerFilterBar from '@/features/customers/components/CustomerFilterBar.vue'
 import CustomerSelectionBar from '@/features/customers/components/CustomerSelectionBar.vue'
 import CustomerTable from '@/features/customers/components/CustomerTable.vue'
@@ -176,9 +195,20 @@ import CustomerDetailModal from '@/features/customers/components/CustomerDetailM
 import { useCustomers } from '@/features/customers/composables/useCustomers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
-import { useColumnResize } from '@/composables/useColumnResize'
+import { useClientPagination } from '@/composables/useClientPagination'
 import { startCustomerExport } from '@/features/customers/services/customerService'
 import { CUSTOMER_COLUMNS, CUSTOMER_INITIAL_COL_WIDTHS } from '@/features/customers/constants'
+import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import { useColumnVisibility } from '@/composables/useColumnVisibility'
+
+const columnVisibility = useColumnVisibility({
+  storageKey: 'customers',
+  columns: CUSTOMER_COLUMNS,
+  lockedKeys: ['select', 'actions'],
+})
+
+const visibleWidths = computed(() => columnVisibility.filterWidths(CUSTOMER_INITIAL_COL_WIDTHS))
+const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -196,15 +226,23 @@ const {
   onError: (msg) => showToast(msg, 'error'),
 })
 
+const {
+  currentPage,
+  perPage,
+  total,
+  totalPages,
+  paginated: paginatedCustomers,
+  setPerPage,
+  resetPage,
+} = useClientPagination(sortedCustomers)
+
 const visibleIds = computed(() =>
-  sortedCustomers.value.filter(canManageRow).map((c) => String(c.id)),
+  paginatedCustomers.value.filter(canManageRow).map((c) => String(c.id)),
 )
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
 } = useRowSelection({ eligibleIds: visibleIds })
-
-const { colWidths, isResizing, startResize } = useColumnResize(CUSTOMER_INITIAL_COL_WIDTHS)
 
 const showForm        = ref(false)
 const editingCustomer = ref(null)
@@ -272,6 +310,7 @@ const { exporting, run } = useExport({
 
 watch([storeFilter, searchQuery, () => currentStore.value?.id], () => {
   clearSelection()
+  resetPage()
 })
 </script>
 

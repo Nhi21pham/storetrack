@@ -14,6 +14,8 @@ import UserManagementPage from '@/features/users/pages/UserManagementPage.vue'
 import AuditLogPage from '@/features/audit/pages/AuditLogPage.vue'
 import SupplierPage from '@/features/suppliers/pages/SupplierPage.vue'
 import CustomerPage from '@/features/customers/pages/CustomerPage.vue'
+import BanksPage from '@/features/banking/pages/BanksPage.vue'
+import BankAccountsPage from '@/features/banking/pages/BankAccountsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -72,37 +74,99 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: DashboardPage
+          component: DashboardPage,
         },
         {
           path: 'business',
           name: 'business',
-          component: BusinessPage
+          component: BusinessPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Business' },
+            ],
+          },
         },
         {
           path: 'stores',
           name: 'stores',
-          component: StorePage
+          component: StorePage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Stores' },
+            ],
+          },
         },
         {
           path: 'users',
           name: 'users',
-          component: UserManagementPage
+          component: UserManagementPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Users' },
+            ],
+          },
         },
         {
           path: 'audit-log',
           name: 'audit-log',
-          component: AuditLogPage
+          component: AuditLogPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Audit Log' },
+            ],
+          },
         },
         {
           path: 'suppliers',
           name: 'suppliers',
-          component: SupplierPage
+          component: SupplierPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Suppliers' },
+            ],
+          },
         },
         {
           path: 'customers',
           name: 'customers',
-          component: CustomerPage
+          component: CustomerPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Customers' },
+            ],
+          },
+        },
+        {
+          path: 'banking/banks',
+          name: 'banking-banks',
+          component: BanksPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Others' },
+              { label: 'Banking', icon: 'bank' },
+              { label: 'Banks' },
+            ],
+          },
+        },
+        {
+          path: 'banking/bank-accounts',
+          name: 'banking-bank-accounts',
+          component: BankAccountsPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Others' },
+              { label: 'Banking', icon: 'bank' },
+              { label: 'Bank Accounts' },
+            ],
+          },
         },
       ]
     },

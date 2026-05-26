@@ -1,0 +1,14 @@
+type BankAccount {
+    id: ID!
+    party_id: ID!
+    bank_id: ID!
+    province_id: ID
+    account_number: String!
+    account_holder_name: String
+    branch: String
+    bank: Bank! @belongsTo
+    province: Province @belongsTo
+    party: Party! @belongsTo
+    created_at: DateTime!
+    updated_at: DateTime!
+}

@@ -1,7 +1,7 @@
 <template>
   <div class="log-feed" :class="{ 'log-feed--fetching': fetching }">
     <div v-for="log in logs" :key="log.id" class="log-entry">
-      <span class="object-badge" :class="badgeClass(log.object_type)">{{ objectLabel(log.object_type) }}</span>
+      <ObjectBadge :type="log.object_type" block />
       <div class="log-body">
         <div class="log-actor-block" :title="actorTitle(log)">
           <span class="log-actor">{{ log.actor_name || 'System' }}</span><span v-if="log.actor_email" class="log-actor-email">&nbsp;({{ log.actor_email }})</span>
@@ -30,8 +30,9 @@
 
 <script setup>
 import Pagination from '@/components/common/Pagination.vue'
+import ObjectBadge from '@/components/common/ObjectBadge.vue'
 import {
-  badgeClass, objectLabel, actorTitle, actionTitle, renderAction, formatDateTime,
+  actorTitle, actionTitle, renderAction, formatDateTime,
 } from '@/features/audit/utils/format'
 
 defineProps({
@@ -54,15 +55,6 @@ defineEmits(['page', 'perPage'])
 .log-entry { display: flex; align-items: flex-start; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #f3f4f6; transition: background 0.12s; }
 .log-entry:last-of-type { border-bottom: none; }
 .log-entry:hover { background: #fafafa; }
-
-.object-badge { flex-shrink: 0; align-self: flex-start; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.04em; line-height: 1.4; min-width: 78px; text-align: center; }
-.object-badge.badge-business   { background: #ffedd5; color: #c2410c; }
-.object-badge.badge-store      { background: #dbeafe; color: #1d4ed8; }
-.object-badge.badge-user       { background: #d1fae5; color: #065f46; }
-.object-badge.badge-invitation { background: #ede9fe; color: #6d28d9; }
-.object-badge.badge-supplier   { background: #fef9c3; color: #854d0e; }
-.object-badge.badge-customer   { background: #fce7f3; color: #9d174d; }
-.object-badge.badge-default    { background: #f3f4f6; color: #6b7280; }
 
 .log-body { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; }
 

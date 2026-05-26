@@ -117,7 +117,7 @@ const fetchBusinesses = async () => {
   try {
     const data = await graphql(`query {
       accessibleBusinesses {
-        id name tax_code role
+        id party_id name tax_code role
         stores { id name is_active my_role }
       }
     }`)

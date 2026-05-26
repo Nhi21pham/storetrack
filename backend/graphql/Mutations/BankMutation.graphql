@@ -1,0 +1,26 @@
+extend type Mutation {
+    createBank(business_id: ID!, input: CreateBankInput! @spread): Bank!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BankResolver@create")
+
+    updateBank(id: ID!, input: UpdateBankInput! @spread): Bank!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BankResolver@update")
+
+    deleteBank(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BankResolver@delete")
+}
+
+input CreateBankInput {
+    short_name: String! @rules(apply: ["required", "string", "min:1", "max:50"])
+    full_name_vi: String! @rules(apply: ["required", "string", "min:2", "max:255"])
+    full_name_en: String! @rules(apply: ["required", "string", "min:2", "max:255"])
+}
+
+input UpdateBankInput {
+    short_name: String @rules(apply: ["sometimes", "string", "min:1", "max:50"])
+    full_name_vi: String @rules(apply: ["sometimes", "string", "min:2", "max:255"])
+    full_name_en: String @rules(apply: ["sometimes", "string", "min:2", "max:255"])
+    is_active: Boolean @rules(apply: ["sometimes", "boolean"])
+}

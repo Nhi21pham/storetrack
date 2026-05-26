@@ -1,5 +1,5 @@
 <template>
-  <div class="searchable-select" ref="rootEl">
+  <div class="searchable-select" :class="{ 'ss-large': size === 'large' }" ref="rootEl">
     <button type="button" class="ss-trigger" :class="{ open }" @click="toggleOpen">
       <span class="ss-value" :class="{ 'ss-placeholder': !selectedLabel }">
         {{ selectedLabel || placeholder }}
@@ -8,7 +8,7 @@
         <polyline points="6 9 12 15 18 9"/>
       </svg>
     </button>
-    <div v-if="open" class="ss-panel">
+    <div v-if="open" class="ss-panel" :class="{ 'ss-panel--up': flipUp }" ref="panelEl">
       <div class="ss-search">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -37,7 +37,8 @@
           :class="{ 'ss-option--active': modelValue === opt.value }"
           @click="select(opt.value)"
         >
-          {{ opt.label }}
+          <span class="ss-option-label">{{ opt.label }}</span>
+          <span v-if="opt.sublabel" class="ss-option-sublabel">{{ opt.sublabel }}</span>
         </li>
         <li v-if="filteredOptions.length === 0" class="ss-empty">No matches</li>
       </ul>
@@ -55,14 +56,17 @@ const props = defineProps({
   searchPlaceholder: { type: String, default: 'Search...' },
   allowAll: { type: Boolean, default: true },
   allLabel: { type: String, default: 'All' },
+  size: { type: String, default: 'default' },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
 
 const rootEl   = ref(null)
+const panelEl  = ref(null)
 const searchEl = ref(null)
 const open     = ref(false)
 const search   = ref('')
+const flipUp   = ref(false)
 
 const selectedLabel = computed(() => {
   if (props.modelValue === '' || props.modelValue == null) {
@@ -75,14 +79,34 @@ const selectedLabel = computed(() => {
 const filteredOptions = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return props.options
-  return props.options.filter(o => o.label.toLowerCase().includes(q))
+  return props.options.filter(o => {
+    const label = (o.label || '').toLowerCase()
+    const sublabel = (o.sublabel || '').toLowerCase()
+    return label.includes(q) || sublabel.includes(q)
+  })
 })
+
+const PANEL_ESTIMATED_HEIGHT = 300
+
+const updateFlip = () => {
+  if (!rootEl.value) return
+  const rect = rootEl.value.getBoundingClientRect()
+  const spaceBelow = window.innerHeight - rect.bottom
+  const spaceAbove = rect.top
+  flipUp.value = spaceBelow < PANEL_ESTIMATED_HEIGHT && spaceAbove > spaceBelow
+}
 
 const toggleOpen = () => {
   open.value = !open.value
   if (open.value) {
     search.value = ''
-    nextTick(() => searchEl.value?.focus())
+    updateFlip()
+    nextTick(() => {
+      searchEl.value?.focus()
+      if (!flipUp.value && panelEl.value) {
+        panelEl.value.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      }
+    })
   }
 }
 
@@ -111,6 +135,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
 .ss-trigger {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   min-width: 140px; min-height: 36px;
+  width: 100%;
   padding: 7px 11px;
   border: 1px solid #e5e7eb; border-radius: 10px;
   background: #fafafa; color: #374151; font-size: 13.5px; font-family: inherit;
@@ -119,6 +144,14 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
 }
 .ss-trigger:hover { background: #fff; border-color: #d1d5db; }
 .ss-trigger.open { background: #fff; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(156,163,175,0.12); }
+
+.ss-large .ss-trigger {
+  min-height: 44px;
+  padding: 11px 14px;
+  font-size: 14.5px;
+  background: #fff;
+  border-color: #d1d5db;
+}
 
 .ss-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ss-placeholder { color: #9ca3af; }
@@ -131,6 +164,10 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
   background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);
   overflow: hidden;
+}
+.ss-panel--up {
+  top: auto;
+  bottom: calc(100% + 4px);
 }
 
 .ss-search {
@@ -146,16 +183,20 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
 
 .ss-list {
   list-style: none; margin: 0; padding: 4px 0;
-  max-height: 220px; overflow-y: auto;
+  max-height: 240px; overflow-y: auto;
 }
 
 .ss-option {
-  padding: 7px 12px; font-size: 13.5px; color: #374151;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 12px; font-size: 13.5px; color: #374151;
   cursor: pointer; transition: background 0.12s;
 }
 .ss-option:hover { background: #f9fafb; }
 .ss-option--active { background: #eff6ff; color: #1d4ed8; font-weight: 500; }
 .ss-option--active:hover { background: #dbeafe; }
+.ss-option-label { line-height: 1.3; }
+.ss-option-sublabel { font-size: 11.5px; color: #6b7280; line-height: 1.3; }
+.ss-option--active .ss-option-sublabel { color: #3b82f6; }
 
 .ss-empty { padding: 10px 12px; font-size: 13px; color: #9ca3af; text-align: center; }
 </style>

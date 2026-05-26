@@ -1,0 +1,29 @@
+extend type Mutation {
+    createBankAccount(party_id: ID!, input: CreateBankAccountInput! @spread): BankAccount!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BankAccountResolver@create")
+
+    updateBankAccount(id: ID!, input: UpdateBankAccountInput! @spread): BankAccount!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BankAccountResolver@update")
+
+    deleteBankAccount(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\BankAccountResolver@delete")
+}
+
+input CreateBankAccountInput {
+    bank_id: ID! @rules(apply: ["required", "integer", "exists:banks,id"])
+    province_id: ID @rules(apply: ["nullable", "integer", "exists:provinces,id"])
+    account_number: String! @rules(apply: ["required", "string", "min:4", "max:50", "regex:/^[0-9]+$/"])
+    account_holder_name: String @rules(apply: ["nullable", "string", "max:255"])
+    branch: String @rules(apply: ["nullable", "string", "max:255"])
+}
+
+input UpdateBankAccountInput {
+    bank_id: ID @rules(apply: ["sometimes", "integer", "exists:banks,id"])
+    province_id: ID @rules(apply: ["nullable", "integer", "exists:provinces,id"])
+    account_number: String @rules(apply: ["sometimes", "string", "min:4", "max:50", "regex:/^[0-9]+$/"])
+    account_holder_name: String @rules(apply: ["nullable", "string", "max:255"])
+    branch: String @rules(apply: ["nullable", "string", "max:255"])
+}

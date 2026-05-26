@@ -50,6 +50,8 @@
           <span v-if="customer.created_at" class="detail-value">{{ formatDateTime(customer.created_at) }}</span>
           <span v-else class="detail-value empty-val">—</span>
         </div>
+
+        <PartyBankAccountsList v-if="customer.party?.id" :party-id="customer.party.id" />
       </div>
 
       <div class="modal-footer">
@@ -65,6 +67,7 @@
 
 <script setup>
 import { formatDateTime } from '@/utils/datetime'
+import PartyBankAccountsList from '@/features/banking/components/PartyBankAccountsList.vue'
 
 defineProps({
   customer: { type: Object, required: true },

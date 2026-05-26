@@ -43,6 +43,13 @@
         </div>
 
         <div v-if="apiError" class="api-error">{{ apiError }}</div>
+
+        <BankAccountsFormWidget
+          ref="bankAccountsWidget"
+          :party-id="supplier?.party?.id ?? null"
+          :default-holder-name="form.name"
+          entity-label="Supplier"
+        />
       </div>
 
       <div class="modal-footer">
@@ -69,6 +76,7 @@
 <script setup>
 import { ref, computed, inject } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import BankAccountsFormWidget from '@/features/banking/components/BankAccountsFormWidget.vue'
 import { validators } from '@/utils/validators'
 import { createSupplier, updateSupplier } from '@/features/suppliers/services/supplierService'
 
@@ -98,8 +106,11 @@ const initialForm = () => ({
 
 const form = ref(initialForm())
 const originalForm = ref(JSON.stringify(initialForm()))
+const bankAccountsWidget = ref(null)
 
-const isDirty = computed(() => JSON.stringify(form.value) !== originalForm.value)
+const isDirty = computed(() =>
+  JSON.stringify(form.value) !== originalForm.value || bankAccountsWidget.value?.hasDrafts
+)
 
 const validateForm = () => {
   errors.value = { name: '', tax_code: '', email: '', phone: '', address: '' }
@@ -136,6 +147,15 @@ const handleSubmit = async () => {
     const result = isEdit.value
       ? await updateSupplier({ id: props.supplier.id, ...ctx })
       : await createSupplier(ctx)
+
+    const partyId = result?.party?.id ?? props.supplier?.party?.id ?? props.supplier?.party_id
+    const errorMsg = await bankAccountsWidget.value?.submitDrafts(partyId)
+    if (errorMsg) {
+      apiError.value = errorMsg
+      emit('saved', result)
+      return
+    }
+
     emit('saved', result)
   } catch (err) {
     apiError.value = err.message
@@ -155,7 +175,8 @@ const handleClose = () => {
 
 <style scoped>
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; box-shadow: 0 24px 80px rgba(0,0,0,0.15); overflow: hidden; }
+.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; box-shadow: 0 24px 80px rgba(0,0,0,0.15); overflow: visible; max-height: 90vh; display: flex; flex-direction: column; }
+.modal-body { overflow-y: auto; overflow-x: visible; }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
 .modal-header h2 { font-size: 18px; font-weight: 700; color: #111; }

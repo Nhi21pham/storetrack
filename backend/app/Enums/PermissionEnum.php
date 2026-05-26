@@ -32,4 +32,14 @@ enum PermissionEnum: string
     case CREATE_INVOICE = 'invoice.create';
     case UPDATE_INVOICE = 'invoice.update';
     case DELETE_INVOICE = 'invoice.delete';
+
+    // Bank
+    case CREATE_BANK = 'bank.create';
+    case UPDATE_BANK = 'bank.update';
+    case DELETE_BANK = 'bank.delete';
+
+    // Bank account
+    case CREATE_BANK_ACCOUNT = 'bank_account.create';
+    case UPDATE_BANK_ACCOUNT = 'bank_account.update';
+    case DELETE_BANK_ACCOUNT = 'bank_account.delete';
 }

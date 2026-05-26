@@ -1,10 +1,12 @@
 export const OBJECT_OPTIONS = [
-  { value: 'business',   label: 'Business' },
-  { value: 'store',      label: 'Store' },
-  { value: 'user',       label: 'User' },
-  { value: 'invitation', label: 'Invitation' },
-  { value: 'supplier',   label: 'Supplier' },
-  { value: 'customer',   label: 'Customer' },
+  { value: 'business',     label: 'Business' },
+  { value: 'store',        label: 'Store' },
+  { value: 'user',         label: 'User' },
+  { value: 'invitation',   label: 'Invitation' },
+  { value: 'supplier',     label: 'Supplier' },
+  { value: 'customer',     label: 'Customer' },
+  { value: 'bank',         label: 'Bank' },
+  { value: 'bank_account', label: 'Bank Account' },
 ]
 
 export const ACTION_OPTIONS = [
@@ -29,24 +31,6 @@ export const ACTION_COLORS = {
   INVITED: '#7c3aed', EXPORTED: '#7c3aed',
   CANCELLED: '#b45309', DEACTIVATED: '#b45309',
   REMOVED: '#dc2626', DELETED: '#dc2626', DECLINED: '#dc2626',
-}
-
-export const OBJECT_LABELS = {
-  business:   'Business',
-  store:      'Store',
-  user:       'User',
-  invitation: 'Invitation',
-  supplier:   'Supplier',
-  customer:   'Customer',
-}
-
-export const OBJECT_BADGE_CLASSES = {
-  business:   'badge-business',
-  store:      'badge-store',
-  user:       'badge-user',
-  invitation: 'badge-invitation',
-  supplier:   'badge-supplier',
-  customer:   'badge-customer',
 }
 
 export const ACTION_VERB_REGEX =

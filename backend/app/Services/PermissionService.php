@@ -38,9 +38,30 @@ class PermissionService
             PermissionEnum::UPDATE_CUSTOMER,
             PermissionEnum::DELETE_CUSTOMER,
             PermissionEnum::UPDATE_SUPPLIER,
-            PermissionEnum::DELETE_SUPPLIER => $this->permissionRepository->isBusinessOwner($user->id, $businessId),
+            PermissionEnum::DELETE_SUPPLIER,
+            PermissionEnum::CREATE_BANK_ACCOUNT,
+            PermissionEnum::UPDATE_BANK_ACCOUNT,
+            PermissionEnum::DELETE_BANK_ACCOUNT => $this->permissionRepository->isBusinessOwner($user->id, $businessId),
             default => false,
         };
+    }
+
+    public function canOnAnyStoreInBusiness(User $user, PermissionEnum $permission, int $businessId): bool
+    {
+        if ($this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
+            return true;
+        }
+        $storeIds = $this->permissionRepository->getUserStoreIdsInBusiness($user->id, $businessId);
+        return $this->canOnAnyStore($user, $permission, $storeIds);
+    }
+
+    public function authorizeAnyStoreInBusiness(User $user, PermissionEnum $permission, int $businessId): void
+    {
+        if (!$this->canOnAnyStoreInBusiness($user, $permission, $businessId)) {
+            throw new AuthorizationException(
+                "You do not have permission to perform '{$permission->value}' in this business."
+            );
+        }
     }
 
     public function authorizeStore(User $user, PermissionEnum $permission, int $storeId): void

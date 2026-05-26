@@ -1,0 +1,6 @@
+type Province {
+    id: ID!
+    code: String!
+    name_vi: String!
+    name_en: String!
+}

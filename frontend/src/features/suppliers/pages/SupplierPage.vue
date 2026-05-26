@@ -50,7 +50,16 @@
         :canExport="sortedSuppliers.length > 0"
         @clearSort="sort.clearSort"
         @export="run"
-      />
+      >
+        <template #extra>
+          <ColumnSelector
+            :togglable-columns="columnVisibility.togglableColumns"
+            :is-visible="columnVisibility.isVisible"
+            :toggle-column="columnVisibility.toggleColumn"
+            :reset-columns="columnVisibility.resetColumns"
+          />
+        </template>
+      </SupplierFilterBar>
 
       <LoadingState v-if="loading">Loading suppliers...</LoadingState>
 
@@ -97,10 +106,11 @@
         />
 
         <SupplierTable
-          :suppliers="sortedSuppliers"
-          :columns="SUPPLIER_COLUMNS"
-          :colWidths="colWidths"
-          :isResizing="isResizing"
+          :key="tableKey"
+          :suppliers="paginatedSuppliers"
+          :columns="columnVisibility.visibleColumns.value"
+          :initial-widths="visibleWidths"
+          :is-visible="columnVisibility.isVisible"
           :sort="sort"
           :isSelected="isSelected"
           :canManageRow="canManageRow"
@@ -108,12 +118,20 @@
           :rowActionsEnabled="!!currentStore?.is_active"
           :allVisibleSelected="allVisibleSelected"
           :someVisibleSelected="someVisibleSelected"
-          @startResize="startResize"
           @toggleSelectAll="toggleSelectAll"
           @toggleRow="toggleRow"
           @openDetail="openDetail"
           @edit="openEdit"
           @delete="confirmDelete"
+        />
+        <Pagination
+          v-if="total > 0"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total="total"
+          :per-page="perPage"
+          @update:current-page="currentPage = $event"
+          @update:per-page="setPerPage"
         />
       </template>
 
@@ -165,6 +183,7 @@ import LoadingState from '@/components/common/LoadingState.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import InactiveBanner from '@/components/common/InactiveBanner.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import SupplierFilterBar from '@/features/suppliers/components/SupplierFilterBar.vue'
 import SupplierSelectionBar from '@/features/suppliers/components/SupplierSelectionBar.vue'
 import SupplierTable from '@/features/suppliers/components/SupplierTable.vue'
@@ -173,9 +192,20 @@ import SupplierDetailModal from '@/features/suppliers/components/SupplierDetailM
 import { useSuppliers } from '@/features/suppliers/composables/useSuppliers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
-import { useColumnResize } from '@/composables/useColumnResize'
+import { useClientPagination } from '@/composables/useClientPagination'
 import { startSupplierExport } from '@/features/suppliers/services/supplierService'
 import { SUPPLIER_COLUMNS, SUPPLIER_INITIAL_COL_WIDTHS } from '@/features/suppliers/constants'
+import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import { useColumnVisibility } from '@/composables/useColumnVisibility'
+
+const columnVisibility = useColumnVisibility({
+  storageKey: 'suppliers',
+  columns: SUPPLIER_COLUMNS,
+  lockedKeys: ['select', 'actions'],
+})
+
+const visibleWidths = computed(() => columnVisibility.filterWidths(SUPPLIER_INITIAL_COL_WIDTHS))
+const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -193,15 +223,23 @@ const {
   onError: (msg) => showToast(msg, 'error'),
 })
 
+const {
+  currentPage,
+  perPage,
+  total,
+  totalPages,
+  paginated: paginatedSuppliers,
+  setPerPage,
+  resetPage,
+} = useClientPagination(sortedSuppliers)
+
 const visibleIds = computed(() =>
-  sortedSuppliers.value.filter(canManageRow).map((s) => String(s.id)),
+  paginatedSuppliers.value.filter(canManageRow).map((s) => String(s.id)),
 )
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
 } = useRowSelection({ eligibleIds: visibleIds })
-
-const { colWidths, isResizing, startResize } = useColumnResize(SUPPLIER_INITIAL_COL_WIDTHS)
 
 const showForm        = ref(false)
 const editingSupplier = ref(null)
@@ -269,6 +307,7 @@ const { exporting, run } = useExport({
 
 watch([storeFilter, searchQuery, () => currentStore.value?.id], () => {
   clearSelection()
+  resetPage()
 })
 </script>
 

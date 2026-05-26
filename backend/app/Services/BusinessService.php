@@ -9,6 +9,7 @@ use App\Models\Business;
 use App\Models\User;
 use App\Repositories\BusinessRepository;
 use App\Repositories\PartyRepository;
+use Database\Seeders\BankSeeder;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\BusinessException;
 
@@ -25,10 +26,12 @@ class BusinessService
     {
         return DB::transaction(function () use ($user, $data) {
             $party = $this->partyRepository->create(PartyTypeEnum::BUSINESS);
-            return $this->businessRepository->create(array_merge($data, [
+            $business = $this->businessRepository->create(array_merge($data, [
                 'owner_id' => $user->id,
                 'party_id' => $party->id,
             ]));
+            BankSeeder::seedDefaultsForBusiness((int) $business->id);
+            return $business;
         });
     }
 
@@ -121,6 +124,7 @@ class BusinessService
 
             $result[] = [
                 'id' => (string) $business->id,
+                'party_id' => (string) $business->party_id,
                 'name' => $business->name,
                 'tax_code' => $business->tax_code,
                 'address' => $business->address,
@@ -147,6 +151,7 @@ class BusinessService
             if (!isset($grouped[$bizId])) {
                 $grouped[$bizId] = [
                     'id' => (string) $store->business->id,
+                    'party_id' => (string) $store->business->party_id,
                     'name' => $store->business->name,
                     'tax_code' => $store->business->tax_code,
                     'address' => $store->business->address,

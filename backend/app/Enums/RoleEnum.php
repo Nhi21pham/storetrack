@@ -27,6 +27,12 @@ enum RoleEnum: string
                 PermissionEnum::CREATE_INVOICE,
                 PermissionEnum::UPDATE_INVOICE,
                 PermissionEnum::DELETE_INVOICE,
+                PermissionEnum::CREATE_BANK,
+                PermissionEnum::UPDATE_BANK,
+                PermissionEnum::DELETE_BANK,
+                PermissionEnum::CREATE_BANK_ACCOUNT,
+                PermissionEnum::UPDATE_BANK_ACCOUNT,
+                PermissionEnum::DELETE_BANK_ACCOUNT,
             ],
             self::ACCOUNTANT => [
                 PermissionEnum::UPDATE_STORE,
@@ -39,6 +45,12 @@ enum RoleEnum: string
                 PermissionEnum::CREATE_INVOICE,
                 PermissionEnum::UPDATE_INVOICE,
                 PermissionEnum::DELETE_INVOICE,
+                PermissionEnum::CREATE_BANK,
+                PermissionEnum::UPDATE_BANK,
+                PermissionEnum::DELETE_BANK,
+                PermissionEnum::CREATE_BANK_ACCOUNT,
+                PermissionEnum::UPDATE_BANK_ACCOUNT,
+                PermissionEnum::DELETE_BANK_ACCOUNT,
             ],
             self::STAFF => [
                 PermissionEnum::CREATE_SUPPLIER,
@@ -47,6 +59,10 @@ enum RoleEnum: string
                 PermissionEnum::UPDATE_CUSTOMER,
                 PermissionEnum::CREATE_INVOICE,
                 PermissionEnum::UPDATE_INVOICE,
+                PermissionEnum::CREATE_BANK,
+                PermissionEnum::UPDATE_BANK,
+                PermissionEnum::CREATE_BANK_ACCOUNT,
+                PermissionEnum::UPDATE_BANK_ACCOUNT,
             ],
         };
     }
