@@ -53,6 +53,17 @@
 
       <div v-else class="table-wrap">
         <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+          <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+            <SortableHeader
+              v-if="c.sortable"
+              :label="c.label"
+              :sort-info="sort.getSortInfo(c.key)"
+              :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
+              @sort="(dir) => sort.toggleSort(c.key, dir)"
+            />
+            <template v-else>{{ c.label }}</template>
+          </template>
+
           <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
             <td v-if="columnVisibility.isVisible('short_name')"><span class="short">{{ bank.short_name }}</span></td>
             <td v-if="columnVisibility.isVisible('full_name_vi')"><span class="truncate" :title="bank.full_name_vi">{{ bank.full_name_vi }}</span></td>
@@ -143,9 +154,11 @@ import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import SortableHeader from '@/components/common/SortableHeader.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
+import { useSortCriteria } from '@/composables/useSortCriteria'
 import { fetchBanks, deleteBank, updateBank } from '@/features/banking/services/bankService'
 import { BANK_COLUMNS, BANK_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 
@@ -192,6 +205,15 @@ const filteredBanks = computed(() => {
   })
 })
 
+const sort = useSortCriteria()
+const sortedBanks = computed(() =>
+  sort.sortItems(filteredBanks.value, (bank, key) => {
+    if (key === 'status') return bank.is_active ? 1 : 0
+    const v = bank[key]
+    return typeof v === 'string' ? normalizeText(v) : (v ?? '')
+  })
+)
+
 const {
   currentPage,
   perPage,
@@ -200,9 +222,9 @@ const {
   paginated: paginatedBanks,
   setPerPage,
   resetPage,
-} = useClientPagination(filteredBanks)
+} = useClientPagination(sortedBanks)
 
-watch([searchQuery, includeInactive], resetPage)
+watch([searchQuery, includeInactive, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentBusiness?.value?.id) {

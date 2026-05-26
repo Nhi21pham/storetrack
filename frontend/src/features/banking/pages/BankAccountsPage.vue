@@ -49,6 +49,17 @@
 
       <div v-else class="table-wrap">
         <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+          <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+            <SortableHeader
+              v-if="c.sortable"
+              :label="c.label"
+              :sort-info="sort.getSortInfo(c.key)"
+              :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
+              @sort="(dir) => sort.toggleSort(c.key, dir)"
+            />
+            <template v-else>{{ c.label }}</template>
+          </template>
+
           <tr v-for="a in paginatedAccounts" :key="a.id">
             <td v-if="columnVisibility.isVisible('owner')">
               <span class="type-badge" :class="a.party?.type">{{ ownerLabel(a) }}</span>
@@ -111,11 +122,14 @@ import Icon from '@/components/common/Icon.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import SortableHeader from '@/components/common/SortableHeader.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
+import { useSortCriteria } from '@/composables/useSortCriteria'
 import { fetchBankAccounts, deleteBankAccount } from '@/features/banking/services/bankAccountService'
 import { BANK_ACCOUNT_COLUMNS, BANK_ACCOUNT_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
+import { normalizeText } from '@/utils/textNormalizer'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'bank_accounts',
@@ -142,6 +156,21 @@ const canDelete = computed(() => {
   return role === 'owner' || role === 'accountant'
 })
 
+const sort = useSortCriteria()
+const sortedAccounts = computed(() =>
+  sort.sortItems(accounts.value, (account, key) => {
+    switch (key) {
+      case 'owner':          return account.party?.type || ''
+      case 'bank':            return normalizeText(account.bank?.short_name || '')
+      case 'account_number':  return account.account_number || ''
+      case 'holder_name':     return normalizeText(account.account_holder_name || '')
+      case 'branch':          return normalizeText(account.branch || '')
+      case 'province':        return normalizeText(account.province?.name_vi || '')
+      default:                return ''
+    }
+  })
+)
+
 const {
   currentPage,
   perPage,
@@ -150,9 +179,9 @@ const {
   paginated: paginatedAccounts,
   setPerPage,
   resetPage,
-} = useClientPagination(accounts)
+} = useClientPagination(sortedAccounts)
 
-watch(searchQuery, resetPage)
+watch([searchQuery, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 let searchTimer = null
 
