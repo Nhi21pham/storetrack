@@ -10,7 +10,7 @@ const BANK_ACCOUNT_FIELDS = `
   branch
   bank { id short_name full_name_vi full_name_en is_active }
   province { id code name_vi name_en }
-  party { id type }
+  party { id type display_name }
   created_at
   updated_at
 `

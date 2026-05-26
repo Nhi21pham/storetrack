@@ -1,6 +1,7 @@
 type Party {
     id: ID!
     type: PartyType!
+    display_name: String @field(resolver: "App\\GraphQL\\Types\\PartyDisplayNameResolver")
     bank_accounts: [BankAccount!]! @hasMany(relation: "bankAccounts")
     created_at: DateTime!
     updated_at: DateTime!

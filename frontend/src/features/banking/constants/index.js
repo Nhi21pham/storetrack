@@ -9,7 +9,8 @@ export const BANK_COLUMNS = [
 export const BANK_INITIAL_COL_WIDTHS = [160, 330, 330, 110, 110]
 
 export const BANK_ACCOUNT_COLUMNS = [
-  { key: 'owner',          label: 'Owner',          sortable: true  },
+  { key: 'owner',          label: 'Owner Type',     sortable: true  },
+  { key: 'owner_name',     label: 'Owner Name',     sortable: true  },
   { key: 'bank',           label: 'Bank',           sortable: true  },
   { key: 'account_number', label: 'Account Number', sortable: true  },
   { key: 'holder_name',    label: 'Holder Name',    sortable: true  },
@@ -18,4 +19,4 @@ export const BANK_ACCOUNT_COLUMNS = [
   { key: 'actions',        label: '',               sortable: false },
 ]
 
-export const BANK_ACCOUNT_INITIAL_COL_WIDTHS = [130, 150, 180, 220, 180, 160, 120]
+export const BANK_ACCOUNT_INITIAL_COL_WIDTHS = [120, 180, 150, 170, 200, 170, 150, 100]

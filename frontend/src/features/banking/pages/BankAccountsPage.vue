@@ -64,6 +64,9 @@
             <td v-if="columnVisibility.isVisible('owner')">
               <span class="type-badge" :class="a.party?.type">{{ ownerLabel(a) }}</span>
             </td>
+            <td v-if="columnVisibility.isVisible('owner_name')">
+              <span class="truncate" :title="a.party?.display_name || ''">{{ a.party?.display_name || '—' }}</span>
+            </td>
             <td v-if="columnVisibility.isVisible('bank')"><span class="bank-cell">{{ a.bank?.short_name }}</span></td>
             <td v-if="columnVisibility.isVisible('account_number')"><span class="mono">{{ a.account_number }}</span></td>
             <td v-if="columnVisibility.isVisible('holder_name')"><span class="truncate" :title="a.account_holder_name || ''">{{ a.account_holder_name || '—' }}</span></td>
@@ -160,7 +163,8 @@ const sort = useSortCriteria()
 const sortedAccounts = computed(() =>
   sort.sortItems(accounts.value, (account, key) => {
     switch (key) {
-      case 'owner':          return account.party?.type || ''
+      case 'owner':           return account.party?.type || ''
+      case 'owner_name':      return normalizeText(account.party?.display_name || '')
       case 'bank':            return normalizeText(account.bank?.short_name || '')
       case 'account_number':  return account.account_number || ''
       case 'holder_name':     return normalizeText(account.account_holder_name || '')
