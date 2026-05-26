@@ -28,15 +28,24 @@
         </template>
         <template v-else>
           <div class="row-summary">
-            <div class="row-main">
+            <div class="row-header">
               <span class="bank-name">{{ account.bank?.short_name || '—' }}</span>
               <span class="account-number">{{ account.account_number }}</span>
-              <span v-if="account.account_holder_name" class="holder-name">{{ account.account_holder_name }}</span>
             </div>
-            <div class="row-meta">
-              <span v-if="account.branch">{{ account.branch }}</span>
-              <span v-if="account.province?.name_vi" class="dot-sep">• {{ account.province.name_vi }}</span>
-            </div>
+            <dl class="row-details">
+              <div v-if="account.account_holder_name" class="detail-item">
+                <dt>Holder</dt>
+                <dd>{{ account.account_holder_name }}</dd>
+              </div>
+              <div v-if="account.branch" class="detail-item">
+                <dt>Branch</dt>
+                <dd>{{ account.branch }}</dd>
+              </div>
+              <div v-if="account.province?.name_vi" class="detail-item">
+                <dt>Province</dt>
+                <dd>{{ account.province.name_vi }}</dd>
+              </div>
+            </dl>
           </div>
           <div class="row-actions">
             <button type="button" class="action-btn" @click="startEdit(account)" title="Edit">
@@ -207,18 +216,20 @@ const removeAccount = async (account, index) => {
 .section-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 8px 12px; border-radius: 8px; font-size: 12px; margin: 0 0 10px; }
 .section-loading { font-size: 13px; color: #6b7280; padding: 8px 0; }
 
-.account-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.account-row { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px; }
+.account-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.account-row { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px; }
 .account-row.editing { display: block; padding: 14px; background: #fff; }
 .inline-form { width: 100%; }
 
 .row-summary { flex: 1; min-width: 0; }
-.row-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
-.bank-name { font-weight: 600; color: #111; font-size: 14px; }
-.account-number { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: #374151; }
-.holder-name { font-size: 12px; color: #6b7280; }
-.row-meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
-.dot-sep { margin-left: 4px; }
+.row-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed #e5e7eb; }
+.bank-name { font-weight: 700; color: #111; font-size: 15px; }
+.account-number { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: #374151; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 2px 8px; }
+
+.row-details { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+.detail-item { display: contents; }
+.detail-item dt { color: #9ca3af; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; align-self: center; }
+.detail-item dd { margin: 0; color: #374151; word-break: break-word; }
 
 .row-actions { display: flex; gap: 4px; flex-shrink: 0; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; }
