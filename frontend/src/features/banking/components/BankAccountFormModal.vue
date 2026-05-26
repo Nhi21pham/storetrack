@@ -20,6 +20,7 @@
                 v-model="partyType"
                 :options="typeOptions"
                 :allow-all="false"
+                size="large"
                 placeholder="Select type..."
                 @change="onTypeChange"
               />
@@ -30,6 +31,7 @@
                 v-model="ownerId"
                 :options="ownerOptions"
                 :allow-all="false"
+                size="large"
                 :placeholder="partyType ? 'Select...' : 'Select type first'"
               />
             </div>
@@ -37,19 +39,15 @@
           <p v-if="loadingOwners" class="hint">Loading...</p>
         </div>
 
-        <div v-if="resolvedPartyId">
-          <h3 v-if="!isEdit" class="section-title">Account Details</h3>
-          <BankAccountForm
-            :party-id="resolvedPartyId"
-            :account="account"
-            :default-holder-name="defaultHolderName"
-            @saved="onSaved"
-            @cancel="emit('close')"
-          />
-        </div>
-        <div v-else class="placeholder">
-          Select a type and name to continue.
-        </div>
+        <h3 v-if="!isEdit" class="section-title">Account Details</h3>
+        <BankAccountForm
+          :party-id="resolvedPartyId"
+          :account="account"
+          :default-holder-name="defaultHolderName"
+          :owner-required="!isEdit"
+          @saved="onSaved"
+          @cancel="emit('close')"
+        />
       </div>
     </div>
   </div>
@@ -178,6 +176,4 @@ watch(() => props.account, () => {
 .form-group label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 6px; }
 .required { color: #dc2626; }
 .hint { margin: 4px 0 0; font-size: 12px; color: #6b7280; }
-
-.placeholder { padding: 20px; text-align: center; color: #9ca3af; font-size: 13px; background: #f9fafb; border-radius: 8px; }
 </style>

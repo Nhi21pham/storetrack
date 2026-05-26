@@ -6,36 +6,38 @@
         v-model="form.bank_id"
         :options="bankOptions"
         :allow-all="false"
+        size="large"
         placeholder="Select a bank..."
         search-placeholder="Search banks..."
       />
       <span v-if="errors.bank_id" class="error-text">{{ errors.bank_id }}</span>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label>Account Number <span class="required">*</span></label>
-        <input
-          v-model.trim="form.account_number"
-          type="text"
-          placeholder="e.g. 0123456789"
-          :class="{ error: errors.account_number }"
-        />
-        <span v-if="errors.account_number" class="error-text">{{ errors.account_number }}</span>
-      </div>
-      <div class="form-group">
-        <label>Account Holder Name</label>
-        <input
-          v-model="form.account_holder_name"
-          type="text"
-          :placeholder="defaultHolderName || 'Name registered with the bank'"
-          :class="{ error: errors.account_holder_name }"
-        />
-        <span v-if="errors.account_holder_name" class="error-text">{{ errors.account_holder_name }}</span>
-        <p v-if="defaultHolderName && !form.account_holder_name" class="hint">
-          Leave empty to default to "{{ defaultHolderName }}"
-        </p>
-      </div>
+    <div class="form-group">
+      <label>Account Number <span class="required">*</span></label>
+      <input
+        v-model="form.account_number"
+        type="text"
+        inputmode="numeric"
+        placeholder="e.g. 0123456789"
+        :class="{ error: errors.account_number }"
+        @input="onAccountNumberInput"
+      />
+      <span v-if="errors.account_number" class="error-text">{{ errors.account_number }}</span>
+    </div>
+
+    <div class="form-group">
+      <label>Account Holder Name</label>
+      <input
+        v-model="form.account_holder_name"
+        type="text"
+        :placeholder="defaultHolderName || 'Name registered with the bank'"
+        :class="{ error: errors.account_holder_name }"
+      />
+      <span v-if="errors.account_holder_name" class="error-text">{{ errors.account_holder_name }}</span>
+      <p v-if="defaultHolderName && !form.account_holder_name" class="hint">
+        Leave empty to default to "{{ defaultHolderName }}"
+      </p>
     </div>
 
     <div class="form-row">
@@ -56,6 +58,7 @@
           :options="provinceOptions"
           allow-all
           all-label="— None —"
+          size="large"
           placeholder="Select province..."
           search-placeholder="Search provinces..."
         />
@@ -88,6 +91,7 @@ const props = defineProps({
   account: { type: Object, default: null },
   defaultHolderName: { type: String, default: '' },
   mode: { type: String, default: 'api' },
+  ownerRequired: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['saved', 'cancel'])
@@ -111,13 +115,19 @@ const form = ref(initialForm())
 const originalForm = ref(JSON.stringify(initialForm()))
 const isDirty = computed(() => isEdit.value ? JSON.stringify(form.value) !== originalForm.value : true)
 
-const errors = ref({ bank_id: '', account_number: '', account_holder_name: '', branch: '' })
+const errors = ref({ bank_id: '', account_number: '', account_holder_name: '', branch: '', owner: '' })
 
 const bankOptions = computed(() => {
-  const list = banks.value
+  return banks.value
     .filter(b => b.is_active || String(b.id) === form.value.bank_id)
-    .map(b => ({ value: String(b.id), label: b.short_name }))
-  return list
+    .map(b => {
+      const names = [b.full_name_vi, b.full_name_en].filter(Boolean).join(' • ')
+      return {
+        value: String(b.id),
+        label: b.short_name,
+        sublabel: names,
+      }
+    })
 })
 
 const provinceOptions = computed(() =>
@@ -143,14 +153,25 @@ watch(() => props.account, () => {
   originalForm.value = JSON.stringify(initialForm())
 })
 
+const onAccountNumberInput = (e) => {
+  const digitsOnly = e.target.value.replace(/\D+/g, '')
+  if (digitsOnly !== e.target.value) {
+    e.target.value = digitsOnly
+  }
+  form.value.account_number = digitsOnly
+}
+
 const validate = () => {
-  errors.value = { bank_id: '', account_number: '', account_holder_name: '', branch: '' }
+  errors.value = { bank_id: '', account_number: '', account_holder_name: '', branch: '', owner: '' }
+  if (props.ownerRequired && !props.partyId) {
+    errors.value.owner = 'Please select an owner type and name.'
+  }
   if (!form.value.bank_id) errors.value.bank_id = 'Please select a bank.'
   const acc = form.value.account_number.trim()
   if (!acc) errors.value.account_number = 'Account number is required.'
-  else if (acc.length < 4) errors.value.account_number = 'Account number must be at least 4 characters.'
-  else if (acc.length > 50) errors.value.account_number = 'Account number must be at most 50 characters.'
-  else if (!/^[0-9A-Za-z]+$/.test(acc)) errors.value.account_number = 'Only letters and digits are allowed.'
+  else if (acc.length < 4) errors.value.account_number = 'Account number must be at least 4 digits.'
+  else if (acc.length > 50) errors.value.account_number = 'Account number must be at most 50 digits.'
+  else if (!/^[0-9]+$/.test(acc)) errors.value.account_number = 'Only digits are allowed.'
   if (form.value.account_holder_name && form.value.account_holder_name.length > 255) errors.value.account_holder_name = 'Too long.'
   if (form.value.branch && form.value.branch.length > 255) errors.value.branch = 'Too long.'
   return !Object.values(errors.value).some(e => e !== '')
@@ -158,7 +179,10 @@ const validate = () => {
 
 const handleSubmit = async () => {
   apiError.value = ''
-  if (!validate()) return
+  if (!validate()) {
+    if (errors.value.owner) apiError.value = errors.value.owner
+    return
+  }
 
   const input = {
     bank_id: form.value.bank_id,
@@ -202,7 +226,7 @@ const handleSubmit = async () => {
 .form-group label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 6px; }
 .required { color: #dc2626; }
 
-.form-group input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; outline: none; box-sizing: border-box; }
+.form-group input[type="text"] { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 14.5px; color: #111; background: #fff; outline: none; box-sizing: border-box; }
 .form-group input[type="text"]:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
 .form-group input[type="text"].error { border-color: #dc2626; }
 
