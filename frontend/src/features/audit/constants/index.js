@@ -1,10 +1,12 @@
 export const OBJECT_OPTIONS = [
-  { value: 'business',   label: 'Business' },
-  { value: 'store',      label: 'Store' },
-  { value: 'user',       label: 'User' },
-  { value: 'invitation', label: 'Invitation' },
-  { value: 'supplier',   label: 'Supplier' },
-  { value: 'customer',   label: 'Customer' },
+  { value: 'business',     label: 'Business' },
+  { value: 'store',        label: 'Store' },
+  { value: 'user',         label: 'User' },
+  { value: 'invitation',   label: 'Invitation' },
+  { value: 'supplier',     label: 'Supplier' },
+  { value: 'customer',     label: 'Customer' },
+  { value: 'bank',         label: 'Bank' },
+  { value: 'bank_account', label: 'Bank Account' },
 ]
 
 export const ACTION_OPTIONS = [
