@@ -31,24 +31,6 @@ export const ACTION_COLORS = {
   REMOVED: '#dc2626', DELETED: '#dc2626', DECLINED: '#dc2626',
 }
 
-export const OBJECT_LABELS = {
-  business:   'Business',
-  store:      'Store',
-  user:       'User',
-  invitation: 'Invitation',
-  supplier:   'Supplier',
-  customer:   'Customer',
-}
-
-export const OBJECT_BADGE_CLASSES = {
-  business:   'badge-business',
-  store:      'badge-store',
-  user:       'badge-user',
-  invitation: 'badge-invitation',
-  supplier:   'badge-supplier',
-  customer:   'badge-customer',
-}
-
 export const ACTION_VERB_REGEX =
   /\b(CREATED|UPDATED|DEACTIVATED|REACTIVATED|ASSIGNED|REMOVED|DELETED|INVITED|CANCELLED|ACCEPTED|DECLINED|EXPORTED)\b/g
 

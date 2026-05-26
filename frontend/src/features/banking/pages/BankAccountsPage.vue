@@ -62,7 +62,7 @@
 
           <tr v-for="a in paginatedAccounts" :key="a.id">
             <td v-if="columnVisibility.isVisible('owner')">
-              <span class="type-badge" :class="a.party?.type">{{ ownerLabel(a) }}</span>
+              <ObjectBadge :type="a.party?.type" />
             </td>
             <td v-if="columnVisibility.isVisible('owner_name')">
               <button
@@ -142,6 +142,7 @@ import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
 import BankAccountDetailModal from '@/features/banking/components/BankAccountDetailModal.vue'
+import ObjectBadge from '@/components/common/ObjectBadge.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
@@ -232,14 +233,6 @@ watch(searchQuery, () => {
   searchTimer = setTimeout(load, 250)
 })
 
-const ownerLabel = (account) => {
-  const type = account.party?.type
-  if (type === 'business') return 'Business'
-  if (type === 'customer') return 'Customer'
-  if (type === 'supplier') return 'Supplier'
-  return type || '—'
-}
-
 const openCreate = () => {
   editingAccount.value = null
   showForm.value = true
@@ -291,11 +284,6 @@ const performDelete = async () => {
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .empty-val { color: #d1d5db; }
-
-.type-badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: #f3f4f6; color: #374151; }
-.type-badge.business { background: #e0f2fe; color: #0369a1; }
-.type-badge.customer { background: #ecfdf5; color: #047857; }
-.type-badge.supplier { background: #fef3c7; color: #92400e; }
 
 .bank-cell { font-weight: 600; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }

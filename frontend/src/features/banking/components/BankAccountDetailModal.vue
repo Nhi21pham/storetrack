@@ -14,7 +14,7 @@
         <div class="detail-row">
           <span class="detail-label">Owner Type</span>
           <span class="detail-value">
-            <span class="type-badge" :class="account.party?.type">{{ ownerTypeLabel }}</span>
+            <ObjectBadge :type="account.party?.type" />
           </span>
         </div>
 
@@ -76,6 +76,7 @@
 <script setup>
 import { computed } from 'vue'
 import { formatDateTime } from '@/utils/datetime'
+import ObjectBadge from '@/components/common/ObjectBadge.vue'
 
 const props = defineProps({
   account: { type: Object, required: true },
@@ -83,14 +84,6 @@ const props = defineProps({
 })
 
 defineEmits(['close', 'edit'])
-
-const ownerTypeLabel = computed(() => {
-  const type = props.account.party?.type
-  if (type === 'business') return 'Business'
-  if (type === 'customer') return 'Customer'
-  if (type === 'supplier') return 'Supplier'
-  return type || '—'
-})
 
 const bankFullName = computed(() => {
   const vi = props.account.bank?.full_name_vi
@@ -122,11 +115,6 @@ const bankFullName = computed(() => {
 
 .bank-name { font-weight: 600; }
 .bank-full { font-size: 12px; color: #6b7280; }
-
-.type-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: #f3f4f6; color: #374151; width: fit-content; }
-.type-badge.business { background: #e0f2fe; color: #0369a1; }
-.type-badge.customer { background: #ecfdf5; color: #047857; }
-.type-badge.supplier { background: #fef3c7; color: #92400e; }
 
 .modal-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid #f3f4f6; }
 
