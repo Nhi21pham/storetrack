@@ -50,7 +50,16 @@
         :canExport="sortedCustomers.length > 0"
         @clearSort="sort.clearSort"
         @export="run"
-      />
+      >
+        <template #extra>
+          <ColumnSelector
+            :togglable-columns="columnVisibility.togglableColumns"
+            :is-visible="columnVisibility.isVisible"
+            :toggle-column="columnVisibility.toggleColumn"
+            :reset-columns="columnVisibility.resetColumns"
+          />
+        </template>
+      </CustomerFilterBar>
 
       <LoadingState v-if="loading">Loading customers...</LoadingState>
 
@@ -100,8 +109,11 @@
         />
 
         <CustomerTable
+          :key="tableKey"
           :customers="paginatedCustomers"
-          :columns="CUSTOMER_COLUMNS"
+          :columns="columnVisibility.visibleColumns.value"
+          :initial-widths="visibleWidths"
+          :is-visible="columnVisibility.isVisible"
           :sort="sort"
           :isSelected="isSelected"
           :canManageRow="canManageRow"
@@ -185,7 +197,18 @@ import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { startCustomerExport } from '@/features/customers/services/customerService'
-import { CUSTOMER_COLUMNS } from '@/features/customers/constants'
+import { CUSTOMER_COLUMNS, CUSTOMER_INITIAL_COL_WIDTHS } from '@/features/customers/constants'
+import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import { useColumnVisibility } from '@/composables/useColumnVisibility'
+
+const columnVisibility = useColumnVisibility({
+  storageKey: 'customers',
+  columns: CUSTOMER_COLUMNS,
+  lockedKeys: ['select', 'actions'],
+})
+
+const visibleWidths = computed(() => columnVisibility.filterWidths(CUSTOMER_INITIAL_COL_WIDTHS))
+const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')

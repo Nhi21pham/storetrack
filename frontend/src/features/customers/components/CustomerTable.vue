@@ -1,5 +1,5 @@
 <template>
-  <ResizableTable :columns="columns" :initial-widths="CUSTOMER_INITIAL_COL_WIDTHS">
+  <ResizableTable :columns="columns" :initial-widths="initialWidths">
     <template #header-select>
       <input
         type="checkbox"
@@ -23,7 +23,7 @@
     </template>
 
     <tr v-for="customer in customers" :key="customer.id" :class="{ 'row-selected': isSelected(customer.id) }">
-      <td>
+      <td v-if="isVisible('select')">
         <input
           v-if="canManageRow(customer)"
           type="checkbox"
@@ -32,21 +32,21 @@
           @change="$emit('toggleRow', customer.id)"
         />
       </td>
-      <td><span class="id-badge">#{{ customer.id }}</span></td>
-      <td><button class="name-link" @click="$emit('openDetail', customer)">{{ customer.name }}</button></td>
-      <td>
+      <td v-if="isVisible('id')"><span class="id-badge">#{{ customer.id }}</span></td>
+      <td v-if="isVisible('name')"><button class="name-link" @click="$emit('openDetail', customer)">{{ customer.name }}</button></td>
+      <td v-if="isVisible('tax_code')">
         <span v-if="customer.tax_code" class="mono">{{ customer.tax_code }}</span>
         <span v-else class="empty-val">—</span>
       </td>
-      <td>
+      <td v-if="isVisible('email')">
         <span v-if="customer.email">{{ customer.email }}</span>
         <span v-else class="empty-val">—</span>
       </td>
-      <td>
+      <td v-if="isVisible('phone')">
         <span v-if="customer.phone" class="mono">{{ customer.phone }}</span>
         <span v-else class="empty-val">—</span>
       </td>
-      <td>
+      <td v-if="isVisible('address')">
         <span v-if="customer.address" :title="customer.address" class="truncate">{{ customer.address }}</span>
         <span v-else class="empty-val">—</span>
       </td>
@@ -68,11 +68,12 @@
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import Icon from '@/components/common/Icon.vue'
-import { CUSTOMER_INITIAL_COL_WIDTHS } from '@/features/customers/constants'
 
 defineProps({
   customers:           { type: Array,   required: true },
   columns:             { type: Array,   required: true },
+  initialWidths:       { type: Array,   required: true },
+  isVisible:           { type: Function, required: true },
   sort:                { type: Object,  required: true },
   isSelected:          { type: Function, required: true },
   canManageRow:        { type: Function, required: true },

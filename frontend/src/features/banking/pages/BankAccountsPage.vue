@@ -26,6 +26,12 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by account number, holder name, or branch..." />
+        <ColumnSelector
+          :togglable-columns="columnVisibility.togglableColumns"
+          :is-visible="columnVisibility.isVisible"
+          :toggle-column="columnVisibility.toggleColumn"
+          :reset-columns="columnVisibility.resetColumns"
+        />
       </div>
 
       <LoadingState v-if="loading">Loading bank accounts...</LoadingState>
@@ -42,16 +48,16 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :columns="BANK_ACCOUNT_COLUMNS" :initial-widths="BANK_ACCOUNT_INITIAL_COL_WIDTHS">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
           <tr v-for="a in paginatedAccounts" :key="a.id">
-            <td>
+            <td v-if="columnVisibility.isVisible('owner')">
               <span class="type-badge" :class="a.party?.type">{{ ownerLabel(a) }}</span>
             </td>
-            <td><span class="bank-cell">{{ a.bank?.short_name }}</span></td>
-            <td><span class="mono">{{ a.account_number }}</span></td>
-            <td><span class="truncate" :title="a.account_holder_name || ''">{{ a.account_holder_name || '—' }}</span></td>
-            <td><span class="truncate" :title="a.branch || ''">{{ a.branch || '—' }}</span></td>
-            <td><span class="truncate" :title="a.province?.name_vi || ''">{{ a.province?.name_vi || '—' }}</span></td>
+            <td v-if="columnVisibility.isVisible('bank')"><span class="bank-cell">{{ a.bank?.short_name }}</span></td>
+            <td v-if="columnVisibility.isVisible('account_number')"><span class="mono">{{ a.account_number }}</span></td>
+            <td v-if="columnVisibility.isVisible('holder_name')"><span class="truncate" :title="a.account_holder_name || ''">{{ a.account_holder_name || '—' }}</span></td>
+            <td v-if="columnVisibility.isVisible('branch')"><span class="truncate" :title="a.branch || ''">{{ a.branch || '—' }}</span></td>
+            <td v-if="columnVisibility.isVisible('province')"><span class="truncate" :title="a.province?.name_vi || ''">{{ a.province?.name_vi || '—' }}</span></td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(a)" title="Edit">
                 <Icon name="edit" :size="14" />
@@ -104,10 +110,21 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
+import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
+import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { fetchBankAccounts, deleteBankAccount } from '@/features/banking/services/bankAccountService'
 import { BANK_ACCOUNT_COLUMNS, BANK_ACCOUNT_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
+
+const columnVisibility = useColumnVisibility({
+  storageKey: 'bank_accounts',
+  columns: BANK_ACCOUNT_COLUMNS,
+  lockedKeys: ['actions'],
+})
+
+const visibleWidths = computed(() => columnVisibility.filterWidths(BANK_ACCOUNT_INITIAL_COL_WIDTHS))
+const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
@@ -206,7 +223,8 @@ const performDelete = async () => {
 </script>
 
 <style scoped>
-.toolbar { margin-bottom: 16px; }
+.toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
 
 .btn-create { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-create:hover { background: #333; }

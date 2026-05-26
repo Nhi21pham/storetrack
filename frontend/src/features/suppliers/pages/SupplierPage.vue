@@ -50,7 +50,16 @@
         :canExport="sortedSuppliers.length > 0"
         @clearSort="sort.clearSort"
         @export="run"
-      />
+      >
+        <template #extra>
+          <ColumnSelector
+            :togglable-columns="columnVisibility.togglableColumns"
+            :is-visible="columnVisibility.isVisible"
+            :toggle-column="columnVisibility.toggleColumn"
+            :reset-columns="columnVisibility.resetColumns"
+          />
+        </template>
+      </SupplierFilterBar>
 
       <LoadingState v-if="loading">Loading suppliers...</LoadingState>
 
@@ -97,8 +106,11 @@
         />
 
         <SupplierTable
+          :key="tableKey"
           :suppliers="paginatedSuppliers"
-          :columns="SUPPLIER_COLUMNS"
+          :columns="columnVisibility.visibleColumns.value"
+          :initial-widths="visibleWidths"
+          :is-visible="columnVisibility.isVisible"
           :sort="sort"
           :isSelected="isSelected"
           :canManageRow="canManageRow"
@@ -182,7 +194,18 @@ import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { startSupplierExport } from '@/features/suppliers/services/supplierService'
-import { SUPPLIER_COLUMNS } from '@/features/suppliers/constants'
+import { SUPPLIER_COLUMNS, SUPPLIER_INITIAL_COL_WIDTHS } from '@/features/suppliers/constants'
+import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import { useColumnVisibility } from '@/composables/useColumnVisibility'
+
+const columnVisibility = useColumnVisibility({
+  storageKey: 'suppliers',
+  columns: SUPPLIER_COLUMNS,
+  lockedKeys: ['select', 'actions'],
+})
+
+const visibleWidths = computed(() => columnVisibility.filterWidths(SUPPLIER_INITIAL_COL_WIDTHS))
+const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')

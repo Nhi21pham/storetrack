@@ -30,6 +30,12 @@
           <input v-model="includeInactive" type="checkbox" />
           Show inactive
         </label>
+        <ColumnSelector
+          :togglable-columns="columnVisibility.togglableColumns"
+          :is-visible="columnVisibility.isVisible"
+          :toggle-column="columnVisibility.toggleColumn"
+          :reset-columns="columnVisibility.resetColumns"
+        />
       </div>
 
       <LoadingState v-if="loading">Loading banks...</LoadingState>
@@ -46,12 +52,12 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :columns="BANK_COLUMNS" :initial-widths="BANK_INITIAL_COL_WIDTHS">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
           <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
-            <td><span class="short">{{ bank.short_name }}</span></td>
-            <td><span class="truncate" :title="bank.full_name_vi">{{ bank.full_name_vi }}</span></td>
-            <td><span class="truncate" :title="bank.full_name_en">{{ bank.full_name_en }}</span></td>
-            <td>
+            <td v-if="columnVisibility.isVisible('short_name')"><span class="short">{{ bank.short_name }}</span></td>
+            <td v-if="columnVisibility.isVisible('full_name_vi')"><span class="truncate" :title="bank.full_name_vi">{{ bank.full_name_vi }}</span></td>
+            <td v-if="columnVisibility.isVisible('full_name_en')"><span class="truncate" :title="bank.full_name_en">{{ bank.full_name_en }}</span></td>
+            <td v-if="columnVisibility.isVisible('status')">
               <ToggleSwitch
                 :model-value="bank.is_active"
                 :title="bank.is_active ? 'Click to deactivate' : 'Click to activate'"
@@ -136,10 +142,21 @@ import Icon from '@/components/common/Icon.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
+import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
+import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { fetchBanks, deleteBank, updateBank } from '@/features/banking/services/bankService'
 import { BANK_COLUMNS, BANK_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
+
+const columnVisibility = useColumnVisibility({
+  storageKey: 'banks',
+  columns: BANK_COLUMNS,
+  lockedKeys: ['actions'],
+})
+
+const visibleWidths = computed(() => columnVisibility.filterWidths(BANK_INITIAL_COL_WIDTHS))
+const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 

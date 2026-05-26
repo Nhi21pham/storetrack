@@ -1,5 +1,5 @@
 <template>
-  <ResizableTable :columns="columns" :initial-widths="SUPPLIER_INITIAL_COL_WIDTHS">
+  <ResizableTable :columns="columns" :initial-widths="initialWidths">
     <template #header-select>
       <input
         type="checkbox"
@@ -23,7 +23,7 @@
     </template>
 
     <tr v-for="supplier in suppliers" :key="supplier.id" :class="{ 'row-selected': isSelected(supplier.id) }">
-      <td>
+      <td v-if="isVisible('select')">
         <input
           v-if="canManageRow(supplier)"
           type="checkbox"
@@ -32,21 +32,21 @@
           @change="$emit('toggleRow', supplier.id)"
         />
       </td>
-      <td><span class="id-badge">#{{ supplier.id }}</span></td>
-      <td><button class="name-link" @click="$emit('openDetail', supplier)">{{ supplier.name }}</button></td>
-      <td>
+      <td v-if="isVisible('id')"><span class="id-badge">#{{ supplier.id }}</span></td>
+      <td v-if="isVisible('name')"><button class="name-link" @click="$emit('openDetail', supplier)">{{ supplier.name }}</button></td>
+      <td v-if="isVisible('tax_code')">
         <span v-if="supplier.tax_code" class="mono">{{ supplier.tax_code }}</span>
         <span v-else class="empty-val">—</span>
       </td>
-      <td>
+      <td v-if="isVisible('email')">
         <span v-if="supplier.email">{{ supplier.email }}</span>
         <span v-else class="empty-val">—</span>
       </td>
-      <td>
+      <td v-if="isVisible('phone')">
         <span v-if="supplier.phone" class="mono">{{ supplier.phone }}</span>
         <span v-else class="empty-val">—</span>
       </td>
-      <td>
+      <td v-if="isVisible('address')">
         <span v-if="supplier.address" :title="supplier.address" class="truncate">{{ supplier.address }}</span>
         <span v-else class="empty-val">—</span>
       </td>
@@ -68,11 +68,12 @@
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import Icon from '@/components/common/Icon.vue'
-import { SUPPLIER_INITIAL_COL_WIDTHS } from '@/features/suppliers/constants'
 
 defineProps({
   suppliers:           { type: Array,   required: true },
   columns:             { type: Array,   required: true },
+  initialWidths:       { type: Array,   required: true },
+  isVisible:           { type: Function, required: true },
   sort:                { type: Object,  required: true },
   isSelected:          { type: Function, required: true },
   canManageRow:        { type: Function, required: true },
