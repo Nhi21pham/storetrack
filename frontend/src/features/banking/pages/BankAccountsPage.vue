@@ -65,7 +65,13 @@
               <span class="type-badge" :class="a.party?.type">{{ ownerLabel(a) }}</span>
             </td>
             <td v-if="columnVisibility.isVisible('owner_name')">
-              <span class="truncate" :title="a.party?.display_name || ''">{{ a.party?.display_name || '—' }}</span>
+              <button
+                v-if="a.party?.display_name"
+                class="name-link"
+                :title="a.party.display_name"
+                @click="detailAccount = a"
+              >{{ a.party.display_name }}</button>
+              <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('bank')"><span class="bank-cell">{{ a.bank?.short_name }}</span></td>
             <td v-if="columnVisibility.isVisible('account_number')"><span class="mono">{{ a.account_number }}</span></td>
@@ -101,6 +107,14 @@
       @saved="onSaved"
     />
 
+    <BankAccountDetailModal
+      v-if="detailAccount"
+      :account="detailAccount"
+      :can-edit="true"
+      @close="detailAccount = null"
+      @edit="onDetailEdit"
+    />
+
     <ConfirmDialog
       v-if="deleteTarget"
       :title="`Delete bank account ${deleteTarget.account_number}?`"
@@ -127,6 +141,7 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
+import BankAccountDetailModal from '@/features/banking/components/BankAccountDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
@@ -152,7 +167,13 @@ const searchQuery = ref('')
 
 const showForm = ref(false)
 const editingAccount = ref(null)
+const detailAccount = ref(null)
 const deleteTarget = ref(null)
+
+const onDetailEdit = (account) => {
+  detailAccount.value = null
+  openEdit(account)
+}
 
 const canDelete = computed(() => {
   const role = String(currentStore?.value?.my_role || '').toLowerCase()
@@ -266,6 +287,10 @@ const performDelete = async () => {
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bank-cell { font-weight: 600; color: #111; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.name-link:hover { color: #2563eb; text-decoration: underline; }
+.empty-val { color: #d1d5db; }
 
 .type-badge { display: inline-block; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: #f3f4f6; color: #374151; }
 .type-badge.business { background: #e0f2fe; color: #0369a1; }

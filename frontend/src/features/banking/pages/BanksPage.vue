@@ -65,7 +65,9 @@
           </template>
 
           <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
-            <td v-if="columnVisibility.isVisible('short_name')"><span class="short">{{ bank.short_name }}</span></td>
+            <td v-if="columnVisibility.isVisible('short_name')">
+              <button class="name-link" @click="detailBank = bank">{{ bank.short_name }}</button>
+            </td>
             <td v-if="columnVisibility.isVisible('full_name_vi')"><span class="truncate" :title="bank.full_name_vi">{{ bank.full_name_vi }}</span></td>
             <td v-if="columnVisibility.isVisible('full_name_en')"><span class="truncate" :title="bank.full_name_en">{{ bank.full_name_en }}</span></td>
             <td v-if="columnVisibility.isVisible('status')">
@@ -104,6 +106,14 @@
       @close="closeForm"
       @saved="onSaved"
       @pick-existing="onPickExisting"
+    />
+
+    <BankDetailModal
+      v-if="detailBank"
+      :bank="detailBank"
+      :can-edit="true"
+      @close="detailBank = null"
+      @edit="onDetailEdit"
     />
 
     <ConfirmDialog
@@ -156,6 +166,7 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
+import BankDetailModal from '@/features/banking/components/BankDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
@@ -183,9 +194,15 @@ const includeInactive = ref(true)
 
 const showForm = ref(false)
 const editingBank = ref(null)
+const detailBank = ref(null)
 const deleteTarget = ref(null)
 const deactivateTarget = ref(null)
 const togglingBank = ref(null)
+
+const onDetailEdit = (bank) => {
+  detailBank.value = null
+  openEdit(bank)
+}
 
 const canDelete = computed(() => {
   const role = String(currentStore?.value?.my_role || '').toLowerCase()
@@ -330,6 +347,8 @@ const handleToggle = async () => {
 tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
 .short { font-weight: 600; color: #111; }
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.name-link:hover { color: #2563eb; text-decoration: underline; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .actions-col { text-align: right; white-space: nowrap; }
