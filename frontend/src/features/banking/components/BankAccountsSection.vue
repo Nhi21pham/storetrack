@@ -2,7 +2,7 @@
   <section class="bank-accounts-section">
     <div class="section-head">
       <h3>Bank Accounts</h3>
-      <button v-if="!addingNew && editingId == null" class="btn-add" type="button" @click="startAdd">
+      <button v-if="canManage && !addingNew && editingId == null" class="btn-add" type="button" @click="startAdd">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add bank account
       </button>
@@ -47,11 +47,11 @@
               </div>
             </dl>
           </div>
-          <div class="row-actions">
+          <div v-if="canManage" class="row-actions">
             <button type="button" class="action-btn" @click="startEdit(account)" title="Edit">
               <Icon name="edit" :size="14" />
             </button>
-            <button v-if="canRemove" type="button" class="action-btn danger" @click="removeAccount(account, index)" title="Remove">
+            <button type="button" class="action-btn danger" @click="removeAccount(account, index)" title="Remove">
               <Icon name="delete" :size="14" />
             </button>
           </div>
@@ -98,8 +98,7 @@ const emit = defineEmits(['update:modelValue'])
 
 const isDraftMode = computed(() => !props.partyId)
 
-const canRemove = computed(() => {
-  // Drafts can always be removed locally; persistent rows respect role.
+const canManage = computed(() => {
   if (isDraftMode.value) return true
   const role = String(currentStore?.value?.my_role || '').toLowerCase()
   return role === 'owner' || role === 'accountant'

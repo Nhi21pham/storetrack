@@ -229,14 +229,12 @@ class BankAccountService
     private function authorize(User $actor, array $context, PermissionEnum $permission): void
     {
         if ($context['scope'] === 'business_owner') {
-            
-            $this->permissionService->authorizeBusiness($actor, $permission, $context['business_id']);
+            $this->permissionService->authorizeAnyStoreInBusiness($actor, $permission, $context['business_id']);
             return;
         }
 
-        
         if (empty($context['store_ids'])) {
-            $this->permissionService->authorizeBusiness($actor, $permission, $context['business_id']);
+            $this->permissionService->authorizeAnyStoreInBusiness($actor, $permission, $context['business_id']);
             return;
         }
         $this->permissionService->authorizeAnyStore($actor, $permission, $context['store_ids']);
