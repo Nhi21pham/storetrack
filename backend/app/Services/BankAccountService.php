@@ -80,7 +80,13 @@ class BankAccountService
                 'branch'              => $data['branch'] ?? null,
             ]);
 
-            $this->auditLogService->bankAccountCreated($actor, $account, $context['party_type'], $context['business_id']);
+            $this->auditLogService->bankAccountCreated(
+                $actor,
+                $account,
+                $context['party_type'],
+                $context['business_id'],
+                $context['store_ids'] ?? []
+            );
 
             return $account;
         });
@@ -147,7 +153,13 @@ class BankAccountService
 
             $account = $this->bankAccountRepository->update($account, $patch);
 
-            $this->auditLogService->bankAccountUpdated($actor, $account, $context['party_type'], $context['business_id']);
+            $this->auditLogService->bankAccountUpdated(
+                $actor,
+                $account,
+                $context['party_type'],
+                $context['business_id'],
+                $context['store_ids'] ?? []
+            );
 
             return $account;
         });
@@ -177,7 +189,8 @@ class BankAccountService
             $bankShortName,
             $partyId,
             $partyType,
-            $businessId
+            $businessId,
+            $context['store_ids'] ?? []
         );
     }
 

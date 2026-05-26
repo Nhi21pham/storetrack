@@ -713,55 +713,78 @@ class AuditLogService
 
     // Bank account actions (scoped to owning party's business)
 
-    public function bankAccountCreated(User $actor, BankAccount $account, string $partyType, ?int $businessId): void
+    public function bankAccountCreated(User $actor, BankAccount $account, string $partyType, ?int $businessId, array $storeIds = []): void
     {
         $shortName = $account->bank?->short_name;
-        $this->log(null, $actor, AuditObjectType::BANK_ACCOUNT, AuditAction::CREATED,
-            self::actor($actor) . " has CREATED bank account {$account->account_number} ({$shortName}) for {$partyType}.",
-            [
-                'bank_account_id' => $account->id,
-                'account_number'  => $account->account_number,
-                'bank_id'         => $account->bank_id,
-                'bank_short_name' => $shortName,
-                'party_id'        => $account->party_id,
-                'party_type'      => $partyType,
-                'business_id'     => $businessId,
-            ],
-            $businessId
+        $message = self::actor($actor) . " has CREATED bank account {$account->account_number} ({$shortName}) for {$partyType}.";
+        $baseMetadata = [
+            'bank_account_id' => $account->id,
+            'account_number'  => $account->account_number,
+            'bank_id'         => $account->bank_id,
+            'bank_short_name' => $shortName,
+            'party_id'        => $account->party_id,
+            'party_type'      => $partyType,
+            'business_id'     => $businessId,
+        ];
+        $this->logBankAccountEvent(
+            $actor, AuditAction::CREATED, $message, $baseMetadata, $businessId, $storeIds
         );
     }
 
-    public function bankAccountUpdated(User $actor, BankAccount $account, string $partyType, ?int $businessId): void
+    public function bankAccountUpdated(User $actor, BankAccount $account, string $partyType, ?int $businessId, array $storeIds = []): void
     {
         $shortName = $account->bank?->short_name;
-        $this->log(null, $actor, AuditObjectType::BANK_ACCOUNT, AuditAction::UPDATED,
-            self::actor($actor) . " has UPDATED bank account {$account->account_number} ({$shortName}).",
-            [
-                'bank_account_id' => $account->id,
-                'account_number'  => $account->account_number,
-                'bank_id'         => $account->bank_id,
-                'bank_short_name' => $shortName,
-                'party_id'        => $account->party_id,
-                'party_type'      => $partyType,
-                'business_id'     => $businessId,
-            ],
-            $businessId
+        $message = self::actor($actor) . " has UPDATED bank account {$account->account_number} ({$shortName}).";
+        $baseMetadata = [
+            'bank_account_id' => $account->id,
+            'account_number'  => $account->account_number,
+            'bank_id'         => $account->bank_id,
+            'bank_short_name' => $shortName,
+            'party_id'        => $account->party_id,
+            'party_type'      => $partyType,
+            'business_id'     => $businessId,
+        ];
+        $this->logBankAccountEvent(
+            $actor, AuditAction::UPDATED, $message, $baseMetadata, $businessId, $storeIds
         );
     }
 
-    public function bankAccountDeleted(User $actor, int $bankAccountId, string $accountNumber, ?string $bankShortName, int $partyId, string $partyType, ?int $businessId): void
+    public function bankAccountDeleted(User $actor, int $bankAccountId, string $accountNumber, ?string $bankShortName, int $partyId, string $partyType, ?int $businessId, array $storeIds = []): void
     {
-        $this->log(null, $actor, AuditObjectType::BANK_ACCOUNT, AuditAction::DELETED,
-            self::actor($actor) . " has DELETED bank account {$accountNumber} ({$bankShortName}).",
-            [
-                'bank_account_id' => $bankAccountId,
-                'account_number'  => $accountNumber,
-                'bank_short_name' => $bankShortName,
-                'party_id'        => $partyId,
-                'party_type'      => $partyType,
-                'business_id'     => $businessId,
-            ],
-            $businessId
+        $message = self::actor($actor) . " has DELETED bank account {$accountNumber} ({$bankShortName}).";
+        $baseMetadata = [
+            'bank_account_id' => $bankAccountId,
+            'account_number'  => $accountNumber,
+            'bank_short_name' => $bankShortName,
+            'party_id'        => $partyId,
+            'party_type'      => $partyType,
+            'business_id'     => $businessId,
+        ];
+        $this->logBankAccountEvent(
+            $actor, AuditAction::DELETED, $message, $baseMetadata, $businessId, $storeIds
         );
+    }
+
+    private function logBankAccountEvent(
+        User $actor,
+        AuditAction $action,
+        string $message,
+        array $baseMetadata,
+        ?int $businessId,
+        array $storeIds
+    ): void {
+        if (empty($storeIds)) {
+            $this->log(null, $actor, AuditObjectType::BANK_ACCOUNT, $action, $message, $baseMetadata, $businessId);
+            return;
+        }
+
+        $storeNames = Store::whereIn('id', $storeIds)->pluck('name', 'id');
+        foreach ($storeIds as $storeId) {
+            $metadata = $baseMetadata + [
+                'store_id'   => (int) $storeId,
+                'store_name' => $storeNames[$storeId] ?? null,
+            ];
+            $this->log((int) $storeId, $actor, AuditObjectType::BANK_ACCOUNT, $action, $message, $metadata, $businessId);
+        }
     }
 }
