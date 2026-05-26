@@ -2,6 +2,7 @@
   <BankAccountsSection
     v-model="drafts"
     :party-id="partyId"
+    :business-id="businessId"
     :default-holder-name="defaultHolderName"
   />
 </template>
@@ -13,6 +14,7 @@ import { submitDraftBankAccounts } from '@/features/banking/services/draftBankAc
 
 const props = defineProps({
   partyId: { type: [String, Number], default: null },
+  businessId: { type: [String, Number], default: null },
   defaultHolderName: { type: String, default: '' },
   entityLabel: { type: String, default: 'Record' },
 })
@@ -27,7 +29,10 @@ watch(() => props.partyId, (id) => {
 const submitDrafts = async (partyId) => {
   if (drafts.value.length === 0) return null
   const errors = await submitDraftBankAccounts({ partyId, drafts: drafts.value })
-  if (errors.length === 0) return null
+  if (errors.length === 0) {
+    drafts.value = []
+    return null
+  }
   return `${props.entityLabel} was saved, but some bank accounts failed:\n` + errors.join('\n')
 }
 

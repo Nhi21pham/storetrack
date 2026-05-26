@@ -46,7 +46,8 @@
 
         <BankAccountsFormWidget
           ref="bankAccountsWidget"
-          :party-id="business?.party?.id ?? null"
+          :party-id="business?.party_id ?? business?.party?.id ?? null"
+          :business-id="business?.id ?? null"
           :default-holder-name="form.name"
           entity-label="Business"
         />
@@ -140,13 +141,12 @@ const handleSubmit = async () => {
       ? await updateBusiness(props.business.id, input)
       : await createBusiness(input)
 
-    if (!isEdit.value) {
-      const errorMsg = await bankAccountsWidget.value?.submitDrafts(result?.party?.id)
-      if (errorMsg) {
-        apiError.value = errorMsg
-        emit('saved', result)
-        return
-      }
+    const partyId = result?.party?.id ?? props.business?.party_id ?? props.business?.party?.id
+    const errorMsg = await bankAccountsWidget.value?.submitDrafts(partyId)
+    if (errorMsg) {
+      apiError.value = errorMsg
+      emit('saved', result)
+      return
     }
 
     emit('saved', result)

@@ -148,13 +148,12 @@ const handleSubmit = async () => {
       ? await updateSupplier({ id: props.supplier.id, ...ctx })
       : await createSupplier(ctx)
 
-    if (!isEdit.value) {
-      const errorMsg = await bankAccountsWidget.value?.submitDrafts(result?.party?.id)
-      if (errorMsg) {
-        apiError.value = errorMsg
-        emit('saved', result)
-        return
-      }
+    const partyId = result?.party?.id ?? props.supplier?.party?.id ?? props.supplier?.party_id
+    const errorMsg = await bankAccountsWidget.value?.submitDrafts(partyId)
+    if (errorMsg) {
+      apiError.value = errorMsg
+      emit('saved', result)
+      return
     }
 
     emit('saved', result)

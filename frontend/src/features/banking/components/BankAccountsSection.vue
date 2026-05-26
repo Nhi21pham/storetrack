@@ -18,6 +18,7 @@
           <BankAccountForm
             class="inline-form"
             :party-id="partyId"
+            :business-id="businessId"
             :account="account"
             :default-holder-name="defaultHolderName"
             :mode="isDraftMode ? 'emit' : 'api'"
@@ -52,6 +53,7 @@
         <BankAccountForm
           class="inline-form"
           :party-id="partyId"
+          :business-id="businessId"
           :account="null"
           :default-holder-name="defaultHolderName"
           :mode="isDraftMode ? 'emit' : 'api'"
@@ -78,6 +80,7 @@ const currentStore = inject('currentStore', null)
 
 const props = defineProps({
   partyId: { type: [String, Number], default: null },
+  businessId: { type: [String, Number], default: null },
   defaultHolderName: { type: String, default: '' },
   modelValue: { type: Array, default: () => [] },
 })

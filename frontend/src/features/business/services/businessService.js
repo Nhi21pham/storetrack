@@ -4,6 +4,7 @@ const ACCESSIBLE_BUSINESSES_QUERY = `
   query {
     accessibleBusinesses {
       id name tax_code address email phone role
+      party_id
       stores { id name is_active my_role }
     }
   }

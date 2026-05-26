@@ -88,6 +88,7 @@ const currentBusiness = inject('currentBusiness', null)
 
 const props = defineProps({
   partyId: { type: [String, Number], default: null },
+  businessId: { type: [String, Number], default: null },
   account: { type: Object, default: null },
   defaultHolderName: { type: String, default: '' },
   mode: { type: String, default: 'api' },
@@ -134,10 +135,13 @@ const provinceOptions = computed(() =>
   provinces.value.map(p => ({ value: String(p.id), label: p.name_vi }))
 )
 
-onMounted(async () => {
-  const businessId = currentBusiness?.value?.id
+const resolvedBusinessId = computed(() => props.businessId ?? currentBusiness?.value?.id ?? null)
+
+const loadBanksAndProvinces = async () => {
+  const businessId = resolvedBusinessId.value
   if (!businessId) {
     provinces.value = await fetchProvinces()
+    banks.value = []
     return
   }
   const [bankList, provinceList] = await Promise.all([
@@ -146,7 +150,10 @@ onMounted(async () => {
   ])
   banks.value = bankList
   provinces.value = provinceList
-})
+}
+
+onMounted(loadBanksAndProvinces)
+watch(resolvedBusinessId, loadBanksAndProvinces)
 
 watch(() => props.account, () => {
   form.value = initialForm()
