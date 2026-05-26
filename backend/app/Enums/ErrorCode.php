@@ -44,6 +44,12 @@ enum ErrorCode: string
     case BANK_ACCOUNT_NOT_FOUND = 'BANK_ACCOUNT_NOT_FOUND';
     case BANK_ACCOUNT_NUMBER_TAKEN = 'BANK_ACCOUNT_NUMBER_TAKEN';
 
+    // Unit
+    case UNIT_NOT_FOUND = 'UNIT_NOT_FOUND';
+    case UNIT_NAME_TAKEN = 'UNIT_NAME_TAKEN';
+    case UNIT_IN_USE = 'UNIT_IN_USE';
+    case UNIT_INACTIVE = 'UNIT_INACTIVE';
+
     // Province
     case PROVINCE_NOT_FOUND = 'PROVINCE_NOT_FOUND';
 
@@ -87,6 +93,9 @@ enum ErrorCode: string
             self::BANK_IN_USE,
             self::BANK_INACTIVE,
             self::BANK_ACCOUNT_NUMBER_TAKEN,
+            self::UNIT_NAME_TAKEN,
+            self::UNIT_IN_USE,
+            self::UNIT_INACTIVE,
             self::CANNOT_CHANGE_OWNER_ROLE,
             self::CANNOT_REMOVE_OWNER,
             self::INVITATION_EXPIRED,
@@ -111,6 +120,7 @@ enum ErrorCode: string
             self::CUSTOMER_NOT_FOUND,
             self::BANK_NOT_FOUND,
             self::BANK_ACCOUNT_NOT_FOUND,
+            self::UNIT_NOT_FOUND,
             self::PROVINCE_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
             self::EXPORT_NOT_FOUND,

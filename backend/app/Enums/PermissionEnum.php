@@ -42,4 +42,9 @@ enum PermissionEnum: string
     case CREATE_BANK_ACCOUNT = 'bank_account.create';
     case UPDATE_BANK_ACCOUNT = 'bank_account.update';
     case DELETE_BANK_ACCOUNT = 'bank_account.delete';
+
+    // Unit
+    case CREATE_UNIT = 'unit.create';
+    case UPDATE_UNIT = 'unit.update';
+    case DELETE_UNIT = 'unit.delete';
 }

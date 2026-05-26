@@ -1,0 +1,13 @@
+extend type Query {
+    units(business_id: ID!, include_inactive: Boolean): [Unit!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\UnitResolver@all")
+
+    unit(id: ID!): Unit
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\UnitResolver@findById")
+
+    searchUnits(business_id: ID!, q: String!, include_inactive: Boolean, limit: Int): [Unit!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\UnitResolver@search")
+}

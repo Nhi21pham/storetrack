@@ -1,0 +1,22 @@
+extend type Mutation {
+    createUnit(business_id: ID!, input: CreateUnitInput! @spread): Unit!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\UnitResolver@create")
+
+    updateUnit(id: ID!, input: UpdateUnitInput! @spread): Unit!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\UnitResolver@update")
+
+    deleteUnit(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\UnitResolver@delete")
+}
+
+input CreateUnitInput {
+    name: String! @rules(apply: ["required", "string", "min:1", "max:50"])
+}
+
+input UpdateUnitInput {
+    name: String @rules(apply: ["sometimes", "string", "min:1", "max:50"])
+    is_active: Boolean @rules(apply: ["sometimes", "boolean"])
+}

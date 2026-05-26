@@ -14,6 +14,7 @@ use App\Models\Export;
 use App\Models\Invitation;
 use App\Models\Store;
 use App\Models\Supplier;
+use App\Models\Unit;
 use App\Models\User;
 use App\Exceptions\AuthorizationException;
 use App\Repositories\AuditLogRepository;
@@ -762,6 +763,78 @@ class AuditLogService
         ];
         $this->logBankAccountEvent(
             $actor, AuditAction::DELETED, $message, $baseMetadata, $businessId, $storeIds
+        );
+    }
+
+    // Unit actions (per-business reference table)
+
+    public function unitCreated(User $actor, Unit $unit): void
+    {
+        $businessId = (int) $unit->business_id;
+        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::CREATED,
+            self::actor($actor) . " has CREATED unit {$unit->name}.",
+            [
+                'unit_id'     => $unit->id,
+                'name'        => $unit->name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function unitUpdated(User $actor, Unit $unit): void
+    {
+        $businessId = (int) $unit->business_id;
+        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::UPDATED,
+            self::actor($actor) . " has UPDATED unit {$unit->name}.",
+            [
+                'unit_id'     => $unit->id,
+                'name'        => $unit->name,
+                'is_active'   => (bool) $unit->is_active,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function unitDeactivated(User $actor, Unit $unit): void
+    {
+        $businessId = (int) $unit->business_id;
+        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::DEACTIVATED,
+            self::actor($actor) . " has DEACTIVATED unit {$unit->name}.",
+            [
+                'unit_id'     => $unit->id,
+                'name'        => $unit->name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function unitReactivated(User $actor, Unit $unit): void
+    {
+        $businessId = (int) $unit->business_id;
+        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::REACTIVATED,
+            self::actor($actor) . " has REACTIVATED unit {$unit->name}.",
+            [
+                'unit_id'     => $unit->id,
+                'name'        => $unit->name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function unitDeleted(User $actor, int $unitId, string $name, int $businessId): void
+    {
+        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::DELETED,
+            self::actor($actor) . " has DELETED unit {$name}.",
+            [
+                'unit_id'     => $unitId,
+                'name'        => $name,
+                'business_id' => $businessId,
+            ],
+            $businessId
         );
     }
 
