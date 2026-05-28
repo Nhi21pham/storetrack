@@ -70,7 +70,7 @@ import { normalizeText } from '@/utils/textNormalizer'
 
 const props = defineProps({
   unit: { type: Object, default: null },
-  businessId: { type: [String, Number], default: null },
+  storeId: { type: [String, Number], default: null },
 })
 
 const emit = defineEmits(['close', 'saved', 'pick-existing'])
@@ -99,12 +99,12 @@ let searchTimer = null
 
 const runSearch = async (value) => {
   const q = value.trim()
-  if (q.length < 1 || !props.businessId) {
+  if (q.length < 1 || !props.storeId) {
     suggestions.value = []
     return
   }
   try {
-    const results = await searchUnits({ businessId: props.businessId, q, includeInactive: true, limit: 8 })
+    const results = await searchUnits({ storeId: props.storeId, q, includeInactive: true, limit: 8 })
     const currentId = props.unit?.id ? String(props.unit.id) : null
     suggestions.value = (results || []).filter(r => String(r.id) !== currentId)
   } catch (e) {
@@ -177,7 +177,7 @@ const handleSubmit = async () => {
       emit('saved', result)
     } else {
       const input = { name: form.value.name }
-      const result = await createUnit({ businessId: props.businessId, input })
+      const result = await createUnit({ storeId: props.storeId, input })
       emit('saved', result)
     }
   } catch (err) {

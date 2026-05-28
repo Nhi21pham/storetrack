@@ -103,7 +103,7 @@
     <UnitFormModal
       v-if="showForm"
       :unit="editingUnit"
-      :business-id="currentBusiness?.id"
+      :store-id="currentStore?.id"
       @close="closeForm"
       @saved="onSaved"
       @pick-existing="onPickExisting"
@@ -242,13 +242,13 @@ const {
 watch([searchQuery, includeInactive, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
-  if (!currentBusiness?.value?.id) {
+  if (!currentStore?.value?.id) {
     units.value = []
     return
   }
   loading.value = true
   try {
-    units.value = await fetchUnits({ businessId: currentBusiness.value.id, includeInactive: true })
+    units.value = await fetchUnits({ storeId: currentStore.value.id, includeInactive: true })
   } finally {
     loading.value = false
   }
@@ -256,7 +256,7 @@ const load = async () => {
 
 onMounted(load)
 
-watch(() => currentBusiness?.value?.id, load)
+watch(() => currentStore?.value?.id, load)
 
 const openCreate = () => {
   editingUnit.value = null
