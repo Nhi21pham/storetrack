@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             BankSeeder::class,
             ProvinceSeeder::class,
+            UnitSeeder::class,
         ]);
     }
 }

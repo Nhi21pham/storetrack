@@ -1,0 +1,8 @@
+type Unit {
+    id: ID!
+    store_id: ID!
+    name: String!
+    is_active: Boolean!
+    created_at: DateTime!
+    updated_at: DateTime!
+}
