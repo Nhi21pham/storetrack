@@ -766,16 +766,20 @@ class AuditLogService
         );
     }
 
-    // Unit actions (per-business reference table)
+    // Unit actions (per-store reference table)
 
     public function unitCreated(User $actor, Unit $unit): void
     {
-        $businessId = (int) $unit->business_id;
-        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::CREATED,
+        $storeId = (int) $unit->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::UNIT, AuditAction::CREATED,
             self::actor($actor) . " has CREATED unit {$unit->name}.",
             [
                 'unit_id'     => $unit->id,
                 'name'        => $unit->name,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
                 'business_id' => $businessId,
             ],
             $businessId
@@ -784,13 +788,17 @@ class AuditLogService
 
     public function unitUpdated(User $actor, Unit $unit): void
     {
-        $businessId = (int) $unit->business_id;
-        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::UPDATED,
+        $storeId = (int) $unit->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::UNIT, AuditAction::UPDATED,
             self::actor($actor) . " has UPDATED unit {$unit->name}.",
             [
                 'unit_id'     => $unit->id,
                 'name'        => $unit->name,
                 'is_active'   => (bool) $unit->is_active,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
                 'business_id' => $businessId,
             ],
             $businessId
@@ -799,12 +807,16 @@ class AuditLogService
 
     public function unitDeactivated(User $actor, Unit $unit): void
     {
-        $businessId = (int) $unit->business_id;
-        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::DEACTIVATED,
+        $storeId = (int) $unit->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::UNIT, AuditAction::DEACTIVATED,
             self::actor($actor) . " has DEACTIVATED unit {$unit->name}.",
             [
                 'unit_id'     => $unit->id,
                 'name'        => $unit->name,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
                 'business_id' => $businessId,
             ],
             $businessId
@@ -813,25 +825,33 @@ class AuditLogService
 
     public function unitReactivated(User $actor, Unit $unit): void
     {
-        $businessId = (int) $unit->business_id;
-        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::REACTIVATED,
+        $storeId = (int) $unit->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::UNIT, AuditAction::REACTIVATED,
             self::actor($actor) . " has REACTIVATED unit {$unit->name}.",
             [
                 'unit_id'     => $unit->id,
                 'name'        => $unit->name,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
                 'business_id' => $businessId,
             ],
             $businessId
         );
     }
 
-    public function unitDeleted(User $actor, int $unitId, string $name, int $businessId): void
+    public function unitDeleted(User $actor, int $unitId, string $name, int $storeId): void
     {
-        $this->log(null, $actor, AuditObjectType::UNIT, AuditAction::DELETED,
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::UNIT, AuditAction::DELETED,
             self::actor($actor) . " has DELETED unit {$name}.",
             [
                 'unit_id'     => $unitId,
                 'name'        => $name,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
                 'business_id' => $businessId,
             ],
             $businessId

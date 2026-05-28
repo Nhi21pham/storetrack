@@ -10,6 +10,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Repositories\PartyRepository;
 use App\Repositories\StoreRepository;
+use Database\Seeders\UnitSeeder;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\StoreException;
 
@@ -37,6 +38,7 @@ class StoreService
                 'party_id'  => $party->id,
             ]));
             $store->users()->attach($user->id, ['role' => RoleEnum::OWNER->value]);
+            UnitSeeder::seedDefaultsForStore((int) $store->id);
             return $store;
         });
 

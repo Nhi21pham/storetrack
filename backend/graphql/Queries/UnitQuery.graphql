@@ -1,5 +1,5 @@
 extend type Query {
-    units(business_id: ID!, include_inactive: Boolean): [Unit!]!
+    units(store_id: ID!, include_inactive: Boolean): [Unit!]!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\UnitResolver@all")
 
@@ -7,7 +7,7 @@ extend type Query {
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\UnitResolver@findById")
 
-    searchUnits(business_id: ID!, q: String!, include_inactive: Boolean, limit: Int): [Unit!]!
+    searchUnits(store_id: ID!, q: String!, include_inactive: Boolean, limit: Int): [Unit!]!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\UnitResolver@search")
 }

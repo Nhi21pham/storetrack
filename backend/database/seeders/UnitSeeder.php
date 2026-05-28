@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Business;
+use App\Models\Store;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class UnitSeeder extends Seeder
 {
-    /** Common Vietnamese units seeded into every business. */
+    /** Common Vietnamese units seeded into every store. */
     public static function defaultUnits(): array
     {
         return [
@@ -42,14 +42,14 @@ class UnitSeeder extends Seeder
         ];
     }
 
-    public static function seedDefaultsForBusiness(int $businessId): void
+    public static function seedDefaultsForStore(int $storeId): void
     {
         $now = Carbon::now();
         $rows = [];
 
         foreach (self::defaultUnits() as $name) {
             $rows[] = [
-                'business_id'     => $businessId,
+                'store_id'        => $storeId,
                 'name'            => $name,
                 'name_normalized' => TextNormalizer::normalize($name),
                 'is_active'       => true,
@@ -60,16 +60,16 @@ class UnitSeeder extends Seeder
 
         DB::table('units')->upsert(
             $rows,
-            ['business_id', 'name_normalized'],
+            ['store_id', 'name_normalized'],
             ['name', 'updated_at']
         );
     }
 
-    /** Backfill: seed defaults for every existing business. Idempotent. */
+    /** Backfill: seed defaults for every existing store. Idempotent. */
     public function run(): void
     {
-        Business::query()->orderBy('id')->each(function (Business $business) {
-            self::seedDefaultsForBusiness((int) $business->id);
+        Store::query()->orderBy('id')->each(function (Store $store) {
+            self::seedDefaultsForStore((int) $store->id);
         });
     }
 }

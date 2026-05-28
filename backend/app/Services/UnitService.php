@@ -21,51 +21,51 @@ class UnitService
         private AuditLogService $auditLogService,
     ) {}
 
-    public function getAll(User $user, int $businessId, bool $includeInactive = false): Collection
+    public function getAll(User $user, int $storeId, bool $includeInactive = false): Collection
     {
-        $this->authorizeView($user, $businessId);
-        return $this->unitRepository->all($businessId, $includeInactive);
+        $this->authorizeView($user, $storeId);
+        return $this->unitRepository->all($storeId, $includeInactive);
     }
 
-    public function search(User $user, int $businessId, string $query, bool $includeInactive = false, int $limit = 10): Collection
+    public function search(User $user, int $storeId, string $query, bool $includeInactive = false, int $limit = 10): Collection
     {
-        $this->authorizeView($user, $businessId);
+        $this->authorizeView($user, $storeId);
         $needle = TextNormalizer::normalize($query);
         if ($needle === '') {
-            return $this->unitRepository->all($businessId, $includeInactive)->take($limit);
+            return $this->unitRepository->all($storeId, $includeInactive)->take($limit);
         }
-        return $this->unitRepository->searchQuery($businessId, $needle, $includeInactive, $limit)->get();
+        return $this->unitRepository->searchQuery($storeId, $needle, $includeInactive, $limit)->get();
     }
 
     public function getById(User $user, int $id): Unit
     {
         $unit = $this->mustFind($id);
-        $this->authorizeView($user, (int) $unit->business_id);
+        $this->authorizeView($user, (int) $unit->store_id);
         return $unit;
     }
 
-    public function create(User $actor, int $businessId, array $data): Unit
+    public function create(User $actor, int $storeId, array $data): Unit
     {
-        $this->permissionService->authorizeAnyStoreInBusiness($actor, PermissionEnum::CREATE_UNIT, $businessId);
+        $this->permissionService->authorizeStore($actor, PermissionEnum::CREATE_UNIT, $storeId);
 
-        return DB::transaction(function () use ($actor, $businessId, $data) {
+        return DB::transaction(function () use ($actor, $storeId, $data) {
             $name = (string) $data['name'];
             $nameNorm = TextNormalizer::normalize($name);
 
-            $existing = $this->unitRepository->findByNameNormalized($businessId, $nameNorm);
+            $existing = $this->unitRepository->findByNameNormalized($storeId, $nameNorm);
             if ($existing !== null) {
                 throw new UnitException(ErrorCode::UNIT_NAME_TAKEN, "A unit with this name already exists: {$existing->name}.");
             }
 
             try {
                 $unit = $this->unitRepository->create([
-                    'business_id'     => $businessId,
+                    'store_id'        => $storeId,
                     'name'            => $name,
                     'name_normalized' => $nameNorm,
                     'is_active'       => true,
                 ]);
             } catch (QueryException $e) {
-                // (business_id, name_normalized) unique index — concurrent insert won the race
+                // (store_id, name_normalized) unique index — concurrent insert won the race
                 if (($e->errorInfo[1] ?? null) === 1062) {
                     throw new UnitException(ErrorCode::UNIT_NAME_TAKEN, "A unit with this name already exists: {$name}.");
                 }
@@ -82,8 +82,8 @@ class UnitService
     {
         return DB::transaction(function () use ($actor, $id, $data) {
             $unit = $this->mustFind($id);
-            $businessId = (int) $unit->business_id;
-            $this->permissionService->authorizeAnyStoreInBusiness($actor, PermissionEnum::UPDATE_UNIT, $businessId);
+            $storeId = (int) $unit->store_id;
+            $this->permissionService->authorizeStore($actor, PermissionEnum::UPDATE_UNIT, $storeId);
 
             $patch = [];
             $renamedTo = null;
@@ -92,7 +92,7 @@ class UnitService
                 $name = (string) $data['name'];
                 $nameNorm = TextNormalizer::normalize($name);
                 if ($nameNorm !== $unit->name_normalized) {
-                    $existing = $this->unitRepository->findByNameNormalized($businessId, $nameNorm, (int) $unit->id);
+                    $existing = $this->unitRepository->findByNameNormalized($storeId, $nameNorm, (int) $unit->id);
                     if ($existing !== null) {
                         throw new UnitException(ErrorCode::UNIT_NAME_TAKEN, "A unit with this name already exists: {$existing->name}.");
                     }
@@ -138,21 +138,21 @@ class UnitService
     public function delete(User $actor, int $id): void
     {
         $unit = $this->mustFind($id);
-        $businessId = (int) $unit->business_id;
-        $this->permissionService->authorizeAnyStoreInBusiness($actor, PermissionEnum::DELETE_UNIT, $businessId);
+        $storeId = (int) $unit->store_id;
+        $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_UNIT, $storeId);
 
         $unitId = (int) $unit->id;
         $name = (string) $unit->name;
 
-        DB::transaction(function () use ($actor, $unit, $unitId, $name, $businessId) {
+        DB::transaction(function () use ($actor, $unit, $unitId, $name, $storeId) {
             $this->unitRepository->delete($unit);
-            $this->auditLogService->unitDeleted($actor, $unitId, $name, $businessId);
+            $this->auditLogService->unitDeleted($actor, $unitId, $name, $storeId);
         });
     }
 
-    private function authorizeView(User $user, int $businessId): void
+    private function authorizeView(User $user, int $storeId): void
     {
-        $this->permissionService->authorizeAnyStoreInBusiness($user, PermissionEnum::UPDATE_UNIT, $businessId);
+        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_UNIT, $storeId);
     }
 
     private function mustFind(int $id): Unit

@@ -14,7 +14,7 @@ class UnitResolver extends BaseResolver
         return $this->safe(fn() =>
             $this->unitService->getAll(
                 $this->user(),
-                (int) $args['business_id'],
+                (int) $args['store_id'],
                 (bool) ($args['include_inactive'] ?? false)
             )
         );
@@ -32,7 +32,7 @@ class UnitResolver extends BaseResolver
         return $this->safe(fn() =>
             $this->unitService->search(
                 $this->user(),
-                (int) $args['business_id'],
+                (int) $args['store_id'],
                 (string) $args['q'],
                 (bool) ($args['include_inactive'] ?? false),
                 (int) ($args['limit'] ?? 10)

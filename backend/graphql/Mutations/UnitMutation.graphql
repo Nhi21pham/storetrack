@@ -1,5 +1,5 @@
 extend type Mutation {
-    createUnit(business_id: ID!, input: CreateUnitInput! @spread): Unit!
+    createUnit(store_id: ID!, input: CreateUnitInput! @spread): Unit!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\UnitResolver@create")
 

@@ -13,10 +13,10 @@ class UnitRepository
         return Unit::find($id);
     }
 
-    public function findByNameNormalized(int $businessId, string $normalized, ?int $excludeId = null): ?Unit
+    public function findByNameNormalized(int $storeId, string $normalized, ?int $excludeId = null): ?Unit
     {
         $query = Unit::query()
-            ->where('business_id', $businessId)
+            ->where('store_id', $storeId)
             ->where('name_normalized', $normalized);
         if ($excludeId !== null) {
             $query->where('id', '!=', $excludeId);
@@ -40,18 +40,18 @@ class UnitRepository
         $unit->delete();
     }
 
-    public function all(int $businessId, bool $includeInactive = false): Collection
+    public function all(int $storeId, bool $includeInactive = false): Collection
     {
-        $query = Unit::query()->where('business_id', $businessId);
+        $query = Unit::query()->where('store_id', $storeId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
         return $query->orderBy('name')->get();
     }
 
-    public function searchQuery(int $businessId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder
+    public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder
     {
-        $query = Unit::query()->where('business_id', $businessId);
+        $query = Unit::query()->where('store_id', $storeId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }

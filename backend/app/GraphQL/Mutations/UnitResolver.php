@@ -12,9 +12,9 @@ class UnitResolver extends BaseResolver
     public function create($_, array $args)
     {
         return $this->safe(function () use ($args) {
-            $businessId = (int) $args['business_id'];
-            unset($args['business_id']);
-            return $this->unitService->create($this->user(), $businessId, $args);
+            $storeId = (int) $args['store_id'];
+            unset($args['store_id']);
+            return $this->unitService->create($this->user(), $storeId, $args);
         });
     }
 

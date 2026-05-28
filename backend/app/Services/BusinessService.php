@@ -10,7 +10,6 @@ use App\Models\User;
 use App\Repositories\BusinessRepository;
 use App\Repositories\PartyRepository;
 use Database\Seeders\BankSeeder;
-use Database\Seeders\UnitSeeder;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\BusinessException;
 
@@ -32,7 +31,6 @@ class BusinessService
                 'party_id' => $party->id,
             ]));
             BankSeeder::seedDefaultsForBusiness((int) $business->id);
-            UnitSeeder::seedDefaultsForBusiness((int) $business->id);
             return $business;
         });
     }

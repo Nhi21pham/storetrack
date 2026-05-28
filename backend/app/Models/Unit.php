@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Unit extends Model
 {
     protected $fillable = [
-        'business_id',
+        'store_id',
         'name',
         'name_normalized',
         'is_active',
@@ -18,8 +18,8 @@ class Unit extends Model
         'is_active' => 'boolean',
     ];
 
-    public function business(): BelongsTo
+    public function store(): BelongsTo
     {
-        return $this->belongsTo(Business::class);
+        return $this->belongsTo(Store::class);
     }
 }
