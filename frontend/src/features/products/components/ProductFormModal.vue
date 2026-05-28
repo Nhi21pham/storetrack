@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Unit' : 'New Unit' }}</h2>
+        <h2>{{ isEdit ? 'Edit Product' : 'New Product' }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -11,22 +11,38 @@
       </div>
 
       <div class="modal-body">
-        <div class="form-group" :class="{ 'has-suggestions': showSuggestions }">
-          <label>Unit Name <span class="required">*</span></label>
+        <div class="form-group" :class="{ 'has-suggestions': showNameSuggestions }">
+          <label>Product Name <span class="required">*</span></label>
           <input
             v-model="form.name"
             type="text"
-            placeholder="e.g. Cái, Chiếc, Hộp..."
+            placeholder="e.g. Áo thun trắng"
             :class="{ error: errors.name }"
-            @focus="active = true"
+            @focus="activeField = 'name'"
             @blur="onBlurField"
           />
           <span v-if="errors.name" class="error-text">{{ errors.name }}</span>
           <SuggestionList
-            v-if="showSuggestions"
-            :items="suggestions"
+            v-if="showNameSuggestions"
+            :items="nameSuggestions"
             @pick="onPickSuggestion"
           />
+        </div>
+
+        <div class="form-group">
+          <label>Unit <span class="required">*</span></label>
+          <select
+            v-model="form.unit_id"
+            :class="{ error: errors.unit_id }"
+            :disabled="unitsLoading"
+          >
+            <option value="" disabled>{{ unitsLoading ? 'Loading units…' : 'Select a unit' }}</option>
+            <option v-for="u in activeUnits" :key="u.id" :value="String(u.id)">{{ u.name }}</option>
+          </select>
+          <span v-if="errors.unit_id" class="error-text">{{ errors.unit_id }}</span>
+          <p v-if="!unitsLoading && activeUnits.length === 0" class="hint warn">
+            No active units in this store. Create one in the Units page first.
+          </p>
         </div>
 
         <div v-if="isEdit" class="form-group toggle-group">
@@ -34,7 +50,7 @@
             <ToggleSwitch v-model="form.is_active" />
             <span class="toggle-text">Active</span>
           </div>
-          <p class="hint">Inactive units won't appear in the unit picker on new products.</p>
+          <p class="hint">Inactive products won't appear in pickers for new transactions.</p>
         </div>
 
         <div v-if="apiError" class="api-error">{{ apiError }}</div>
@@ -44,7 +60,7 @@
         <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Unit' }}
+          {{ isEdit ? 'Save Changes' : 'Create Product' }}
         </button>
       </div>
     </div>
@@ -62,100 +78,131 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
-import SuggestionList from '@/features/units/components/UnitSuggestionList.vue'
-import { createUnit, updateUnit, searchUnits } from '@/features/units/services/unitService'
+import SuggestionList from '@/features/products/components/ProductSuggestionList.vue'
+import { createProduct, updateProduct, searchProducts } from '@/features/products/services/productService'
+import { fetchUnits } from '@/features/units/services/unitService'
 import { normalizeText } from '@/utils/textNormalizer'
 
 const props = defineProps({
-  unit: { type: Object, default: null },
+  product: { type: Object, default: null },
   storeId: { type: [String, Number], default: null },
 })
 
 const emit = defineEmits(['close', 'saved', 'pick-existing'])
 
-const isEdit = computed(() => !!props.unit)
+const isEdit = computed(() => !!props.product)
 const loading = ref(false)
 const apiError = ref('')
 const showUnsavedWarning = ref(false)
 
-const errors = ref({ name: '' })
+const errors = ref({ name: '', unit_id: '' })
 
 const initialForm = () => ({
-  name: props.unit?.name || '',
-  is_active: props.unit?.is_active ?? true,
+  name: props.product?.name || '',
+  unit_id: props.product?.unit_id ? String(props.product.unit_id) : '',
+  is_active: props.product?.is_active ?? true,
 })
 
 const form = ref(initialForm())
 const originalForm = ref(JSON.stringify(initialForm()))
 const isDirty = computed(() => JSON.stringify(form.value) !== originalForm.value)
 
-const active = ref(false)
-const suggestions = ref([])
-const showSuggestions = computed(() => active.value && suggestions.value.length > 0)
+const units = ref([])
+const unitsLoading = ref(false)
+const activeUnits = computed(() => {
+  const list = units.value.filter(u => u.is_active)
+  // If editing and the current unit is inactive, surface it so the picker shows
+  // the current value rather than dropping it silently.
+  const currentId = props.product?.unit_id ? String(props.product.unit_id) : null
+  if (currentId && !list.some(u => String(u.id) === currentId)) {
+    const found = units.value.find(u => String(u.id) === currentId)
+    if (found) return [found, ...list]
+  }
+  return list
+})
+
+const loadUnits = async () => {
+  if (!props.storeId) return
+  unitsLoading.value = true
+  try {
+    units.value = await fetchUnits({ storeId: props.storeId, includeInactive: true })
+  } finally {
+    unitsLoading.value = false
+  }
+}
+
+onMounted(loadUnits)
+watch(() => props.storeId, loadUnits)
+
+const activeField = ref(null)
+const nameSuggestions = ref([])
+const showNameSuggestions = computed(() => activeField.value === 'name' && nameSuggestions.value.length > 0)
 
 let searchTimer = null
 
 const runSearch = async (value) => {
   const q = value.trim()
   if (q.length < 1 || !props.storeId) {
-    suggestions.value = []
+    nameSuggestions.value = []
     return
   }
   try {
-    const results = await searchUnits({ storeId: props.storeId, q, includeInactive: true, limit: 8 })
-    const currentId = props.unit?.id ? String(props.unit.id) : null
-    suggestions.value = (results || []).filter(r => String(r.id) !== currentId)
+    const results = await searchProducts({ storeId: props.storeId, q, includeInactive: true, limit: 8 })
+    const currentId = props.product?.id ? String(props.product.id) : null
+    nameSuggestions.value = (results || []).filter(r => String(r.id) !== currentId)
   } catch (e) {
-    suggestions.value = []
+    nameSuggestions.value = []
   }
 }
 
 watch(
-  () => [form.value.name, active.value],
+  () => [form.value.name, activeField.value],
   () => {
     if (searchTimer) clearTimeout(searchTimer)
-    if (!active.value) {
-      suggestions.value = []
+    if (activeField.value !== 'name') {
+      nameSuggestions.value = []
       return
     }
     searchTimer = setTimeout(() => runSearch(form.value.name), 250)
   }
 )
 
-watch(() => props.unit, () => {
+watch(() => props.product, () => {
   form.value = initialForm()
   originalForm.value = JSON.stringify(initialForm())
-  errors.value = { name: '' }
+  errors.value = { name: '', unit_id: '' }
   apiError.value = ''
-  suggestions.value = []
+  nameSuggestions.value = []
 })
 
 const onBlurField = () => {
   setTimeout(() => {
-    active.value = false
-    suggestions.value = []
+    activeField.value = null
+    nameSuggestions.value = []
   }, 150)
 }
 
-const onPickSuggestion = (unit) => {
-  suggestions.value = []
-  emit('pick-existing', unit)
+const onPickSuggestion = (product) => {
+  nameSuggestions.value = []
+  emit('pick-existing', product)
 }
 
 const validateForm = () => {
-  errors.value = { name: '' }
+  errors.value = { name: '', unit_id: '' }
   const name = form.value.name.trim()
-  if (!name) errors.value.name = 'Unit name is required.'
-  else if (name.length > 50) errors.value.name = 'Unit name must be at most 50 characters.'
+  if (!name) errors.value.name = 'Product name is required.'
+  else if (name.length > 100) errors.value.name = 'Product name must be at most 100 characters.'
+
+  if (!form.value.unit_id) errors.value.unit_id = 'Unit is required.'
 
   if (!isEdit.value) {
     const norm = normalizeText(name)
-    const dup = suggestions.value.find(s => normalizeText(s.name) === norm)
+    const dup = nameSuggestions.value.find(s => normalizeText(s.name) === norm)
     if (dup) {
-      apiError.value = `A unit with this name already exists: ${dup.name}. Open it from the suggestion list above to edit.`
+      apiError.value = `A product with this name already exists: ${dup.name}. Open it from the suggestion list above to edit.`
       return false
     }
   }
@@ -172,13 +219,17 @@ const handleSubmit = async () => {
     if (isEdit.value) {
       const input = {
         name: form.value.name,
+        unit_id: form.value.unit_id,
         is_active: form.value.is_active,
       }
-      const result = await updateUnit({ id: props.unit.id, input })
+      const result = await updateProduct({ id: props.product.id, input })
       emit('saved', result)
     } else {
-      const input = { name: form.value.name }
-      const result = await createUnit({ storeId: props.storeId, input })
+      const input = {
+        name: form.value.name,
+        unit_id: form.value.unit_id,
+      }
+      const result = await createProduct({ storeId: props.storeId, input })
       emit('saved', result)
     }
   } catch (err) {
@@ -201,7 +252,7 @@ const handleClose = () => {
 
 <style scoped>
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 480px; box-shadow: 0 24px 80px rgba(0,0,0,0.15); overflow: visible; }
+.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; box-shadow: 0 24px 80px rgba(0,0,0,0.15); overflow: visible; }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
 .modal-header h2 { font-size: 18px; font-weight: 700; color: #111; }
@@ -214,16 +265,17 @@ const handleClose = () => {
 .form-group label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 6px; }
 .required { color: #dc2626; }
 
-.form-group input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
-.form-group input[type="text"]:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
-.form-group input[type="text"].error { border-color: #dc2626; }
+.form-group input[type="text"], .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
+.form-group input[type="text"]:focus, .form-group select:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
+.form-group input[type="text"].error, .form-group select.error { border-color: #dc2626; }
 
 .error-text { display: block; font-size: 12px; color: #dc2626; margin-top: 4px; }
 
 .toggle-group { display: flex; flex-direction: column; gap: 6px; }
 .toggle-row { display: flex; align-items: center; gap: 10px; }
 .toggle-text { font-size: 14px; font-weight: 500; color: #111; }
-.hint { margin: 0; font-size: 12px; color: #6b7280; }
+.hint { margin: 4px 0 0; font-size: 12px; color: #6b7280; }
+.hint.warn { color: #b45309; }
 
 .api-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 4px; }
 

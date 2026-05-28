@@ -17,6 +17,7 @@ const TYPE_LABELS = {
   bank:         'Bank',
   bank_account: 'Bank Account',
   unit:         'Unit',
+  product:      'Product',
 }
 
 const KNOWN_VARIANTS = new Set(Object.keys(TYPE_LABELS))
@@ -61,5 +62,6 @@ const displayLabel = computed(() =>
 .badge-bank         { background: #ccfbf1; color: #0f766e; } /* teal    */
 .badge-bank_account { background: #fee2e2; color: #b91c1c; } /* red     */
 .badge-unit         { background: #e0e7ff; color: #4338ca; } /* indigo  */
+.badge-product      { background: #ecfccb; color: #4d7c0f; } /* lime    */
 .badge-default      { background: #f3f4f6; color: #6b7280; } /* gray    */
 </style>
