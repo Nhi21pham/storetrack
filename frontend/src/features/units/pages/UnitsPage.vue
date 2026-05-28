@@ -26,10 +26,6 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by name..." />
-        <label class="toggle">
-          <input v-model="includeInactive" type="checkbox" />
-          Show inactive
-        </label>
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -41,14 +37,9 @@
       <LoadingState v-if="loading">Loading units...</LoadingState>
 
       <EmptyState
-        v-else-if="filteredUnits.length === 0 && units.length === 0"
+        v-else-if="units.length === 0"
         title="No units yet"
         description="Add your first unit to get started."
-      />
-
-      <EmptyState
-        v-else-if="filteredUnits.length === 0"
-        :description="`No units matching &quot;${searchQuery}&quot;`"
       />
 
       <div v-else class="table-wrap">
@@ -64,6 +55,22 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
+          <template #filter-status>
+            <SearchableSelect
+              :modelValue="statusFilter"
+              :options="STATUS_OPTIONS"
+              all-label="(All)"
+              search-placeholder="Filter status..."
+              teleport
+              @update:modelValue="statusFilter = $event"
+            />
+          </template>
+
+          <tr v-if="filteredUnits.length === 0" class="empty-tr">
+            <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
+              No units match the current filters.
+            </td>
+          </tr>
           <tr v-for="unit in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
             <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ unit.id }}</td>
             <td v-if="columnVisibility.isVisible('name')">
@@ -166,13 +173,14 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
+import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
 import UnitDetailModal from '@/features/units/components/UnitDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { fetchUnits, deleteUnit, updateUnit } from '@/features/units/services/unitService'
-import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS } from '@/features/units/constants'
+import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
@@ -192,7 +200,7 @@ const currentStore = inject('currentStore')
 const units = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
-const includeInactive = ref(true)
+const statusFilter = ref('')
 
 const showForm = ref(false)
 const editingUnit = ref(null)
@@ -214,7 +222,8 @@ const canDelete = computed(() => {
 const filteredUnits = computed(() => {
   const needle = normalizeText(searchQuery.value)
   return units.value.filter(u => {
-    if (!includeInactive.value && !u.is_active) return false
+    if (statusFilter.value === 'active'   && !u.is_active) return false
+    if (statusFilter.value === 'inactive' &&  u.is_active) return false
     if (!needle) return true
     return normalizeText(u.name).includes(needle)
   })
@@ -240,7 +249,7 @@ const {
   resetPage,
 } = useClientPagination(sortedUnits)
 
-watch([searchQuery, includeInactive, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, statusFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {
@@ -337,7 +346,8 @@ const handleToggle = async () => {
 <style scoped>
 .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
-.toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; cursor: pointer; flex-shrink: 0; }
+
+.empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 
 .btn-create { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-create:hover { background: #333; }

@@ -26,10 +26,6 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by name..." />
-        <label class="toggle">
-          <input v-model="includeInactive" type="checkbox" />
-          Show inactive
-        </label>
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -41,14 +37,9 @@
       <LoadingState v-if="loading">Loading products...</LoadingState>
 
       <EmptyState
-        v-else-if="filteredProducts.length === 0 && products.length === 0"
+        v-else-if="products.length === 0"
         title="No products yet"
         description="Add your first product to get started."
-      />
-
-      <EmptyState
-        v-else-if="filteredProducts.length === 0"
-        :description="`No products matching &quot;${searchQuery}&quot;`"
       />
 
       <div v-else class="table-wrap">
@@ -64,6 +55,32 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
+          <template #filter-unit>
+            <SearchableSelect
+              :modelValue="unitFilter"
+              :options="unitOptions"
+              all-label="(All units)"
+              search-placeholder="Filter unit..."
+              teleport
+              @update:modelValue="unitFilter = $event"
+            />
+          </template>
+          <template #filter-status>
+            <SearchableSelect
+              :modelValue="statusFilter"
+              :options="STATUS_OPTIONS"
+              all-label="(All)"
+              search-placeholder="Filter status..."
+              teleport
+              @update:modelValue="statusFilter = $event"
+            />
+          </template>
+
+          <tr v-if="filteredProducts.length === 0">
+            <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
+              No products match the current filters.
+            </td>
+          </tr>
           <tr v-for="product in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
             <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ product.id }}</td>
             <td v-if="columnVisibility.isVisible('name')">
@@ -170,13 +187,15 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
+import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { fetchProducts, deleteProduct, updateProduct } from '@/features/products/services/productService'
-import { PRODUCT_COLUMNS, PRODUCT_INITIAL_COL_WIDTHS } from '@/features/products/constants'
+import { fetchUnits } from '@/features/units/services/unitService'
+import { PRODUCT_COLUMNS, PRODUCT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/products/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
@@ -194,9 +213,15 @@ const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
 
 const products = ref([])
+const units = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
-const includeInactive = ref(true)
+const statusFilter = ref('')
+const unitFilter = ref('')
+
+const unitOptions = computed(() =>
+  units.value.map(u => ({ value: String(u.id), label: u.name }))
+)
 
 const showForm = ref(false)
 const editingProduct = ref(null)
@@ -218,7 +243,9 @@ const canDelete = computed(() => {
 const filteredProducts = computed(() => {
   const needle = normalizeText(searchQuery.value)
   return products.value.filter(p => {
-    if (!includeInactive.value && !p.is_active) return false
+    if (statusFilter.value === 'active'   && !p.is_active) return false
+    if (statusFilter.value === 'inactive' &&  p.is_active) return false
+    if (unitFilter.value && String(p.unit_id) !== unitFilter.value) return false
     if (!needle) return true
     return (
       normalizeText(p.name).includes(needle) ||
@@ -248,16 +275,22 @@ const {
   resetPage,
 } = useClientPagination(sortedProducts)
 
-watch([searchQuery, includeInactive, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, statusFilter, unitFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {
     products.value = []
+    units.value = []
     return
   }
   loading.value = true
   try {
-    products.value = await fetchProducts({ storeId: currentStore.value.id, includeInactive: true })
+    const [productList, unitList] = await Promise.all([
+      fetchProducts({ storeId: currentStore.value.id, includeInactive: true }),
+      fetchUnits({ storeId: currentStore.value.id, includeInactive: true }),
+    ])
+    products.value = productList
+    units.value = unitList
   } finally {
     loading.value = false
   }
@@ -345,7 +378,8 @@ const handleToggle = async () => {
 <style scoped>
 .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
-.toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; cursor: pointer; flex-shrink: 0; }
+
+.empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 
 .btn-create { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-create:hover { background: #333; }

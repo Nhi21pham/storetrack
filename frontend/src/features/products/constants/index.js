@@ -9,3 +9,8 @@ export const PRODUCT_COLUMNS = [
 ]
 
 export const PRODUCT_INITIAL_COL_WIDTHS = [60, 260, 130, 110, 180, 180, 80]
+
+export const STATUS_OPTIONS = [
+  { value: 'active',   label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]

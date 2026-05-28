@@ -8,3 +8,8 @@ export const UNIT_COLUMNS = [
 ]
 
 export const UNIT_INITIAL_COL_WIDTHS = [70, 180, 140, 280, 280, 90]
+
+export const STATUS_OPTIONS = [
+  { value: 'active',   label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]
