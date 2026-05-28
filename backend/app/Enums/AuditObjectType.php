@@ -12,6 +12,7 @@ enum AuditObjectType: string
     case CUSTOMER   = 'customer';
     case BANK         = 'bank';
     case BANK_ACCOUNT = 'bank_account';
-    case UNIT         = 'unit';
-    case PRODUCT      = 'product';
+    case UNIT             = 'unit';
+    case PRODUCT          = 'product';
+    case PRODUCT_CATEGORY = 'product_category';
 }
