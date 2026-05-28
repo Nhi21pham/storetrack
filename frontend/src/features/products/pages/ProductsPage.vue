@@ -64,8 +64,8 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
-          <tr v-for="(product, index) in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
-            <td v-if="columnVisibility.isVisible('no')" class="no-col">{{ (currentPage - 1) * perPage + index + 1 }}</td>
+          <tr v-for="product in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
+            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ product.id }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailProduct = product">{{ product.name }}</button>
             </td>
@@ -232,6 +232,7 @@ const sortedProducts = computed(() =>
   sort.sortItems(filteredProducts.value, (product, key) => {
     if (key === 'status') return product.is_active ? 1 : 0
     if (key === 'unit')   return normalizeText(product.unit?.name || '')
+    if (key === 'id')     return Number(product.id) || 0
     const v = product[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -353,7 +354,7 @@ const handleToggle = async () => {
 tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
 
-.no-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .empty-val { color: #d1d5db; }

@@ -64,8 +64,8 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
-          <tr v-for="(unit, index) in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
-            <td v-if="columnVisibility.isVisible('no')" class="no-col">{{ (currentPage - 1) * perPage + index + 1 }}</td>
+          <tr v-for="unit in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
+            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ unit.id }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailUnit = unit">{{ unit.name }}</button>
             </td>
@@ -224,6 +224,7 @@ const sort = useSortCriteria()
 const sortedUnits = computed(() =>
   sort.sortItems(filteredUnits.value, (unit, key) => {
     if (key === 'status') return unit.is_active ? 1 : 0
+    if (key === 'id')     return Number(unit.id) || 0
     const v = unit[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -345,7 +346,7 @@ const handleToggle = async () => {
 tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
 
-.no-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 

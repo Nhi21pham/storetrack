@@ -1,5 +1,5 @@
 export const UNIT_COLUMNS = [
-  { key: 'no', label: 'No.', sortable: false },
+  { key: 'id', label: 'ID', sortable: true },
   { key: 'name', label: 'Unit Name', sortable: true },
   { key: 'status', label: 'Status', sortable: true },
   { key: 'created_at', label: 'Created', sortable: true },

@@ -1,5 +1,5 @@
 export const PRODUCT_COLUMNS = [
-  { key: 'no',         label: 'No.',           sortable: false },
+  { key: 'id',         label: 'ID',            sortable: true  },
   { key: 'name',       label: 'Product Name',  sortable: true  },
   { key: 'unit',       label: 'Unit',          sortable: true  },
   { key: 'status',     label: 'Status',        sortable: true  },
