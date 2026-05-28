@@ -53,6 +53,12 @@
       <path d="M8 13l3 3"/>
       <path d="M5 16l2 2"/>
     </template>
+    <template v-else-if="name === 'category'">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+    </template>
   </svg>
 </template>
 

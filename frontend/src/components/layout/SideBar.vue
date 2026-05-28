@@ -110,6 +110,12 @@
               Units
             </span>
           </router-link>
+          <router-link to="/product-categories" class="submenu-item" :class="{ active: isActive('/product-categories') }" @click="$emit('close')">
+            <span class="submenu-item-label">
+              <Icon name="category" :size="15" color="currentColor" />
+              Product Categories
+            </span>
+          </router-link>
         </div>
       </div>
     </div>
