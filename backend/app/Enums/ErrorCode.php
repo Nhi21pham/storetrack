@@ -50,6 +50,12 @@ enum ErrorCode: string
     case UNIT_IN_USE = 'UNIT_IN_USE';
     case UNIT_INACTIVE = 'UNIT_INACTIVE';
 
+    // Product
+    case PRODUCT_NOT_FOUND = 'PRODUCT_NOT_FOUND';
+    case PRODUCT_NAME_TAKEN = 'PRODUCT_NAME_TAKEN';
+    case PRODUCT_IN_USE = 'PRODUCT_IN_USE';
+    case PRODUCT_INACTIVE = 'PRODUCT_INACTIVE';
+
     // Province
     case PROVINCE_NOT_FOUND = 'PROVINCE_NOT_FOUND';
 
@@ -96,6 +102,9 @@ enum ErrorCode: string
             self::UNIT_NAME_TAKEN,
             self::UNIT_IN_USE,
             self::UNIT_INACTIVE,
+            self::PRODUCT_NAME_TAKEN,
+            self::PRODUCT_IN_USE,
+            self::PRODUCT_INACTIVE,
             self::CANNOT_CHANGE_OWNER_ROLE,
             self::CANNOT_REMOVE_OWNER,
             self::INVITATION_EXPIRED,
@@ -121,6 +130,7 @@ enum ErrorCode: string
             self::BANK_NOT_FOUND,
             self::BANK_ACCOUNT_NOT_FOUND,
             self::UNIT_NOT_FOUND,
+            self::PRODUCT_NOT_FOUND,
             self::PROVINCE_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
             self::EXPORT_NOT_FOUND,

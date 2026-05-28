@@ -47,4 +47,9 @@ enum PermissionEnum: string
     case CREATE_UNIT = 'unit.create';
     case UPDATE_UNIT = 'unit.update';
     case DELETE_UNIT = 'unit.delete';
+
+    // Product
+    case CREATE_PRODUCT = 'product.create';
+    case UPDATE_PRODUCT = 'product.update';
+    case DELETE_PRODUCT = 'product.delete';
 }

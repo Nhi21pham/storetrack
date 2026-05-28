@@ -141,6 +141,13 @@ class UnitService
         $storeId = (int) $unit->store_id;
         $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_UNIT, $storeId);
 
+        if ($this->unitRepository->hasProducts((int) $unit->id)) {
+            throw new UnitException(
+                ErrorCode::UNIT_IN_USE,
+                "Unit {$unit->name} is referenced by existing products. Deactivate it instead of deleting."
+            );
+        }
+
         $unitId = (int) $unit->id;
         $name = (string) $unit->name;
 

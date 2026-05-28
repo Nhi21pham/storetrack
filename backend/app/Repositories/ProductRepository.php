@@ -2,20 +2,20 @@
 
 namespace App\Repositories;
 
-use App\Models\Unit;
+use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
-class UnitRepository
+class ProductRepository
 {
-    public function findById(int $id): ?Unit
+    public function findById(int $id): ?Product
     {
-        return Unit::find($id);
+        return Product::with('unit')->find($id);
     }
 
-    public function findByNameNormalized(int $storeId, string $normalized, ?int $excludeId = null): ?Unit
+    public function findByNameNormalized(int $storeId, string $normalized, ?int $excludeId = null): ?Product
     {
-        $query = Unit::query()
+        $query = Product::query()
             ->where('store_id', $storeId)
             ->where('name_normalized', $normalized);
         if ($excludeId !== null) {
@@ -24,30 +24,25 @@ class UnitRepository
         return $query->first();
     }
 
-    public function create(array $data): Unit
+    public function create(array $data): Product
     {
-        return Unit::create($data);
+        return Product::create($data);
     }
 
-    public function update(Unit $unit, array $data): Unit
+    public function update(Product $product, array $data): Product
     {
-        $unit->update($data);
-        return $unit->fresh();
+        $product->update($data);
+        return $product->fresh(['unit']);
     }
 
-    public function delete(Unit $unit): void
+    public function delete(Product $product): void
     {
-        $unit->delete();
-    }
-
-    public function hasProducts(int $unitId): bool
-    {
-        return Unit::where('id', $unitId)->whereHas('products')->exists();
+        $product->delete();
     }
 
     public function all(int $storeId, bool $includeInactive = false): Collection
     {
-        $query = Unit::query()->where('store_id', $storeId);
+        $query = Product::query()->with('unit')->where('store_id', $storeId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
@@ -56,7 +51,7 @@ class UnitRepository
 
     public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder
     {
-        $query = Unit::query()->where('store_id', $storeId);
+        $query = Product::query()->with('unit')->where('store_id', $storeId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
@@ -67,5 +62,10 @@ class UnitRepository
             $query->limit($limit);
         }
         return $query;
+    }
+
+    public function existsForUnit(int $unitId): bool
+    {
+        return Product::where('unit_id', $unitId)->exists();
     }
 }

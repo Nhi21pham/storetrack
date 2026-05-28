@@ -4,12 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Unit extends Model
+class Product extends Model
 {
     protected $fillable = [
         'store_id',
+        'unit_id',
         'name',
         'name_normalized',
         'is_active',
@@ -24,8 +24,8 @@ class Unit extends Model
         return $this->belongsTo(Store::class);
     }
 
-    public function products(): HasMany
+    public function unit(): BelongsTo
     {
-        return $this->hasMany(Product::class);
+        return $this->belongsTo(Unit::class);
     }
 }
