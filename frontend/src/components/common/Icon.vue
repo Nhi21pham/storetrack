@@ -46,6 +46,13 @@
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
       <polyline points="9 22 9 12 15 12 15 22"/>
     </template>
+    <template v-else-if="name === 'unit'">
+      <path d="M21.3 8.7L8.7 21.3a1 1 0 0 1-1.4 0L2.7 16.7a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4z"/>
+      <path d="M14 7l3 3"/>
+      <path d="M11 10l2 2"/>
+      <path d="M8 13l3 3"/>
+      <path d="M5 16l2 2"/>
+    </template>
   </svg>
 </template>
 

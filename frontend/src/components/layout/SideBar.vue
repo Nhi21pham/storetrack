@@ -104,6 +104,12 @@
               <router-link to="/banking/bank-accounts" class="submenu-item" :class="{ active: isActive('/banking/bank-accounts') }" @click="$emit('close')">Bank Accounts</router-link>
             </div>
           </div>
+          <router-link to="/units" class="submenu-item" :class="{ active: isActive('/units') }" @click="$emit('close')">
+            <span class="submenu-item-label">
+              <Icon name="unit" :size="15" color="currentColor" />
+              Units
+            </span>
+          </router-link>
         </div>
       </div>
     </div>

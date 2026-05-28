@@ -16,6 +16,7 @@ import SupplierPage from '@/features/suppliers/pages/SupplierPage.vue'
 import CustomerPage from '@/features/customers/pages/CustomerPage.vue'
 import BanksPage from '@/features/banking/pages/BanksPage.vue'
 import BankAccountsPage from '@/features/banking/pages/BankAccountsPage.vue'
+import UnitsPage from '@/features/units/pages/UnitsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -165,6 +166,18 @@ const router = createRouter({
               { label: 'Others' },
               { label: 'Banking', icon: 'bank' },
               { label: 'Bank Accounts' },
+            ],
+          },
+        },
+        {
+          path: 'units',
+          name: 'units',
+          component: UnitsPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Others' },
+              { label: 'Units', icon: 'unit' },
             ],
           },
         },
