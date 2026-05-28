@@ -10,7 +10,7 @@ class ProductRepository
 {
     public function findById(int $id): ?Product
     {
-        return Product::with('unit')->find($id);
+        return Product::with(['unit', 'category'])->find($id);
     }
 
     public function findByNameNormalized(int $storeId, string $normalized, ?int $excludeId = null): ?Product
@@ -32,7 +32,7 @@ class ProductRepository
     public function update(Product $product, array $data): Product
     {
         $product->update($data);
-        return $product->fresh(['unit']);
+        return $product->fresh(['unit', 'category']);
     }
 
     public function delete(Product $product): void
@@ -42,22 +42,25 @@ class ProductRepository
 
     public function all(int $storeId, bool $includeInactive = false): Collection
     {
-        $query = Product::query()->with('unit')->where('store_id', $storeId);
+        $query = Product::query()->with(['unit', 'category'])->where('store_id', $storeId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
-        return $query->orderBy('name')->get();
+        return $query->orderBy('code')->get();
     }
 
     public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder
     {
-        $query = Product::query()->with('unit')->where('store_id', $storeId);
+        $query = Product::query()->with(['unit', 'category'])->where('store_id', $storeId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
         $like = '%' . $needle . '%';
-        $query->where('name_normalized', 'like', $like);
-        $query->orderBy('name');
+        $query->where(function ($q) use ($like) {
+            $q->where('code', 'like', $like)
+                ->orWhere('name_normalized', 'like', $like);
+        });
+        $query->orderBy('code');
         if ($limit !== null) {
             $query->limit($limit);
         }
@@ -67,5 +70,10 @@ class ProductRepository
     public function existsForUnit(int $unitId): bool
     {
         return Product::where('unit_id', $unitId)->exists();
+    }
+
+    public function existsForCategory(int $categoryId): bool
+    {
+        return Product::where('product_category_id', $categoryId)->exists();
     }
 }

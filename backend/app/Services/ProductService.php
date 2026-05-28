@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Enums\ErrorCode;
 use App\Enums\PermissionEnum;
+use App\Exceptions\ProductCategoryException;
 use App\Exceptions\ProductException;
 use App\Exceptions\UnitException;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\Unit;
 use App\Models\User;
 use App\Repositories\ProductRepository;
@@ -51,33 +53,62 @@ class ProductService
         $this->permissionService->authorizeStore($actor, PermissionEnum::CREATE_PRODUCT, $storeId);
 
         return DB::transaction(function () use ($actor, $storeId, $data) {
-            $name     = (string) $data['name'];
-            $unitId   = (int) $data['unit_id'];
+            $name = (string) $data['name'];
+            $unitId = (int) $data['unit_id'];
+            $categoryId = (int) $data['product_category_id'];
             $nameNorm = TextNormalizer::normalize($name);
 
-            // sharedLock blocks any concurrent transaction trying to delete/update this
-            // unit row until our transaction commits — closes the TOCTOU window
-            // between checking the unit and inserting the product.
             $this->assertUnitBelongsToStore($unitId, $storeId);
+
+            // lockForUpdate blocks any concurrent create in this category — the
+            // sequence increment and product insert happen atomically. Other
+            // transactions wait until we commit.
+            $category = ProductCategory::query()
+                ->where('id', $categoryId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$category || (int) $category->store_id !== $storeId) {
+                throw new ProductCategoryException(
+                    ErrorCode::PRODUCT_CATEGORY_NOT_FOUND,
+                    'Category not found in this store.'
+                );
+            }
+            if (!$category->is_active) {
+                throw new ProductCategoryException(
+                    ErrorCode::PRODUCT_CATEGORY_INACTIVE,
+                    "Category '{$category->name}' is inactive."
+                );
+            }
 
             $existing = $this->productRepository->findByNameNormalized($storeId, $nameNorm);
             if ($existing !== null) {
-                throw new ProductException(ErrorCode::PRODUCT_NAME_TAKEN, "A product with this name already exists: {$existing->name}.");
+                throw new ProductException(
+                    ErrorCode::PRODUCT_NAME_TAKEN,
+                    "A product with this name already exists: {$existing->name}."
+                );
             }
+
+            $nextSequence = (int) $category->last_sequence + 1;
+            $code = $category->code . sprintf('%06d', $nextSequence);
+
+            $category->update(['last_sequence' => $nextSequence]);
 
             try {
                 $product = $this->productRepository->create([
-                    'store_id'        => $storeId,
-                    'unit_id'         => $unitId,
-                    'name'            => $name,
-                    'name_normalized' => $nameNorm,
-                    'is_active'       => true,
+                    'store_id'            => $storeId,
+                    'product_category_id' => $categoryId,
+                    'unit_id'             => $unitId,
+                    'code'                => $code,
+                    'name'                => $name,
+                    'name_normalized'     => $nameNorm,
+                    'is_active'           => true,
                 ]);
             } catch (QueryException $e) {
                 $this->translateQueryException($e, $name);
             }
 
-            $product = $product->fresh(['unit']);
+            $product = $product->fresh(['unit', 'category']);
             $this->auditLogService->productCreated($actor, $product);
 
             return $product;
@@ -91,6 +122,17 @@ class ProductService
             $storeId = (int) $product->store_id;
             $this->permissionService->authorizeStore($actor, PermissionEnum::UPDATE_PRODUCT, $storeId);
 
+            // Code is immutable after create — silently accept matching values, reject changes.
+            if (array_key_exists('code', $data)) {
+                $submitted = trim((string) $data['code']);
+                if ($submitted !== '' && $submitted !== $product->code) {
+                    throw new ProductException(
+                        ErrorCode::PRODUCT_NAME_TAKEN,
+                        'Product code cannot be changed once created.'
+                    );
+                }
+            }
+
             $patch = [];
             $renamedTo = null;
 
@@ -100,7 +142,10 @@ class ProductService
                 if ($nameNorm !== $product->name_normalized) {
                     $existing = $this->productRepository->findByNameNormalized($storeId, $nameNorm, (int) $product->id);
                     if ($existing !== null) {
-                        throw new ProductException(ErrorCode::PRODUCT_NAME_TAKEN, "A product with this name already exists: {$existing->name}.");
+                        throw new ProductException(
+                            ErrorCode::PRODUCT_NAME_TAKEN,
+                            "A product with this name already exists: {$existing->name}."
+                        );
                     }
                 }
                 $patch['name'] = $name;
@@ -112,6 +157,12 @@ class ProductService
                 $unitId = (int) $data['unit_id'];
                 $this->assertUnitBelongsToStore($unitId, $storeId);
                 $patch['unit_id'] = $unitId;
+            }
+
+            if (array_key_exists('product_category_id', $data)) {
+                $categoryId = (int) $data['product_category_id'];
+                $this->assertCategoryBelongsToStore($categoryId, $storeId);
+                $patch['product_category_id'] = $categoryId;
             }
 
             if (array_key_exists('is_active', $data)) {
@@ -151,11 +202,12 @@ class ProductService
         $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_PRODUCT, $storeId);
 
         $productId = (int) $product->id;
+        $code = (string) $product->code;
         $name = (string) $product->name;
 
-        DB::transaction(function () use ($actor, $product, $productId, $name, $storeId) {
+        DB::transaction(function () use ($actor, $product, $productId, $code, $name, $storeId) {
             $this->productRepository->delete($product);
-            $this->auditLogService->productDeleted($actor, $productId, $name, $storeId);
+            $this->auditLogService->productDeleted($actor, $productId, $code, $name, $storeId);
         });
     }
 
@@ -174,9 +226,8 @@ class ProductService
     }
 
     /**
-     * Verify the unit exists, belongs to this store, and is active. Uses a
-     * shared lock so the row can't be deleted/deactivated between this check
-     * and the product insert that follows in the same transaction.
+     * sharedLock blocks concurrent unit deletes/deactivations until our
+     * transaction commits — closes the TOCTOU window between check and write.
      */
     private function assertUnitBelongsToStore(int $unitId, int $storeId): void
     {
@@ -189,20 +240,41 @@ class ProductService
         }
     }
 
+    private function assertCategoryBelongsToStore(int $categoryId, int $storeId): void
+    {
+        $category = ProductCategory::query()->where('id', $categoryId)->sharedLock()->first();
+        if (!$category || (int) $category->store_id !== $storeId) {
+            throw new ProductCategoryException(
+                ErrorCode::PRODUCT_CATEGORY_NOT_FOUND,
+                'Category not found in this store.'
+            );
+        }
+        if (!$category->is_active) {
+            throw new ProductCategoryException(
+                ErrorCode::PRODUCT_CATEGORY_INACTIVE,
+                "Category '{$category->name}' is inactive."
+            );
+        }
+    }
+
     /**
-     * Map the MySQL/Eloquent QueryException codes we care about to clean
-     * domain exceptions. 1062 = duplicate-key (concurrent name insert won the
-     * race); 1452 = FK violation (unit was deleted between our shared lock
-     * release and the write — defensive fallback).
+     * 1062 = duplicate-key (concurrent name insert won the race, or a code
+     * collision we shouldn't normally hit since the category lock owns the
+     * counter). 1452 = FK violation (referenced unit/category deleted between
+     * our shared lock release and the write — defensive fallback).
      */
     private function translateQueryException(QueryException $e, string $name): never
     {
         $code = $e->errorInfo[1] ?? null;
         if ($code === 1062) {
-            throw new ProductException(ErrorCode::PRODUCT_NAME_TAKEN, "A product with this name already exists: {$name}.");
+            $msg = (string) ($e->errorInfo[2] ?? '');
+            if (str_contains($msg, 'name_normalized')) {
+                throw new ProductException(ErrorCode::PRODUCT_NAME_TAKEN, "A product with this name already exists: {$name}.");
+            }
+            throw new ProductException(ErrorCode::PRODUCT_NAME_TAKEN, 'A product with this code already exists.');
         }
         if ($code === 1452) {
-            throw new UnitException(ErrorCode::UNIT_NOT_FOUND, 'Selected unit no longer exists.');
+            throw new UnitException(ErrorCode::UNIT_NOT_FOUND, 'Selected unit or category no longer exists.');
         }
         throw $e;
     }

@@ -36,11 +36,14 @@ class ProductCategorySeeder extends Seeder
                 'description'     => null,
                 'is_active'       => true,
                 'is_system'       => true,
+                'last_sequence'   => 0,
                 'created_at'      => $now,
                 'updated_at'      => $now,
             ];
         }
 
+        // last_sequence intentionally NOT in the update list — don't reset
+        // counters when re-seeding existing stores.
         DB::table('product_categories')->upsert(
             $rows,
             ['store_id', 'code'],

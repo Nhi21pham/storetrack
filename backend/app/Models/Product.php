@@ -9,7 +9,9 @@ class Product extends Model
 {
     protected $fillable = [
         'store_id',
+        'product_category_id',
         'unit_id',
+        'code',
         'name',
         'name_normalized',
         'is_active',
@@ -22,6 +24,11 @@ class Product extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class, 'product_category_id');
     }
 
     public function unit(): BelongsTo
