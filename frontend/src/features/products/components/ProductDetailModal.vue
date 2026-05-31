@@ -12,8 +12,21 @@
 
       <div class="modal-body">
         <div class="detail-row">
+          <span class="detail-label">Code</span>
+          <span class="detail-value code-text">{{ product.code }}</span>
+        </div>
+
+        <div class="detail-row">
           <span class="detail-label">Name</span>
           <span class="detail-value name-text">{{ product.name }}</span>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">Category</span>
+          <span v-if="product.category" class="detail-value">
+            <span class="cat-code">{{ product.category.code }}</span> — {{ displayCategoryName(product.category) }}
+          </span>
+          <span v-else class="detail-value empty-val">—</span>
         </div>
 
         <div class="detail-row">
@@ -57,6 +70,7 @@
 
 <script setup>
 import { formatDateTime } from '@/utils/datetime'
+import { displayCategoryName } from '@/features/productCategories/constants'
 
 defineProps({
   product: { type: Object, required: true },
@@ -84,6 +98,8 @@ defineEmits(['close', 'edit'])
 .detail-value { font-size: 14px; color: #111; word-break: break-word; }
 
 .name-text { font-weight: 700; font-size: 15px; }
+.code-text { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; font-size: 15px; }
+.cat-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: #4338ca; }
 .empty-val { color: #d1d5db; }
 
 .status-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }

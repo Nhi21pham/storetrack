@@ -1,7 +1,7 @@
 import { graphql } from '@/api'
 
 const CATEGORY_FIELDS = `
-  id store_id code name description is_active is_system created_at updated_at
+  id store_id code name description is_active is_system last_sequence created_at updated_at
 `
 
 const CATEGORIES_QUERY = `

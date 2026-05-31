@@ -1,8 +1,9 @@
 import { graphql } from '@/api'
 
 const PRODUCT_FIELDS = `
-  id store_id unit_id name is_active created_at updated_at
+  id store_id product_category_id unit_id code name is_active created_at updated_at
   unit { id name is_active }
+  category { id code name is_active is_system }
 `
 
 const PRODUCTS_QUERY = `

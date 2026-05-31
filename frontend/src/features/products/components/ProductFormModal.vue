@@ -11,6 +11,39 @@
       </div>
 
       <div class="modal-body">
+        <div v-if="isEdit" class="form-group">
+          <label>Code</label>
+          <input
+            :value="form.code_display"
+            type="text"
+            disabled
+            class="code-display"
+          />
+          <p class="hint">Auto-generated. Cannot be changed.</p>
+        </div>
+
+        <div class="form-group">
+          <label>Category <span class="required">*</span></label>
+          <select
+            v-model="form.product_category_id"
+            :class="{ error: errors.product_category_id }"
+            :disabled="categoriesLoading || isEdit"
+          >
+            <option value="" disabled>{{ categoriesLoading ? 'Loading categories…' : 'Select a category' }}</option>
+            <option v-for="c in availableCategories" :key="c.id" :value="String(c.id)">
+              {{ c.code }} — {{ displayCategoryName(c) }}
+            </option>
+          </select>
+          <span v-if="errors.product_category_id" class="error-text">{{ errors.product_category_id }}</span>
+          <p v-if="!isEdit && form.product_category_id && nextCodePreview" class="hint">
+            Next code will be: <strong>{{ nextCodePreview }}</strong>
+          </p>
+          <p v-else-if="!isEdit" class="hint">
+            The product code is auto-generated from the category prefix (e.g. SV000001).
+          </p>
+          <p v-if="isEdit" class="hint">Category cannot be changed once a product has a code.</p>
+        </div>
+
         <div class="form-group" :class="{ 'has-suggestions': showNameSuggestions }">
           <label>Product Name <span class="required">*</span></label>
           <input
@@ -84,6 +117,8 @@ import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import SuggestionList from '@/features/products/components/ProductSuggestionList.vue'
 import { createProduct, updateProduct, searchProducts } from '@/features/products/services/productService'
 import { fetchUnits } from '@/features/units/services/unitService'
+import { fetchProductCategories } from '@/features/productCategories/services/productCategoryService'
+import { displayCategoryName } from '@/features/productCategories/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 
 const props = defineProps({
@@ -98,11 +133,13 @@ const loading = ref(false)
 const apiError = ref('')
 const showUnsavedWarning = ref(false)
 
-const errors = ref({ name: '', unit_id: '' })
+const errors = ref({ name: '', unit_id: '', product_category_id: '' })
 
 const initialForm = () => ({
   name: props.product?.name || '',
   unit_id: props.product?.unit_id ? String(props.product.unit_id) : '',
+  product_category_id: props.product?.product_category_id ? String(props.product.product_category_id) : '',
+  code_display: props.product?.code || '',
   is_active: props.product?.is_active ?? true,
 })
 
@@ -124,18 +161,46 @@ const activeUnits = computed(() => {
   return list
 })
 
-const loadUnits = async () => {
+const categories = ref([])
+const categoriesLoading = ref(false)
+const availableCategories = computed(() => {
+  const list = categories.value.filter(c => c.is_active)
+  const currentId = props.product?.product_category_id ? String(props.product.product_category_id) : null
+  if (currentId && !list.some(c => String(c.id) === currentId)) {
+    const found = categories.value.find(c => String(c.id) === currentId)
+    if (found) return [found, ...list]
+  }
+  return list
+})
+
+const nextCodePreview = computed(() => {
+  const id = form.value.product_category_id
+  if (!id) return ''
+  const cat = categories.value.find(c => String(c.id) === id)
+  if (!cat) return ''
+  const next = (cat.last_sequence || 0) + 1
+  return cat.code + String(next).padStart(6, '0')
+})
+
+const loadOptions = async () => {
   if (!props.storeId) return
   unitsLoading.value = true
+  categoriesLoading.value = true
   try {
-    units.value = await fetchUnits({ storeId: props.storeId, includeInactive: true })
+    const [unitList, categoryList] = await Promise.all([
+      fetchUnits({ storeId: props.storeId, includeInactive: true }),
+      fetchProductCategories({ storeId: props.storeId, includeInactive: true }),
+    ])
+    units.value = unitList
+    categories.value = categoryList
   } finally {
     unitsLoading.value = false
+    categoriesLoading.value = false
   }
 }
 
-onMounted(loadUnits)
-watch(() => props.storeId, loadUnits)
+onMounted(loadOptions)
+watch(() => props.storeId, loadOptions)
 
 const activeField = ref(null)
 const nameSuggestions = ref([])
@@ -173,7 +238,7 @@ watch(
 watch(() => props.product, () => {
   form.value = initialForm()
   originalForm.value = JSON.stringify(initialForm())
-  errors.value = { name: '', unit_id: '' }
+  errors.value = { name: '', unit_id: '', product_category_id: '' }
   apiError.value = ''
   nameSuggestions.value = []
 })
@@ -191,12 +256,15 @@ const onPickSuggestion = (product) => {
 }
 
 const validateForm = () => {
-  errors.value = { name: '', unit_id: '' }
+  errors.value = { name: '', unit_id: '', product_category_id: '' }
   const name = form.value.name.trim()
   if (!name) errors.value.name = 'Product name is required.'
   else if (name.length > 100) errors.value.name = 'Product name must be at most 100 characters.'
 
   if (!form.value.unit_id) errors.value.unit_id = 'Unit is required.'
+  if (!isEdit.value && !form.value.product_category_id) {
+    errors.value.product_category_id = 'Category is required.'
+  }
 
   if (!isEdit.value) {
     const norm = normalizeText(name)
@@ -228,6 +296,7 @@ const handleSubmit = async () => {
       const input = {
         name: form.value.name,
         unit_id: form.value.unit_id,
+        product_category_id: form.value.product_category_id,
       }
       const result = await createProduct({ storeId: props.storeId, input })
       emit('saved', result)
@@ -268,6 +337,18 @@ const handleClose = () => {
 .form-group input[type="text"], .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
 .form-group input[type="text"]:focus, .form-group select:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
 .form-group input[type="text"].error, .form-group select.error { border-color: #dc2626; }
+.form-group input.code-display { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; background: #f9fafb; cursor: not-allowed; }
+
+.form-group select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+}
+.form-group select:disabled { background-color: #f9fafb; color: #6b7280; cursor: not-allowed; }
 
 .error-text { display: block; font-size: 12px; color: #dc2626; margin-top: 4px; }
 

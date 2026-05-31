@@ -6,6 +6,7 @@ type ProductCategory {
     description: String
     is_active: Boolean!
     is_system: Boolean!
+    last_sequence: Int!
     created_at: DateTime!
     updated_at: DateTime!
 }

@@ -55,6 +55,16 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
+          <template #filter-category>
+            <SearchableSelect
+              :modelValue="categoryFilter"
+              :options="categoryOptions"
+              all-label="(All categories)"
+              search-placeholder="Filter category..."
+              teleport
+              @update:modelValue="categoryFilter = $event"
+            />
+          </template>
           <template #filter-unit>
             <SearchableSelect
               :modelValue="unitFilter"
@@ -83,8 +93,13 @@
           </tr>
           <tr v-for="product in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
             <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ product.id }}</td>
+            <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ product.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailProduct = product">{{ product.name }}</button>
+            </td>
+            <td v-if="columnVisibility.isVisible('category')">
+              <span v-if="product.category">{{ displayCategoryName(product.category) }}</span>
+              <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('unit')">
               <span v-if="product.unit?.name">{{ product.unit.name }}</span>
@@ -98,7 +113,6 @@
               />
             </td>
             <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(product.created_at) }}</td>
-            <td v-if="columnVisibility.isVisible('updated_at')">{{ formatDateTime(product.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(product)" title="Edit">
                 <Icon name="edit" :size="14" />
@@ -195,6 +209,8 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { fetchProducts, deleteProduct, updateProduct } from '@/features/products/services/productService'
 import { fetchUnits } from '@/features/units/services/unitService'
+import { fetchProductCategories } from '@/features/productCategories/services/productCategoryService'
+import { displayCategoryName } from '@/features/productCategories/constants'
 import { PRODUCT_COLUMNS, PRODUCT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/products/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
@@ -214,13 +230,22 @@ const currentStore = inject('currentStore')
 
 const products = ref([])
 const units = ref([])
+const categories = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
 const unitFilter = ref('')
+const categoryFilter = ref('')
 
 const unitOptions = computed(() =>
   units.value.map(u => ({ value: String(u.id), label: u.name }))
+)
+
+const categoryOptions = computed(() =>
+  categories.value.map(c => ({
+    value: String(c.id),
+    label: `${c.code} — ${displayCategoryName(c)}`,
+  }))
 )
 
 const showForm = ref(false)
@@ -246,10 +271,13 @@ const filteredProducts = computed(() => {
     if (statusFilter.value === 'active'   && !p.is_active) return false
     if (statusFilter.value === 'inactive' &&  p.is_active) return false
     if (unitFilter.value && String(p.unit_id) !== unitFilter.value) return false
+    if (categoryFilter.value && String(p.product_category_id) !== categoryFilter.value) return false
     if (!needle) return true
     return (
+      normalizeText(p.code || '').includes(needle) ||
       normalizeText(p.name).includes(needle) ||
-      normalizeText(p.unit?.name || '').includes(needle)
+      normalizeText(p.unit?.name || '').includes(needle) ||
+      normalizeText(displayCategoryName(p.category || {})).includes(needle)
     )
   })
 })
@@ -257,9 +285,10 @@ const filteredProducts = computed(() => {
 const sort = useSortCriteria()
 const sortedProducts = computed(() =>
   sort.sortItems(filteredProducts.value, (product, key) => {
-    if (key === 'status') return product.is_active ? 1 : 0
-    if (key === 'unit')   return normalizeText(product.unit?.name || '')
-    if (key === 'id')     return Number(product.id) || 0
+    if (key === 'status')   return product.is_active ? 1 : 0
+    if (key === 'unit')     return normalizeText(product.unit?.name || '')
+    if (key === 'category') return normalizeText(displayCategoryName(product.category || {}))
+    if (key === 'id')       return Number(product.id) || 0
     const v = product[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -275,22 +304,25 @@ const {
   resetPage,
 } = useClientPagination(sortedProducts)
 
-watch([searchQuery, statusFilter, unitFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, statusFilter, unitFilter, categoryFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {
     products.value = []
     units.value = []
+    categories.value = []
     return
   }
   loading.value = true
   try {
-    const [productList, unitList] = await Promise.all([
+    const [productList, unitList, categoryList] = await Promise.all([
       fetchProducts({ storeId: currentStore.value.id, includeInactive: true }),
       fetchUnits({ storeId: currentStore.value.id, includeInactive: true }),
+      fetchProductCategories({ storeId: currentStore.value.id, includeInactive: true }),
     ])
     products.value = productList
     units.value = unitList
+    categories.value = categoryList
   } finally {
     loading.value = false
   }
@@ -389,6 +421,7 @@ tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
 
 .id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .empty-val { color: #d1d5db; }
