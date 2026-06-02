@@ -467,6 +467,7 @@ const handleToggle = async () => {
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
+tbody tr.inactive td.actions-col { background: #fafafa; }
 
 .id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }

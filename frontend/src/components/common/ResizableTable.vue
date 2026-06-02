@@ -1,12 +1,12 @@
 <template>
   <div class="table-wrapper" :class="{ resizing: isResizing }">
-    <table :style="{ width: totalWidth + 'px' }">
+    <table :style="{ minWidth: totalWidth + 'px' }">
       <colgroup>
         <col v-for="(w, i) in colWidths" :key="i" :style="{ width: w + 'px' }" />
       </colgroup>
       <thead>
         <tr>
-          <th v-for="(col, i) in columns" :key="col.key" :class="col.headerClass">
+          <th v-for="(col, i) in columns" :key="col.key" :class="[col.headerClass, { 'col-pinned': col.key === 'actions' }]">
             <slot :name="`header-${col.key}`" :col="col">{{ col.label }}</slot>
             <div
               v-if="i < columns.length - 1"
@@ -16,7 +16,7 @@
           </th>
         </tr>
         <tr v-if="hasFilterRow" class="filter-row">
-          <th v-for="col in columns" :key="`filter-${col.key}`">
+          <th v-for="col in columns" :key="`filter-${col.key}`" :class="{ 'col-pinned': col.key === 'actions' }">
             <slot :name="`filter-${col.key}`" :col="col" />
           </th>
         </tr>
@@ -53,7 +53,7 @@ defineExpose({ colWidths, isResizing, startResize })
 .table-wrapper { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow-x: auto; }
 .table-wrapper.resizing { cursor: col-resize; user-select: none; }
 
-table { border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; table-layout: fixed; }
 
 thead { background: #f9fafb; }
 th { position: relative; padding: 11px 16px; text-align: left; font-size: 11.5px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e5e7eb; white-space: nowrap; overflow: hidden; }
@@ -72,4 +72,9 @@ th { position: relative; padding: 11px 16px; text-align: left; font-size: 11.5px
 table :deep(td) { padding: 13px 16px; color: #374151; border-bottom: 1px solid #f3f4f6; vertical-align: middle; overflow: hidden; }
 table :deep(tbody tr:last-child td) { border-bottom: none; }
 table :deep(tbody tr:hover) { background: #fafafa; }
+
+th.col-pinned { position: sticky; right: 0; z-index: 2; background: #f9fafb; border-left: 1px solid #d1d5db; }
+.filter-row th.col-pinned { background: #fff; border-left: 1px solid #d1d5db; }
+table :deep(td.actions-col) { position: sticky; right: 0; z-index: 1; background: #fff; border-left: 1px solid #d1d5db; }
+table :deep(tbody tr:hover td.actions-col) { background: #fafafa; }
 </style>

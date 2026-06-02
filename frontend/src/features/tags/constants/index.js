@@ -7,4 +7,4 @@ export const TAG_COLUMNS = [
   { key: 'actions',     label: '',            sortable: false },
 ]
 
-export const TAG_INITIAL_COL_WIDTHS = [70, 200, 320, 250, 160, 110]
+export const TAG_INITIAL_COL_WIDTHS = [70, 200, 320, 250, 160, 150]

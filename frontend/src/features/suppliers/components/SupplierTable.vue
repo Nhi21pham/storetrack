@@ -50,7 +50,7 @@
         <span v-if="supplier.address" :title="supplier.address" class="truncate">{{ supplier.address }}</span>
         <span v-else class="empty-val">—</span>
       </td>
-      <td>
+      <td class="actions-col">
         <div v-if="rowActionsEnabled && canManageRow(supplier)" class="row-actions">
           <button class="action-btn" @click="$emit('edit', supplier)" title="Edit">
             <Icon name="edit" :size="14" />
@@ -100,6 +100,8 @@ defineEmits([
 .row-check { width: 15px; height: 15px; cursor: pointer; accent-color: #111; }
 tbody tr.row-selected { background: #f0f7ff; }
 tbody tr.row-selected:hover { background: #e6f0fb; }
+tbody tr.row-selected td.actions-col { background: #f0f7ff; }
+tbody tr.row-selected:hover td.actions-col { background: #e6f0fb; }
 
 .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: none; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; }

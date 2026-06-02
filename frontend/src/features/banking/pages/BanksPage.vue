@@ -346,6 +346,7 @@ const handleToggle = async () => {
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
+tbody tr.inactive td.actions-col { background: #fafafa; }
 .short { font-weight: 600; color: #111; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }

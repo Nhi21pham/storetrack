@@ -76,7 +76,6 @@
                   </button>
                 </span>
                 <span v-if="tag.values.length === 0" class="keyonly-hint">Key-only</span>
-                <button v-if="canCreateUpdate" class="add-value-btn" @click="openAddValue(tag)" title="Add value">+ Value</button>
               </div>
             </td>
             <td v-if="columnVisibility.isVisible('description')">
@@ -85,6 +84,9 @@
             </td>
             <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(tag.created_at) }}</td>
             <td class="actions-col">
+              <button v-if="canCreateUpdate" class="action-btn" @click="openAddValue(tag)" title="Add value">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
               <button class="action-btn" @click="openEdit(tag)" title="Edit tag">
                 <Icon name="edit" :size="14" />
               </button>
@@ -353,8 +355,6 @@ const performDeleteValue = async () => {
 .chip-del { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 2px; padding: 0; border: none; border-radius: 50%; background: transparent; color: #9ca3af; cursor: pointer; }
 .chip-del:hover { background: #fef2f2; color: #dc2626; }
 .keyonly-hint { font-size: 12px; color: #9ca3af; font-style: italic; }
-.add-value-btn { font-size: 12px; font-weight: 600; color: #4338ca; background: #eef2ff; border: 1px dashed #c7d2fe; border-radius: 6px; padding: 3px 8px; cursor: pointer; }
-.add-value-btn:hover { background: #e0e7ff; }
 
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .empty-val { color: #d1d5db; }
