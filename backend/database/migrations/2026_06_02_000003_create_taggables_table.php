@@ -17,11 +17,9 @@ return new class extends Migration
             $table->unsignedBigInteger('taggable_id');
             $table->timestamps();
 
-            $table->unsignedBigInteger('tag_value_key')->storedAs('COALESCE(tag_value_id, 0)');
-
             $table->index(['taggable_type', 'taggable_id']);
             $table->unique(
-                ['taggable_type', 'taggable_id', 'tag_id', 'tag_value_key'],
+                ['taggable_type', 'taggable_id', 'tag_id', 'tag_value_id'],
                 'taggables_entity_tag_value_unique'
             );
         });

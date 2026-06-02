@@ -1,0 +1,43 @@
+extend type Mutation {
+    createTag(store_id: ID!, input: CreateTagInput! @spread): Tag!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagResolver@createKey")
+
+    updateTag(id: ID!, input: UpdateTagInput! @spread): Tag!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagResolver@updateKey")
+
+    deleteTag(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagResolver@deleteKey")
+
+    createTagValue(tag_id: ID!, input: CreateTagValueInput! @spread): TagValue!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagValueResolver@create")
+
+    updateTagValue(id: ID!, input: UpdateTagValueInput! @spread): TagValue!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagValueResolver@update")
+
+    deleteTagValue(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagValueResolver@delete")
+}
+
+input CreateTagInput {
+    name: String! @rules(apply: ["required", "string", "min:1", "max:100"])
+    description: String @rules(apply: ["sometimes", "nullable", "string", "max:500"])
+}
+
+input UpdateTagInput {
+    name: String @rules(apply: ["sometimes", "string", "min:1", "max:100"])
+    description: String @rules(apply: ["sometimes", "nullable", "string", "max:500"])
+}
+
+input CreateTagValueInput {
+    value: String! @rules(apply: ["required", "string", "min:1", "max:100"])
+}
+
+input UpdateTagValueInput {
+    value: String @rules(apply: ["sometimes", "string", "min:1", "max:100"])
+}
