@@ -4,6 +4,15 @@ const PRODUCT_FIELDS = `
   id store_id product_category_id unit_id code name is_active created_at updated_at
   unit { id name is_active }
   category { id code name is_active is_system }
+  tags { tag_id tag_name tag_value_id value }
+`
+
+const PRODUCTS_BY_TAG_QUERY = `
+  query ProductsByTag($store_id: ID!, $tag_id: ID!, $tag_value_id: ID, $include_inactive: Boolean) {
+    productsByTag(store_id: $store_id, tag_id: $tag_id, tag_value_id: $tag_value_id, include_inactive: $include_inactive) {
+      id code name is_active
+    }
+  }
 `
 
 const PRODUCTS_QUERY = `
@@ -69,4 +78,14 @@ export const updateProduct = async ({ id, input }) => {
 
 export const deleteProduct = async ({ id }) => {
   await graphql(DELETE_PRODUCT_MUTATION, { id })
+}
+
+export const fetchProductsByTag = async ({ storeId, tagId, tagValueId = null, includeInactive = true }) => {
+  const data = await graphql(PRODUCTS_BY_TAG_QUERY, {
+    store_id: storeId,
+    tag_id: tagId,
+    tag_value_id: tagValueId,
+    include_inactive: includeInactive,
+  })
+  return data.productsByTag
 }

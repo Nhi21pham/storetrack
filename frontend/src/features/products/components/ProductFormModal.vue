@@ -92,6 +92,11 @@
           <span v-if="errors.unit_id" class="error-text">{{ errors.unit_id }}</span>
         </div>
 
+        <div class="form-group">
+          <label>Tags</label>
+          <TagPicker v-model="form.tags" :store-id="storeId" />
+        </div>
+
         <div v-if="isEdit" class="form-group toggle-group">
           <div class="toggle-row">
             <ToggleSwitch v-model="form.is_active" />
@@ -147,6 +152,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import AddItemButton from '@/components/common/AddItemButton.vue'
+import TagPicker from '@/features/tags/components/TagPicker.vue'
 import SuggestionList from '@/features/products/components/ProductSuggestionList.vue'
 import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
 import ProductCategoryFormModal from '@/features/productCategories/components/ProductCategoryFormModal.vue'
@@ -178,7 +184,18 @@ const initialForm = () => ({
   product_category_id: props.product?.product_category_id ? String(props.product.product_category_id) : '',
   code_display: props.product?.code || '',
   is_active: props.product?.is_active ?? true,
+  tags: (props.product?.tags || []).map(t => ({
+    tag_id: String(t.tag_id),
+    tag_value_id: t.tag_value_id != null ? String(t.tag_value_id) : null,
+    tag_name: t.tag_name || '',
+    value: t.value || '',
+  })),
 })
+
+const tagsInput = () => form.value.tags.map(t => ({
+  tag_id: t.tag_id,
+  tag_value_id: t.tag_value_id,
+}))
 
 const form = ref(initialForm())
 const originalForm = ref(JSON.stringify(initialForm()))
@@ -346,6 +363,7 @@ const handleSubmit = async () => {
         name: form.value.name,
         unit_id: form.value.unit_id,
         is_active: form.value.is_active,
+        tags: tagsInput(),
       }
       const result = await updateProduct({ id: props.product.id, input })
       emit('saved', result)
@@ -354,6 +372,7 @@ const handleSubmit = async () => {
         name: form.value.name,
         unit_id: form.value.unit_id,
         product_category_id: form.value.product_category_id,
+        tags: tagsInput(),
       }
       const result = await createProduct({ storeId: props.storeId, input })
       emit('saved', result)

@@ -75,6 +75,16 @@
               @update:modelValue="unitFilter = $event"
             />
           </template>
+          <template #filter-tags>
+            <SearchableSelect
+              :modelValue="tagFilter"
+              :options="tagOptions"
+              all-label="(All tags)"
+              search-placeholder="Filter tag..."
+              teleport
+              @update:modelValue="tagFilter = $event"
+            />
+          </template>
           <template #filter-status>
             <SearchableSelect
               :modelValue="statusFilter"
@@ -103,6 +113,12 @@
             </td>
             <td v-if="columnVisibility.isVisible('unit')">
               <span v-if="product.unit?.name">{{ product.unit.name }}</span>
+              <span v-else class="empty-val">—</span>
+            </td>
+            <td v-if="columnVisibility.isVisible('tags')">
+              <div v-if="product.tags && product.tags.length" class="tags-cell">
+                <TagChip v-for="(t, i) in product.tags" :key="i" :tag-name="t.tag_name" :value="t.value" />
+              </div>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('status')">
@@ -202,12 +218,14 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import TagChip from '@/components/common/TagChip.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { fetchProducts, deleteProduct, updateProduct } from '@/features/products/services/productService'
+import { fetchTags } from '@/features/tags/services/tagService'
 import { fetchUnits } from '@/features/units/services/unitService'
 import { fetchProductCategories } from '@/features/productCategories/services/productCategoryService'
 import { displayCategoryName } from '@/features/productCategories/constants'
@@ -231,11 +249,13 @@ const currentStore = inject('currentStore')
 const products = ref([])
 const units = ref([])
 const categories = ref([])
+const tags = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
 const unitFilter = ref('')
 const categoryFilter = ref('')
+const tagFilter = ref('')
 
 const unitOptions = computed(() =>
   units.value.map(u => ({ value: String(u.id), label: u.name }))
@@ -247,6 +267,17 @@ const categoryOptions = computed(() =>
     label: `${c.code} — ${displayCategoryName(c)}`,
   }))
 )
+
+const tagOptions = computed(() => {
+  const opts = []
+  for (const t of tags.value) {
+    opts.push({ value: `tag:${t.id}`, label: `${t.name} (any)` })
+    for (const v of (t.values || [])) {
+      opts.push({ value: `val:${v.id}`, label: `${t.name}: ${v.value}` })
+    }
+  }
+  return opts
+})
 
 const showForm = ref(false)
 const editingProduct = ref(null)
@@ -265,6 +296,15 @@ const canDelete = computed(() => {
   return role === 'owner' || role === 'accountant'
 })
 
+const matchesTagFilter = (product) => {
+  if (!tagFilter.value) return true
+  const [kind, id] = tagFilter.value.split(':')
+  const productTags = product.tags || []
+  if (kind === 'tag') return productTags.some(t => String(t.tag_id) === id)
+  if (kind === 'val') return productTags.some(t => String(t.tag_value_id) === id)
+  return true
+}
+
 const filteredProducts = computed(() => {
   const needle = normalizeText(searchQuery.value)
   return products.value.filter(p => {
@@ -272,12 +312,17 @@ const filteredProducts = computed(() => {
     if (statusFilter.value === 'inactive' &&  p.is_active) return false
     if (unitFilter.value && String(p.unit_id) !== unitFilter.value) return false
     if (categoryFilter.value && String(p.product_category_id) !== categoryFilter.value) return false
+    if (!matchesTagFilter(p)) return false
     if (!needle) return true
     return (
       normalizeText(p.code || '').includes(needle) ||
       normalizeText(p.name).includes(needle) ||
       normalizeText(p.unit?.name || '').includes(needle) ||
-      normalizeText(displayCategoryName(p.category || {})).includes(needle)
+      normalizeText(displayCategoryName(p.category || {})).includes(needle) ||
+      (p.tags || []).some(t =>
+        normalizeText(t.tag_name || '').includes(needle) ||
+        normalizeText(t.value || '').includes(needle)
+      )
     )
   })
 })
@@ -304,25 +349,28 @@ const {
   resetPage,
 } = useClientPagination(sortedProducts)
 
-watch([searchQuery, statusFilter, unitFilter, categoryFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, statusFilter, unitFilter, categoryFilter, tagFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {
     products.value = []
     units.value = []
     categories.value = []
+    tags.value = []
     return
   }
   loading.value = true
   try {
-    const [productList, unitList, categoryList] = await Promise.all([
+    const [productList, unitList, categoryList, tagList] = await Promise.all([
       fetchProducts({ storeId: currentStore.value.id, includeInactive: true }),
       fetchUnits({ storeId: currentStore.value.id, includeInactive: true }),
       fetchProductCategories({ storeId: currentStore.value.id, includeInactive: true }),
+      fetchTags({ storeId: currentStore.value.id }),
     ])
     products.value = productList
     units.value = unitList
     categories.value = categoryList
+    tags.value = tagList
   } finally {
     loading.value = false
   }
@@ -422,6 +470,7 @@ tbody tr.inactive td { color: #6b7280; }
 
 .id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }
+.tags-cell { display: flex; flex-wrap: wrap; gap: 4px; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .empty-val { color: #d1d5db; }
