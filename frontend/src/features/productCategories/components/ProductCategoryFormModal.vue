@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Unit' : 'New Unit' }}</h2>
+        <h2>{{ isEdit ? 'Edit Category' : 'New Category' }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -11,12 +11,28 @@
       </div>
 
       <div class="modal-body">
+        <div class="form-group">
+          <label>Code <span class="required">*</span></label>
+          <input
+            v-model="form.code"
+            type="text"
+            placeholder="e.g. SV"
+            maxlength="10"
+            :disabled="isEdit"
+            :class="{ error: errors.code }"
+            @input="form.code = form.code.toUpperCase()"
+          />
+          <span v-if="errors.code" class="error-text">{{ errors.code }}</span>
+          <p v-else class="hint">2-10 uppercase letters. Used as the prefix for product codes (e.g. SV000001). Cannot be changed once created.</p>
+        </div>
+
         <div class="form-group" :class="{ 'has-suggestions': showSuggestions }">
-          <label>Unit Name <span class="required">*</span></label>
+          <label>Name <span class="required">*</span></label>
           <input
             v-model="form.name"
             type="text"
-            placeholder="e.g. Cái, Chiếc, Hộp..."
+            placeholder="e.g. Dịch vụ"
+            maxlength="100"
             :class="{ error: errors.name }"
             @focus="active = true"
             @blur="onBlurField"
@@ -29,12 +45,24 @@
           />
         </div>
 
+        <div class="form-group">
+          <label>Description</label>
+          <textarea
+            v-model="form.description"
+            rows="3"
+            maxlength="500"
+            placeholder="Optional"
+            :class="{ error: errors.description }"
+          />
+          <span v-if="errors.description" class="error-text">{{ errors.description }}</span>
+        </div>
+
         <div v-if="isEdit" class="form-group toggle-group">
           <div class="toggle-row">
             <ToggleSwitch v-model="form.is_active" />
             <span class="toggle-text">Active</span>
           </div>
-          <p class="hint">Inactive units won't appear in the unit picker on new products.</p>
+          <p class="hint">Inactive categories won't appear in the category picker on new products.</p>
         </div>
 
         <div v-if="apiError" class="api-error">{{ apiError }}</div>
@@ -44,7 +72,7 @@
         <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Unit' }}
+          {{ isEdit ? 'Save Changes' : 'Create Category' }}
         </button>
       </div>
     </div>
@@ -65,27 +93,33 @@
 import { ref, computed, watch } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
-import SuggestionList from '@/features/units/components/UnitSuggestionList.vue'
-import { createUnit, updateUnit, searchUnits } from '@/features/units/services/unitService'
+import SuggestionList from '@/features/productCategories/components/ProductCategorySuggestionList.vue'
+import {
+  createProductCategory,
+  updateProductCategory,
+  searchProductCategories,
+} from '@/features/productCategories/services/productCategoryService'
 import { normalizeText } from '@/utils/textNormalizer'
 
 const props = defineProps({
-  unit: { type: Object, default: null },
-  storeId: { type: [String, Number], default: null },
+  category: { type: Object, default: null },
+  storeId:  { type: [String, Number], default: null },
 })
 
 const emit = defineEmits(['close', 'saved', 'pick-existing'])
 
-const isEdit = computed(() => !!props.unit)
+const isEdit = computed(() => !!props.category)
 const loading = ref(false)
 const apiError = ref('')
 const showUnsavedWarning = ref(false)
 
-const errors = ref({ name: '' })
+const errors = ref({ code: '', name: '', description: '' })
 
 const initialForm = () => ({
-  name: props.unit?.name || '',
-  is_active: props.unit?.is_active ?? true,
+  code:        props.category?.code || '',
+  name:        props.category?.name || '',
+  description: props.category?.description || '',
+  is_active:   props.category?.is_active ?? true,
 })
 
 const form = ref(initialForm())
@@ -105,8 +139,8 @@ const runSearch = async (value) => {
     return
   }
   try {
-    const results = await searchUnits({ storeId: props.storeId, q, includeInactive: true, limit: 8 })
-    const currentId = props.unit?.id ? String(props.unit.id) : null
+    const results = await searchProductCategories({ storeId: props.storeId, q, includeInactive: true, limit: 8 })
+    const currentId = props.category?.id ? String(props.category.id) : null
     suggestions.value = (results || []).filter(r => String(r.id) !== currentId)
   } catch (e) {
     suggestions.value = []
@@ -125,10 +159,10 @@ watch(
   }
 )
 
-watch(() => props.unit, () => {
+watch(() => props.category, () => {
   form.value = initialForm()
   originalForm.value = JSON.stringify(initialForm())
-  errors.value = { name: '' }
+  errors.value = { code: '', name: '', description: '' }
   apiError.value = ''
   suggestions.value = []
 })
@@ -140,22 +174,33 @@ const onBlurField = () => {
   }, 150)
 }
 
-const onPickSuggestion = (unit) => {
+const onPickSuggestion = (category) => {
   suggestions.value = []
-  emit('pick-existing', unit)
+  emit('pick-existing', category)
 }
 
 const validateForm = () => {
-  errors.value = { name: '' }
+  errors.value = { code: '', name: '', description: '' }
+  const code = form.value.code.trim()
   const name = form.value.name.trim()
-  if (!name) errors.value.name = 'Unit name is required.'
-  else if (name.length > 50) errors.value.name = 'Unit name must be at most 50 characters.'
+
+  if (!isEdit.value) {
+    if (!code) errors.value.code = 'Code is required.'
+    else if (!/^[A-Z]{2,10}$/.test(code)) errors.value.code = 'Code must be 2-10 uppercase letters (A-Z).'
+  }
+
+  if (!name) errors.value.name = 'Name is required.'
+  else if (name.length > 100) errors.value.name = 'Name must be at most 100 characters.'
+
+  if ((form.value.description || '').length > 500) {
+    errors.value.description = 'Description must be at most 500 characters.'
+  }
 
   if (!isEdit.value) {
     const norm = normalizeText(name)
-    const dup = suggestions.value.find(s => normalizeText(s.name) === norm)
+    const dup = suggestions.value.find(s => normalizeText(s.name) === norm || s.code === code)
     if (dup) {
-      apiError.value = `A unit with this name already exists: ${dup.name}. Open it from the suggestion list above to edit.`
+      apiError.value = `A category with this ${dup.code === code ? 'code' : 'name'} already exists: ${dup.code} - ${dup.name}. Open it from the suggestion list above to edit.`
       return false
     }
   }
@@ -171,14 +216,19 @@ const handleSubmit = async () => {
   try {
     if (isEdit.value) {
       const input = {
-        name: form.value.name,
-        is_active: form.value.is_active,
+        name:        form.value.name,
+        description: form.value.description || null,
+        is_active:   form.value.is_active,
       }
-      const result = await updateUnit({ id: props.unit.id, input })
+      const result = await updateProductCategory({ id: props.category.id, input })
       emit('saved', result)
     } else {
-      const input = { name: form.value.name }
-      const result = await createUnit({ storeId: props.storeId, input })
+      const input = {
+        code:        form.value.code,
+        name:        form.value.name,
+        description: form.value.description || null,
+      }
+      const result = await createProductCategory({ storeId: props.storeId, input })
       emit('saved', result)
     }
   } catch (err) {
@@ -201,7 +251,7 @@ const handleClose = () => {
 
 <style scoped>
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 480px; box-shadow: 0 24px 80px rgba(0,0,0,0.15); overflow: visible; }
+.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 520px; box-shadow: 0 24px 80px rgba(0,0,0,0.15); overflow: visible; }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
 .modal-header h2 { font-size: 18px; font-weight: 700; color: #111; }
@@ -214,16 +264,17 @@ const handleClose = () => {
 .form-group label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 6px; }
 .required { color: #dc2626; }
 
-.form-group input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
-.form-group input[type="text"]:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
-.form-group input[type="text"].error { border-color: #dc2626; }
+.form-group input[type="text"], .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; font-family: inherit; resize: vertical; }
+.form-group input[type="text"]:focus, .form-group textarea:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
+.form-group input[type="text"].error, .form-group textarea.error { border-color: #dc2626; }
+.form-group input[type="text"]:disabled { background: #f9fafb; color: #6b7280; cursor: not-allowed; }
 
 .error-text { display: block; font-size: 12px; color: #dc2626; margin-top: 4px; }
 
 .toggle-group { display: flex; flex-direction: column; gap: 6px; }
 .toggle-row { display: flex; align-items: center; gap: 10px; }
 .toggle-text { font-size: 14px; font-weight: 500; color: #111; }
-.hint { margin: 0; font-size: 12px; color: #6b7280; }
+.hint { margin: 4px 0 0; font-size: 12px; color: #6b7280; }
 
 .api-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 4px; }
 

@@ -1,12 +1,12 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Units" subtitle="Manage the master list of measurement units used on products.">
+    <PageHeader title="Product Categories" subtitle="Group products and services. System categories cannot be edited or deleted.">
       <template v-if="currentBusiness && currentStore" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Unit
+          New Category
         </button>
       </template>
     </PageHeader>
@@ -14,18 +14,18 @@
     <EmptyState
       v-if="!currentBusiness"
       title="No business found"
-      description="You need to create or select a business before managing units."
+      description="You need to create or select a business before managing categories."
     />
 
     <EmptyState
       v-else-if="!currentStore"
       title="No store selected"
-      description="Select a store to manage units."
+      description="Select a store to manage categories."
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <SearchBar v-model="searchQuery" placeholder="Search by code or name..." />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -34,12 +34,12 @@
         />
       </div>
 
-      <LoadingState v-if="loading">Loading units...</LoadingState>
+      <LoadingState v-if="loading">Loading categories...</LoadingState>
 
       <EmptyState
-        v-else-if="units.length === 0"
-        title="No units yet"
-        description="Add your first unit to get started."
+        v-else-if="categories.length === 0"
+        title="No categories yet"
+        description="Add your first category to get started."
       />
 
       <div v-else class="table-wrap">
@@ -66,32 +66,41 @@
             />
           </template>
 
-          <tr v-if="filteredUnits.length === 0" class="empty-tr">
+          <tr v-if="filteredCategories.length === 0">
             <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
-              No units match the current filters.
+              No categories match the current filters.
             </td>
           </tr>
-          <tr v-for="unit in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
-            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ unit.id }}</td>
+          <tr v-for="category in paginatedCategories" :key="category.id" :class="{ inactive: !category.is_active, system: category.is_system }">
+            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ category.id }}</td>
+            <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ category.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" @click="detailUnit = unit">{{ unit.name }}</button>
+              <button class="name-link" @click="detailCategory = category">{{ displayCategoryName(category) }}</button>
+              <span v-if="category.is_system" class="system-badge">System</span>
+            </td>
+            <td v-if="columnVisibility.isVisible('description')">
+              <span v-if="category.description" class="truncate" :title="category.description">{{ category.description }}</span>
+              <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('status')">
               <ToggleSwitch
-                :model-value="unit.is_active"
-                :title="unit.is_active ? 'Click to deactivate' : 'Click to activate'"
-                @change="onToggleActive(unit)"
+                :model-value="category.is_active"
+                :disabled="category.is_system"
+                :title="category.is_system ? 'System categories are always active' : (category.is_active ? 'Click to deactivate' : 'Click to activate')"
+                @change="onToggleActive(category)"
               />
             </td>
-            <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(unit.created_at) }}</td>
-            <td v-if="columnVisibility.isVisible('updated_at')">{{ formatDateTime(unit.updated_at) }}</td>
+            <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(category.created_at) }}</td>
             <td class="actions-col">
-              <button class="action-btn" @click="openEdit(unit)" title="Edit">
-                <Icon name="edit" :size="14" />
-              </button>
-              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(unit)" title="Delete">
-                <Icon name="delete" :size="14" />
-              </button>
+              <template v-if="!category.is_system">
+                <button class="action-btn" @click="openEdit(category)" title="Edit">
+                  <Icon name="edit" :size="14" />
+                </button>
+                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(category)" title="Delete">
+                  <Icon name="delete" :size="14" />
+                </button>
+              </template>
+              <span v-else class="locked-label" title="System categories cannot be edited or deleted">Locked</span>
             </td>
           </tr>
         </ResizableTable>
@@ -107,27 +116,27 @@
       </div>
     </template>
 
-    <UnitFormModal
+    <ProductCategoryFormModal
       v-if="showForm"
-      :unit="editingUnit"
+      :category="editingCategory"
       :store-id="currentStore?.id"
       @close="closeForm"
       @saved="onSaved"
       @pick-existing="onPickExisting"
     />
 
-    <UnitDetailModal
-      v-if="detailUnit"
-      :unit="detailUnit"
+    <ProductCategoryDetailModal
+      v-if="detailCategory"
+      :category="detailCategory"
       :can-edit="true"
-      @close="detailUnit = null"
+      @close="detailCategory = null"
       @edit="onDetailEdit"
     />
 
     <ConfirmDialog
       v-if="deleteTarget"
-      :title="`Delete ${deleteTarget.name}?`"
-      message="This will permanently remove the unit from the master list."
+      :title="`Delete ${deleteTarget.code} - ${displayCategoryName(deleteTarget)}?`"
+      message="This will permanently remove the category."
       confirm-text="Delete"
       cancel-text="Cancel"
       @confirm="performDelete"
@@ -136,8 +145,8 @@
 
     <ConfirmDialog
       v-if="deactivateTarget"
-      :title="`Unit is in use`"
-      :message="`${deactivateTarget.name} is referenced by existing products and cannot be deleted. Deactivate it instead? Inactive units stay linked to existing products but won't appear in new-product pickers.`"
+      :title="`Category is in use`"
+      :message="`${deactivateTarget.code} - ${displayCategoryName(deactivateTarget)} is referenced by existing products and cannot be deleted. Deactivate it instead?`"
       confirm-text="Deactivate"
       cancel-text="Cancel"
       @confirm="performDeactivate"
@@ -145,16 +154,16 @@
     />
 
     <ConfirmDialog
-      v-if="togglingUnit"
-      :title="togglingUnit.is_active ? 'Deactivate Unit' : 'Reactivate Unit'"
-      :message="togglingUnit.is_active
-        ? `Are you sure you want to deactivate '${togglingUnit.name}'? Existing products will stay linked, but this unit won't appear in new-product pickers.`
-        : `Are you sure you want to reactivate '${togglingUnit.name}'?`"
-      :confirm-text="togglingUnit.is_active ? 'Yes, deactivate' : 'Yes, reactivate'"
+      v-if="togglingCategory"
+      :title="togglingCategory.is_active ? 'Deactivate Category' : 'Reactivate Category'"
+      :message="togglingCategory.is_active
+        ? `Are you sure you want to deactivate '${displayCategoryName(togglingCategory)}'? Existing products keep their category, but it won't appear in the picker for new products.`
+        : `Are you sure you want to reactivate '${displayCategoryName(togglingCategory)}'?`"
+      :confirm-text="togglingCategory.is_active ? 'Yes, deactivate' : 'Yes, reactivate'"
       cancel-text="Cancel"
-      :type="togglingUnit.is_active ? 'warning' : 'success'"
+      :type="togglingCategory.is_active ? 'warning' : 'success'"
       @confirm="handleToggle"
-      @cancel="togglingUnit = null"
+      @cancel="togglingCategory = null"
     />
   </PageContainer>
 </template>
@@ -174,44 +183,54 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
-import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
-import UnitDetailModal from '@/features/units/components/UnitDetailModal.vue'
+import ProductCategoryFormModal from '@/features/productCategories/components/ProductCategoryFormModal.vue'
+import ProductCategoryDetailModal from '@/features/productCategories/components/ProductCategoryDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
-import { fetchUnits, deleteUnit, updateUnit } from '@/features/units/services/unitService'
-import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'
+import {
+  fetchProductCategories,
+  deleteProductCategory,
+  updateProductCategory,
+} from '@/features/productCategories/services/productCategoryService'
+import {
+  PRODUCT_CATEGORY_COLUMNS,
+  PRODUCT_CATEGORY_INITIAL_COL_WIDTHS,
+  STATUS_OPTIONS,
+  displayCategoryName,
+} from '@/features/productCategories/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
 
 const columnVisibility = useColumnVisibility({
-  storageKey: 'units',
-  columns: UNIT_COLUMNS,
+  storageKey: 'product_categories',
+  columns: PRODUCT_CATEGORY_COLUMNS,
   lockedKeys: ['actions'],
 })
 
-const visibleWidths = computed(() => columnVisibility.filterWidths(UNIT_INITIAL_COL_WIDTHS))
+const visibleWidths = computed(() => columnVisibility.filterWidths(PRODUCT_CATEGORY_INITIAL_COL_WIDTHS))
 const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
 
-const units = ref([])
+const categories = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
 
 const showForm = ref(false)
-const editingUnit = ref(null)
-const detailUnit = ref(null)
+const editingCategory = ref(null)
+const detailCategory = ref(null)
 const deleteTarget = ref(null)
 const deactivateTarget = ref(null)
-const togglingUnit = ref(null)
+const togglingCategory = ref(null)
 
-const onDetailEdit = (unit) => {
-  detailUnit.value = null
-  openEdit(unit)
+const onDetailEdit = (category) => {
+  detailCategory.value = null
+  if (category.is_system) return
+  openEdit(category)
 }
 
 const canDelete = computed(() => {
@@ -219,22 +238,27 @@ const canDelete = computed(() => {
   return role === 'owner' || role === 'accountant'
 })
 
-const filteredUnits = computed(() => {
+const filteredCategories = computed(() => {
   const needle = normalizeText(searchQuery.value)
-  return units.value.filter(u => {
-    if (statusFilter.value === 'active'   && !u.is_active) return false
-    if (statusFilter.value === 'inactive' &&  u.is_active) return false
+  return categories.value.filter(c => {
+    if (statusFilter.value === 'active'   && !c.is_active) return false
+    if (statusFilter.value === 'inactive' &&  c.is_active) return false
     if (!needle) return true
-    return normalizeText(u.name).includes(needle)
+    return (
+      normalizeText(displayCategoryName(c)).includes(needle) ||
+      normalizeText(c.code).includes(needle) ||
+      normalizeText(c.description || '').includes(needle)
+    )
   })
 })
 
 const sort = useSortCriteria()
-const sortedUnits = computed(() =>
-  sort.sortItems(filteredUnits.value, (unit, key) => {
-    if (key === 'status') return unit.is_active ? 1 : 0
-    if (key === 'id')     return Number(unit.id) || 0
-    const v = unit[key]
+const sortedCategories = computed(() =>
+  sort.sortItems(filteredCategories.value, (category, key) => {
+    if (key === 'status') return category.is_active ? 1 : 0
+    if (key === 'id')     return Number(category.id) || 0
+    if (key === 'name')   return normalizeText(displayCategoryName(category))
+    const v = category[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
 )
@@ -244,21 +268,21 @@ const {
   perPage,
   total,
   totalPages,
-  paginated: paginatedUnits,
+  paginated: paginatedCategories,
   setPerPage,
   resetPage,
-} = useClientPagination(sortedUnits)
+} = useClientPagination(sortedCategories)
 
 watch([searchQuery, statusFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {
-    units.value = []
+    categories.value = []
     return
   }
   loading.value = true
   try {
-    units.value = await fetchUnits({ storeId: currentStore.value.id, includeInactive: true })
+    categories.value = await fetchProductCategories({ storeId: currentStore.value.id, includeInactive: true })
   } finally {
     loading.value = false
   }
@@ -269,18 +293,19 @@ onMounted(load)
 watch(() => currentStore?.value?.id, load)
 
 const openCreate = () => {
-  editingUnit.value = null
+  editingCategory.value = null
   showForm.value = true
 }
 
-const openEdit = (unit) => {
-  editingUnit.value = unit
+const openEdit = (category) => {
+  if (category.is_system) return
+  editingCategory.value = category
   showForm.value = true
 }
 
 const closeForm = () => {
   showForm.value = false
-  editingUnit.value = null
+  editingCategory.value = null
 }
 
 const onSaved = async () => {
@@ -288,24 +313,25 @@ const onSaved = async () => {
   await load()
 }
 
-const onPickExisting = (unit) => {
-  editingUnit.value = unit
+const onPickExisting = (category) => {
+  editingCategory.value = category
   showForm.value = true
 }
 
-const confirmDelete = (unit) => {
-  deleteTarget.value = unit
+const confirmDelete = (category) => {
+  if (category.is_system) return
+  deleteTarget.value = category
 }
 
 const performDelete = async () => {
-  const unit = deleteTarget.value
+  const category = deleteTarget.value
   deleteTarget.value = null
   try {
-    await deleteUnit({ id: unit.id })
+    await deleteProductCategory({ id: category.id })
     await load()
   } catch (err) {
-    if (err.code === ErrorCode.UNIT_IN_USE) {
-      deactivateTarget.value = unit
+    if (err.code === ErrorCode.PRODUCT_CATEGORY_IN_USE) {
+      deactivateTarget.value = category
     } else {
       alert(err.message)
     }
@@ -313,31 +339,32 @@ const performDelete = async () => {
 }
 
 const performDeactivate = async () => {
-  const unit = deactivateTarget.value
+  const category = deactivateTarget.value
   deactivateTarget.value = null
   try {
-    await updateUnit({ id: unit.id, input: { is_active: false } })
+    await updateProductCategory({ id: category.id, input: { is_active: false } })
     await load()
   } catch (err) {
     alert(err.message)
   }
 }
 
-const onToggleActive = (unit) => {
-  togglingUnit.value = unit
+const onToggleActive = (category) => {
+  if (category.is_system) return
+  togglingCategory.value = category
 }
 
 const handleToggle = async () => {
-  const unit = togglingUnit.value
-  togglingUnit.value = null
-  if (!unit) return
-  const nextValue = !unit.is_active
-  const previous = unit.is_active
-  unit.is_active = nextValue
+  const category = togglingCategory.value
+  togglingCategory.value = null
+  if (!category) return
+  const nextValue = !category.is_active
+  const previous = category.is_active
+  category.is_active = nextValue
   try {
-    await updateUnit({ id: unit.id, input: { is_active: nextValue } })
+    await updateProductCategory({ id: category.id, input: { is_active: nextValue } })
   } catch (err) {
-    unit.is_active = previous
+    category.is_active = previous
     alert(err.message)
   }
 }
@@ -355,13 +382,19 @@ const handleToggle = async () => {
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
+tbody tr.system td { background: #fdf4ff; }
 
 .id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
+.system-badge { display: inline-block; margin-left: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 4px; background: #fae8ff; color: #a21caf; font-weight: 600; }
+.truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty-val { color: #d1d5db; }
 
 .actions-col { text-align: right; white-space: nowrap; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: none; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; margin-left: 4px; }
 .action-btn:hover { background: #f3f4f6; color: #111; border-color: #d1d5db; }
 .action-btn.danger:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.locked-label { display: inline-block; padding-right: 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; font-weight: 600; }
 </style>

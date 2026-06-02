@@ -1,0 +1,12 @@
+type ProductCategory {
+    id: ID!
+    store_id: ID!
+    code: String!
+    name: String!
+    description: String
+    is_active: Boolean!
+    is_system: Boolean!
+    last_sequence: Int!
+    created_at: DateTime!
+    updated_at: DateTime!
+}

@@ -1,0 +1,13 @@
+extend type Query {
+    products(store_id: ID!, include_inactive: Boolean): [Product!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\ProductResolver@all")
+
+    product(id: ID!): Product
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\ProductResolver@findById")
+
+    searchProducts(store_id: ID!, q: String!, include_inactive: Boolean, limit: Int): [Product!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\ProductResolver@search")
+}

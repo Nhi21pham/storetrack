@@ -1,0 +1,25 @@
+extend type Mutation {
+    createProductCategory(store_id: ID!, input: CreateProductCategoryInput! @spread): ProductCategory!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\ProductCategoryResolver@create")
+
+    updateProductCategory(id: ID!, input: UpdateProductCategoryInput! @spread): ProductCategory!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\ProductCategoryResolver@update")
+
+    deleteProductCategory(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\ProductCategoryResolver@delete")
+}
+
+input CreateProductCategoryInput {
+    code: String! @rules(apply: ["required", "string", "min:2", "max:10", "regex:/^[A-Za-z]+$/"])
+    name: String! @rules(apply: ["required", "string", "min:1", "max:100"])
+    description: String @rules(apply: ["sometimes", "nullable", "string", "max:500"])
+}
+
+input UpdateProductCategoryInput {
+    name: String @rules(apply: ["sometimes", "string", "min:1", "max:100"])
+    description: String @rules(apply: ["sometimes", "nullable", "string", "max:500"])
+    is_active: Boolean @rules(apply: ["sometimes", "boolean"])
+}

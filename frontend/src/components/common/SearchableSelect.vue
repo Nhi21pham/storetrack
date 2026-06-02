@@ -8,7 +8,14 @@
         <polyline points="6 9 12 15 18 9"/>
       </svg>
     </button>
-    <div v-if="open" class="ss-panel" :class="{ 'ss-panel--up': flipUp }" ref="panelEl">
+    <Teleport to="body" :disabled="!teleport">
+    <div
+      v-if="open"
+      class="ss-panel"
+      :class="{ 'ss-panel--up': flipUp, 'ss-panel--floating': teleport }"
+      :style="teleport ? floatingStyle : null"
+      ref="panelEl"
+    >
       <div class="ss-search">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -43,6 +50,7 @@
         <li v-if="filteredOptions.length === 0" class="ss-empty">No matches</li>
       </ul>
     </div>
+    </Teleport>
   </div>
 </template>
 
@@ -57,6 +65,7 @@ const props = defineProps({
   allowAll: { type: Boolean, default: true },
   allLabel: { type: String, default: 'All' },
   size: { type: String, default: 'default' },
+  teleport: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -67,6 +76,7 @@ const searchEl = ref(null)
 const open     = ref(false)
 const search   = ref('')
 const flipUp   = ref(false)
+const floatingStyle = ref(null)
 
 const selectedLabel = computed(() => {
   if (props.modelValue === '' || props.modelValue == null) {
@@ -94,6 +104,25 @@ const updateFlip = () => {
   const spaceBelow = window.innerHeight - rect.bottom
   const spaceAbove = rect.top
   flipUp.value = spaceBelow < PANEL_ESTIMATED_HEIGHT && spaceAbove > spaceBelow
+
+  if (props.teleport) {
+    const minWidth = Math.max(rect.width, 180)
+    if (flipUp.value) {
+      floatingStyle.value = {
+        position: 'fixed',
+        left:     `${rect.left}px`,
+        bottom:   `${window.innerHeight - rect.top + 4}px`,
+        minWidth: `${minWidth}px`,
+      }
+    } else {
+      floatingStyle.value = {
+        position: 'fixed',
+        left:     `${rect.left}px`,
+        top:      `${rect.bottom + 4}px`,
+        minWidth: `${minWidth}px`,
+      }
+    }
+  }
 }
 
 const toggleOpen = () => {
@@ -122,7 +151,9 @@ const select = (value) => {
 
 const onDocumentClick = (e) => {
   if (!rootEl.value) return
-  if (!rootEl.value.contains(e.target)) close()
+  if (rootEl.value.contains(e.target)) return
+  if (panelEl.value && panelEl.value.contains(e.target)) return
+  close()
 }
 
 onMounted(() => document.addEventListener('mousedown', onDocumentClick))
@@ -169,6 +200,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
   top: auto;
   bottom: calc(100% + 4px);
 }
+.ss-panel--floating { z-index: 2000; }
 
 .ss-search {
   display: flex; align-items: center; gap: 8px;

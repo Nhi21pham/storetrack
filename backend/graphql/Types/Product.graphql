@@ -1,0 +1,13 @@
+type Product {
+    id: ID!
+    store_id: ID!
+    product_category_id: ID!
+    unit_id: ID!
+    code: String!
+    name: String!
+    is_active: Boolean!
+    created_at: DateTime!
+    updated_at: DateTime!
+    unit: Unit @belongsTo
+    category: ProductCategory @belongsTo
+}

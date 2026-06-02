@@ -36,6 +36,12 @@ enum RoleEnum: string
                 PermissionEnum::CREATE_UNIT,
                 PermissionEnum::UPDATE_UNIT,
                 PermissionEnum::DELETE_UNIT,
+                PermissionEnum::CREATE_PRODUCT,
+                PermissionEnum::UPDATE_PRODUCT,
+                PermissionEnum::DELETE_PRODUCT,
+                PermissionEnum::CREATE_PRODUCT_CATEGORY,
+                PermissionEnum::UPDATE_PRODUCT_CATEGORY,
+                PermissionEnum::DELETE_PRODUCT_CATEGORY,
             ],
             self::ACCOUNTANT => [
                 PermissionEnum::UPDATE_STORE,
@@ -57,6 +63,12 @@ enum RoleEnum: string
                 PermissionEnum::CREATE_UNIT,
                 PermissionEnum::UPDATE_UNIT,
                 PermissionEnum::DELETE_UNIT,
+                PermissionEnum::CREATE_PRODUCT,
+                PermissionEnum::UPDATE_PRODUCT,
+                PermissionEnum::DELETE_PRODUCT,
+                PermissionEnum::CREATE_PRODUCT_CATEGORY,
+                PermissionEnum::UPDATE_PRODUCT_CATEGORY,
+                PermissionEnum::DELETE_PRODUCT_CATEGORY,
             ],
             self::STAFF => [
                 PermissionEnum::CREATE_SUPPLIER,
@@ -71,6 +83,10 @@ enum RoleEnum: string
                 PermissionEnum::UPDATE_BANK_ACCOUNT,
                 PermissionEnum::CREATE_UNIT,
                 PermissionEnum::UPDATE_UNIT,
+                PermissionEnum::CREATE_PRODUCT,
+                PermissionEnum::UPDATE_PRODUCT,
+                PermissionEnum::CREATE_PRODUCT_CATEGORY,
+                PermissionEnum::UPDATE_PRODUCT_CATEGORY,
             ],
         };
     }

@@ -15,6 +15,11 @@
             ></div>
           </th>
         </tr>
+        <tr v-if="hasFilterRow" class="filter-row">
+          <th v-for="col in columns" :key="`filter-${col.key}`">
+            <slot :name="`filter-${col.key}`" :col="col" />
+          </th>
+        </tr>
       </thead>
       <tbody>
         <slot />
@@ -24,13 +29,18 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 import { useColumnResize } from '@/composables/useColumnResize'
 
 const props = defineProps({
   columns: { type: Array, required: true },
   initialWidths: { type: Array, required: true },
 })
+
+const slots = useSlots()
+const hasFilterRow = computed(() =>
+  props.columns.some(c => slots[`filter-${c.key}`])
+)
 
 const { colWidths, isResizing, startResize } = useColumnResize(props.initialWidths)
 
@@ -47,6 +57,12 @@ table { border-collapse: collapse; font-size: 13.5px; table-layout: fixed; }
 
 thead { background: #f9fafb; }
 th { position: relative; padding: 11px 16px; text-align: left; font-size: 11.5px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e5e7eb; white-space: nowrap; overflow: hidden; }
+
+.filter-row th { padding: 6px 10px; background: #fff; text-transform: none; font-weight: 400; overflow: visible; }
+.filter-row :deep(.searchable-select) { width: 100%; min-width: 0; }
+.filter-row :deep(.ss-trigger) { width: 100%; min-width: 0; padding: 5px 10px; min-height: 28px; font-size: 12px; border-radius: 6px; }
+
+.filter-row th { padding: 6px 10px; background: #fff; border-bottom: 1px solid #e5e7eb; text-transform: none; font-weight: 400; }
 
 .resize-handle { position: absolute; top: 0; right: -6px; width: 12px; height: 100%; cursor: col-resize; z-index: 1; display: flex; align-items: stretch; justify-content: center; }
 .resize-handle::after { content: ''; width: 2px; border-radius: 2px; background: #d1d5db; transition: background 0.15s; }

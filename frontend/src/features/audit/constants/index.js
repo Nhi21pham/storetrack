@@ -7,6 +7,9 @@ export const OBJECT_OPTIONS = [
   { value: 'customer',     label: 'Customer' },
   { value: 'bank',         label: 'Bank' },
   { value: 'bank_account', label: 'Bank Account' },
+  { value: 'unit',         label: 'Unit' },
+  { value: 'product',          label: 'Product' },
+  { value: 'product_category', label: 'Category' },
 ]
 
 export const ACTION_OPTIONS = [

@@ -40,6 +40,11 @@ class UnitRepository
         $unit->delete();
     }
 
+    public function hasProducts(int $unitId): bool
+    {
+        return Unit::where('id', $unitId)->whereHas('products')->exists();
+    }
+
     public function all(int $storeId, bool $includeInactive = false): Collection
     {
         $query = Unit::query()->where('store_id', $storeId);

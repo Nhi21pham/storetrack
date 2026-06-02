@@ -17,6 +17,8 @@ import CustomerPage from '@/features/customers/pages/CustomerPage.vue'
 import BanksPage from '@/features/banking/pages/BanksPage.vue'
 import BankAccountsPage from '@/features/banking/pages/BankAccountsPage.vue'
 import UnitsPage from '@/features/units/pages/UnitsPage.vue'
+import ProductsPage from '@/features/products/pages/ProductsPage.vue'
+import ProductCategoriesPage from '@/features/productCategories/pages/ProductCategoriesPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -178,6 +180,29 @@ const router = createRouter({
               { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Others' },
               { label: 'Units', icon: 'unit' },
+            ],
+          },
+        },
+        {
+          path: 'products',
+          name: 'products',
+          component: ProductsPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Products' },
+            ],
+          },
+        },
+        {
+          path: 'product-categories',
+          name: 'product-categories',
+          component: ProductCategoriesPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Others' },
+              { label: 'Product Categories' },
             ],
           },
         },
