@@ -82,6 +82,7 @@ class ProductCategoryService
                     'description'     => $description,
                     'is_active'       => true,
                     'is_system'       => false,
+                    'last_sequence'   => 0,
                 ]);
             } catch (QueryException $e) {
                 $this->translateUniqueViolation($e, $code, $name);

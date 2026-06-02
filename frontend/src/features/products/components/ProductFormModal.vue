@@ -24,16 +24,25 @@
 
         <div class="form-group">
           <label>Category <span class="required">*</span></label>
-          <select
-            v-model="form.product_category_id"
-            :class="{ error: errors.product_category_id }"
-            :disabled="categoriesLoading || isEdit"
-          >
-            <option value="" disabled>{{ categoriesLoading ? 'Loading categories…' : 'Select a category' }}</option>
-            <option v-for="c in availableCategories" :key="c.id" :value="String(c.id)">
-              {{ c.code }} — {{ displayCategoryName(c) }}
-            </option>
-          </select>
+          <div class="picker-row">
+            <select
+              v-model="form.product_category_id"
+              :class="{ error: errors.product_category_id }"
+              :disabled="categoriesLoading || isEdit"
+            >
+              <option value="" disabled>{{ categoriesLoading ? 'Loading categories…' : 'Select a category' }}</option>
+              <option v-for="c in availableCategories" :key="c.id" :value="String(c.id)">
+                {{ c.code }} — {{ displayCategoryName(c) }}
+              </option>
+            </select>
+            <AddItemButton
+              v-if="!isEdit"
+              size="small"
+              title="Create a new category"
+              :disabled="categoriesLoading"
+              @click="showCategoryForm = true"
+            />
+          </div>
           <span v-if="errors.product_category_id" class="error-text">{{ errors.product_category_id }}</span>
           <p v-if="!isEdit && form.product_category_id && nextCodePreview" class="hint">
             Next code will be: <strong>{{ nextCodePreview }}</strong>
@@ -64,18 +73,23 @@
 
         <div class="form-group">
           <label>Unit <span class="required">*</span></label>
-          <select
-            v-model="form.unit_id"
-            :class="{ error: errors.unit_id }"
-            :disabled="unitsLoading"
-          >
-            <option value="" disabled>{{ unitsLoading ? 'Loading units…' : 'Select a unit' }}</option>
-            <option v-for="u in activeUnits" :key="u.id" :value="String(u.id)">{{ u.name }}</option>
-          </select>
+          <div class="picker-row">
+            <select
+              v-model="form.unit_id"
+              :class="{ error: errors.unit_id }"
+              :disabled="unitsLoading"
+            >
+              <option value="" disabled>{{ unitsLoading ? 'Loading units…' : 'Select a unit' }}</option>
+              <option v-for="u in activeUnits" :key="u.id" :value="String(u.id)">{{ u.name }}</option>
+            </select>
+            <AddItemButton
+              size="small"
+              title="Create a new unit"
+              :disabled="unitsLoading"
+              @click="showUnitForm = true"
+            />
+          </div>
           <span v-if="errors.unit_id" class="error-text">{{ errors.unit_id }}</span>
-          <p v-if="!unitsLoading && activeUnits.length === 0" class="hint warn">
-            No active units in this store. Create one in the Units page first.
-          </p>
         </div>
 
         <div v-if="isEdit" class="form-group toggle-group">
@@ -108,13 +122,34 @@
     @confirm="$emit('close')"
     @cancel="showUnsavedWarning = false"
   />
+
+  <UnitFormModal
+    v-if="showUnitForm"
+    :unit="null"
+    :store-id="storeId"
+    @close="showUnitForm = false"
+    @saved="onUnitCreated"
+    @pick-existing="onUnitCreated"
+  />
+
+  <ProductCategoryFormModal
+    v-if="showCategoryForm"
+    :category="null"
+    :store-id="storeId"
+    @close="showCategoryForm = false"
+    @saved="onCategoryCreated"
+    @pick-existing="onCategoryCreated"
+  />
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
+import AddItemButton from '@/components/common/AddItemButton.vue'
 import SuggestionList from '@/features/products/components/ProductSuggestionList.vue'
+import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
+import ProductCategoryFormModal from '@/features/productCategories/components/ProductCategoryFormModal.vue'
 import { createProduct, updateProduct, searchProducts } from '@/features/products/services/productService'
 import { fetchUnits } from '@/features/units/services/unitService'
 import { fetchProductCategories } from '@/features/productCategories/services/productCategoryService'
@@ -132,6 +167,8 @@ const isEdit = computed(() => !!props.product)
 const loading = ref(false)
 const apiError = ref('')
 const showUnsavedWarning = ref(false)
+const showUnitForm = ref(false)
+const showCategoryForm = ref(false)
 
 const errors = ref({ name: '', unit_id: '', product_category_id: '' })
 
@@ -201,6 +238,26 @@ const loadOptions = async () => {
 
 onMounted(loadOptions)
 watch(() => props.storeId, loadOptions)
+
+const onUnitCreated = async (unit) => {
+  showUnitForm.value = false
+  if (props.storeId) {
+    units.value = await fetchUnits({ storeId: props.storeId, includeInactive: true })
+  }
+  if (unit?.id != null) {
+    form.value.unit_id = String(unit.id)
+  }
+}
+
+const onCategoryCreated = async (category) => {
+  showCategoryForm.value = false
+  if (props.storeId) {
+    categories.value = await fetchProductCategories({ storeId: props.storeId, includeInactive: true })
+  }
+  if (category?.id != null) {
+    form.value.product_category_id = String(category.id)
+  }
+}
 
 const activeField = ref(null)
 const nameSuggestions = ref([])
@@ -333,6 +390,9 @@ const handleClose = () => {
 .form-group { margin-bottom: 16px; position: relative; }
 .form-group label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 6px; }
 .required { color: #dc2626; }
+
+.picker-row { display: flex; align-items: stretch; gap: 8px; }
+.picker-row > select { flex: 1; min-width: 0; }
 
 .form-group input[type="text"], .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
 .form-group input[type="text"]:focus, .form-group select:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }

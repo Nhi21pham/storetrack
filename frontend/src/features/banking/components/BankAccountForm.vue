@@ -11,17 +11,11 @@
           placeholder="Select a bank..."
           search-placeholder="Search banks..."
         />
-        <button
+        <AddItemButton
           v-if="resolvedBusinessId"
-          type="button"
-          class="btn-new-bank"
           title="Can't find the bank? Create a new one"
           @click="showBankModal = true"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </button>
+        />
       </div>
       <span v-if="errors.bank_id" class="error-text">{{ errors.bank_id }}</span>
     </div>
@@ -102,6 +96,7 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import AddItemButton from '@/components/common/AddItemButton.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import { fetchBanks } from '@/features/banking/services/bankService'
 import { fetchProvinces } from '@/features/banking/services/provinceService'
@@ -278,14 +273,6 @@ const handleSubmit = async () => {
 
 .bank-picker { display: flex; align-items: stretch; gap: 8px; }
 .bank-picker :deep(.searchable-select) { flex: 1; min-width: 0; }
-.btn-new-bank {
-  display: inline-flex; align-items: center; justify-content: center;
-  flex-shrink: 0; width: 44px; min-height: 44px;
-  background: #fff; color: #374151;
-  border: 1px solid #d1d5db; border-radius: 10px;
-  cursor: pointer; transition: all 0.15s;
-}
-.btn-new-bank:hover { background: #111; color: #fff; border-color: #111; }
 
 .api-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin: 4px 0 12px; }
 
