@@ -15,4 +15,5 @@ enum AuditObjectType: string
     case UNIT             = 'unit';
     case PRODUCT          = 'product';
     case PRODUCT_CATEGORY = 'product_category';
+    case TAG              = 'tag';
 }

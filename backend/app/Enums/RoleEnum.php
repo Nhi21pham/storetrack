@@ -42,6 +42,10 @@ enum RoleEnum: string
                 PermissionEnum::CREATE_PRODUCT_CATEGORY,
                 PermissionEnum::UPDATE_PRODUCT_CATEGORY,
                 PermissionEnum::DELETE_PRODUCT_CATEGORY,
+                PermissionEnum::CREATE_TAG,
+                PermissionEnum::UPDATE_TAG,
+                PermissionEnum::DELETE_TAG_VALUE,
+                PermissionEnum::DELETE_TAG_KEY,
             ],
             self::ACCOUNTANT => [
                 PermissionEnum::UPDATE_STORE,
@@ -69,6 +73,10 @@ enum RoleEnum: string
                 PermissionEnum::CREATE_PRODUCT_CATEGORY,
                 PermissionEnum::UPDATE_PRODUCT_CATEGORY,
                 PermissionEnum::DELETE_PRODUCT_CATEGORY,
+                PermissionEnum::CREATE_TAG,
+                PermissionEnum::UPDATE_TAG,
+                PermissionEnum::DELETE_TAG_VALUE,
+                PermissionEnum::DELETE_TAG_KEY,
             ],
             self::STAFF => [
                 PermissionEnum::CREATE_SUPPLIER,
@@ -87,6 +95,8 @@ enum RoleEnum: string
                 PermissionEnum::UPDATE_PRODUCT,
                 PermissionEnum::CREATE_PRODUCT_CATEGORY,
                 PermissionEnum::UPDATE_PRODUCT_CATEGORY,
+                PermissionEnum::CREATE_TAG,
+                PermissionEnum::UPDATE_TAG,
             ],
         };
     }

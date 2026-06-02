@@ -57,4 +57,10 @@ enum PermissionEnum: string
     case CREATE_PRODUCT_CATEGORY = 'product_category.create';
     case UPDATE_PRODUCT_CATEGORY = 'product_category.update';
     case DELETE_PRODUCT_CATEGORY = 'product_category.delete';
+
+    // Tag
+    case CREATE_TAG       = 'tag.create';
+    case UPDATE_TAG       = 'tag.update';
+    case DELETE_TAG_VALUE = 'tag.delete_value';
+    case DELETE_TAG_KEY   = 'tag.delete_key';
 }
