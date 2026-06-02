@@ -39,4 +39,17 @@ class ProductResolver extends BaseResolver
             )
         );
     }
+
+    public function byTag($_, array $args)
+    {
+        return $this->safe(fn() =>
+            $this->productService->getByTag(
+                $this->user(),
+                (int) $args['store_id'],
+                (int) $args['tag_id'],
+                isset($args['tag_value_id']) ? (int) $args['tag_value_id'] : null,
+                (bool) ($args['include_inactive'] ?? false)
+            )
+        );
+    }
 }

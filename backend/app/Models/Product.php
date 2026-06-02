@@ -42,4 +42,17 @@ class Product extends Model
     {
         return $this->morphMany(Taggable::class, 'taggable');
     }
+
+    public function getTagsAttribute(): array
+    {
+        if (!$this->relationLoaded('taggables')) {
+            $this->load(['taggables.tag', 'taggables.tagValue']);
+        }
+        return $this->taggables->map(fn (Taggable $t) => [
+            'tag_id'       => (string) $t->tag_id,
+            'tag_name'     => $t->tag?->name,
+            'tag_value_id' => $t->tag_value_id !== null ? (string) $t->tag_value_id : null,
+            'value'        => $t->tagValue?->value,
+        ])->all();
+    }
 }
