@@ -34,6 +34,17 @@
         />
       </div>
 
+      <BulkStatusBar
+        v-if="selectedIds.size > 0"
+        :count="selectedIds.size"
+        :busy="bulkBusy"
+        :can-delete="canDelete"
+        @clear="clearSelection"
+        @activate="requestBulk('activate')"
+        @deactivate="requestBulk('deactivate')"
+        @delete="requestBulk('delete')"
+      />
+
       <LoadingState v-if="loading">Loading categories...</LoadingState>
 
       <EmptyState
@@ -45,8 +56,15 @@
       <div v-else class="table-wrap">
         <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+            <SelectCheckbox
+              v-if="c.key === 'select'"
+              :checked="allVisibleSelected"
+              :indeterminate="someVisibleSelected"
+              title="Select all on this page"
+              @change="toggleSelectAll"
+            />
             <SortableHeader
-              v-if="c.sortable"
+              v-else-if="c.sortable"
               :label="c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
@@ -72,6 +90,13 @@
             </td>
           </tr>
           <tr v-for="category in paginatedCategories" :key="category.id" :class="{ inactive: !category.is_active, system: category.is_system }">
+            <td v-if="columnVisibility.isVisible('select')">
+              <SelectCheckbox
+                v-if="!category.is_system"
+                :checked="isSelected(category.id)"
+                @change="toggleRow(category.id)"
+              />
+            </td>
             <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ category.id }}</td>
             <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ category.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
@@ -144,6 +169,17 @@
     />
 
     <ConfirmDialog
+      v-if="pendingAction"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      cancel-text="Cancel"
+      :type="confirmConfig.type"
+      @confirm="confirmBulk"
+      @cancel="cancelBulk"
+    />
+
+    <ConfirmDialog
       v-if="deactivateTarget"
       :title="`Category is in use`"
       :message="`${deactivateTarget.code} - ${displayCategoryName(deactivateTarget)} is referenced by existing products and cannot be deleted. Deactivate it instead?`"
@@ -183,11 +219,15 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
+import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import ProductCategoryFormModal from '@/features/productCategories/components/ProductCategoryFormModal.vue'
 import ProductCategoryDetailModal from '@/features/productCategories/components/ProductCategoryDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useRowSelection } from '@/composables/useRowSelection'
+import { useBulkActions } from '@/composables/useBulkActions'
 import {
   fetchProductCategories,
   deleteProductCategory,
@@ -206,7 +246,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'product_categories',
   columns: PRODUCT_CATEGORY_COLUMNS,
-  lockedKeys: ['actions'],
+  lockedKeys: ['select', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(PRODUCT_CATEGORY_INITIAL_COL_WIDTHS))
@@ -273,6 +313,20 @@ const {
   resetPage,
 } = useClientPagination(sortedCategories)
 
+const visibleIds = computed(() =>
+  paginatedCategories.value.filter(c => !c.is_system).map(c => String(c.id))
+)
+const {
+  selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
+  allVisibleSelected, someVisibleSelected,
+} = useRowSelection({ eligibleIds: visibleIds })
+
+const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
+  selectedIds, clearSelection, reload: () => load(), noun: 'category',
+  setActive: (id, isActive) => updateProductCategory({ id, input: { is_active: isActive } }),
+  remove: (id) => deleteProductCategory({ id }),
+})
+
 watch([searchQuery, statusFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
@@ -290,7 +344,7 @@ const load = async () => {
 
 onMounted(load)
 
-watch(() => currentStore?.value?.id, load)
+watch(() => currentStore?.value?.id, () => { clearSelection(); load() })
 
 const openCreate = () => {
   editingCategory.value = null

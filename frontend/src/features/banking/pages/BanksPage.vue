@@ -38,6 +38,17 @@
         />
       </div>
 
+      <BulkStatusBar
+        v-if="selectedIds.size > 0"
+        :count="selectedIds.size"
+        :busy="bulkBusy"
+        :can-delete="canDelete"
+        @clear="clearSelection"
+        @activate="requestBulk('activate')"
+        @deactivate="requestBulk('deactivate')"
+        @delete="requestBulk('delete')"
+      />
+
       <LoadingState v-if="loading">Loading banks...</LoadingState>
 
       <EmptyState
@@ -54,8 +65,15 @@
       <div v-else class="table-wrap">
         <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+            <SelectCheckbox
+              v-if="c.key === 'select'"
+              :checked="allVisibleSelected"
+              :indeterminate="someVisibleSelected"
+              title="Select all on this page"
+              @change="toggleSelectAll"
+            />
             <SortableHeader
-              v-if="c.sortable"
+              v-else-if="c.sortable"
               :label="c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
@@ -65,6 +83,9 @@
           </template>
 
           <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
+            <td v-if="columnVisibility.isVisible('select')">
+              <SelectCheckbox :checked="isSelected(bank.id)" @change="toggleRow(bank.id)" />
+            </td>
             <td v-if="columnVisibility.isVisible('short_name')">
               <button class="name-link" @click="detailBank = bank">{{ bank.short_name }}</button>
             </td>
@@ -127,6 +148,17 @@
     />
 
     <ConfirmDialog
+      v-if="pendingAction"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      cancel-text="Cancel"
+      :type="confirmConfig.type"
+      @confirm="confirmBulk"
+      @cancel="cancelBulk"
+    />
+
+    <ConfirmDialog
       v-if="deactivateTarget"
       :title="`Bank is in use`"
       :message="`${deactivateTarget.short_name} is referenced by existing bank accounts and cannot be deleted. Deactivate it instead? Inactive banks stay linked to existing accounts but won't appear in new-account pickers.`"
@@ -165,18 +197,22 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
+import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
+import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import BankDetailModal from '@/features/banking/components/BankDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useRowSelection } from '@/composables/useRowSelection'
+import { useBulkActions } from '@/composables/useBulkActions'
 import { fetchBanks, deleteBank, updateBank } from '@/features/banking/services/bankService'
 import { BANK_COLUMNS, BANK_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'banks',
   columns: BANK_COLUMNS,
-  lockedKeys: ['actions'],
+  lockedKeys: ['select', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(BANK_INITIAL_COL_WIDTHS))
@@ -241,6 +277,18 @@ const {
   resetPage,
 } = useClientPagination(sortedBanks)
 
+const visibleIds = computed(() => paginatedBanks.value.map(b => String(b.id)))
+const {
+  selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
+  allVisibleSelected, someVisibleSelected,
+} = useRowSelection({ eligibleIds: visibleIds })
+
+const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
+  selectedIds, clearSelection, reload: () => load(), noun: 'bank',
+  setActive: (id, isActive) => updateBank({ id, input: { is_active: isActive } }),
+  remove: (id) => deleteBank({ id }),
+})
+
 watch([searchQuery, includeInactive, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
@@ -258,7 +306,7 @@ const load = async () => {
 
 onMounted(load)
 
-watch(() => currentBusiness?.value?.id, load)
+watch(() => currentBusiness?.value?.id, () => { clearSelection(); load() })
 
 const openCreate = () => {
   editingBank.value = null

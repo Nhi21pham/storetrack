@@ -34,6 +34,16 @@
         />
       </div>
 
+      <BulkStatusBar
+        v-if="selectedIds.size > 0"
+        :count="selectedIds.size"
+        :busy="bulkBusy"
+        :can-delete="canDeleteKey"
+        :show-status="false"
+        @clear="clearSelection"
+        @delete="requestBulk('delete')"
+      />
+
       <LoadingState v-if="loading">Loading tags...</LoadingState>
 
       <EmptyState
@@ -45,8 +55,15 @@
       <div v-else class="table-wrap">
         <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+            <SelectCheckbox
+              v-if="c.key === 'select'"
+              :checked="allVisibleSelected"
+              :indeterminate="someVisibleSelected"
+              title="Select all on this page"
+              @change="toggleSelectAll"
+            />
             <SortableHeader
-              v-if="c.sortable"
+              v-else-if="c.sortable"
               :label="c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
@@ -61,6 +78,9 @@
             </td>
           </tr>
           <tr v-for="tag in paginatedTags" :key="tag.id">
+            <td v-if="columnVisibility.isVisible('select')">
+              <SelectCheckbox :checked="isSelected(tag.id)" @change="toggleRow(tag.id)" />
+            </td>
             <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ tag.id }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailTag = tag">{{ tag.name }}</button>
@@ -157,6 +177,17 @@
       @confirm="performDeleteKey"
       @cancel="deleteKeyTarget = null"
     />
+
+    <ConfirmDialog
+      v-if="pendingAction"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      cancel-text="Cancel"
+      :type="confirmConfig.type"
+      @confirm="confirmBulk"
+      @cancel="cancelBulk"
+    />
   </PageContainer>
 </template>
 
@@ -173,6 +204,9 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
+import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import TagFormModal from '@/features/tags/components/TagFormModal.vue'
 import TagValueFormModal from '@/features/tags/components/TagValueFormModal.vue'
 import TagDetailModal from '@/features/tags/components/TagDetailModal.vue'
@@ -180,6 +214,8 @@ import TagDeleteDialog from '@/features/tags/components/TagDeleteDialog.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useRowSelection } from '@/composables/useRowSelection'
+import { useBulkActions } from '@/composables/useBulkActions'
 import { fetchTags, deleteTag, deleteTagValue } from '@/features/tags/services/tagService'
 import { TAG_COLUMNS, TAG_INITIAL_COL_WIDTHS } from '@/features/tags/constants'
 import { normalizeText } from '@/utils/textNormalizer'
@@ -188,7 +224,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'tags',
   columns: TAG_COLUMNS,
-  lockedKeys: ['actions'],
+  lockedKeys: ['select', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(TAG_INITIAL_COL_WIDTHS))
@@ -244,6 +280,18 @@ const {
   resetPage,
 } = useClientPagination(sortedTags)
 
+const visibleIds = computed(() => paginatedTags.value.map(t => String(t.id)))
+const {
+  selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
+  allVisibleSelected, someVisibleSelected,
+} = useRowSelection({ eligibleIds: visibleIds })
+
+const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
+  selectedIds, clearSelection, reload: () => load(), noun: 'tag',
+  remove: (id) => deleteTag({ id }),
+  deleteMessage: 'This permanently deletes the selected tags (and all their values) and detaches them from any products using them. This cannot be undone.',
+})
+
 watch([searchQuery, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
@@ -260,7 +308,7 @@ const load = async () => {
 }
 
 onMounted(load)
-watch(() => currentStore?.value?.id, load)
+watch(() => currentStore?.value?.id, () => { clearSelection(); load() })
 
 const openCreate = () => {
   editingTag.value = null

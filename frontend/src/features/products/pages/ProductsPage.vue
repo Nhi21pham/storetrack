@@ -34,6 +34,17 @@
         />
       </div>
 
+      <BulkStatusBar
+        v-if="selectedIds.size > 0"
+        :count="selectedIds.size"
+        :busy="bulkBusy"
+        :can-delete="canDelete"
+        @clear="clearSelection"
+        @activate="requestBulk('activate')"
+        @deactivate="requestBulk('deactivate')"
+        @delete="requestBulk('delete')"
+      />
+
       <LoadingState v-if="loading">Loading products...</LoadingState>
 
       <EmptyState
@@ -45,8 +56,15 @@
       <div v-else class="table-wrap">
         <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+            <SelectCheckbox
+              v-if="c.key === 'select'"
+              :checked="allVisibleSelected"
+              :indeterminate="someVisibleSelected"
+              title="Select all on this page"
+              @change="toggleSelectAll"
+            />
             <SortableHeader
-              v-if="c.sortable"
+              v-else-if="c.sortable"
               :label="c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
@@ -102,6 +120,9 @@
             </td>
           </tr>
           <tr v-for="product in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
+            <td v-if="columnVisibility.isVisible('select')">
+              <SelectCheckbox :checked="isSelected(product.id)" @change="toggleRow(product.id)" />
+            </td>
             <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ product.id }}</td>
             <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ product.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
@@ -179,6 +200,17 @@
     />
 
     <ConfirmDialog
+      v-if="pendingAction"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      cancel-text="Cancel"
+      :type="confirmConfig.type"
+      @confirm="confirmBulk"
+      @cancel="cancelBulk"
+    />
+
+    <ConfirmDialog
       v-if="deactivateTarget"
       :title="`Product is in use`"
       :message="`${deactivateTarget.name} is referenced elsewhere and cannot be deleted. Deactivate it instead? Inactive products stay linked to existing references but won't appear in new pickers.`"
@@ -219,11 +251,15 @@ import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
+import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useRowSelection } from '@/composables/useRowSelection'
+import { useBulkActions } from '@/composables/useBulkActions'
 import { fetchProducts, deleteProduct, updateProduct } from '@/features/products/services/productService'
 import { fetchTags } from '@/features/tags/services/tagService'
 import { fetchUnits } from '@/features/units/services/unitService'
@@ -237,7 +273,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'products',
   columns: PRODUCT_COLUMNS,
-  lockedKeys: ['actions'],
+  lockedKeys: ['select', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(PRODUCT_INITIAL_COL_WIDTHS))
@@ -349,6 +385,18 @@ const {
   resetPage,
 } = useClientPagination(sortedProducts)
 
+const visibleIds = computed(() => paginatedProducts.value.map(p => String(p.id)))
+const {
+  selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
+  allVisibleSelected, someVisibleSelected,
+} = useRowSelection({ eligibleIds: visibleIds })
+
+const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
+  selectedIds, clearSelection, reload: () => load(), noun: 'product',
+  setActive: (id, isActive) => updateProduct({ id, input: { is_active: isActive } }),
+  remove: (id) => deleteProduct({ id }),
+})
+
 watch([searchQuery, statusFilter, unitFilter, categoryFilter, tagFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
@@ -378,7 +426,7 @@ const load = async () => {
 
 onMounted(load)
 
-watch(() => currentStore?.value?.id, load)
+watch(() => currentStore?.value?.id, () => { clearSelection(); load() })
 
 const openCreate = () => {
   editingProduct.value = null
