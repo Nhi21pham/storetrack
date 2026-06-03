@@ -9,24 +9,35 @@
     <p v-else class="no-tags">No tags attached.</p>
 
     <div class="add-row">
-      <select v-model="draftTagId" :disabled="loading" class="tag-select">
+      <SelectField v-model="draftTagId" :disabled="loading" size="small" class="tag-select">
         <option value="">{{ loading ? 'Loading tags…' : 'Select a tag…' }}</option>
         <option v-for="t in tags" :key="t.id" :value="String(t.id)">{{ t.name }}</option>
-      </select>
-      <select v-model="draftValueId" :disabled="!draftTagId || !draftTagValues.length" class="value-select">
+      </SelectField>
+      <SelectField v-model="draftValueId" :disabled="!draftTagId || !draftTagValues.length" size="small" class="value-select">
         <option value="">{{ draftTagValues.length ? '(No value)' : 'No values' }}</option>
         <option v-for="v in draftTagValues" :key="v.id" :value="String(v.id)">{{ v.value }}</option>
-      </select>
+      </SelectField>
       <button type="button" class="add-btn" :disabled="!draftTagId" @click="addDraft">Add</button>
+      <AddItemButton v-if="canCreateTag" size="small" title="Create new tag" @click="showCreateTag = true" />
     </div>
     <p v-if="hint" class="picker-hint">{{ hint }}</p>
+
+    <TagFormModal
+      v-if="showCreateTag"
+      :store-id="storeId"
+      @close="showCreateTag = false"
+      @saved="onTagCreated"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, inject } from 'vue'
 import TagChip from '@/components/common/TagChip.vue'
 import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
+import AddItemButton from '@/components/common/AddItemButton.vue'
+import SelectField from '@/components/common/SelectField.vue'
+import TagFormModal from '@/features/tags/components/TagFormModal.vue'
 import { fetchTags } from '@/features/tags/services/tagService'
 
 const props = defineProps({
@@ -36,12 +47,19 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
+const currentStore = inject('currentStore', null)
+const canCreateTag = computed(() => {
+  const role = String(currentStore?.value?.my_role || '').toLowerCase()
+  return ['owner', 'accountant', 'staff'].includes(role)
+})
+
 const tags = ref([])
 const loading = ref(false)
 const selected = ref(normalizeIncoming(props.modelValue))
 const draftTagId = ref('')
 const draftValueId = ref('')
 const hint = ref('')
+const showCreateTag = ref(false)
 
 function normalizeIncoming(list) {
   return (list || []).map(p => ({
@@ -105,6 +123,13 @@ const removeAt = (idx) => {
   selected.value.splice(idx, 1)
   emitChange()
 }
+
+const onTagCreated = (tag) => {
+  showCreateTag.value = false
+  if (!tag) return
+  tags.value.push(tag)
+  draftTagId.value = String(tag.id)
+}
 </script>
 
 <style scoped>
@@ -116,9 +141,6 @@ const removeAt = (idx) => {
 .add-row { display: flex; gap: 8px; align-items: stretch; }
 .tag-select { flex: 1.2; min-width: 0; }
 .value-select { flex: 1; min-width: 0; }
-.add-row select { padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; color: #111; background: #fff; outline: none; box-sizing: border-box; }
-.add-row select:focus { border-color: #111; }
-.add-row select:disabled { background: #f9fafb; color: #9ca3af; }
 .add-btn { padding: 8px 16px; background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .add-btn:hover:not(:disabled) { background: #e0e7ff; }
 .add-btn:disabled { opacity: 0.5; cursor: not-allowed; }

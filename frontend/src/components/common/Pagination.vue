@@ -2,9 +2,14 @@
   <div class="pagination-bar">
     <div class="pagination-left">
       <span class="page-info">{{ pageStart }}–{{ pageEnd }} of {{ total }}</span>
-      <select :value="perPage" class="per-page-select" @change="$emit('update:perPage', +$event.target.value)">
+      <SelectField
+        :model-value="perPage"
+        size="small"
+        inline
+        @update:model-value="$emit('update:perPage', +$event)"
+      >
         <option v-for="n in pageSizeOptions" :key="n" :value="n">{{ n }} / page</option>
-      </select>
+      </SelectField>
     </div>
 
     <div class="pagination-right">
@@ -34,6 +39,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import SelectField from '@/components/common/SelectField.vue'
 
 const props = defineProps({
   currentPage:    { type: Number, required: true },
@@ -65,8 +71,6 @@ const visiblePages = computed(() => {
 
 .pagination-left { display: flex; align-items: center; gap: 12px; }
 .page-info { font-size: 13px; color: #6b7280; white-space: nowrap; }
-.per-page-select { font-size: 13px; padding: 5px 8px; border: 1px solid #e5e7eb; border-radius: 7px; color: #374151; background: #fff; outline: none; cursor: pointer; }
-.per-page-select:focus { border-color: #111; }
 
 .pagination-right { display: flex; align-items: center; gap: 4px; }
 .page-btn { display: flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 6px; border: 1px solid #e5e7eb; background: #fff; color: #374151; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }

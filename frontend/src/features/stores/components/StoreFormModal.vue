@@ -14,12 +14,12 @@
         <!-- Business selector (create mode only) -->
         <div v-if="!isEdit" class="form-group">
           <label>Business <span class="required">*</span></label>
-          <select v-model="form.business_id" :class="{ error: errors.business_id }">
+          <SelectField v-model="form.business_id" :error="!!errors.business_id">
             <option value="">Select a business</option>
             <option v-for="biz in ownedBusinesses" :key="biz.id" :value="biz.id">
               {{ biz.name }}
             </option>
-          </select>
+          </SelectField>
           <span v-if="errors.business_id" class="error-text">{{ errors.business_id }}</span>
         </div>
 
@@ -84,6 +84,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { validators } from '@/utils/validators'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import SelectField from '@/components/common/SelectField.vue'
 import {
   fetchMyBusinesses,
   createStore,
@@ -197,9 +198,9 @@ onMounted(() => {
 .form-group label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 6px; }
 .required { color: #dc2626; }
 
-.form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
-.form-group input:focus, .form-group select:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
-.form-group input.error, .form-group select.error { border-color: #dc2626; }
+.form-group input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
+.form-group input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
+.form-group input.error { border-color: #dc2626; }
 
 .error-text { display: block; font-size: 12px; color: #dc2626; margin-top: 4px; }
 
