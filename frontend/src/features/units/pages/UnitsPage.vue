@@ -26,6 +26,7 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -204,6 +205,7 @@ import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
@@ -237,6 +239,9 @@ const units = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
+
+const hasActiveFilters = computed(() => !!statusFilter.value)
+const clearFilters = () => { statusFilter.value = '' }
 
 const showForm = ref(false)
 const editingUnit = ref(null)

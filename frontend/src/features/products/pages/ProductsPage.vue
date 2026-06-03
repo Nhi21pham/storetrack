@@ -26,6 +26,7 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -266,6 +267,7 @@ import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import TagChip from '@/components/common/TagChip.vue'
 import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
@@ -329,6 +331,17 @@ const tagOptions = computed(() => {
   }
   return opts
 })
+
+const hasActiveFilters = computed(() =>
+  !!(statusFilter.value || unitFilter.value || categoryFilter.value || tagFilter.value)
+)
+
+const clearFilters = () => {
+  statusFilter.value = ''
+  unitFilter.value = ''
+  categoryFilter.value = ''
+  tagFilter.value = ''
+}
 
 const showForm = ref(false)
 const editingProduct = ref(null)
