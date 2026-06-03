@@ -138,7 +138,10 @@
             </td>
             <td v-if="columnVisibility.isVisible('tags')">
               <div v-if="product.tags && product.tags.length" class="tags-cell">
-                <TagChip v-for="(t, i) in product.tags" :key="i" :tag-name="t.tag_name" :value="t.value" />
+                <span v-for="(t, i) in product.tags" :key="i" class="chip-wrap">
+                  <TagChip :tag-name="t.tag_name" :value="t.value" />
+                  <ChipRemoveButton v-if="canCreateUpdate" title="Detach tag" @click="detachTag(product, i)" />
+                </span>
               </div>
               <span v-else class="empty-val">—</span>
             </td>
@@ -221,6 +224,17 @@
     />
 
     <ConfirmDialog
+      v-if="detachTarget"
+      :title="`Detach tag?`"
+      :message="`Remove the tag '${detachTarget.tag.value ? `${detachTarget.tag.tag_name}: ${detachTarget.tag.value}` : detachTarget.tag.tag_name}' from '${detachTarget.product.name}'? This won't delete the tag itself.`"
+      confirm-text="Detach"
+      cancel-text="Cancel"
+      type="warning"
+      @confirm="performDetach"
+      @cancel="detachTarget = null"
+    />
+
+    <ConfirmDialog
       v-if="togglingProduct"
       :title="togglingProduct.is_active ? 'Deactivate Product' : 'Reactivate Product'"
       :message="togglingProduct.is_active
@@ -251,6 +265,7 @@ import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
@@ -320,6 +335,7 @@ const editingProduct = ref(null)
 const detailProduct = ref(null)
 const deleteTarget = ref(null)
 const deactivateTarget = ref(null)
+const detachTarget = ref(null)
 const togglingProduct = ref(null)
 
 const onDetailEdit = (product) => {
@@ -330,6 +346,11 @@ const onDetailEdit = (product) => {
 const canDelete = computed(() => {
   const role = String(currentStore?.value?.my_role || '').toLowerCase()
   return role === 'owner' || role === 'accountant'
+})
+
+const canCreateUpdate = computed(() => {
+  const role = String(currentStore?.value?.my_role || '').toLowerCase()
+  return role === 'owner' || role === 'accountant' || role === 'staff'
 })
 
 const matchesTagFilter = (product) => {
@@ -483,6 +504,27 @@ const performDeactivate = async () => {
   }
 }
 
+const detachTag = (product, idx) => {
+  detachTarget.value = { product, idx, tag: product.tags[idx] }
+}
+
+const performDetach = async () => {
+  const { product, idx } = detachTarget.value
+  detachTarget.value = null
+  const tags = (product.tags || [])
+    .filter((_, i) => i !== idx)
+    .map(t => ({
+      tag_id: String(t.tag_id),
+      tag_value_id: t.tag_value_id != null ? String(t.tag_value_id) : null,
+    }))
+  try {
+    await updateProduct({ id: product.id, input: { tags } })
+    await load()
+  } catch (err) {
+    alert(err.message)
+  }
+}
+
 const onToggleActive = (product) => {
   togglingProduct.value = product
 }
@@ -520,6 +562,7 @@ tbody tr.inactive td.actions-col { background: #fafafa; }
 .id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }
 .tags-cell { display: flex; flex-wrap: wrap; gap: 4px; }
+.tags-cell .chip-wrap { display: inline-flex; align-items: center; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .empty-val { color: #d1d5db; }

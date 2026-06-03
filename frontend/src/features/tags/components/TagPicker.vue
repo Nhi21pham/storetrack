@@ -3,9 +3,7 @@
     <div v-if="selected.length" class="selected-chips">
       <span v-for="(pair, idx) in selected" :key="idx" class="chip-wrap">
         <TagChip :tag-name="pair.tag_name" :value="pair.value" />
-        <button type="button" class="chip-del" title="Remove" @click="removeAt(idx)">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+        <ChipRemoveButton title="Remove" @click="removeAt(idx)" />
       </span>
     </div>
     <p v-else class="no-tags">No tags attached.</p>
@@ -28,6 +26,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import TagChip from '@/components/common/TagChip.vue'
+import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
 import { fetchTags } from '@/features/tags/services/tagService'
 
 const props = defineProps({
@@ -112,8 +111,6 @@ const removeAt = (idx) => {
 .tag-picker { display: flex; flex-direction: column; gap: 8px; }
 .selected-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip-wrap { display: inline-flex; align-items: center; }
-.chip-del { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 2px; padding: 0; border: none; border-radius: 50%; background: transparent; color: #9ca3af; cursor: pointer; }
-.chip-del:hover { background: #fef2f2; color: #dc2626; }
 .no-tags { font-size: 13px; color: #9ca3af; margin: 0; }
 
 .add-row { display: flex; gap: 8px; align-items: stretch; }

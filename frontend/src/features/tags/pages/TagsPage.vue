@@ -91,9 +91,7 @@
                   <button class="value-edit" :title="canCreateUpdate ? 'Edit value' : ''" :disabled="!canCreateUpdate" @click="openEditValue(tag, val)">
                     <TagChip :tag-name="tag.name" :value="val.value" />
                   </button>
-                  <button v-if="canDeleteValue" class="chip-del" title="Delete value" @click="confirmDeleteValue(tag, val)">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
+                  <ChipRemoveButton v-if="canDeleteValue" title="Delete value" @click="confirmDeleteValue(tag, val)" />
                 </span>
                 <span v-if="tag.values.length === 0" class="keyonly-hint">Key-only</span>
               </div>
@@ -204,6 +202,7 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -400,8 +399,6 @@ const performDeleteValue = async () => {
 .value-wrap { display: inline-flex; align-items: center; }
 .value-edit { background: none; border: none; padding: 0; cursor: pointer; }
 .value-edit:disabled { cursor: default; }
-.chip-del { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 2px; padding: 0; border: none; border-radius: 50%; background: transparent; color: #9ca3af; cursor: pointer; }
-.chip-del:hover { background: #fef2f2; color: #dc2626; }
 .keyonly-hint { font-size: 12px; color: #9ca3af; font-style: italic; }
 
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
