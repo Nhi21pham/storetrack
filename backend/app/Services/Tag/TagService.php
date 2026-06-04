@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Repositories\Tag\TagRepository;
 use App\Repositories\Tag\TagValueRepository;
 use App\Services\AuditLog\Loggers\TagAuditLogger;
+use App\Services\AuditLog\Loggers\TagValueAuditLogger;
 use App\Services\PermissionService;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,6 +25,7 @@ class TagService
         private TagValueRepository $tagValueRepository,
         private PermissionService $permissionService,
         private TagAuditLogger $auditLogger,
+        private TagValueAuditLogger $valueAuditLogger,
     ) {}
 
     public function getAll(User $user, int $storeId): Collection
@@ -73,8 +75,45 @@ class TagService
 
             $this->auditLogger->tagCreated($actor, $tag);
 
+            if (!empty($data['values'])) {
+                $this->attachValues($actor, $tag, $data['values']);
+            }
+
             return $tag->fresh('values');
         });
+    }
+
+    private function attachValues(User $actor, Tag $tag, array $values): void
+    {
+        $seen = [];
+
+        foreach ($values as $rawValue) {
+            $value = trim((string) $rawValue);
+            if ($value === '') {
+                continue;
+            }
+
+            if (mb_strlen($value) > 100) {
+                throw new TagException(
+                    ErrorCode::TAG_VALUE_INVALID,
+                    "Tag value must be at most 100 characters: {$value}."
+                );
+            }
+
+            $valueNorm = TextNormalizer::normalize($value);
+            if (isset($seen[$valueNorm])) {
+                continue;
+            }
+            $seen[$valueNorm] = true;
+
+            $tagValue = $this->tagValueRepository->create([
+                'tag_id'           => $tag->id,
+                'value'            => $value,
+                'value_normalized' => $valueNorm,
+            ]);
+
+            $this->valueAuditLogger->tagValueCreated($actor, $tag, $tagValue);
+        }
     }
 
     public function updateKey(User $actor, int $id, array $data): Tag

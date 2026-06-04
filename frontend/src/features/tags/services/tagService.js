@@ -51,6 +51,12 @@ const CREATE_TAG_VALUE_MUTATION = `
   }
 `
 
+const ADD_TAG_VALUES_MUTATION = `
+  mutation AddTagValues($tag_id: ID!, $input: AddTagValuesInput!) {
+    addTagValues(tag_id: $tag_id, input: $input) { ${TAG_FIELDS} }
+  }
+`
+
 const UPDATE_TAG_VALUE_MUTATION = `
   mutation UpdateTagValue($id: ID!, $input: UpdateTagValueInput!) {
     updateTagValue(id: $id, input: $input) { ${TAG_VALUE_FIELDS} }
@@ -95,6 +101,11 @@ export const deleteTag = async ({ id }) => {
 export const createTagValue = async ({ tagId, input }) => {
   const data = await graphql(CREATE_TAG_VALUE_MUTATION, { tag_id: tagId, input })
   return data.createTagValue
+}
+
+export const addTagValues = async ({ tagId, values }) => {
+  const data = await graphql(ADD_TAG_VALUES_MUTATION, { tag_id: tagId, input: { values } })
+  return data.addTagValues
 }
 
 export const updateTagValue = async ({ id, input }) => {

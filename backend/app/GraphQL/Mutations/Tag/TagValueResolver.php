@@ -18,6 +18,14 @@ class TagValueResolver extends BaseResolver
         });
     }
 
+    public function addMany($_, array $args)
+    {
+        return $this->safe(function () use ($args) {
+            $tagId = (int) $args['tag_id'];
+            return $this->tagValueService->createMany($this->user(), $tagId, $args['values']);
+        });
+    }
+
     public function update($_, array $args)
     {
         return $this->safe(function () use ($args) {

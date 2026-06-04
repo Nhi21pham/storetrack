@@ -127,7 +127,9 @@ const removeAt = (idx) => {
 const onTagCreated = (tag) => {
   showCreateTag.value = false
   if (!tag) return
-  tags.value.push(tag)
+  const idx = tags.value.findIndex(t => String(t.id) === String(tag.id))
+  if (idx === -1) tags.value.push(tag)
+  else tags.value[idx] = tag
   draftTagId.value = String(tag.id)
 }
 </script>
