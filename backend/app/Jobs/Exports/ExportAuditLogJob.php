@@ -2,8 +2,6 @@
 
 namespace App\Jobs\Exports;
 
-use App\Enums\AuditAction;
-use App\Enums\AuditObjectType;
 use App\Exports\AuditLogExport;
 use App\Exports\BaseExport;
 use App\Models\Business;
@@ -11,7 +9,8 @@ use App\Models\Export;
 use App\Models\Store;
 use App\Models\User;
 use App\Repositories\AuditLogRepository;
-use App\Services\AuditLogService;
+use App\Services\AuditLog\Loggers\BusinessAuditLogger;
+use App\Services\AuditLog\Loggers\StoreAuditLogger;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -63,43 +62,10 @@ class ExportAuditLogJob extends BaseExportJob
         $scopeName = $metadata['scope_name'] ?? '';
         $scopeId = (int) ($metadata['scope_id'] ?? 0);
 
-        $auditService = app(AuditLogService::class);
-
         if ($isBusinessView) {
-            $business = Business::find($scopeId);
-            $auditService->log(
-                null,
-                $user,
-                AuditObjectType::BUSINESS,
-                AuditAction::EXPORTED,
-                "{$user->name}({$user->email}) has EXPORTED audit log of business {$scopeName}.",
-                [
-                    'business_id' => $scopeId,
-                    'business_name' => $scopeName,
-                    'export_id' => $export->id,
-                    'filename' => $export->filename,
-                    'filters' => $metadata['filters'] ?? null,
-                ],
-                $business?->id
-            );
+            app(BusinessAuditLogger::class)->auditLogExported($user, $scopeId, $scopeName, $export);
         } else {
-            $store = Store::find($scopeId);
-            $auditService->log(
-                $scopeId,
-                $user,
-                AuditObjectType::STORE,
-                AuditAction::EXPORTED,
-                "{$user->name}({$user->email}) has EXPORTED audit log of store {$scopeName}.",
-                [
-                    'store_id' => $scopeId,
-                    'store_name' => $scopeName,
-                    'business_id' => $store?->business_id,
-                    'export_id' => $export->id,
-                    'filename' => $export->filename,
-                    'filters' => $metadata['filters'] ?? null,
-                ],
-                $store?->business_id
-            );
+            app(StoreAuditLogger::class)->auditLogExported($user, $scopeId, $scopeName, $export);
         }
     }
 

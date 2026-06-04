@@ -16,6 +16,7 @@ use App\Repositories\ExportRepository;
 use App\Repositories\PartyRepository;
 use App\Repositories\CustomerRepository;
 use App\Repositories\PermissionRepository;
+use App\Services\AuditLog\Loggers\CustomerAuditLogger;
 use Illuminate\Support\Facades\DB;
 
 class CustomerService
@@ -23,7 +24,7 @@ class CustomerService
     public function __construct(
         private CustomerRepository $customerRepository,
         private PartyRepository $partyRepository,
-        private AuditLogService $auditLogService,
+        private CustomerAuditLogger $auditLogger,
         private PermissionRepository $permissionRepository,
         private PermissionService $permissionService,
         private ExportService $exportService,
@@ -62,7 +63,7 @@ class CustomerService
             ]));
             $this->customerRepository->attachStore($customer, $storeId);
 
-            $this->auditLogService->customerCreated($actor, $storeId, $businessId, $customer);
+            $this->auditLogger->customerCreated($actor, $storeId, $businessId, $customer);
 
             return $customer;
         });
@@ -86,7 +87,7 @@ class CustomerService
         $customer = $this->customerRepository->update($customer, $data);
 
         $auditStoreId = $customer->store_id !== null ? (int) $customer->store_id : null;
-        $this->auditLogService->customerUpdated($actor, $auditStoreId, $businessId, $customer);
+        $this->auditLogger->customerUpdated($actor, $auditStoreId, $businessId, $customer);
 
         return $customer;
     }
@@ -146,7 +147,7 @@ class CustomerService
             }
 
             foreach ($snapshots as $snap) {
-                $this->auditLogService->customerDeleted(
+                $this->auditLogger->customerDeleted(
                     $actor,
                     $snap['store_id'],
                     $businessId,
@@ -177,7 +178,7 @@ class CustomerService
             $this->partyRepository->delete($partyId);
         });
 
-        $this->auditLogService->customerDeleted($actor, $customerStoreId, $businessId, $customerId, $customerName);
+        $this->auditLogger->customerDeleted($actor, $customerStoreId, $businessId, $customerId, $customerName);
     }
 
     private function authorizeCustomerDelete(User $actor, int $businessId, ?array $storeIds): void

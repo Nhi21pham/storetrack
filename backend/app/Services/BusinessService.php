@@ -9,6 +9,7 @@ use App\Models\Business;
 use App\Models\User;
 use App\Repositories\BusinessRepository;
 use App\Repositories\PartyRepository;
+use App\Services\AuditLog\Loggers\BusinessAuditLogger;
 use Database\Seeders\BankSeeder;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\BusinessException;
@@ -18,7 +19,7 @@ class BusinessService
     public function __construct(
         private BusinessRepository $businessRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private BusinessAuditLogger $auditLogger,
         private PartyRepository $partyRepository
     ) {}
 
@@ -50,7 +51,7 @@ class BusinessService
         }
 
         $business = $this->businessRepository->update($business, $data);
-        $this->auditLogService->businessUpdated($user, $business);
+        $this->auditLogger->businessUpdated($user, $business);
         return $business;
     }
 

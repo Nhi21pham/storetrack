@@ -3,16 +3,16 @@
 namespace App\GraphQL\Queries;
 
 use App\GraphQL\BaseResolver;
-use App\Services\AuditLogService;
+use App\Services\AuditLog\AuditLogQueryService;
 
 class AuditLogResolver extends BaseResolver
 {
-    public function __construct(private AuditLogService $auditLogService) {}
+    public function __construct(private AuditLogQueryService $auditLogQueryService) {}
 
     public function index($_, array $args): array
     {
         return $this->safe(function () use ($args) {
-            return $this->auditLogService->getStoreLogs(
+            return $this->auditLogQueryService->getStoreLogs(
                 $this->user(),
                 (int) $args['store_id'],
                 $args['page'] ?? 1,
@@ -29,7 +29,7 @@ class AuditLogResolver extends BaseResolver
     public function business($_, array $args): array
     {
         return $this->safe(function () use ($args) {
-            return $this->auditLogService->getBusinessLogs(
+            return $this->auditLogQueryService->getBusinessLogs(
                 $this->user(),
                 (int) $args['business_id'],
                 $args['page'] ?? 1,

@@ -9,7 +9,7 @@ use App\Models\Export;
 use App\Models\Store;
 use App\Models\User;
 use App\Repositories\CustomerRepository;
-use App\Services\AuditLogService;
+use App\Services\AuditLog\Loggers\CustomerAuditLogger;
 
 class ExportCustomerJob extends BaseExportJob
 {
@@ -55,7 +55,7 @@ class ExportCustomerJob extends BaseExportJob
         $filters = $metadata['filters'] ?? [];
         $storeId = isset($filters['store_id']) ? (int) $filters['store_id'] : null;
 
-        app(AuditLogService::class)->customerExported(
+        app(CustomerAuditLogger::class)->customerExported(
             $user,
             $businessId,
             $storeId,

@@ -12,6 +12,7 @@ use App\Models\Party;
 use App\Models\User;
 use App\Repositories\BankAccountRepository;
 use App\Repositories\BankRepository;
+use App\Services\AuditLog\Loggers\BankAccountAuditLogger;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -21,7 +22,7 @@ class BankAccountService
         private BankAccountRepository $bankAccountRepository,
         private BankRepository $bankRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private BankAccountAuditLogger $auditLogger,
     ) {}
 
     public function listForParty(User $actor, int $partyId): Collection
@@ -80,7 +81,7 @@ class BankAccountService
                 'branch'              => $data['branch'] ?? null,
             ]);
 
-            $this->auditLogService->bankAccountCreated(
+            $this->auditLogger->bankAccountCreated(
                 $actor,
                 $account,
                 $context['party_type'],
@@ -153,7 +154,7 @@ class BankAccountService
 
             $account = $this->bankAccountRepository->update($account, $patch);
 
-            $this->auditLogService->bankAccountUpdated(
+            $this->auditLogger->bankAccountUpdated(
                 $actor,
                 $account,
                 $context['party_type'],
@@ -182,7 +183,7 @@ class BankAccountService
             $this->bankAccountRepository->delete($account);
         });
 
-        $this->auditLogService->bankAccountDeleted(
+        $this->auditLogger->bankAccountDeleted(
             $actor,
             $accountId,
             $accountNumber,

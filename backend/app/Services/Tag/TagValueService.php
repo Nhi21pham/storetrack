@@ -8,7 +8,7 @@ use App\Exceptions\TagException;
 use App\Models\Tag\TagValue;
 use App\Models\User;
 use App\Repositories\Tag\TagValueRepository;
-use App\Services\AuditLogService;
+use App\Services\AuditLog\Loggers\TagValueAuditLogger;
 use App\Services\PermissionService;
 use App\Support\TextNormalizer;
 use Illuminate\Database\QueryException;
@@ -20,7 +20,7 @@ class TagValueService
         private TagValueRepository $tagValueRepository,
         private TagService $tagService,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private TagValueAuditLogger $auditLogger,
     ) {}
 
     public function create(User $actor, int $tagId, array $data): TagValue
@@ -45,7 +45,7 @@ class TagValueService
                 $this->translateUniqueViolation($e, $value);
             }
 
-            $this->auditLogService->tagValueCreated($actor, $tag, $tagValue);
+            $this->auditLogger->tagValueCreated($actor, $tag, $tagValue);
 
             return $tagValue;
         });
@@ -79,7 +79,7 @@ class TagValueService
                 $this->translateUniqueViolation($e, $value);
             }
 
-            $this->auditLogService->tagValueUpdated($actor, $tag, $tagValue);
+            $this->auditLogger->tagValueUpdated($actor, $tag, $tagValue);
 
             return $tagValue;
         });
@@ -98,7 +98,7 @@ class TagValueService
 
         DB::transaction(function () use ($actor, $tagValue, $storeId, $tagName, $id, $value) {
             $this->tagValueRepository->delete($tagValue);
-            $this->auditLogService->tagValueDeleted($actor, $storeId, $tagName, $id, $value);
+            $this->auditLogger->tagValueDeleted($actor, $storeId, $tagName, $id, $value);
         });
     }
 

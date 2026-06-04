@@ -8,6 +8,7 @@ use App\Exceptions\UnitException;
 use App\Models\Unit;
 use App\Models\User;
 use App\Repositories\UnitRepository;
+use App\Services\AuditLog\Loggers\UnitAuditLogger;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -18,7 +19,7 @@ class UnitService
     public function __construct(
         private UnitRepository $unitRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private UnitAuditLogger $auditLogger,
     ) {}
 
     public function getAll(User $user, int $storeId, bool $includeInactive = false): Collection
@@ -72,7 +73,7 @@ class UnitService
                 throw $e;
             }
 
-            $this->auditLogService->unitCreated($actor, $unit);
+            $this->auditLogger->unitCreated($actor, $unit);
 
             return $unit;
         });
@@ -123,12 +124,12 @@ class UnitService
 
             if (array_key_exists('is_active', $patch) && $patch['is_active'] !== $wasActive) {
                 if ($patch['is_active']) {
-                    $this->auditLogService->unitReactivated($actor, $unit);
+                    $this->auditLogger->unitReactivated($actor, $unit);
                 } else {
-                    $this->auditLogService->unitDeactivated($actor, $unit);
+                    $this->auditLogger->unitDeactivated($actor, $unit);
                 }
             } else {
-                $this->auditLogService->unitUpdated($actor, $unit);
+                $this->auditLogger->unitUpdated($actor, $unit);
             }
 
             return $unit;
@@ -153,7 +154,7 @@ class UnitService
 
         DB::transaction(function () use ($actor, $unit, $unitId, $name, $storeId) {
             $this->unitRepository->delete($unit);
-            $this->auditLogService->unitDeleted($actor, $unitId, $name, $storeId);
+            $this->auditLogger->unitDeleted($actor, $unitId, $name, $storeId);
         });
     }
 

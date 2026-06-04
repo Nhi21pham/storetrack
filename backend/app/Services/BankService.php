@@ -8,6 +8,7 @@ use App\Exceptions\BankException;
 use App\Models\Bank;
 use App\Models\User;
 use App\Repositories\BankRepository;
+use App\Services\AuditLog\Loggers\BankAuditLogger;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class BankService
     public function __construct(
         private BankRepository $bankRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private BankAuditLogger $auditLogger,
     ) {}
 
     public function getAll(User $user, int $businessId, bool $includeInactive = false): Collection
@@ -69,7 +70,7 @@ class BankService
                 'is_active'               => true,
             ]);
 
-            $this->auditLogService->bankCreated($actor, $bank);
+            $this->auditLogger->bankCreated($actor, $bank);
 
             return $bank;
         });
@@ -136,12 +137,12 @@ class BankService
 
             if (array_key_exists('is_active', $patch) && $patch['is_active'] !== $wasActive) {
                 if ($patch['is_active']) {
-                    $this->auditLogService->bankReactivated($actor, $bank);
+                    $this->auditLogger->bankReactivated($actor, $bank);
                 } else {
-                    $this->auditLogService->bankDeactivated($actor, $bank);
+                    $this->auditLogger->bankDeactivated($actor, $bank);
                 }
             } else {
-                $this->auditLogService->bankUpdated($actor, $bank);
+                $this->auditLogger->bankUpdated($actor, $bank);
             }
 
             return $bank;
@@ -168,7 +169,7 @@ class BankService
             $this->bankRepository->delete($bank);
         });
 
-        $this->auditLogService->bankDeleted($actor, $bankId, $shortName, $businessId);
+        $this->auditLogger->bankDeleted($actor, $bankId, $shortName, $businessId);
     }
 
     private function authorizeView(User $user, int $businessId): void
