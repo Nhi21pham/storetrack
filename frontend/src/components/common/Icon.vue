@@ -26,6 +26,10 @@
       <line x1="18" y1="6" x2="6" y2="18"/>
       <line x1="6" y1="6" x2="18" y2="18"/>
     </template>
+    <template v-else-if="name === 'undo'">
+      <polyline points="1 4 1 10 7 10"/>
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+    </template>
     <template v-else-if="name === 'chevron-right'">
       <polyline points="9 18 15 12 9 6"/>
     </template>

@@ -14,10 +14,7 @@
       <div class="cs-header">
         <span>Show columns</span>
         <button type="button" class="cs-reset" title="Reset to default" @click="resetColumns">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10"/>
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-          </svg>
+          <Icon name="undo" :size="13" :stroke-width="2.2" />
         </button>
       </div>
       <ul class="cs-list">
@@ -51,6 +48,7 @@
 
 <script setup>
 import { ref, computed, watchEffect, onMounted, onBeforeUnmount } from 'vue'
+import Icon from '@/components/common/Icon.vue'
 
 const props = defineProps({
   togglableColumns: { type: Array, required: true },
