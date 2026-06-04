@@ -10,7 +10,7 @@ use App\Models\Tag\TagValue;
 use App\Models\User;
 use App\Repositories\Tag\TagRepository;
 use App\Repositories\Tag\TagValueRepository;
-use App\Services\AuditLogService;
+use App\Services\AuditLog\Loggers\TagAuditLogger;
 use App\Services\PermissionService;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,7 +23,7 @@ class TagService
         private TagRepository $tagRepository,
         private TagValueRepository $tagValueRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private TagAuditLogger $auditLogger,
     ) {}
 
     public function getAll(User $user, int $storeId): Collection
@@ -71,7 +71,7 @@ class TagService
                 $this->translateUniqueViolation($e, $name);
             }
 
-            $this->auditLogService->tagCreated($actor, $tag);
+            $this->auditLogger->tagCreated($actor, $tag);
 
             return $tag->fresh('values');
         });
@@ -113,7 +113,7 @@ class TagService
                 $this->translateUniqueViolation($e, $renamedTo ?? $tag->name);
             }
 
-            $this->auditLogService->tagUpdated($actor, $tag);
+            $this->auditLogger->tagUpdated($actor, $tag);
 
             return $tag;
         });
@@ -130,7 +130,7 @@ class TagService
 
         DB::transaction(function () use ($actor, $tag, $tagId, $name, $storeId) {
             $this->tagRepository->delete($tag);
-            $this->auditLogService->tagKeyDeleted($actor, $tagId, $name, $storeId);
+            $this->auditLogger->tagKeyDeleted($actor, $tagId, $name, $storeId);
         });
     }
 

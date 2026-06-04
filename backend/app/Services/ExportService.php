@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Storage;
  * them through processing/completed/failed, and serves the resulting file.
  *
  * Type-specific orchestration (queueing the right job, applying the right
- * filters) lives in the type's own service (e.g. AuditLogService).
+ * filters) lives in the type's own service (e.g. AuditLogExportService).
  */
 class ExportService
 {

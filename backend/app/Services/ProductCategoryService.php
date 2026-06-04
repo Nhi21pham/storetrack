@@ -8,6 +8,7 @@ use App\Exceptions\ProductCategoryException;
 use App\Models\ProductCategory;
 use App\Models\User;
 use App\Repositories\ProductCategoryRepository;
+use App\Services\AuditLog\Loggers\ProductCategoryAuditLogger;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -20,7 +21,7 @@ class ProductCategoryService
     public function __construct(
         private ProductCategoryRepository $productCategoryRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private ProductCategoryAuditLogger $auditLogger,
     ) {}
 
     public function getAll(User $user, int $storeId, bool $includeInactive = false): Collection
@@ -88,7 +89,7 @@ class ProductCategoryService
                 $this->translateUniqueViolation($e, $code, $name);
             }
 
-            $this->auditLogService->productCategoryCreated($actor, $category);
+            $this->auditLogger->productCategoryCreated($actor, $category);
 
             return $category;
         });
@@ -162,12 +163,12 @@ class ProductCategoryService
 
             if (array_key_exists('is_active', $patch) && $patch['is_active'] !== $wasActive) {
                 if ($patch['is_active']) {
-                    $this->auditLogService->productCategoryReactivated($actor, $category);
+                    $this->auditLogger->productCategoryReactivated($actor, $category);
                 } else {
-                    $this->auditLogService->productCategoryDeactivated($actor, $category);
+                    $this->auditLogger->productCategoryDeactivated($actor, $category);
                 }
             } else {
-                $this->auditLogService->productCategoryUpdated($actor, $category);
+                $this->auditLogger->productCategoryUpdated($actor, $category);
             }
 
             return $category;
@@ -193,7 +194,7 @@ class ProductCategoryService
 
         DB::transaction(function () use ($actor, $category, $categoryId, $code, $name, $storeId) {
             $this->productCategoryRepository->delete($category);
-            $this->auditLogService->productCategoryDeleted($actor, $categoryId, $code, $name, $storeId);
+            $this->auditLogger->productCategoryDeleted($actor, $categoryId, $code, $name, $storeId);
         });
     }
 

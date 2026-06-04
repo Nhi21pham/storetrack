@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\AppException;
 use App\Models\Export;
-use App\Services\AuditLogService;
+use App\Services\AuditLog\AuditLogExportService;
 use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\SupplierService;
@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class ExportController extends Controller
 {
     public function __construct(
-        private AuditLogService $auditLogService,
+        private AuditLogExportService $auditLogExportService,
         private ExportService $exportService,
         private CustomerService $customerService,
         private SupplierService $supplierService,
@@ -24,7 +24,7 @@ class ExportController extends Controller
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
     {
         try {
-            $export = $this->auditLogService->queueStoreExport(
+            $export = $this->auditLogExportService->queueStoreExport(
                 $request->user(),
                 $storeId,
                 $this->extractFilters($request),
@@ -40,7 +40,7 @@ class ExportController extends Controller
     public function queueAuditLogBusiness(Request $request, int $businessId): JsonResponse
     {
         try {
-            $export = $this->auditLogService->queueBusinessExport(
+            $export = $this->auditLogExportService->queueBusinessExport(
                 $request->user(),
                 $businessId,
                 $this->extractFilters($request),

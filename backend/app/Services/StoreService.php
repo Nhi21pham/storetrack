@@ -10,6 +10,9 @@ use App\Models\Store;
 use App\Models\User;
 use App\Repositories\PartyRepository;
 use App\Repositories\StoreRepository;
+use App\Services\AuditLog\Loggers\BusinessAuditLogger;
+use App\Services\AuditLog\Loggers\StoreAuditLogger;
+use App\Services\AuditLog\Loggers\UserAuditLogger;
 use Database\Seeders\ProductCategorySeeder;
 use Database\Seeders\UnitSeeder;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +23,9 @@ class StoreService
     public function __construct(
         private StoreRepository $storeRepository,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private StoreAuditLogger $storeAuditLogger,
+        private BusinessAuditLogger $businessAuditLogger,
+        private UserAuditLogger $userAuditLogger,
         private PartyRepository $partyRepository
     ) {}
 
@@ -44,10 +49,10 @@ class StoreService
             return $store;
         });
 
-        $this->auditLogService->storeCreated($user, $store);
+        $this->storeAuditLogger->storeCreated($user, $store);
 
         $business = $store->business;
-        $this->auditLogService->businessCreated($user, $business, $store, $business->created_at);
+        $this->businessAuditLogger->businessCreated($user, $business, $store, $business->created_at);
 
         return $store;
     }
@@ -58,7 +63,7 @@ class StoreService
         $store = $this->mustFind($storeId);
         $store = $this->storeRepository->update($store, $data);
 
-        $this->auditLogService->storeUpdated($user, $store);
+        $this->storeAuditLogger->storeUpdated($user, $store);
 
         return $store;
     }
@@ -73,7 +78,7 @@ class StoreService
             'deactivated_at' => now(),
         ]);
 
-        $this->auditLogService->storeDeactivated($user, $store);
+        $this->storeAuditLogger->storeDeactivated($user, $store);
 
         return $store;
     }
@@ -88,7 +93,7 @@ class StoreService
             'deactivated_at' => null,
         ]);
 
-        $this->auditLogService->storeReactivated($user, $store);
+        $this->storeAuditLogger->storeReactivated($user, $store);
 
         return $store;
     }
@@ -103,7 +108,7 @@ class StoreService
                 throw new StoreException(ErrorCode::STORE_NOT_FOUND, 'Store not found.');
             }
 
-            $this->auditLogService->storeDeleted($user, $store);
+            $this->storeAuditLogger->storeDeleted($user, $store);
 
             $partyId = $store->party_id;
             $store->users()->detach();
@@ -138,9 +143,9 @@ class StoreService
         $target = User::find($userId);
         if ($target) {
             if (!$existingMember) {
-                $this->auditLogService->userAssigned($actor, $store, $target, $role->value);
+                $this->userAuditLogger->userAssigned($actor, $store, $target, $role->value);
             } elseif ($oldRole !== $role->value) {
-                $this->auditLogService->userRoleUpdated($actor, $store, $target, $oldRole, $role->value);
+                $this->userAuditLogger->userRoleUpdated($actor, $store, $target, $oldRole, $role->value);
             }
         }
 
@@ -160,7 +165,7 @@ class StoreService
         $store->users()->detach($userId);
 
         if ($target) {
-            $this->auditLogService->userRemoved($actor, $store, $target);
+            $this->userAuditLogger->userRemoved($actor, $store, $target);
         }
 
         return $store->fresh('users');

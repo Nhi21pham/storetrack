@@ -16,6 +16,7 @@ use App\Repositories\ExportRepository;
 use App\Repositories\PartyRepository;
 use App\Repositories\SupplierRepository;
 use App\Repositories\PermissionRepository;
+use App\Services\AuditLog\Loggers\SupplierAuditLogger;
 use Illuminate\Support\Facades\DB;
 
 class SupplierService
@@ -23,7 +24,7 @@ class SupplierService
     public function __construct(
         private SupplierRepository $supplierRepository,
         private PartyRepository $partyRepository,
-        private AuditLogService $auditLogService,
+        private SupplierAuditLogger $auditLogger,
         private PermissionRepository $permissionRepository,
         private PermissionService $permissionService,
         private ExportService $exportService,
@@ -62,7 +63,7 @@ class SupplierService
             ]));
             $this->supplierRepository->attachStore($supplier, $storeId);
 
-            $this->auditLogService->supplierCreated($actor, $storeId, $businessId, $supplier);
+            $this->auditLogger->supplierCreated($actor, $storeId, $businessId, $supplier);
 
             return $supplier;
         });
@@ -86,7 +87,7 @@ class SupplierService
         $supplier = $this->supplierRepository->update($supplier, $data);
 
         $auditStoreId = $supplier->store_id !== null ? (int) $supplier->store_id : null;
-        $this->auditLogService->supplierUpdated($actor, $auditStoreId, $businessId, $supplier);
+        $this->auditLogger->supplierUpdated($actor, $auditStoreId, $businessId, $supplier);
 
         return $supplier;
     }
@@ -146,7 +147,7 @@ class SupplierService
             }
 
             foreach ($snapshots as $snap) {
-                $this->auditLogService->supplierDeleted(
+                $this->auditLogger->supplierDeleted(
                     $actor,
                     $snap['store_id'],
                     $businessId,
@@ -177,7 +178,7 @@ class SupplierService
             $this->partyRepository->delete($partyId);
         });
 
-        $this->auditLogService->supplierDeleted($actor, $supplierStoreId, $businessId, $supplierId, $supplierName);
+        $this->auditLogger->supplierDeleted($actor, $supplierStoreId, $businessId, $supplierId, $supplierName);
     }
 
     private function authorizeSupplierDelete(User $actor, int $businessId, ?array $storeIds): void

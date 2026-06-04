@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\AuditLog\Loggers\InvitationAuditLogger;
 use Illuminate\Support\Collection;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class InvitationService
 {
     public function __construct(
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService
+        private InvitationAuditLogger $auditLogger
     ) {}
 
     public function sendInvitation(User $inviter, int $storeId, string $email, RoleEnum $role): Invitation
@@ -87,7 +88,7 @@ class InvitationService
             token: $invitation->token,
         ));
 
-        $this->auditLogService->invitationSent($inviter, $store, $email, $role->value);
+        $this->auditLogger->invitationSent($inviter, $store, $email, $role->value);
 
         return $invitation->load(['store', 'inviter']);
     }
@@ -110,7 +111,7 @@ class InvitationService
             throw new InvitationException(ErrorCode::INVITATION_NOT_CANCELLABLE, 'This invitation can no longer be cancelled.');
         }
 
-        $this->auditLogService->invitationCancelled($actor, $invitation);
+        $this->auditLogger->invitationCancelled($actor, $invitation);
     }
 
     public function getStorePendingInvitations(User $actor, int $storeId): Collection
@@ -226,7 +227,7 @@ class InvitationService
             accepted: true,
         ));
 
-        $this->auditLogService->invitationAccepted($user, $result->invitation);
+        $this->auditLogger->invitationAccepted($user, $result->invitation);
 
         return $result->store->fresh('users', 'business');
     }
@@ -280,6 +281,6 @@ class InvitationService
             accepted: false,
         ));
 
-        $this->auditLogService->invitationDeclined($user, $result->invitation);
+        $this->auditLogger->invitationDeclined($user, $result->invitation);
     }
 }

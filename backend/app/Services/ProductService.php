@@ -13,6 +13,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Repositories\ProductRepository;
 use App\Repositories\Tag\TaggableRepository;
+use App\Services\AuditLog\Loggers\ProductAuditLogger;
 use App\Services\Tag\TaggableService;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,7 +27,7 @@ class ProductService
         private TaggableRepository $taggableRepository,
         private TaggableService $taggableService,
         private PermissionService $permissionService,
-        private AuditLogService $auditLogService,
+        private ProductAuditLogger $auditLogger,
     ) {}
 
     public function getByTag(User $user, int $storeId, int $tagId, ?int $tagValueId = null, bool $includeInactive = false): Collection
@@ -131,7 +132,7 @@ class ProductService
             }
 
             $product = $product->fresh(['unit', 'category', 'taggables.tag', 'taggables.tagValue']);
-            $this->auditLogService->productCreated($actor, $product);
+            $this->auditLogger->productCreated($actor, $product);
 
             return $product;
         });
@@ -220,12 +221,12 @@ class ProductService
 
             if (array_key_exists('is_active', $patch) && $patch['is_active'] !== $wasActive) {
                 if ($patch['is_active']) {
-                    $this->auditLogService->productReactivated($actor, $product);
+                    $this->auditLogger->productReactivated($actor, $product);
                 } else {
-                    $this->auditLogService->productDeactivated($actor, $product);
+                    $this->auditLogger->productDeactivated($actor, $product);
                 }
             } else {
-                $this->auditLogService->productUpdated($actor, $product);
+                $this->auditLogger->productUpdated($actor, $product);
             }
 
             return $product->fresh(['unit', 'category', 'taggables.tag', 'taggables.tagValue']);
@@ -244,7 +245,7 @@ class ProductService
 
         DB::transaction(function () use ($actor, $product, $productId, $code, $name, $storeId) {
             $this->productRepository->delete($product);
-            $this->auditLogService->productDeleted($actor, $productId, $code, $name, $storeId);
+            $this->auditLogger->productDeleted($actor, $productId, $code, $name, $storeId);
         });
     }
 
