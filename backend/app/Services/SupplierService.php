@@ -7,6 +7,7 @@ use App\Enums\PartyTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Exceptions\SupplierException;
 use App\Exceptions\AuthorizationException;
+use App\Exports\SupplierExport;
 use App\Jobs\Exports\ExportSupplierJob;
 use App\Models\Business;
 use App\Models\Export;
@@ -274,6 +275,15 @@ class SupplierService
             sort($ids);
             if (count($ids) > 0) {
                 $clean['ids'] = $ids;
+            }
+        }
+        if (!empty($filters['columns']) && is_array($filters['columns'])) {
+            $columns = array_values(array_filter(
+                SupplierExport::COLUMN_KEYS,
+                fn ($key) => in_array($key, $filters['columns'], true),
+            ));
+            if (count($columns) > 0 && count($columns) < count(SupplierExport::COLUMN_KEYS)) {
+                $clean['columns'] = $columns;
             }
         }
 

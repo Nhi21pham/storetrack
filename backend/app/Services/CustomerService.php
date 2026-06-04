@@ -7,6 +7,7 @@ use App\Enums\PartyTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Exceptions\CustomerException;
 use App\Exceptions\AuthorizationException;
+use App\Exports\CustomerExport;
 use App\Jobs\Exports\ExportCustomerJob;
 use App\Models\Business;
 use App\Models\Customer;
@@ -274,6 +275,15 @@ class CustomerService
             sort($ids);
             if (count($ids) > 0) {
                 $clean['ids'] = $ids;
+            }
+        }
+        if (!empty($filters['columns']) && is_array($filters['columns'])) {
+            $columns = array_values(array_filter(
+                CustomerExport::COLUMN_KEYS,
+                fn ($key) => in_array($key, $filters['columns'], true),
+            ));
+            if (count($columns) > 0 && count($columns) < count(CustomerExport::COLUMN_KEYS)) {
+                $clean['columns'] = $columns;
             }
         }
 

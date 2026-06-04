@@ -157,10 +157,16 @@ class ExportController extends Controller
             $ids = null;
         }
 
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
         return [
             'store_id' => $request->query('store_id'),
             'search'   => $request->query('search'),
             'ids'      => $ids,
+            'columns'  => $columns,
         ];
     }
 

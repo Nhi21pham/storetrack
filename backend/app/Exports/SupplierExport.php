@@ -7,15 +7,19 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SupplierExport extends BaseExport
 {
+    public const COLUMN_KEYS = ['id', 'name', 'tax_code', 'email', 'phone', 'address'];
+
     /**
      * @param  Builder  $query  filtered, ordered query of Supplier
      * @param  string  $title  e.g. "Suppliers of My Store"
      * @param  string[]  $metaLines
+     * @param  string[]|null  $columns  selected column keys; null exports every column
      */
     public function __construct(
         private Builder $query,
         private string $title,
         private array $metaLines,
+        private ?array $columns = null,
     ) {}
 
     public function title(): string
@@ -30,7 +34,7 @@ class SupplierExport extends BaseExport
 
     public function columnHeadings(): array
     {
-        return ['ID', 'Name', 'Tax Code', 'Email', 'Phone', 'Created', 'Last Updated'];
+        return array_map(fn ($column) => $column['heading'], $this->activeColumns());
     }
 
     public function exportQuery(): Builder
@@ -43,19 +47,46 @@ class SupplierExport extends BaseExport
      */
     public function map($row): array
     {
-        return [
-            (int) $row->id,
-            (string) $row->name,
-            (string) ($row->tax_code ?? ''),
-            (string) ($row->email ?? ''),
-            (string) ($row->phone ?? ''),
-            optional($row->created_at)->format('Y-m-d H:i:s') ?? '',
-            optional($row->updated_at)->format('Y-m-d H:i:s') ?? '',
-        ];
+        return array_map(fn ($column) => $column['value']($row), $this->activeColumns());
     }
 
     public function columnWidths(): array
     {
-        return [1 => 8, 2 => 26, 3 => 18, 4 => 28, 5 => 16, 6 => 20, 7 => 20];
+        $widths = [];
+        foreach (array_values($this->activeColumns()) as $index => $column) {
+            $widths[$index + 1] = $column['width'];
+        }
+
+        return $widths;
+    }
+
+    private function columnDefinitions(): array
+    {
+        return [
+            'id'       => ['heading' => 'ID',       'width' => 8,  'value' => fn ($row) => (int) $row->id],
+            'name'     => ['heading' => 'Name',     'width' => 26, 'value' => fn ($row) => (string) $row->name],
+            'tax_code' => ['heading' => 'Tax Code', 'width' => 18, 'value' => fn ($row) => (string) ($row->tax_code ?? '')],
+            'email'    => ['heading' => 'Email',    'width' => 28, 'value' => fn ($row) => (string) ($row->email ?? '')],
+            'phone'    => ['heading' => 'Phone',    'width' => 16, 'value' => fn ($row) => (string) ($row->phone ?? '')],
+            'address'  => ['heading' => 'Address',  'width' => 30, 'value' => fn ($row) => (string) ($row->address ?? '')],
+        ];
+    }
+
+    private function activeColumns(): array
+    {
+        $definitions = $this->columnDefinitions();
+
+        if (empty($this->columns)) {
+            return array_values($definitions);
+        }
+
+        $selected = [];
+        foreach ($definitions as $key => $definition) {
+            if (in_array($key, $this->columns, true)) {
+                $selected[] = $definition;
+            }
+        }
+
+        return $selected !== [] ? $selected : array_values($definitions);
     }
 }

@@ -24,7 +24,10 @@ class ExportSupplierJob extends BaseExportJob
             'Date exported: '.now()->format('Y-m-d H:i:s'),
         ];
 
-        return new SupplierExport($query, $title, $metaLines);
+        $filters = $export->metadata['filters'] ?? [];
+        $columns = isset($filters['columns']) && is_array($filters['columns']) ? $filters['columns'] : null;
+
+        return new SupplierExport($query, $title, $metaLines, $columns);
     }
 
     protected function filename(Export $export): string

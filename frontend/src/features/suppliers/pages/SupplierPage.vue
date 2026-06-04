@@ -298,6 +298,9 @@ const { exporting, run } = useExport({
     if (selectedIds.value.size > 0) {
       params.ids = Array.from(selectedIds.value)
     }
+    params.columns = columnVisibility.togglableColumns
+      .filter((col) => columnVisibility.isVisible(col.key))
+      .map((col) => col.key)
     return startSupplierExport({ businessId: currentBusiness.value.id, params })
   },
   defaultFilename: (id) => `suppliers-${id}.xlsx`,
