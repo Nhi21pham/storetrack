@@ -16,6 +16,8 @@ use App\Models\Store;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
+use App\Models\Tag\Tag;
+use App\Models\Tag\TagValue;
 use App\Models\Unit;
 use App\Models\User;
 use App\Exceptions\AuthorizationException;
@@ -1059,6 +1061,117 @@ class AuditLogService
                 'store_id'            => $storeId,
                 'store_name'          => $store?->name,
                 'business_id'         => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function tagCreated(User $actor, Tag $tag): void
+    {
+        $storeId = (int) $tag->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::TAG, AuditAction::CREATED,
+            self::actor($actor) . " has CREATED tag {$tag->name}.",
+            [
+                'tag_id'      => $tag->id,
+                'name'        => $tag->name,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function tagUpdated(User $actor, Tag $tag): void
+    {
+        $storeId = (int) $tag->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::TAG, AuditAction::UPDATED,
+            self::actor($actor) . " has UPDATED tag {$tag->name}.",
+            [
+                'tag_id'      => $tag->id,
+                'name'        => $tag->name,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function tagKeyDeleted(User $actor, int $tagId, string $name, int $storeId): void
+    {
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::TAG, AuditAction::DELETED,
+            self::actor($actor) . " has DELETED tag {$name}.",
+            [
+                'tag_id'      => $tagId,
+                'name'        => $name,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function tagValueCreated(User $actor, Tag $tag, TagValue $value): void
+    {
+        $storeId = (int) $tag->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::TAG, AuditAction::CREATED,
+            self::actor($actor) . " has ADDED value {$value->value} to tag {$tag->name}.",
+            [
+                'tag_id'       => $tag->id,
+                'name'         => $tag->name,
+                'tag_value_id' => $value->id,
+                'value'        => $value->value,
+                'store_id'     => $storeId,
+                'store_name'   => $store?->name,
+                'business_id'  => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function tagValueUpdated(User $actor, Tag $tag, TagValue $value): void
+    {
+        $storeId = (int) $tag->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::TAG, AuditAction::UPDATED,
+            self::actor($actor) . " has UPDATED value {$value->value} of tag {$tag->name}.",
+            [
+                'tag_id'       => $tag->id,
+                'name'         => $tag->name,
+                'tag_value_id' => $value->id,
+                'value'        => $value->value,
+                'store_id'     => $storeId,
+                'store_name'   => $store?->name,
+                'business_id'  => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function tagValueDeleted(User $actor, int $storeId, string $tagName, int $valueId, string $value): void
+    {
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $this->log($storeId, $actor, AuditObjectType::TAG, AuditAction::DELETED,
+            self::actor($actor) . " has DELETED value {$value} from tag {$tagName}.",
+            [
+                'tag_name'     => $tagName,
+                'tag_value_id' => $valueId,
+                'value'        => $value,
+                'store_id'     => $storeId,
+                'store_name'   => $store?->name,
+                'business_id'  => $businessId,
             ],
             $businessId
         );

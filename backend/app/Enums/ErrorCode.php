@@ -65,6 +65,13 @@ enum ErrorCode: string
     case PRODUCT_CATEGORY_CODE_IMMUTABLE = 'PRODUCT_CATEGORY_CODE_IMMUTABLE';
     case PRODUCT_CATEGORY_SYSTEM_LOCKED = 'PRODUCT_CATEGORY_SYSTEM_LOCKED';
 
+    // Tag
+    case TAG_NOT_FOUND = 'TAG_NOT_FOUND';
+    case TAG_NAME_TAKEN = 'TAG_NAME_TAKEN';
+    case TAG_VALUE_NOT_FOUND = 'TAG_VALUE_NOT_FOUND';
+    case TAG_VALUE_TAKEN = 'TAG_VALUE_TAKEN';
+    case TAG_VALUE_INVALID = 'TAG_VALUE_INVALID';
+
     // Province
     case PROVINCE_NOT_FOUND = 'PROVINCE_NOT_FOUND';
 
@@ -120,6 +127,9 @@ enum ErrorCode: string
             self::PRODUCT_CATEGORY_INACTIVE,
             self::PRODUCT_CATEGORY_CODE_IMMUTABLE,
             self::PRODUCT_CATEGORY_SYSTEM_LOCKED,
+            self::TAG_NAME_TAKEN,
+            self::TAG_VALUE_TAKEN,
+            self::TAG_VALUE_INVALID,
             self::CANNOT_CHANGE_OWNER_ROLE,
             self::CANNOT_REMOVE_OWNER,
             self::INVITATION_EXPIRED,
@@ -147,6 +157,8 @@ enum ErrorCode: string
             self::UNIT_NOT_FOUND,
             self::PRODUCT_NOT_FOUND,
             self::PRODUCT_CATEGORY_NOT_FOUND,
+            self::TAG_NOT_FOUND,
+            self::TAG_VALUE_NOT_FOUND,
             self::PROVINCE_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
             self::EXPORT_NOT_FOUND,

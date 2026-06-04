@@ -10,4 +10,8 @@ extend type Query {
     searchProducts(store_id: ID!, q: String!, include_inactive: Boolean, limit: Int): [Product!]!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\ProductResolver@search")
+
+    productsByTag(store_id: ID!, tag_id: ID!, tag_value_id: ID, include_inactive: Boolean): [Product!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\ProductResolver@byTag")
 }

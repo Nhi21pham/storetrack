@@ -10,4 +10,12 @@ type Product {
     updated_at: DateTime!
     unit: Unit @belongsTo
     category: ProductCategory @belongsTo
+    tags: [ProductTag!]!
+}
+
+type ProductTag {
+    tag_id: ID!
+    tag_name: String!
+    tag_value_id: ID
+    value: String
 }

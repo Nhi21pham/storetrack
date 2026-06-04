@@ -1,0 +1,13 @@
+extend type Query {
+    tags(store_id: ID!): [Tag!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Tag\\TagResolver@all")
+
+    tag(id: ID!): Tag
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Tag\\TagResolver@findById")
+
+    searchTags(store_id: ID!, q: String!, limit: Int): [Tag!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Tag\\TagResolver@search")
+}

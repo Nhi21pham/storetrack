@@ -21,6 +21,16 @@
         </button>
       </div>
       <ul class="cs-list">
+        <li class="cs-option cs-select-all" @click="toggleAll">
+          <input
+            type="checkbox"
+            ref="selectAllEl"
+            :checked="allVisible"
+            @click.stop="toggleAll"
+          />
+          <span>Select all</span>
+        </li>
+        <li class="cs-divider" role="separator"></li>
         <li
           v-for="col in togglableColumns"
           :key="col.key"
@@ -40,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watchEffect, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   togglableColumns: { type: Array, required: true },
@@ -50,11 +60,31 @@ const props = defineProps({
 })
 
 const rootEl = ref(null)
+const selectAllEl = ref(null)
 const open = ref(false)
 
 const visibleCount = computed(() =>
   props.togglableColumns.filter(c => props.isVisible(c.key)).length
 )
+
+const allVisible = computed(() =>
+  props.togglableColumns.length > 0 && visibleCount.value === props.togglableColumns.length
+)
+
+const someVisible = computed(() =>
+  visibleCount.value > 0 && !allVisible.value
+)
+
+const toggleAll = () => {
+  const target = !allVisible.value
+  props.togglableColumns.forEach(col => {
+    if (props.isVisible(col.key) !== target) props.toggleColumn(col.key)
+  })
+}
+
+watchEffect(() => {
+  if (selectAllEl.value) selectAllEl.value.indeterminate = someVisible.value
+})
 
 const onDocumentClick = (e) => {
   if (!rootEl.value) return
@@ -117,4 +147,8 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
 }
 .cs-option:hover { background: #f9fafb; }
 .cs-option input { accent-color: #111; cursor: pointer; }
+
+.cs-select-all { font-weight: 600; color: #111; }
+
+.cs-divider { height: 1px; margin: 4px 0; background: #f3f4f6; }
 </style>

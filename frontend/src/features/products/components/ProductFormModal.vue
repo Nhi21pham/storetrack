@@ -25,16 +25,16 @@
         <div class="form-group">
           <label>Category <span class="required">*</span></label>
           <div class="picker-row">
-            <select
+            <SelectField
               v-model="form.product_category_id"
-              :class="{ error: errors.product_category_id }"
+              :error="!!errors.product_category_id"
               :disabled="categoriesLoading || isEdit"
             >
               <option value="" disabled>{{ categoriesLoading ? 'Loading categories…' : 'Select a category' }}</option>
               <option v-for="c in availableCategories" :key="c.id" :value="String(c.id)">
                 {{ c.code }} — {{ displayCategoryName(c) }}
               </option>
-            </select>
+            </SelectField>
             <AddItemButton
               v-if="!isEdit"
               size="small"
@@ -74,14 +74,14 @@
         <div class="form-group">
           <label>Unit <span class="required">*</span></label>
           <div class="picker-row">
-            <select
+            <SelectField
               v-model="form.unit_id"
-              :class="{ error: errors.unit_id }"
+              :error="!!errors.unit_id"
               :disabled="unitsLoading"
             >
               <option value="" disabled>{{ unitsLoading ? 'Loading units…' : 'Select a unit' }}</option>
               <option v-for="u in activeUnits" :key="u.id" :value="String(u.id)">{{ u.name }}</option>
-            </select>
+            </SelectField>
             <AddItemButton
               size="small"
               title="Create a new unit"
@@ -90,6 +90,11 @@
             />
           </div>
           <span v-if="errors.unit_id" class="error-text">{{ errors.unit_id }}</span>
+        </div>
+
+        <div class="form-group">
+          <label>Tags</label>
+          <TagPicker v-model="form.tags" :store-id="storeId" />
         </div>
 
         <div v-if="isEdit" class="form-group toggle-group">
@@ -147,6 +152,8 @@ import { ref, computed, watch, onMounted } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import AddItemButton from '@/components/common/AddItemButton.vue'
+import SelectField from '@/components/common/SelectField.vue'
+import TagPicker from '@/features/tags/components/TagPicker.vue'
 import SuggestionList from '@/features/products/components/ProductSuggestionList.vue'
 import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
 import ProductCategoryFormModal from '@/features/productCategories/components/ProductCategoryFormModal.vue'
@@ -178,7 +185,18 @@ const initialForm = () => ({
   product_category_id: props.product?.product_category_id ? String(props.product.product_category_id) : '',
   code_display: props.product?.code || '',
   is_active: props.product?.is_active ?? true,
+  tags: (props.product?.tags || []).map(t => ({
+    tag_id: String(t.tag_id),
+    tag_value_id: t.tag_value_id != null ? String(t.tag_value_id) : null,
+    tag_name: t.tag_name || '',
+    value: t.value || '',
+  })),
 })
+
+const tagsInput = () => form.value.tags.map(t => ({
+  tag_id: t.tag_id,
+  tag_value_id: t.tag_value_id,
+}))
 
 const form = ref(initialForm())
 const originalForm = ref(JSON.stringify(initialForm()))
@@ -346,6 +364,7 @@ const handleSubmit = async () => {
         name: form.value.name,
         unit_id: form.value.unit_id,
         is_active: form.value.is_active,
+        tags: tagsInput(),
       }
       const result = await updateProduct({ id: props.product.id, input })
       emit('saved', result)
@@ -354,6 +373,7 @@ const handleSubmit = async () => {
         name: form.value.name,
         unit_id: form.value.unit_id,
         product_category_id: form.value.product_category_id,
+        tags: tagsInput(),
       }
       const result = await createProduct({ storeId: props.storeId, input })
       emit('saved', result)
@@ -394,21 +414,10 @@ const handleClose = () => {
 .picker-row { display: flex; align-items: stretch; gap: 8px; }
 .picker-row > select { flex: 1; min-width: 0; }
 
-.form-group input[type="text"], .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
-.form-group input[type="text"]:focus, .form-group select:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
-.form-group input[type="text"].error, .form-group select.error { border-color: #dc2626; }
+.form-group input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; background: #fff; transition: border-color 0.15s; outline: none; box-sizing: border-box; }
+.form-group input[type="text"]:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
+.form-group input[type="text"].error { border-color: #dc2626; }
 .form-group input.code-display { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; background: #f9fafb; cursor: not-allowed; }
-
-.form-group select {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 36px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 14px;
-}
-.form-group select:disabled { background-color: #f9fafb; color: #6b7280; cursor: not-allowed; }
 
 .error-text { display: block; font-size: 12px; color: #dc2626; margin-top: 4px; }
 

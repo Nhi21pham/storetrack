@@ -1,17 +1,15 @@
 <template>
   <ResizableTable :columns="columns" :initial-widths="initialWidths">
     <template #header-select>
-      <input
-        type="checkbox"
-        class="row-check"
+      <SelectCheckbox
         :checked="allVisibleSelected"
-        :indeterminate.prop="someVisibleSelected"
-        @change="$emit('toggleSelectAll')"
+        :indeterminate="someVisibleSelected"
         title="Select all on this page"
+        @change="$emit('toggleSelectAll')"
       />
     </template>
 
-    <template v-for="col in columns" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+    <template v-for="col in headerColumns" :key="col.key" #[`header-${col.key}`]="{ col: c }">
       <SortableHeader
         v-if="c.sortable"
         :label="c.label"
@@ -24,10 +22,8 @@
 
     <tr v-for="supplier in suppliers" :key="supplier.id" :class="{ 'row-selected': isSelected(supplier.id) }">
       <td v-if="isVisible('select')">
-        <input
+        <SelectCheckbox
           v-if="canManageRow(supplier)"
-          type="checkbox"
-          class="row-check"
           :checked="isSelected(supplier.id)"
           @change="$emit('toggleRow', supplier.id)"
         />
@@ -50,7 +46,7 @@
         <span v-if="supplier.address" :title="supplier.address" class="truncate">{{ supplier.address }}</span>
         <span v-else class="empty-val">—</span>
       </td>
-      <td>
+      <td class="actions-col">
         <div v-if="rowActionsEnabled && canManageRow(supplier)" class="row-actions">
           <button class="action-btn" @click="$emit('edit', supplier)" title="Edit">
             <Icon name="edit" :size="14" />
@@ -65,11 +61,13 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
+import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import Icon from '@/components/common/Icon.vue'
 
-defineProps({
+const props = defineProps({
   suppliers:           { type: Array,   required: true },
   columns:             { type: Array,   required: true },
   initialWidths:       { type: Array,   required: true },
@@ -82,6 +80,8 @@ defineProps({
   allVisibleSelected:  { type: Boolean, required: true },
   someVisibleSelected: { type: Boolean, required: true },
 })
+
+const headerColumns = computed(() => props.columns.filter((c) => c.key !== 'select'))
 
 defineEmits([
   'toggleSelectAll', 'toggleRow',
@@ -97,9 +97,10 @@ defineEmits([
 .empty-val { color: #d1d5db; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.row-check { width: 15px; height: 15px; cursor: pointer; accent-color: #111; }
 tbody tr.row-selected { background: #f0f7ff; }
 tbody tr.row-selected:hover { background: #e6f0fb; }
+tbody tr.row-selected td.actions-col { background: #f0f7ff; }
+tbody tr.row-selected:hover td.actions-col { background: #e6f0fb; }
 
 .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
 .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: none; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; transition: all 0.15s; }

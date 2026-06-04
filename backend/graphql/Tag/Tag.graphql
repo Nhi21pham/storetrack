@@ -1,0 +1,17 @@
+type Tag {
+    id: ID!
+    store_id: ID!
+    name: String!
+    description: String
+    values: [TagValue!]!
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+type TagValue {
+    id: ID!
+    tag_id: ID!
+    value: String!
+    created_at: DateTime!
+    updated_at: DateTime!
+}

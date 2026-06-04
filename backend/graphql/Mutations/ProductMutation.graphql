@@ -16,6 +16,7 @@ input CreateProductInput {
     name: String! @rules(apply: ["required", "string", "min:1", "max:100"])
     product_category_id: ID! @rules(apply: ["required", "integer"])
     unit_id: ID! @rules(apply: ["required", "integer"])
+    tags: [ProductTagInput!]
 }
 
 input UpdateProductInput {
@@ -23,4 +24,10 @@ input UpdateProductInput {
     product_category_id: ID @rules(apply: ["sometimes", "integer"])
     unit_id: ID @rules(apply: ["sometimes", "integer"])
     is_active: Boolean @rules(apply: ["sometimes", "boolean"])
+    tags: [ProductTagInput!]
+}
+
+input ProductTagInput {
+    tag_id: ID! @rules(apply: ["required", "integer"])
+    tag_value_id: ID @rules(apply: ["sometimes", "nullable", "integer"])
 }

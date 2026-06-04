@@ -26,6 +26,7 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -33,6 +34,17 @@
           :reset-columns="columnVisibility.resetColumns"
         />
       </div>
+
+      <BulkStatusBar
+        v-if="selectedIds.size > 0"
+        :count="selectedIds.size"
+        :busy="bulkBusy"
+        :can-delete="canDelete"
+        @clear="clearSelection"
+        @activate="requestBulk('activate')"
+        @deactivate="requestBulk('deactivate')"
+        @delete="requestBulk('delete')"
+      />
 
       <LoadingState v-if="loading">Loading units...</LoadingState>
 
@@ -45,8 +57,15 @@
       <div v-else class="table-wrap">
         <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+            <SelectCheckbox
+              v-if="c.key === 'select'"
+              :checked="allVisibleSelected"
+              :indeterminate="someVisibleSelected"
+              title="Select all on this page"
+              @change="toggleSelectAll"
+            />
             <SortableHeader
-              v-if="c.sortable"
+              v-else-if="c.sortable"
               :label="c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
@@ -72,6 +91,9 @@
             </td>
           </tr>
           <tr v-for="unit in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
+            <td v-if="columnVisibility.isVisible('select')">
+              <SelectCheckbox :checked="isSelected(unit.id)" @change="toggleRow(unit.id)" />
+            </td>
             <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ unit.id }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailUnit = unit">{{ unit.name }}</button>
@@ -135,6 +157,17 @@
     />
 
     <ConfirmDialog
+      v-if="pendingAction"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      cancel-text="Cancel"
+      :type="confirmConfig.type"
+      @confirm="confirmBulk"
+      @cancel="cancelBulk"
+    />
+
+    <ConfirmDialog
       v-if="deactivateTarget"
       :title="`Unit is in use`"
       :message="`${deactivateTarget.name} is referenced by existing products and cannot be deleted. Deactivate it instead? Inactive units stay linked to existing products but won't appear in new-product pickers.`"
@@ -172,13 +205,18 @@ import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
+import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
 import UnitDetailModal from '@/features/units/components/UnitDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useRowSelection } from '@/composables/useRowSelection'
+import { useBulkActions } from '@/composables/useBulkActions'
 import { fetchUnits, deleteUnit, updateUnit } from '@/features/units/services/unitService'
 import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'
 import { ErrorCode } from '@/utils/errorCodes'
@@ -188,7 +226,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'units',
   columns: UNIT_COLUMNS,
-  lockedKeys: ['actions'],
+  lockedKeys: ['select', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(UNIT_INITIAL_COL_WIDTHS))
@@ -201,6 +239,9 @@ const units = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
+
+const hasActiveFilters = computed(() => !!statusFilter.value)
+const clearFilters = () => { statusFilter.value = '' }
 
 const showForm = ref(false)
 const editingUnit = ref(null)
@@ -249,6 +290,18 @@ const {
   resetPage,
 } = useClientPagination(sortedUnits)
 
+const visibleIds = computed(() => paginatedUnits.value.map(u => String(u.id)))
+const {
+  selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
+  allVisibleSelected, someVisibleSelected,
+} = useRowSelection({ eligibleIds: visibleIds })
+
+const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
+  selectedIds, clearSelection, reload: () => load(), noun: 'unit',
+  setActive: (id, isActive) => updateUnit({ id, input: { is_active: isActive } }),
+  remove: (id) => deleteUnit({ id }),
+})
+
 watch([searchQuery, statusFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
@@ -266,7 +319,7 @@ const load = async () => {
 
 onMounted(load)
 
-watch(() => currentStore?.value?.id, load)
+watch(() => currentStore?.value?.id, () => { clearSelection(); load() })
 
 const openCreate = () => {
   editingUnit.value = null
@@ -355,6 +408,7 @@ const handleToggle = async () => {
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
+tbody tr.inactive td.actions-col { background: #fafafa; }
 
 .id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }

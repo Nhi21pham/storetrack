@@ -36,6 +36,16 @@
         </div>
 
         <div class="detail-row">
+          <span class="detail-label">Tags</span>
+          <span class="detail-value">
+            <span v-if="product.tags && product.tags.length" class="tags-list">
+              <TagChip v-for="(t, i) in product.tags" :key="i" :tag-name="t.tag_name" :value="t.value" />
+            </span>
+            <span v-else class="empty-val">—</span>
+          </span>
+        </div>
+
+        <div class="detail-row">
           <span class="detail-label">Status</span>
           <span class="detail-value">
             <span class="status-pill" :class="product.is_active ? 'active' : 'inactive'">
@@ -71,6 +81,7 @@
 <script setup>
 import { formatDateTime } from '@/utils/datetime'
 import { displayCategoryName } from '@/features/productCategories/constants'
+import TagChip from '@/components/common/TagChip.vue'
 
 defineProps({
   product: { type: Object, required: true },
@@ -100,6 +111,7 @@ defineEmits(['close', 'edit'])
 .name-text { font-weight: 700; font-size: 15px; }
 .code-text { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; font-size: 15px; }
 .cat-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: #4338ca; }
+.tags-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .empty-val { color: #d1d5db; }
 
 .status-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }

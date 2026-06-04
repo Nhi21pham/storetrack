@@ -12,6 +12,8 @@ use App\Models\ProductCategory;
 use App\Models\Unit;
 use App\Models\User;
 use App\Repositories\ProductRepository;
+use App\Repositories\Tag\TaggableRepository;
+use App\Services\Tag\TaggableService;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -21,9 +23,18 @@ class ProductService
 {
     public function __construct(
         private ProductRepository $productRepository,
+        private TaggableRepository $taggableRepository,
+        private TaggableService $taggableService,
         private PermissionService $permissionService,
         private AuditLogService $auditLogService,
     ) {}
+
+    public function getByTag(User $user, int $storeId, int $tagId, ?int $tagValueId = null, bool $includeInactive = false): Collection
+    {
+        $this->authorizeView($user, $storeId);
+        $ids = $this->taggableRepository->entityIdsByTag($storeId, Product::class, $tagId, $tagValueId);
+        return $this->productRepository->byIds($storeId, $ids, $includeInactive);
+    }
 
     public function getAll(User $user, int $storeId, bool $includeInactive = false): Collection
     {
@@ -108,7 +119,18 @@ class ProductService
                 $this->translateQueryException($e, $name);
             }
 
-            $product = $product->fresh(['unit', 'category']);
+            if (array_key_exists('tags', $data)) {
+                $this->taggableService->syncEntityTags(
+                    $actor,
+                    PermissionEnum::CREATE_PRODUCT,
+                    $storeId,
+                    Product::class,
+                    (int) $product->id,
+                    $data['tags'] ?? []
+                );
+            }
+
+            $product = $product->fresh(['unit', 'category', 'taggables.tag', 'taggables.tagValue']);
             $this->auditLogService->productCreated($actor, $product);
 
             return $product;
@@ -169,16 +191,31 @@ class ProductService
                 $patch['is_active'] = (bool) $data['is_active'];
             }
 
-            if (empty($patch)) {
+            $hasTags = array_key_exists('tags', $data);
+
+            if (empty($patch) && !$hasTags) {
                 return $product;
             }
 
             $wasActive = (bool) $product->is_active;
 
-            try {
-                $product = $this->productRepository->update($product, $patch);
-            } catch (QueryException $e) {
-                $this->translateQueryException($e, $renamedTo ?? $product->name);
+            if (!empty($patch)) {
+                try {
+                    $product = $this->productRepository->update($product, $patch);
+                } catch (QueryException $e) {
+                    $this->translateQueryException($e, $renamedTo ?? $product->name);
+                }
+            }
+
+            if ($hasTags) {
+                $this->taggableService->syncEntityTags(
+                    $actor,
+                    PermissionEnum::UPDATE_PRODUCT,
+                    $storeId,
+                    Product::class,
+                    (int) $product->id,
+                    $data['tags'] ?? []
+                );
             }
 
             if (array_key_exists('is_active', $patch) && $patch['is_active'] !== $wasActive) {
@@ -191,7 +228,7 @@ class ProductService
                 $this->auditLogService->productUpdated($actor, $product);
             }
 
-            return $product;
+            return $product->fresh(['unit', 'category', 'taggables.tag', 'taggables.tagValue']);
         });
     }
 

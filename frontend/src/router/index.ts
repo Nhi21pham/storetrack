@@ -19,6 +19,7 @@ import BankAccountsPage from '@/features/banking/pages/BankAccountsPage.vue'
 import UnitsPage from '@/features/units/pages/UnitsPage.vue'
 import ProductsPage from '@/features/products/pages/ProductsPage.vue'
 import ProductCategoriesPage from '@/features/productCategories/pages/ProductCategoriesPage.vue'
+import TagsPage from '@/features/tags/pages/TagsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -203,6 +204,18 @@ const router = createRouter({
               { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Others' },
               { label: 'Product Categories' },
+            ],
+          },
+        },
+        {
+          path: 'tags',
+          name: 'tags',
+          component: TagsPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Others' },
+              { label: 'Tags' },
             ],
           },
         },

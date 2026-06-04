@@ -116,6 +116,12 @@
               Product Categories
             </span>
           </router-link>
+          <router-link to="/tags" class="submenu-item" :class="{ active: isActive('/tags') }" @click="$emit('close')">
+            <span class="submenu-item-label">
+              <Icon name="tag" :size="15" color="currentColor" />
+              Tags
+            </span>
+          </router-link>
         </div>
       </div>
     </div>

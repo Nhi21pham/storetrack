@@ -26,6 +26,7 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -33,6 +34,17 @@
           :reset-columns="columnVisibility.resetColumns"
         />
       </div>
+
+      <BulkStatusBar
+        v-if="selectedIds.size > 0"
+        :count="selectedIds.size"
+        :busy="bulkBusy"
+        :can-delete="canDelete"
+        @clear="clearSelection"
+        @activate="requestBulk('activate')"
+        @deactivate="requestBulk('deactivate')"
+        @delete="requestBulk('delete')"
+      />
 
       <LoadingState v-if="loading">Loading products...</LoadingState>
 
@@ -45,8 +57,15 @@
       <div v-else class="table-wrap">
         <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+            <SelectCheckbox
+              v-if="c.key === 'select'"
+              :checked="allVisibleSelected"
+              :indeterminate="someVisibleSelected"
+              title="Select all on this page"
+              @change="toggleSelectAll"
+            />
             <SortableHeader
-              v-if="c.sortable"
+              v-else-if="c.sortable"
               :label="c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
@@ -75,6 +94,16 @@
               @update:modelValue="unitFilter = $event"
             />
           </template>
+          <template #filter-tags>
+            <SearchableSelect
+              :modelValue="tagFilter"
+              :options="tagOptions"
+              all-label="(All tags)"
+              search-placeholder="Filter tag..."
+              teleport
+              @update:modelValue="tagFilter = $event"
+            />
+          </template>
           <template #filter-status>
             <SearchableSelect
               :modelValue="statusFilter"
@@ -92,6 +121,9 @@
             </td>
           </tr>
           <tr v-for="product in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
+            <td v-if="columnVisibility.isVisible('select')">
+              <SelectCheckbox :checked="isSelected(product.id)" @change="toggleRow(product.id)" />
+            </td>
             <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ product.id }}</td>
             <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ product.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
@@ -103,6 +135,15 @@
             </td>
             <td v-if="columnVisibility.isVisible('unit')">
               <span v-if="product.unit?.name">{{ product.unit.name }}</span>
+              <span v-else class="empty-val">—</span>
+            </td>
+            <td v-if="columnVisibility.isVisible('tags')">
+              <div v-if="product.tags && product.tags.length" class="tags-cell">
+                <span v-for="(t, i) in product.tags" :key="i" class="chip-wrap">
+                  <TagChip :tag-name="t.tag_name" :value="t.value" />
+                  <ChipRemoveButton v-if="canCreateUpdate" title="Detach tag" @click="detachTag(product, i)" />
+                </span>
+              </div>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('status')">
@@ -163,6 +204,17 @@
     />
 
     <ConfirmDialog
+      v-if="pendingAction"
+      :title="confirmConfig.title"
+      :message="confirmConfig.message"
+      :confirm-text="confirmConfig.confirmText"
+      cancel-text="Cancel"
+      :type="confirmConfig.type"
+      @confirm="confirmBulk"
+      @cancel="cancelBulk"
+    />
+
+    <ConfirmDialog
       v-if="deactivateTarget"
       :title="`Product is in use`"
       :message="`${deactivateTarget.name} is referenced elsewhere and cannot be deleted. Deactivate it instead? Inactive products stay linked to existing references but won't appear in new pickers.`"
@@ -170,6 +222,17 @@
       cancel-text="Cancel"
       @confirm="performDeactivate"
       @cancel="deactivateTarget = null"
+    />
+
+    <ConfirmDialog
+      v-if="detachTarget"
+      :title="`Detach tag?`"
+      :message="`Remove the tag '${detachTarget.tag.value ? `${detachTarget.tag.tag_name}: ${detachTarget.tag.value}` : detachTarget.tag.tag_name}' from '${detachTarget.product.name}'? This won't delete the tag itself.`"
+      confirm-text="Detach"
+      cancel-text="Cancel"
+      type="warning"
+      @confirm="performDetach"
+      @cancel="detachTarget = null"
     />
 
     <ConfirmDialog
@@ -202,12 +265,20 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import TagChip from '@/components/common/TagChip.vue'
+import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
+import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useRowSelection } from '@/composables/useRowSelection'
+import { useBulkActions } from '@/composables/useBulkActions'
 import { fetchProducts, deleteProduct, updateProduct } from '@/features/products/services/productService'
+import { fetchTags } from '@/features/tags/services/tagService'
 import { fetchUnits } from '@/features/units/services/unitService'
 import { fetchProductCategories } from '@/features/productCategories/services/productCategoryService'
 import { displayCategoryName } from '@/features/productCategories/constants'
@@ -219,7 +290,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'products',
   columns: PRODUCT_COLUMNS,
-  lockedKeys: ['actions'],
+  lockedKeys: ['select', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(PRODUCT_INITIAL_COL_WIDTHS))
@@ -231,11 +302,13 @@ const currentStore = inject('currentStore')
 const products = ref([])
 const units = ref([])
 const categories = ref([])
+const tags = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
 const unitFilter = ref('')
 const categoryFilter = ref('')
+const tagFilter = ref('')
 
 const unitOptions = computed(() =>
   units.value.map(u => ({ value: String(u.id), label: u.name }))
@@ -248,11 +321,34 @@ const categoryOptions = computed(() =>
   }))
 )
 
+const tagOptions = computed(() => {
+  const opts = []
+  for (const t of tags.value) {
+    opts.push({ value: `tag:${t.id}`, label: `${t.name} (any)` })
+    for (const v of (t.values || [])) {
+      opts.push({ value: `val:${v.id}`, label: `${t.name}: ${v.value}` })
+    }
+  }
+  return opts
+})
+
+const hasActiveFilters = computed(() =>
+  !!(statusFilter.value || unitFilter.value || categoryFilter.value || tagFilter.value)
+)
+
+const clearFilters = () => {
+  statusFilter.value = ''
+  unitFilter.value = ''
+  categoryFilter.value = ''
+  tagFilter.value = ''
+}
+
 const showForm = ref(false)
 const editingProduct = ref(null)
 const detailProduct = ref(null)
 const deleteTarget = ref(null)
 const deactivateTarget = ref(null)
+const detachTarget = ref(null)
 const togglingProduct = ref(null)
 
 const onDetailEdit = (product) => {
@@ -265,6 +361,20 @@ const canDelete = computed(() => {
   return role === 'owner' || role === 'accountant'
 })
 
+const canCreateUpdate = computed(() => {
+  const role = String(currentStore?.value?.my_role || '').toLowerCase()
+  return role === 'owner' || role === 'accountant' || role === 'staff'
+})
+
+const matchesTagFilter = (product) => {
+  if (!tagFilter.value) return true
+  const [kind, id] = tagFilter.value.split(':')
+  const productTags = product.tags || []
+  if (kind === 'tag') return productTags.some(t => String(t.tag_id) === id)
+  if (kind === 'val') return productTags.some(t => String(t.tag_value_id) === id)
+  return true
+}
+
 const filteredProducts = computed(() => {
   const needle = normalizeText(searchQuery.value)
   return products.value.filter(p => {
@@ -272,12 +382,17 @@ const filteredProducts = computed(() => {
     if (statusFilter.value === 'inactive' &&  p.is_active) return false
     if (unitFilter.value && String(p.unit_id) !== unitFilter.value) return false
     if (categoryFilter.value && String(p.product_category_id) !== categoryFilter.value) return false
+    if (!matchesTagFilter(p)) return false
     if (!needle) return true
     return (
       normalizeText(p.code || '').includes(needle) ||
       normalizeText(p.name).includes(needle) ||
       normalizeText(p.unit?.name || '').includes(needle) ||
-      normalizeText(displayCategoryName(p.category || {})).includes(needle)
+      normalizeText(displayCategoryName(p.category || {})).includes(needle) ||
+      (p.tags || []).some(t =>
+        normalizeText(t.tag_name || '').includes(needle) ||
+        normalizeText(t.value || '').includes(needle)
+      )
     )
   })
 })
@@ -304,25 +419,40 @@ const {
   resetPage,
 } = useClientPagination(sortedProducts)
 
-watch([searchQuery, statusFilter, unitFilter, categoryFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
+const visibleIds = computed(() => paginatedProducts.value.map(p => String(p.id)))
+const {
+  selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
+  allVisibleSelected, someVisibleSelected,
+} = useRowSelection({ eligibleIds: visibleIds })
+
+const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
+  selectedIds, clearSelection, reload: () => load(), noun: 'product',
+  setActive: (id, isActive) => updateProduct({ id, input: { is_active: isActive } }),
+  remove: (id) => deleteProduct({ id }),
+})
+
+watch([searchQuery, statusFilter, unitFilter, categoryFilter, tagFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {
     products.value = []
     units.value = []
     categories.value = []
+    tags.value = []
     return
   }
   loading.value = true
   try {
-    const [productList, unitList, categoryList] = await Promise.all([
+    const [productList, unitList, categoryList, tagList] = await Promise.all([
       fetchProducts({ storeId: currentStore.value.id, includeInactive: true }),
       fetchUnits({ storeId: currentStore.value.id, includeInactive: true }),
       fetchProductCategories({ storeId: currentStore.value.id, includeInactive: true }),
+      fetchTags({ storeId: currentStore.value.id }),
     ])
     products.value = productList
     units.value = unitList
     categories.value = categoryList
+    tags.value = tagList
   } finally {
     loading.value = false
   }
@@ -330,7 +460,7 @@ const load = async () => {
 
 onMounted(load)
 
-watch(() => currentStore?.value?.id, load)
+watch(() => currentStore?.value?.id, () => { clearSelection(); load() })
 
 const openCreate = () => {
   editingProduct.value = null
@@ -387,6 +517,27 @@ const performDeactivate = async () => {
   }
 }
 
+const detachTag = (product, idx) => {
+  detachTarget.value = { product, idx, tag: product.tags[idx] }
+}
+
+const performDetach = async () => {
+  const { product, idx } = detachTarget.value
+  detachTarget.value = null
+  const tags = (product.tags || [])
+    .filter((_, i) => i !== idx)
+    .map(t => ({
+      tag_id: String(t.tag_id),
+      tag_value_id: t.tag_value_id != null ? String(t.tag_value_id) : null,
+    }))
+  try {
+    await updateProduct({ id: product.id, input: { tags } })
+    await load()
+  } catch (err) {
+    alert(err.message)
+  }
+}
+
 const onToggleActive = (product) => {
   togglingProduct.value = product
 }
@@ -419,9 +570,12 @@ const handleToggle = async () => {
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
+tbody tr.inactive td.actions-col { background: #fafafa; }
 
 .id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }
+.tags-cell { display: flex; flex-wrap: wrap; gap: 4px; }
+.tags-cell .chip-wrap { display: inline-flex; align-items: center; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .empty-val { color: #d1d5db; }

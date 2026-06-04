@@ -42,7 +42,7 @@ class ProductRepository
 
     public function all(int $storeId, bool $includeInactive = false): Collection
     {
-        $query = Product::query()->with(['unit', 'category'])->where('store_id', $storeId);
+        $query = Product::query()->with(['unit', 'category', 'taggables.tag', 'taggables.tagValue'])->where('store_id', $storeId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
@@ -51,20 +51,39 @@ class ProductRepository
 
     public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder
     {
-        $query = Product::query()->with(['unit', 'category'])->where('store_id', $storeId);
+        $query = Product::query()->with(['unit', 'category', 'taggables.tag', 'taggables.tagValue'])->where('store_id', $storeId);
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
         $like = '%' . $needle . '%';
         $query->where(function ($q) use ($like) {
             $q->where('code', 'like', $like)
-                ->orWhere('name_normalized', 'like', $like);
+                ->orWhere('name_normalized', 'like', $like)
+                ->orWhereHas('taggables', function ($tq) use ($like) {
+                    $tq->whereHas('tag', fn ($t) => $t->where('name_normalized', 'like', $like))
+                        ->orWhereHas('tagValue', fn ($v) => $v->where('value_normalized', 'like', $like));
+                });
         });
         $query->orderBy('code');
         if ($limit !== null) {
             $query->limit($limit);
         }
         return $query;
+    }
+
+    public function byIds(int $storeId, array $ids, bool $includeInactive = false): Collection
+    {
+        if (empty($ids)) {
+            return new Collection();
+        }
+        $query = Product::query()
+            ->with(['unit', 'category', 'taggables.tag', 'taggables.tagValue'])
+            ->where('store_id', $storeId)
+            ->whereIn('id', $ids);
+        if (!$includeInactive) {
+            $query->where('is_active', true);
+        }
+        return $query->orderByDesc('id')->get();
     }
 
     public function existsForUnit(int $unitId): bool

@@ -1,4 +1,5 @@
 export const PRODUCT_CATEGORY_COLUMNS = [
+  { key: 'select',      label: '',            sortable: false },
   { key: 'id',          label: 'ID',          sortable: true  },
   { key: 'code',        label: 'Code',        sortable: true  },
   { key: 'name',        label: 'Name',        sortable: true  },
@@ -8,7 +9,7 @@ export const PRODUCT_CATEGORY_COLUMNS = [
   { key: 'actions',     label: '',            sortable: false },
 ]
 
-export const PRODUCT_CATEGORY_INITIAL_COL_WIDTHS = [70, 100, 220, 290, 110, 160, 90]
+export const PRODUCT_CATEGORY_INITIAL_COL_WIDTHS = [44, 70, 100, 220, 290, 110, 160, 90]
 
 export const STATUS_OPTIONS = [
   { value: 'active',   label: 'Active' },
