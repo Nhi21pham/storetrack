@@ -77,11 +77,12 @@ class ExportUnitJob extends BaseExportJob
         $filters = $metadata['filters'] ?? [];
         $search = $filters['search'] ?? null;
         $ids = isset($filters['ids']) && is_array($filters['ids']) ? $filters['ids'] : null;
+        $status = $filters['status'] ?? null;
 
         $storeName = $metadata['scope_name'] ?? (Store::find($storeId)?->name ?? '');
         $title = 'Units of store '.$storeName;
 
-        $query = app(UnitRepository::class)->listQuery($storeId, $search, $ids);
+        $query = app(UnitRepository::class)->listQuery($storeId, $search, $ids, $status);
 
         return [$user, $title, $query];
     }

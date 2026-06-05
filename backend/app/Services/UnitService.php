@@ -215,6 +215,9 @@ class UnitService
         if (!empty($filters['search'])) {
             $clean['search'] = (string) $filters['search'];
         }
+        if (in_array($filters['status'] ?? null, ['active', 'inactive'], true)) {
+            $clean['status'] = (string) $filters['status'];
+        }
         if (!empty($filters['ids']) && is_array($filters['ids'])) {
             $ids = array_values(array_unique(array_map('intval', $filters['ids'])));
             sort($ids);

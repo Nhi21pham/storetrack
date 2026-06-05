@@ -247,7 +247,7 @@ const selectableIds = computed(() => sortedTags.value.map(t => String(t.id)))
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: selectableIds })
+} = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), noun: 'tag',

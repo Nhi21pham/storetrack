@@ -423,7 +423,7 @@ const selectableIds = computed(() => sortedProducts.value.map(p => String(p.id))
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: selectableIds })
+} = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), noun: 'product',

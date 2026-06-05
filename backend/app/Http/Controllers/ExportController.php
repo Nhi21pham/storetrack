@@ -153,6 +153,7 @@ class ExportController extends Controller
         return [
             'store_id' => $request->query('store_id'),
             'search'   => $request->query('search'),
+            'status'   => $request->query('status'),
             'ids'      => $ids,
             'columns'  => $columns,
         ];

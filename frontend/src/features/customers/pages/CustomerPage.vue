@@ -242,7 +242,7 @@ const selectableIds = computed(() =>
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: selectableIds })
+} = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
 
 const showForm        = ref(false)
 const editingCustomer = ref(null)

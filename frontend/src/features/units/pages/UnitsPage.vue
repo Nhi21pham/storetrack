@@ -308,11 +308,14 @@ const selectableIds = computed(() => sortedUnits.value.map(u => String(u.id)))
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: selectableIds })
+} = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
 
 const { exporting, run: runExport } = useExport({
   start: () => {
-    const params = { search: searchQuery.value.trim() || undefined }
+    const params = {
+      search: searchQuery.value.trim() || undefined,
+      status: statusFilter.value || undefined,
+    }
     if (selectedIds.value.size > 0) {
       params.ids = Array.from(selectedIds.value)
     }
