@@ -54,6 +54,22 @@ class UnitRepository
         return $query->orderBy('name')->get();
     }
 
+    public function listQuery(int $storeId, ?string $search = null, ?array $ids = null): Builder
+    {
+        $query = Unit::query()->where('store_id', $storeId);
+
+        if ($ids !== null && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        if ($search !== null && $search !== '') {
+            $needle = '%'.$search.'%';
+            $query->where('name', 'like', $needle);
+        }
+
+        return $query->orderBy('id');
+    }
+
     public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder
     {
         $query = Unit::query()->where('store_id', $storeId);

@@ -1,4 +1,4 @@
-import { graphql } from '@/api'
+import { graphql, rest } from '@/api'
 
 const UNIT_FIELDS = `id store_id name is_active created_at updated_at`
 
@@ -66,3 +66,6 @@ export const updateUnit = async ({ id, input }) => {
 export const deleteUnit = async ({ id }) => {
   await graphql(DELETE_UNIT_MUTATION, { id })
 }
+
+export const startUnitExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/units/${storeId}`, { params })
