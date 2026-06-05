@@ -236,13 +236,13 @@ const {
   resetPage,
 } = useClientPagination(sortedCustomers)
 
-const visibleIds = computed(() =>
-  paginatedCustomers.value.filter(canManageRow).map((c) => String(c.id)),
+const selectableIds = computed(() =>
+  sortedCustomers.value.filter(canManageRow).map((c) => String(c.id)),
 )
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: visibleIds })
+} = useRowSelection({ eligibleIds: selectableIds })
 
 const showForm        = ref(false)
 const editingCustomer = ref(null)

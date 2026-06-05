@@ -73,7 +73,7 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all on this page"
+              title="Select all"
               @change="toggleSelectAll"
             />
             <SortableHeader
@@ -304,11 +304,11 @@ const {
   resetPage,
 } = useClientPagination(sortedUnits)
 
-const visibleIds = computed(() => paginatedUnits.value.map(u => String(u.id)))
+const selectableIds = computed(() => sortedUnits.value.map(u => String(u.id)))
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: visibleIds })
+} = useRowSelection({ eligibleIds: selectableIds })
 
 const { exporting, run: runExport } = useExport({
   start: () => {

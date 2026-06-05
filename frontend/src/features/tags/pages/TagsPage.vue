@@ -59,7 +59,7 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all on this page"
+              title="Select all"
               @change="toggleSelectAll"
             />
             <SortableHeader
@@ -243,11 +243,11 @@ const {
   resetPage,
 } = useClientPagination(sortedTags)
 
-const visibleIds = computed(() => paginatedTags.value.map(t => String(t.id)))
+const selectableIds = computed(() => sortedTags.value.map(t => String(t.id)))
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: visibleIds })
+} = useRowSelection({ eligibleIds: selectableIds })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), noun: 'tag',
