@@ -47,42 +47,22 @@ class ExportController extends Controller
 
     public function queueCustomers(Request $request, int $businessId): JsonResponse
     {
-        return $this->queued(fn () => $this->customerService->queueExport(
-            $request->user(),
-            $businessId,
-            $this->extractPartyExportFilters($request),
-            $this->extractClientId($request),
-        ));
+        return $this->queueEntityExport($request, $businessId, $this->customerService);
     }
 
     public function queueSuppliers(Request $request, int $businessId): JsonResponse
     {
-        return $this->queued(fn () => $this->supplierService->queueExport(
-            $request->user(),
-            $businessId,
-            $this->extractPartyExportFilters($request),
-            $this->extractClientId($request),
-        ));
+        return $this->queueEntityExport($request, $businessId, $this->supplierService);
     }
 
     public function queueUnits(Request $request, int $storeId): JsonResponse
     {
-        return $this->queued(fn () => $this->unitService->queueExport(
-            $request->user(),
-            $storeId,
-            $this->extractPartyExportFilters($request),
-            $this->extractClientId($request),
-        ));
+        return $this->queueEntityExport($request, $storeId, $this->unitService);
     }
 
     public function queueTags(Request $request, int $storeId): JsonResponse
     {
-        return $this->queued(fn () => $this->tagService->queueExport(
-            $request->user(),
-            $storeId,
-            $this->extractPartyExportFilters($request),
-            $this->extractClientId($request),
-        ));
+        return $this->queueEntityExport($request, $storeId, $this->tagService);
     }
 
     public function status(Request $request, int $exportId): JsonResponse
@@ -192,12 +172,6 @@ class ExportController extends Controller
         ], $e->getStatusCode());
     }
 
-    /**
-     * Run a queue-export action and shape the response: a 202 with the export
-     * payload on success, or the standard error body if it throws AppException.
-     *
-     * @param  callable(): Export  $resolve
-     */
     private function queued(callable $resolve): JsonResponse
     {
         try {
@@ -205,5 +179,15 @@ class ExportController extends Controller
         } catch (AppException $e) {
             return $this->appExceptionResponse($e);
         }
+    }
+
+    private function queueEntityExport(Request $request, int $scopeId, object $service): JsonResponse
+    {
+        return $this->queued(fn () => $service->queueExport(
+            $request->user(),
+            $scopeId,
+            $this->extractPartyExportFilters($request),
+            $this->extractClientId($request),
+        ));
     }
 }
