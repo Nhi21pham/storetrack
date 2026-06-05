@@ -36,6 +36,15 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <button
+          class="btn-export"
+          :disabled="exporting || sortedBanks.length === 0"
+          :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
+          @click="runExport"
+        >
+          <Icon name="download" :size="14" />
+          <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+        </button>
       </div>
 
       <BulkStatusBar
@@ -43,7 +52,10 @@
         :count="selectedIds.size"
         :busy="bulkBusy"
         :can-delete="canDelete"
+        show-export
+        :exporting="exporting"
         @clear="clearSelection"
+        @export="runExport"
         @activate="requestBulk('activate')"
         @deactivate="requestBulk('deactivate')"
         @delete="requestBulk('delete')"
@@ -206,7 +218,8 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
-import { fetchBanks, deleteBank, updateBank } from '@/features/banking/services/bankService'
+import { useExport } from '@/composables/useExport'
+import { fetchBanks, deleteBank, updateBank, startBankExport } from '@/features/banking/services/bankService'
 import { BANK_COLUMNS, BANK_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 
 const columnVisibility = useColumnVisibility({
@@ -222,6 +235,7 @@ import { normalizeText } from '@/utils/textNormalizer'
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
+const showToast = inject('showToast')
 
 const banks = ref([])
 const loading = ref(false)
@@ -282,6 +296,25 @@ const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
 } = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
+
+const { exporting, run: runExport } = useExport({
+  start: () => {
+    const params = {
+      search: searchQuery.value.trim() || undefined,
+      include_inactive: includeInactive.value ? undefined : 'false',
+    }
+    if (selectedIds.value.size > 0) {
+      params.ids = Array.from(selectedIds.value)
+    }
+    params.columns = columnVisibility.togglableColumns
+      .filter((col) => columnVisibility.isVisible(col.key))
+      .map((col) => col.key)
+    return startBankExport({ businessId: currentBusiness.value.id, params })
+  },
+  defaultFilename: (id) => `banks-${id}.xlsx`,
+  onSuccess: () => showToast('Bank export ready.', 'success'),
+  onError:   (msg) => showToast(msg, 'error'),
+})
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), noun: 'bank',
@@ -387,6 +420,10 @@ const handleToggle = async () => {
 .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
 .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; cursor: pointer; flex-shrink: 0; }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #111; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; }
+.btn-export:hover:not(:disabled) { background: #000; }
+.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-create { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-create:hover { background: #333; }

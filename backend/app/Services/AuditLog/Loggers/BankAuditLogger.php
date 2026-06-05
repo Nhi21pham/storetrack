@@ -5,6 +5,8 @@ namespace App\Services\AuditLog\Loggers;
 use App\Enums\AuditAction;
 use App\Enums\AuditObjectType;
 use App\Models\Bank;
+use App\Models\Business;
+use App\Models\Export;
 use App\Models\User;
 use App\Services\AuditLog\AuditLogger;
 
@@ -79,6 +81,23 @@ class BankAuditLogger extends AuditLogger
                 'bank_id'     => $bankId,
                 'short_name'  => $shortName,
                 'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function bankExported(User $actor, int $businessId, Export $export, string $scopeName): void
+    {
+        $businessName = Business::find($businessId)?->name ?? $scopeName;
+        $metadata = $export->metadata ?? [];
+
+        $this->log(null, $actor, AuditObjectType::BANK, AuditAction::EXPORTED,
+            self::actor($actor) . " has EXPORTED banks of business {$businessName}.",
+            [
+                'business_id' => $businessId,
+                'export_id'   => $export->id,
+                'filename'    => $export->filename,
+                'filters'     => $metadata['filters'] ?? null,
             ],
             $businessId
         );

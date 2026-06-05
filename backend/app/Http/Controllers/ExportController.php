@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\AppException;
 use App\Models\Export;
 use App\Services\AuditLog\AuditLogExportService;
+use App\Services\BankService;
 use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\ProductService;
@@ -25,6 +26,7 @@ class ExportController extends Controller
         private UnitService $unitService,
         private TagService $tagService,
         private ProductService $productService,
+        private BankService $bankService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -73,6 +75,16 @@ class ExportController extends Controller
             $request->user(),
             $storeId,
             $this->extractProductExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueBanks(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->bankService->queueExport(
+            $request->user(),
+            $businessId,
+            $this->extractBankExportFilters($request),
             $this->extractClientId($request),
         ));
     }
@@ -170,6 +182,13 @@ class ExportController extends Controller
             'category_id'  => $request->query('category_id'),
             'tag_id'       => $request->query('tag_id'),
             'tag_value_id' => $request->query('tag_value_id'),
+        ]);
+    }
+
+    private function extractBankExportFilters(Request $request): array
+    {
+        return array_merge($this->extractPartyExportFilters($request), [
+            'include_inactive' => $request->query('include_inactive'),
         ]);
     }
 

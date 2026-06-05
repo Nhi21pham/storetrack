@@ -3,9 +3,14 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\ExportScope;
 use App\Enums\PermissionEnum;
 use App\Exceptions\BankException;
+use App\Exports\BankExport;
+use App\Jobs\Exports\ExportBankJob;
 use App\Models\Bank;
+use App\Models\Business;
+use App\Models\Export;
 use App\Models\User;
 use App\Repositories\BankRepository;
 use App\Services\AuditLog\Loggers\BankAuditLogger;
@@ -19,6 +24,7 @@ class BankService
         private BankRepository $bankRepository,
         private PermissionService $permissionService,
         private BankAuditLogger $auditLogger,
+        private ExportService $exportService,
     ) {}
 
     public function getAll(User $user, int $businessId, bool $includeInactive = false): Collection
@@ -170,6 +176,58 @@ class BankService
         });
 
         $this->auditLogger->bankDeleted($actor, $bankId, $shortName, $businessId);
+    }
+
+    public function queueExport(User $user, int $businessId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->authorizeView($user, $businessId);
+
+        $type              = ExportBankJob::TYPE;
+        $scope             = ExportScope::BUSINESS;
+        $scopeName         = Business::find($businessId)?->name;
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        $jobClass          = ExportBankJob::class;
+
+        return $this->exportService->queue(
+            $user,
+            $type,
+            $scope,
+            $businessId,
+            $scopeName,
+            $normalizedFilters,
+            $jobClass,
+            $clientId,
+        );
+    }
+
+    private function normalizeExportFilters(array $filters): array
+    {
+        $clean = [];
+
+        if (!empty($filters['search'])) {
+            $clean['search'] = (string) $filters['search'];
+        }
+        if (in_array($filters['include_inactive'] ?? null, ['false', '0', 0, false], true)) {
+            $clean['include_inactive'] = false;
+        }
+        if (!empty($filters['ids']) && is_array($filters['ids'])) {
+            $ids = array_values(array_unique(array_map('intval', $filters['ids'])));
+            sort($ids);
+            if (count($ids) > 0) {
+                $clean['ids'] = $ids;
+            }
+        }
+        if (!empty($filters['columns']) && is_array($filters['columns'])) {
+            $columns = array_values(array_filter(
+                BankExport::COLUMN_KEYS,
+                fn ($key) => in_array($key, $filters['columns'], true),
+            ));
+            if (count($columns) > 0 && count($columns) < count(BankExport::COLUMN_KEYS)) {
+                $clean['columns'] = $columns;
+            }
+        }
+
+        return $clean;
     }
 
     private function authorizeView(User $user, int $businessId): void
