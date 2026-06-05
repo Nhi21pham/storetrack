@@ -4,6 +4,7 @@ namespace App\Services\AuditLog\Loggers;
 
 use App\Enums\AuditAction;
 use App\Enums\AuditObjectType;
+use App\Models\Export;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\User;
@@ -111,6 +112,27 @@ class ProductAuditLogger extends AuditLogger
                 'store_id'    => $storeId,
                 'store_name'  => $store?->name,
                 'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function productExported(User $actor, int $storeId, Export $export, string $scopeName): void
+    {
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $storeName = $store?->name ?? $scopeName;
+        $metadata = $export->metadata ?? [];
+
+        $this->log($storeId, $actor, AuditObjectType::PRODUCT, AuditAction::EXPORTED,
+            self::actor($actor) . " has EXPORTED products of store {$storeName}.",
+            [
+                'store_id'    => $storeId,
+                'store_name'  => $storeName,
+                'business_id' => $businessId,
+                'export_id'   => $export->id,
+                'filename'    => $export->filename,
+                'filters'     => $metadata['filters'] ?? null,
             ],
             $businessId
         );

@@ -7,6 +7,7 @@ use App\Models\Export;
 use App\Services\AuditLog\AuditLogExportService;
 use App\Services\CustomerService;
 use App\Services\ExportService;
+use App\Services\ProductService;
 use App\Services\SupplierService;
 use App\Services\Tag\TagService;
 use App\Services\UnitService;
@@ -23,6 +24,7 @@ class ExportController extends Controller
         private SupplierService $supplierService,
         private UnitService $unitService,
         private TagService $tagService,
+        private ProductService $productService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -63,6 +65,16 @@ class ExportController extends Controller
     public function queueTags(Request $request, int $storeId): JsonResponse
     {
         return $this->queueEntityExport($request, $storeId, $this->tagService);
+    }
+
+    public function queueProducts(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->productService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractProductExportFilters($request),
+            $this->extractClientId($request),
+        ));
     }
 
     public function status(Request $request, int $exportId): JsonResponse
@@ -149,6 +161,16 @@ class ExportController extends Controller
             'ids'      => $ids,
             'columns'  => $columns,
         ];
+    }
+
+    private function extractProductExportFilters(Request $request): array
+    {
+        return array_merge($this->extractPartyExportFilters($request), [
+            'unit_id'      => $request->query('unit_id'),
+            'category_id'  => $request->query('category_id'),
+            'tag_id'       => $request->query('tag_id'),
+            'tag_value_id' => $request->query('tag_value_id'),
+        ]);
     }
 
     private function exportResponse(Export $export, int $status): JsonResponse
