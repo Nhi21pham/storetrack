@@ -32,6 +32,15 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <button
+          class="btn-export"
+          :disabled="exporting || sortedTags.length === 0"
+          :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
+          @click="runExport"
+        >
+          <Icon name="download" :size="14" />
+          <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+        </button>
       </div>
 
       <BulkStatusBar
@@ -40,7 +49,10 @@
         :busy="bulkBusy"
         :can-delete="canDeleteKey"
         :show-status="false"
+        show-export
+        :exporting="exporting"
         @clear="clearSelection"
+        @export="runExport"
         @delete="requestBulk('delete')"
       />
 
@@ -183,7 +195,8 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
-import { fetchTags, deleteTag } from '@/features/tags/services/tagService'
+import { useExport } from '@/composables/useExport'
+import { fetchTags, deleteTag, startTagExport } from '@/features/tags/services/tagService'
 import { TAG_COLUMNS, TAG_INITIAL_COL_WIDTHS } from '@/features/tags/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
@@ -199,6 +212,7 @@ const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
+const showToast = inject('showToast')
 
 const tags = ref([])
 const loading = ref(false)
@@ -248,6 +262,22 @@ const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
 } = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
+
+const { exporting, run: runExport } = useExport({
+  start: () => {
+    const params = { search: searchQuery.value.trim() || undefined }
+    if (selectedIds.value.size > 0) {
+      params.ids = Array.from(selectedIds.value)
+    }
+    params.columns = columnVisibility.togglableColumns
+      .filter((col) => columnVisibility.isVisible(col.key))
+      .map((col) => col.key)
+    return startTagExport({ storeId: currentStore.value.id, params })
+  },
+  defaultFilename: (id) => `tags-${id}.xlsx`,
+  onSuccess: () => showToast('Tag export ready.', 'success'),
+  onError:   (msg) => showToast(msg, 'error'),
+})
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), noun: 'tag',
@@ -319,6 +349,10 @@ const performDeleteKey = async () => {
 <style scoped>
 .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #111; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; }
+.btn-export:hover:not(:disabled) { background: #000; }
+.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 

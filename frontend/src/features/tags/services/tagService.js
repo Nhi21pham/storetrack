@@ -1,4 +1,4 @@
-import { graphql } from '@/api'
+import { graphql, rest } from '@/api'
 
 const TAG_VALUE_FIELDS = `
   id tag_id value created_at updated_at
@@ -116,3 +116,6 @@ export const updateTagValue = async ({ id, input }) => {
 export const deleteTagValue = async ({ id }) => {
   await graphql(DELETE_TAG_VALUE_MUTATION, { id })
 }
+
+export const startTagExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/tags/${storeId}`, { params })

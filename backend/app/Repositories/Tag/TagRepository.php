@@ -3,6 +3,7 @@
 namespace App\Repositories\Tag;
 
 use App\Models\Tag\Tag;
+use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -47,6 +48,30 @@ class TagRepository
             ->where('store_id', $storeId)
             ->orderBy('name')
             ->get();
+    }
+
+    public function listQuery(int $storeId, ?string $search = null, ?array $ids = null): Builder
+    {
+        $query = Tag::query()->with('values')->where('store_id', $storeId);
+
+        if ($ids !== null && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        if ($search !== null && $search !== '') {
+            $needle = TextNormalizer::normalize($search);
+            if ($needle !== '') {
+                $like = '%'.$needle.'%';
+                $query->where(function (Builder $q) use ($like) {
+                    $q->where('name_normalized', 'like', $like)
+                        ->orWhereHas('values', function (Builder $valueQuery) use ($like) {
+                            $valueQuery->where('value_normalized', 'like', $like);
+                        });
+                });
+            }
+        }
+
+        return $query->orderBy('id');
     }
 
     public function searchQuery(int $storeId, string $needle, ?int $limit = null): Builder

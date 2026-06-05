@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\ExportScope;
 use App\Enums\PermissionEnum;
 use App\Exceptions\UnitException;
 use App\Exports\UnitExport;
@@ -11,7 +12,6 @@ use App\Models\Export;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
-use App\Repositories\ExportRepository;
 use App\Repositories\UnitRepository;
 use App\Services\AuditLog\Loggers\UnitAuditLogger;
 use App\Support\TextNormalizer;
@@ -26,7 +26,6 @@ class UnitService
         private PermissionService $permissionService,
         private UnitAuditLogger $auditLogger,
         private ExportService $exportService,
-        private ExportRepository $exportRepository,
     ) {}
 
     public function getAll(User $user, int $storeId, bool $includeInactive = false): Collection
@@ -169,43 +168,22 @@ class UnitService
     {
         $this->authorizeView($user, $storeId);
 
-        $normalizedFilters = $this->normalizeExportFilters($filters);
-        $filterSignature   = $this->filterSignature($normalizedFilters);
         $type              = ExportUnitJob::TYPE;
+        $scope             = ExportScope::STORE;
+        $scopeName         = Store::find($storeId)?->name;
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        $jobClass          = ExportUnitJob::class;
 
-        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $storeId, $filterSignature, $clientId);
-        if ($inProgress) {
-            return $inProgress;
-        }
-
-        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $storeId, $filterSignature, $clientId);
-        if ($reusable) {
-            return $reusable;
-        }
-
-        $existing = $this->exportRepository->findExistingFilesForScope($user->id, $type, $storeId, $clientId);
-        foreach ($existing as $old) {
-            $this->exportService->deleteFile($old);
-        }
-
-        $store = Store::find($storeId);
-
-        $export = $this->exportService->createPending(
+        return $this->exportService->queue(
             $user,
             $type,
-            [
-                'scope'            => 'store',
-                'scope_id'         => $storeId,
-                'scope_name'       => $store?->name,
-                'filters'          => $normalizedFilters,
-                'filter_signature' => $filterSignature,
-                'client_id'        => $clientId,
-            ]
+            $scope,
+            $storeId,
+            $scopeName,
+            $normalizedFilters,
+            $jobClass,
+            $clientId,
         );
-
-        ExportUnitJob::dispatch($export->id);
-
-        return $export;
     }
 
     private function normalizeExportFilters(array $filters): array
@@ -236,12 +214,6 @@ class UnitService
         }
 
         return $clean;
-    }
-
-    private function filterSignature(array $filters): string
-    {
-        ksort($filters);
-        return sha1((string) json_encode($filters));
     }
 
     private function authorizeView(User $user, int $storeId): void

@@ -8,6 +8,7 @@ use App\Services\AuditLog\AuditLogExportService;
 use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\SupplierService;
+use App\Services\Tag\TagService;
 use App\Services\UnitService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class ExportController extends Controller
         private CustomerService $customerService,
         private SupplierService $supplierService,
         private UnitService $unitService,
+        private TagService $tagService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -66,6 +68,16 @@ class ExportController extends Controller
     public function queueUnits(Request $request, int $storeId): JsonResponse
     {
         return $this->queued(fn () => $this->unitService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractPartyExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueTags(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->tagService->queueExport(
             $request->user(),
             $storeId,
             $this->extractPartyExportFilters($request),

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\ExportScope;
 use App\Enums\PartyTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Exceptions\SupplierException;
@@ -13,7 +14,6 @@ use App\Models\Business;
 use App\Models\Export;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Repositories\ExportRepository;
 use App\Repositories\PartyRepository;
 use App\Repositories\SupplierRepository;
 use App\Repositories\PermissionRepository;
@@ -29,7 +29,6 @@ class SupplierService
         private PermissionRepository $permissionRepository,
         private PermissionService $permissionService,
         private ExportService $exportService,
-        private ExportRepository $exportRepository,
     ) {}
 
     public function getAll(User $user, int $storeId, int $businessId)
@@ -204,43 +203,22 @@ class SupplierService
     {
         $this->assertScopedAccess($user, $businessId, $filters['store_id'] ?? null);
 
-        $normalizedFilters = $this->normalizeExportFilters($filters);
-        $filterSignature   = $this->filterSignature($normalizedFilters);
         $type              = ExportSupplierJob::TYPE;
+        $scope             = ExportScope::BUSINESS;
+        $scopeName         = Business::find($businessId)?->name;
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        $jobClass          = ExportSupplierJob::class;
 
-        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $businessId, $filterSignature, $clientId);
-        if ($inProgress) {
-            return $inProgress;
-        }
-
-        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $businessId, $filterSignature, $clientId);
-        if ($reusable) {
-            return $reusable;
-        }
-
-        $existing = $this->exportRepository->findExistingFilesForScope($user->id, $type, $businessId, $clientId);
-        foreach ($existing as $old) {
-            $this->exportService->deleteFile($old);
-        }
-
-        $business = Business::find($businessId);
-
-        $export = $this->exportService->createPending(
+        return $this->exportService->queue(
             $user,
             $type,
-            [
-                'scope'            => 'business',
-                'scope_id'         => $businessId,
-                'scope_name'       => $business?->name,
-                'filters'          => $normalizedFilters,
-                'filter_signature' => $filterSignature,
-                'client_id'        => $clientId,
-            ]
+            $scope,
+            $businessId,
+            $scopeName,
+            $normalizedFilters,
+            $jobClass,
+            $clientId,
         );
-
-        ExportSupplierJob::dispatch($export->id);
-
-        return $export;
     }
 
     private function assertScopedAccess(User $user, int $businessId, $storeId): void
@@ -288,11 +266,5 @@ class SupplierService
         }
 
         return $clean;
-    }
-
-    private function filterSignature(array $filters): string
-    {
-        ksort($filters);
-        return sha1((string) json_encode($filters));
     }
 }
