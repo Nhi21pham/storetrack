@@ -5,14 +5,24 @@ namespace App\Repositories\Invoice;
 use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Invoice\InvoiceProductTax;
+use Illuminate\Database\Eloquent\Collection;
 
 class InvoiceRepository
 {
-    private const RELATIONS = ['party', 'creator', 'items.product', 'items.taxes'];
+    private const RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.product', 'items.taxes'];
 
     public function findById(int $id): ?Invoice
     {
         return Invoice::with(self::RELATIONS)->find($id);
+    }
+
+    public function all(int $storeId, ?string $type = null): Collection
+    {
+        $query = Invoice::with(['party.supplier', 'party.customer', 'creator'])->where('store_id', $storeId);
+        if ($type !== null) {
+            $query->where('type', $type);
+        }
+        return $query->orderByDesc('id')->get();
     }
 
     public function create(array $data): Invoice

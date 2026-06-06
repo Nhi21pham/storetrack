@@ -18,6 +18,7 @@ use App\Repositories\Invoice\InvoiceRepository;
 use App\Repositories\Invoice\InvoiceSequenceRepository;
 use App\Services\AuditLog\Loggers\InvoiceAuditLogger;
 use App\Services\PermissionService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceService
@@ -29,6 +30,12 @@ class InvoiceService
         private PermissionService $permissionService,
         private InvoiceAuditLogger $auditLogger,
     ) {}
+
+    public function getAll(User $user, int $storeId, ?string $type = null): Collection
+    {
+        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
+        return $this->invoiceRepository->all($storeId, $type);
+    }
 
     public function getById(User $user, int $id): Invoice
     {

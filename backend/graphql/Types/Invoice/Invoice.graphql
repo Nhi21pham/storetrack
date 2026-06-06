@@ -4,6 +4,7 @@ type Invoice {
     type: InvoiceType!
     code: String!
     party_id: ID!
+    party_name: String
     created_by: ID
     description: String
     invoice_date: DateTime!

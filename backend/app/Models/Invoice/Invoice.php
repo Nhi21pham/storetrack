@@ -58,4 +58,14 @@ class Invoice extends Model
     {
         return $this->hasMany(InvoiceProduct::class);
     }
+
+    public function getPartyNameAttribute(): ?string
+    {
+        if (!$this->party) {
+            return null;
+        }
+        return $this->type === InvoiceTypeEnum::PURCHASE
+            ? $this->party->supplier?->name
+            : $this->party->customer?->name;
+    }
 }

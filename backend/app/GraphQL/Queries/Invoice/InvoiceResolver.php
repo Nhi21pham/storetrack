@@ -9,6 +9,17 @@ class InvoiceResolver extends BaseResolver
 {
     public function __construct(private InvoiceService $invoiceService) {}
 
+    public function all($_, array $args)
+    {
+        return $this->safe(fn() =>
+            $this->invoiceService->getAll(
+                $this->user(),
+                (int) $args['store_id'],
+                $args['type'] ?? null,
+            )
+        );
+    }
+
     public function findById($_, array $args)
     {
         return $this->safe(fn() =>
