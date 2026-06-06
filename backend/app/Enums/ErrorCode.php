@@ -72,6 +72,19 @@ enum ErrorCode: string
     case TAG_VALUE_TAKEN = 'TAG_VALUE_TAKEN';
     case TAG_VALUE_INVALID = 'TAG_VALUE_INVALID';
 
+    // Tax
+    case TAX_NOT_FOUND = 'TAX_NOT_FOUND';
+    case TAX_NAME_TAKEN = 'TAX_NAME_TAKEN';
+    case TAX_SYSTEM_LOCKED = 'TAX_SYSTEM_LOCKED';
+
+    // Invoice
+    case INVOICE_NOT_FOUND = 'INVOICE_NOT_FOUND';
+    case INVOICE_PARTY_INVALID = 'INVOICE_PARTY_INVALID';
+    case INVOICE_PRODUCT_INVALID = 'INVOICE_PRODUCT_INVALID';
+    case INVOICE_NO_ITEMS = 'INVOICE_NO_ITEMS';
+    case INVOICE_IMMUTABLE = 'INVOICE_IMMUTABLE';
+    case INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK';
+
     // Province
     case PROVINCE_NOT_FOUND = 'PROVINCE_NOT_FOUND';
 
@@ -130,6 +143,13 @@ enum ErrorCode: string
             self::TAG_NAME_TAKEN,
             self::TAG_VALUE_TAKEN,
             self::TAG_VALUE_INVALID,
+            self::TAX_NAME_TAKEN,
+            self::TAX_SYSTEM_LOCKED,
+            self::INVOICE_PARTY_INVALID,
+            self::INVOICE_PRODUCT_INVALID,
+            self::INVOICE_NO_ITEMS,
+            self::INVOICE_IMMUTABLE,
+            self::INSUFFICIENT_STOCK,
             self::CANNOT_CHANGE_OWNER_ROLE,
             self::CANNOT_REMOVE_OWNER,
             self::INVITATION_EXPIRED,
@@ -159,6 +179,8 @@ enum ErrorCode: string
             self::PRODUCT_CATEGORY_NOT_FOUND,
             self::TAG_NOT_FOUND,
             self::TAG_VALUE_NOT_FOUND,
+            self::TAX_NOT_FOUND,
+            self::INVOICE_NOT_FOUND,
             self::PROVINCE_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
             self::EXPORT_NOT_FOUND,

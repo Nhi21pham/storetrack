@@ -2,9 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Invoice\InventoryBatch;
+use App\Models\Invoice\ProductStock;
 use App\Models\Tag\Taggable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Product extends Model
@@ -41,6 +45,16 @@ class Product extends Model
     public function taggables(): MorphMany
     {
         return $this->morphMany(Taggable::class, 'taggable');
+    }
+
+    public function stock(): HasOne
+    {
+        return $this->hasOne(ProductStock::class);
+    }
+
+    public function inventoryBatches(): HasMany
+    {
+        return $this->hasMany(InventoryBatch::class);
     }
 
     public function getTagsAttribute(): array

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\NormalizedEmail;
 use App\Enums\RoleEnum;
+use App\Models\Invoice\Invoice;
 use Illuminate\Database\Eloquent\Model;
 
 class Store extends Model
@@ -42,6 +43,16 @@ class Store extends Model
         return $this->belongsToMany(User::class)
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    public function taxes()
+    {
+        return $this->hasMany(Tax::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     public function roleFor(User $user): ?RoleEnum
