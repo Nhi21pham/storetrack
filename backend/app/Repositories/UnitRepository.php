@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Unit;
+use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -52,6 +53,30 @@ class UnitRepository
             $query->where('is_active', true);
         }
         return $query->orderBy('name')->get();
+    }
+
+    public function listQuery(int $storeId, ?string $search = null, ?array $ids = null, ?string $status = null): Builder
+    {
+        $query = Unit::query()->where('store_id', $storeId);
+
+        if ($ids !== null && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        if ($status === 'active') {
+            $query->where('is_active', true);
+        } elseif ($status === 'inactive') {
+            $query->where('is_active', false);
+        }
+
+        if ($search !== null && $search !== '') {
+            $needle = TextNormalizer::normalize($search);
+            if ($needle !== '') {
+                $query->where('name_normalized', 'like', '%'.$needle.'%');
+            }
+        }
+
+        return $query->orderBy('id');
     }
 
     public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder

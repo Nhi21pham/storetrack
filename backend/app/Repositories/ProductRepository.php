@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Product;
+use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -47,6 +48,63 @@ class ProductRepository
             $query->where('is_active', true);
         }
         return $query->orderByDesc('id')->get();
+    }
+
+    public function listQuery(int $storeId, array $filters = []): Builder
+    {
+        $query = Product::query()
+            ->with(['unit', 'category', 'taggables.tag', 'taggables.tagValue'])
+            ->where('store_id', $storeId);
+
+        $ids = $filters['ids'] ?? null;
+        if (is_array($ids) && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        $status = $filters['status'] ?? null;
+        if ($status === 'active') {
+            $query->where('is_active', true);
+        } elseif ($status === 'inactive') {
+            $query->where('is_active', false);
+        }
+
+        if (!empty($filters['unit_id'])) {
+            $query->where('unit_id', (int) $filters['unit_id']);
+        }
+
+        if (!empty($filters['category_id'])) {
+            $query->where('product_category_id', (int) $filters['category_id']);
+        }
+
+        if (!empty($filters['tag_id'])) {
+            $tagId = (int) $filters['tag_id'];
+            $query->whereHas('taggables', fn ($q) => $q->where('tag_id', $tagId));
+        }
+
+        if (!empty($filters['tag_value_id'])) {
+            $tagValueId = (int) $filters['tag_value_id'];
+            $query->whereHas('taggables', fn ($q) => $q->where('tag_value_id', $tagValueId));
+        }
+
+        $search = $filters['search'] ?? null;
+        if (is_string($search) && $search !== '') {
+            $needle = TextNormalizer::normalize($search);
+            if ($needle !== '') {
+                $like = '%'.$needle.'%';
+                $query->where(function (Builder $q) use ($like) {
+                    $q->where('code', 'like', $like)
+                        ->orWhere('name_normalized', 'like', $like)
+                        ->orWhereHas('unit', fn ($u) => $u->where('name_normalized', 'like', $like))
+                        ->orWhereHas('category', fn ($c) => $c->where('name_normalized', 'like', $like))
+                        ->orWhereHas('taggables', function ($tq) use ($like) {
+                            $tq->whereHas('tag', fn ($t) => $t->where('name_normalized', 'like', $like))
+                                ->orWhereHas('tagValue', fn ($v) => $v->where('value_normalized', 'like', $like));
+                        });
+                });
+            }
+        }
+
+        return $query->orderBy('id');
     }
 
     public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder

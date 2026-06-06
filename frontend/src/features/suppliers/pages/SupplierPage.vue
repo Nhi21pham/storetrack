@@ -233,13 +233,13 @@ const {
   resetPage,
 } = useClientPagination(sortedSuppliers)
 
-const visibleIds = computed(() =>
-  paginatedSuppliers.value.filter(canManageRow).map((s) => String(s.id)),
+const selectableIds = computed(() =>
+  sortedSuppliers.value.filter(canManageRow).map((s) => String(s.id)),
 )
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: visibleIds })
+} = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
 
 const showForm        = ref(false)
 const editingSupplier = ref(null)
@@ -298,6 +298,9 @@ const { exporting, run } = useExport({
     if (selectedIds.value.size > 0) {
       params.ids = Array.from(selectedIds.value)
     }
+    params.columns = columnVisibility.togglableColumns
+      .filter((col) => columnVisibility.isVisible(col.key))
+      .map((col) => col.key)
     return startSupplierExport({ businessId: currentBusiness.value.id, params })
   },
   defaultFilename: (id) => `suppliers-${id}.xlsx`,

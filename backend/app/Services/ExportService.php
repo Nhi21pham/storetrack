@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\ExportScope;
 use App\Exceptions\ExportException;
+use App\Jobs\Exports\BaseExportJob;
 use App\Models\Export;
 use App\Models\User;
 use App\Repositories\ExportRepository;
@@ -32,6 +34,61 @@ class ExportService
             'metadata' => $metadata ?: null,
             'expires_at' => now()->addDay(),
         ]);
+    }
+
+    /**
+     * Queue a scoped export: returns an in-progress/reusable export when one
+     * already matches (per-user, per-type, per-scope, per-filter dedup),
+     * otherwise clears stale files for the scope, creates a pending record, and
+     * dispatches $jobClass to build the file. The job is only dispatched for a
+     * freshly created export, never for a reused one.
+     *
+     * @param  class-string<BaseExportJob>  $jobClass  the export job to dispatch
+     */
+    public function queue(
+        User $user,
+        string $type,
+        ExportScope $scope,
+        int $scopeId,
+        ?string $scopeName,
+        array $filters,
+        string $jobClass,
+        ?string $clientId = null,
+    ): Export {
+        $filterSignature = $this->filterSignature($filters);
+
+        $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $scopeId, $filterSignature, $clientId);
+        if ($inProgress) {
+            return $inProgress;
+        }
+
+        $reusable = $this->exportRepository->findCompletedDuplicateWithFile($user->id, $type, $scopeId, $filterSignature, $clientId);
+        if ($reusable) {
+            return $reusable;
+        }
+
+        foreach ($this->exportRepository->findExistingFilesForScope($user->id, $type, $scopeId, $clientId) as $old) {
+            $this->deleteFile($old);
+        }
+
+        $export = $this->createPending($user, $type, [
+            'scope'            => $scope->value,
+            'scope_id'         => $scopeId,
+            'scope_name'       => $scopeName,
+            'filters'          => $filters,
+            'filter_signature' => $filterSignature,
+            'client_id'        => $clientId,
+        ]);
+
+        $jobClass::dispatch($export->id);
+
+        return $export;
+    }
+
+    private function filterSignature(array $filters): string
+    {
+        ksort($filters);
+        return sha1((string) json_encode($filters));
     }
 
     public function markProcessing(Export $export): Export

@@ -15,6 +15,10 @@ extend type Mutation {
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagValueResolver@create")
 
+    addTagValues(tag_id: ID!, input: AddTagValuesInput! @spread): Tag!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagValueResolver@addMany")
+
     updateTagValue(id: ID!, input: UpdateTagValueInput! @spread): TagValue!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\Tag\\TagValueResolver@update")
@@ -27,6 +31,7 @@ extend type Mutation {
 input CreateTagInput {
     name: String! @rules(apply: ["required", "string", "min:1", "max:100"])
     description: String @rules(apply: ["sometimes", "nullable", "string", "max:500"])
+    values: [String!]
 }
 
 input UpdateTagInput {
@@ -36,6 +41,10 @@ input UpdateTagInput {
 
 input CreateTagValueInput {
     value: String! @rules(apply: ["required", "string", "min:1", "max:100"])
+}
+
+input AddTagValuesInput {
+    values: [String!]!
 }
 
 input UpdateTagValueInput {

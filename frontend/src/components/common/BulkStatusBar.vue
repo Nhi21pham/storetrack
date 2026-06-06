@@ -3,6 +3,10 @@
     <span class="selection-count">{{ count }} selected</span>
     <div class="selection-actions">
       <button class="btn-selection-action" @click="$emit('clear')">Clear</button>
+      <button v-if="showExport" class="btn-selection-action" :disabled="exporting" @click="$emit('export')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        {{ exporting ? 'Exporting...' : 'Export selected' }}
+      </button>
       <button v-if="showStatus" class="btn-selection-action activate" :disabled="busy" @click="$emit('activate')">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         Activate
@@ -25,9 +29,11 @@ defineProps({
   busy:       { type: Boolean, default: false },
   canDelete:  { type: Boolean, default: false },
   showStatus: { type: Boolean, default: true },
+  showExport: { type: Boolean, default: false },
+  exporting:  { type: Boolean, default: false },
 })
 
-defineEmits(['clear', 'activate', 'deactivate', 'delete'])
+defineEmits(['clear', 'activate', 'deactivate', 'delete', 'export'])
 </script>
 
 <style scoped>

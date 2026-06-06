@@ -5,6 +5,7 @@ namespace App\Services\Tag;
 use App\Enums\ErrorCode;
 use App\Enums\PermissionEnum;
 use App\Exceptions\TagException;
+use App\Models\Tag\Tag;
 use App\Models\Tag\TagValue;
 use App\Models\User;
 use App\Repositories\Tag\TagValueRepository;
@@ -48,6 +49,48 @@ class TagValueService
             $this->auditLogger->tagValueCreated($actor, $tag, $tagValue);
 
             return $tagValue;
+        });
+    }
+
+    public function createMany(User $actor, int $tagId, array $values): Tag
+    {
+        return DB::transaction(function () use ($actor, $tagId, $values) {
+            $tag = $this->tagService->findTagOrFail($tagId);
+            $this->permissionService->authorizeStore($actor, PermissionEnum::CREATE_TAG, (int) $tag->store_id);
+
+            $seen = [];
+
+            foreach ($values as $rawValue) {
+                $value = trim((string) $rawValue);
+                if ($value === '') {
+                    continue;
+                }
+                $this->assertValidValue($value);
+                $valueNorm = TextNormalizer::normalize($value);
+
+                if (isset($seen[$valueNorm])) {
+                    continue;
+                }
+                $seen[$valueNorm] = true;
+
+                if ($this->tagValueRepository->findByValueNormalized($tagId, $valueNorm) !== null) {
+                    continue;
+                }
+
+                try {
+                    $tagValue = $this->tagValueRepository->create([
+                        'tag_id'           => $tagId,
+                        'value'            => $value,
+                        'value_normalized' => $valueNorm,
+                    ]);
+                } catch (QueryException $e) {
+                    $this->translateUniqueViolation($e, $value);
+                }
+
+                $this->auditLogger->tagValueCreated($actor, $tag, $tagValue);
+            }
+
+            return $tag->fresh('values');
         });
     }
 
@@ -106,6 +149,12 @@ class TagValueService
     {
         if ($value === '') {
             throw new TagException(ErrorCode::TAG_VALUE_INVALID, 'Tag value cannot be empty.');
+        }
+        if (mb_strlen($value) > 100) {
+            throw new TagException(
+                ErrorCode::TAG_VALUE_INVALID,
+                "Tag value must be at most 100 characters: {$value}."
+            );
         }
     }
 

@@ -3,12 +3,17 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\ExportScope;
 use App\Enums\PermissionEnum;
 use App\Exceptions\ProductCategoryException;
 use App\Exceptions\ProductException;
 use App\Exceptions\UnitException;
+use App\Exports\ProductExport;
+use App\Jobs\Exports\ExportProductJob;
+use App\Models\Export;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use App\Repositories\ProductRepository;
@@ -28,6 +33,7 @@ class ProductService
         private TaggableService $taggableService,
         private PermissionService $permissionService,
         private ProductAuditLogger $auditLogger,
+        private ExportService $exportService,
     ) {}
 
     public function getByTag(User $user, int $storeId, int $tagId, ?int $tagValueId = null, bool $includeInactive = false): Collection
@@ -247,6 +253,70 @@ class ProductService
             $this->productRepository->delete($product);
             $this->auditLogger->productDeleted($actor, $productId, $code, $name, $storeId);
         });
+    }
+
+    public function queueExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->authorizeView($user, $storeId);
+
+        $type              = ExportProductJob::TYPE;
+        $scope             = ExportScope::STORE;
+        $scopeName         = Store::find($storeId)?->name;
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        $jobClass          = ExportProductJob::class;
+
+        return $this->exportService->queue(
+            $user,
+            $type,
+            $scope,
+            $storeId,
+            $scopeName,
+            $normalizedFilters,
+            $jobClass,
+            $clientId,
+        );
+    }
+
+    private function normalizeExportFilters(array $filters): array
+    {
+        $clean = [];
+
+        if (!empty($filters['search'])) {
+            $clean['search'] = (string) $filters['search'];
+        }
+        if (in_array($filters['status'] ?? null, ['active', 'inactive'], true)) {
+            $clean['status'] = (string) $filters['status'];
+        }
+        if (!empty($filters['unit_id'])) {
+            $clean['unit_id'] = (int) $filters['unit_id'];
+        }
+        if (!empty($filters['category_id'])) {
+            $clean['category_id'] = (int) $filters['category_id'];
+        }
+        if (!empty($filters['tag_id'])) {
+            $clean['tag_id'] = (int) $filters['tag_id'];
+        }
+        if (!empty($filters['tag_value_id'])) {
+            $clean['tag_value_id'] = (int) $filters['tag_value_id'];
+        }
+        if (!empty($filters['ids']) && is_array($filters['ids'])) {
+            $ids = array_values(array_unique(array_map('intval', $filters['ids'])));
+            sort($ids);
+            if (count($ids) > 0) {
+                $clean['ids'] = $ids;
+            }
+        }
+        if (!empty($filters['columns']) && is_array($filters['columns'])) {
+            $columns = array_values(array_filter(
+                ProductExport::COLUMN_KEYS,
+                fn ($key) => in_array($key, $filters['columns'], true),
+            ));
+            if (count($columns) > 0 && count($columns) < count(ProductExport::COLUMN_KEYS)) {
+                $clean['columns'] = $columns;
+            }
+        }
+
+        return $clean;
     }
 
     private function authorizeView(User $user, int $storeId): void

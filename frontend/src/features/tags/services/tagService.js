@@ -1,4 +1,4 @@
-import { graphql } from '@/api'
+import { graphql, rest } from '@/api'
 
 const TAG_VALUE_FIELDS = `
   id tag_id value created_at updated_at
@@ -51,6 +51,12 @@ const CREATE_TAG_VALUE_MUTATION = `
   }
 `
 
+const ADD_TAG_VALUES_MUTATION = `
+  mutation AddTagValues($tag_id: ID!, $input: AddTagValuesInput!) {
+    addTagValues(tag_id: $tag_id, input: $input) { ${TAG_FIELDS} }
+  }
+`
+
 const UPDATE_TAG_VALUE_MUTATION = `
   mutation UpdateTagValue($id: ID!, $input: UpdateTagValueInput!) {
     updateTagValue(id: $id, input: $input) { ${TAG_VALUE_FIELDS} }
@@ -97,6 +103,11 @@ export const createTagValue = async ({ tagId, input }) => {
   return data.createTagValue
 }
 
+export const addTagValues = async ({ tagId, values }) => {
+  const data = await graphql(ADD_TAG_VALUES_MUTATION, { tag_id: tagId, input: { values } })
+  return data.addTagValues
+}
+
 export const updateTagValue = async ({ id, input }) => {
   const data = await graphql(UPDATE_TAG_VALUE_MUTATION, { id, input })
   return data.updateTagValue
@@ -105,3 +116,6 @@ export const updateTagValue = async ({ id, input }) => {
 export const deleteTagValue = async ({ id }) => {
   await graphql(DELETE_TAG_VALUE_MUTATION, { id })
 }
+
+export const startTagExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/tags/${storeId}`, { params })

@@ -2,16 +2,16 @@
 
 namespace App\Exports;
 
-use App\Models\Supplier;
+use App\Models\Bank;
 use Illuminate\Database\Eloquent\Builder;
 
-class SupplierExport extends BaseExport
+class BankExport extends BaseExport
 {
-    public const COLUMN_KEYS = ['id', 'name', 'tax_code', 'email', 'phone', 'address'];
+    public const COLUMN_KEYS = ['short_name', 'full_name_vi', 'full_name_en', 'status'];
 
     /**
-     * @param  Builder  $query  filtered, ordered query of Supplier
-     * @param  string  $title  e.g. "Suppliers of My Store"
+     * @param  Builder  $query  filtered, ordered query of Bank
+     * @param  string  $title  e.g. "Banks of business My Business"
      * @param  string[]  $metaLines
      * @param  string[]|null  $columns  selected column keys; null exports every column
      */
@@ -43,7 +43,7 @@ class SupplierExport extends BaseExport
     }
 
     /**
-     * @param  Supplier  $row
+     * @param  Bank  $row
      */
     public function map($row): array
     {
@@ -63,12 +63,10 @@ class SupplierExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'id'       => ['heading' => 'ID',       'width' => 8,  'value' => fn ($row) => (int) $row->id],
-            'name'     => ['heading' => 'Name',     'width' => 26, 'value' => fn ($row) => (string) $row->name],
-            'tax_code' => ['heading' => 'Tax Code', 'width' => 18, 'value' => fn ($row) => (string) ($row->tax_code ?? '')],
-            'email'    => ['heading' => 'Email',    'width' => 28, 'value' => fn ($row) => (string) ($row->email ?? '')],
-            'phone'    => ['heading' => 'Phone',    'width' => 16, 'value' => fn ($row) => (string) ($row->phone ?? '')],
-            'address'  => ['heading' => 'Address',  'width' => 30, 'value' => fn ($row) => (string) ($row->address ?? '')],
+            'short_name'   => ['heading' => 'Short Name',      'width' => 18, 'value' => fn ($row) => (string) $row->short_name],
+            'full_name_vi' => ['heading' => 'Vietnamese Name', 'width' => 34, 'value' => fn ($row) => (string) ($row->full_name_vi ?? '')],
+            'full_name_en' => ['heading' => 'English Name',    'width' => 34, 'value' => fn ($row) => (string) ($row->full_name_en ?? '')],
+            'status'       => ['heading' => 'Status',          'width' => 12, 'value' => fn ($row) => $row->is_active ? 'Active' : 'Inactive'],
         ];
     }
 

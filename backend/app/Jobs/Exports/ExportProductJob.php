@@ -3,17 +3,16 @@
 namespace App\Jobs\Exports;
 
 use App\Exports\BaseExport;
-use App\Exports\SupplierExport;
-use App\Models\Business;
+use App\Exports\ProductExport;
 use App\Models\Export;
 use App\Models\Store;
 use App\Models\User;
-use App\Repositories\SupplierRepository;
-use App\Services\AuditLog\Loggers\SupplierAuditLogger;
+use App\Repositories\ProductRepository;
+use App\Services\AuditLog\Loggers\ProductAuditLogger;
 
-class ExportSupplierJob extends BaseExportJob
+class ExportProductJob extends BaseExportJob
 {
-    public const TYPE = 'suppliers';
+    public const TYPE = 'products';
 
     protected function buildExport(Export $export): BaseExport
     {
@@ -27,14 +26,13 @@ class ExportSupplierJob extends BaseExportJob
         $filters = $export->metadata['filters'] ?? [];
         $columns = isset($filters['columns']) && is_array($filters['columns']) ? $filters['columns'] : null;
 
-        return new SupplierExport($query, $title, $metaLines, $columns);
+        return new ProductExport($query, $title, $metaLines, $columns);
     }
 
     protected function filename(Export $export): string
     {
         $metadata = $export->metadata ?? [];
-        $filters = $metadata['filters'] ?? [];
-        $storeId = isset($filters['store_id']) ? (int) $filters['store_id'] : null;
+        $storeId = (int) ($metadata['scope_id'] ?? 0);
 
         $name = $storeId
             ? (Store::find($storeId)?->name ?? '')
@@ -43,7 +41,7 @@ class ExportSupplierJob extends BaseExportJob
         $slug = BaseExport::slugForFilename((string) $name);
         $datetime = now()->format('YmdHis');
 
-        return "suppliers-{$slug}-{$datetime}.xlsx";
+        return "products-{$slug}-{$datetime}.xlsx";
     }
 
     protected function onCompleted(Export $export): void
@@ -54,13 +52,10 @@ class ExportSupplierJob extends BaseExportJob
         }
 
         $metadata = $export->metadata ?? [];
-        $businessId = (int) ($metadata['scope_id'] ?? 0);
-        $filters = $metadata['filters'] ?? [];
-        $storeId = isset($filters['store_id']) ? (int) $filters['store_id'] : null;
+        $storeId = (int) ($metadata['scope_id'] ?? 0);
 
-        app(SupplierAuditLogger::class)->supplierExported(
+        app(ProductAuditLogger::class)->productExported(
             $user,
-            $businessId,
             $storeId,
             $export,
             $metadata['scope_name'] ?? '',
@@ -78,20 +73,13 @@ class ExportSupplierJob extends BaseExportJob
         }
 
         $metadata = $export->metadata ?? [];
-        $businessId = (int) ($metadata['scope_id'] ?? 0);
+        $storeId = (int) ($metadata['scope_id'] ?? 0);
         $filters = $metadata['filters'] ?? [];
-        $storeId = isset($filters['store_id']) ? (int) $filters['store_id'] : null;
-        $search = $filters['search'] ?? null;
-        $ids = isset($filters['ids']) && is_array($filters['ids']) ? $filters['ids'] : null;
 
-        $business = Business::find($businessId);
-        $businessName = $metadata['scope_name'] ?? ($business?->name ?? '');
+        $storeName = $metadata['scope_name'] ?? (Store::find($storeId)?->name ?? '');
+        $title = 'Products of store '.$storeName;
 
-        $title = $storeId
-            ? 'Suppliers of store '.(Store::find($storeId)?->name ?? '')
-            : 'Suppliers of business '.$businessName;
-
-        $query = app(SupplierRepository::class)->listQuery($businessId, $storeId, $search, $ids);
+        $query = app(ProductRepository::class)->listQuery($storeId, $filters);
 
         return [$user, $title, $query];
     }

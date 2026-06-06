@@ -32,6 +32,15 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <button
+          class="btn-export"
+          :disabled="exporting || sortedTags.length === 0"
+          :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
+          @click="runExport"
+        >
+          <Icon name="download" :size="14" />
+          <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+        </button>
       </div>
 
       <BulkStatusBar
@@ -40,7 +49,10 @@
         :busy="bulkBusy"
         :can-delete="canDeleteKey"
         :show-status="false"
+        show-export
+        :exporting="exporting"
         @clear="clearSelection"
+        @export="runExport"
         @delete="requestBulk('delete')"
       />
 
@@ -59,7 +71,7 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all on this page"
+              title="Select all"
               @change="toggleSelectAll"
             />
             <SortableHeader
@@ -87,12 +99,7 @@
             </td>
             <td v-if="columnVisibility.isVisible('values')">
               <div class="values-cell">
-                <span v-for="val in tag.values" :key="val.id" class="value-wrap">
-                  <button class="value-edit" :title="canCreateUpdate ? 'Edit value' : ''" :disabled="!canCreateUpdate" @click="openEditValue(tag, val)">
-                    <TagChip :tag-name="tag.name" :value="val.value" />
-                  </button>
-                  <ChipRemoveButton v-if="canDeleteValue" title="Delete value" @click="confirmDeleteValue(tag, val)" />
-                </span>
+                <TagChip v-for="val in tag.values" :key="val.id" :tag-name="tag.name" :value="val.value" />
                 <span v-if="tag.values.length === 0" class="keyonly-hint">Key-only</span>
               </div>
             </td>
@@ -102,9 +109,6 @@
             </td>
             <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(tag.created_at) }}</td>
             <td class="actions-col">
-              <button v-if="canCreateUpdate" class="action-btn" @click="openAddValue(tag)" title="Add value">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </button>
               <button class="action-btn" @click="openEdit(tag)" title="Edit tag">
                 <Icon name="edit" :size="14" />
               </button>
@@ -134,33 +138,11 @@
       @saved="onSaved"
     />
 
-    <TagValueFormModal
-      v-if="valueModal.open"
-      :tag-id="valueModal.tagId"
-      :tag-name="valueModal.tagName"
-      :value="valueModal.value"
-      @close="valueModal.open = false"
-      @saved="onValueSaved"
-    />
-
     <TagDetailModal
       v-if="detailTag"
       :tag="detailTag"
       @close="detailTag = null"
       @edit="onDetailEdit"
-    />
-
-    <TagDeleteDialog
-      v-if="deleteValueTarget"
-      :title="`Delete value '${deleteValueTarget.value.value}'?`"
-      :message="`This removes '${deleteValueTarget.value.value}' from the tag '${deleteValueTarget.tag.name}'. This cannot be undone.`"
-      confirm-text="Delete value"
-      :store-id="currentStore?.id"
-      :tag-id="deleteValueTarget.tag.id"
-      :tag-value-id="deleteValueTarget.value.id"
-      :deleting="deleting"
-      @confirm="performDeleteValue"
-      @cancel="deleteValueTarget = null"
     />
 
     <TagDeleteDialog
@@ -202,12 +184,10 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import TagChip from '@/components/common/TagChip.vue'
-import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import TagFormModal from '@/features/tags/components/TagFormModal.vue'
-import TagValueFormModal from '@/features/tags/components/TagValueFormModal.vue'
 import TagDetailModal from '@/features/tags/components/TagDetailModal.vue'
 import TagDeleteDialog from '@/features/tags/components/TagDeleteDialog.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
@@ -215,7 +195,8 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
-import { fetchTags, deleteTag, deleteTagValue } from '@/features/tags/services/tagService'
+import { useExport } from '@/composables/useExport'
+import { fetchTags, deleteTag, startTagExport } from '@/features/tags/services/tagService'
 import { TAG_COLUMNS, TAG_INITIAL_COL_WIDTHS } from '@/features/tags/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
@@ -231,6 +212,7 @@ const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
+const showToast = inject('showToast')
 
 const tags = ref([])
 const loading = ref(false)
@@ -240,14 +222,10 @@ const showForm = ref(false)
 const editingTag = ref(null)
 const detailTag = ref(null)
 const deleteKeyTarget = ref(null)
-const deleteValueTarget = ref(null)
 const deleting = ref(false)
-const valueModal = ref({ open: false, tagId: null, tagName: '', value: null })
 
 const role = computed(() => String(currentStore?.value?.my_role || '').toLowerCase())
-const canCreateUpdate = computed(() => ['owner', 'accountant', 'staff'].includes(role.value))
 const canDeleteKey = computed(() => ['owner', 'accountant'].includes(role.value))
-const canDeleteValue = computed(() => canDeleteKey.value)
 
 const filteredTags = computed(() => {
   const needle = normalizeText(searchQuery.value)
@@ -279,11 +257,27 @@ const {
   resetPage,
 } = useClientPagination(sortedTags)
 
-const visibleIds = computed(() => paginatedTags.value.map(t => String(t.id)))
+const selectableIds = computed(() => sortedTags.value.map(t => String(t.id)))
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: visibleIds })
+} = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
+
+const { exporting, run: runExport } = useExport({
+  start: () => {
+    const params = { search: searchQuery.value.trim() || undefined }
+    if (selectedIds.value.size > 0) {
+      params.ids = Array.from(selectedIds.value)
+    }
+    params.columns = columnVisibility.togglableColumns
+      .filter((col) => columnVisibility.isVisible(col.key))
+      .map((col) => col.key)
+    return startTagExport({ storeId: currentStore.value.id, params })
+  },
+  defaultFilename: (id) => `tags-${id}.xlsx`,
+  onSuccess: () => showToast('Tag export ready.', 'success'),
+  onError:   (msg) => showToast(msg, 'error'),
+})
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), noun: 'tag',
@@ -334,22 +328,7 @@ const onDetailEdit = (tag) => {
   openEdit(tag)
 }
 
-const openAddValue = (tag) => {
-  valueModal.value = { open: true, tagId: tag.id, tagName: tag.name, value: null }
-}
-
-const openEditValue = (tag, value) => {
-  if (!canCreateUpdate.value) return
-  valueModal.value = { open: true, tagId: tag.id, tagName: tag.name, value }
-}
-
-const onValueSaved = async () => {
-  valueModal.value.open = false
-  await load()
-}
-
 const confirmDeleteKey = (tag) => { deleteKeyTarget.value = tag }
-const confirmDeleteValue = (tag, value) => { deleteValueTarget.value = { tag, value } }
 
 const performDeleteKey = async () => {
   const tag = deleteKeyTarget.value
@@ -365,24 +344,15 @@ const performDeleteKey = async () => {
   }
 }
 
-const performDeleteValue = async () => {
-  const target = deleteValueTarget.value
-  deleting.value = true
-  try {
-    await deleteTagValue({ id: target.value.id })
-    deleteValueTarget.value = null
-    await load()
-  } catch (err) {
-    alert(err.message)
-  } finally {
-    deleting.value = false
-  }
-}
 </script>
 
 <style scoped>
 .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #111; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; }
+.btn-export:hover:not(:disabled) { background: #000; }
+.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 
@@ -396,9 +366,6 @@ const performDeleteValue = async () => {
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 
 .values-cell { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.value-wrap { display: inline-flex; align-items: center; }
-.value-edit { background: none; border: none; padding: 0; cursor: pointer; }
-.value-edit:disabled { cursor: default; }
 .keyonly-hint { font-size: 12px; color: #9ca3af; font-style: italic; }
 
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

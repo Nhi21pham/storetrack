@@ -33,6 +33,15 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <button
+          class="btn-export"
+          :disabled="exporting || sortedUnits.length === 0"
+          :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
+          @click="runExport"
+        >
+          <Icon name="download" :size="14" />
+          <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
+        </button>
       </div>
 
       <BulkStatusBar
@@ -40,7 +49,10 @@
         :count="selectedIds.size"
         :busy="bulkBusy"
         :can-delete="canDelete"
+        show-export
+        :exporting="exporting"
         @clear="clearSelection"
+        @export="runExport"
         @activate="requestBulk('activate')"
         @deactivate="requestBulk('deactivate')"
         @delete="requestBulk('delete')"
@@ -61,7 +73,7 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all on this page"
+              title="Select all"
               @change="toggleSelectAll"
             />
             <SortableHeader
@@ -217,7 +229,8 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
-import { fetchUnits, deleteUnit, updateUnit } from '@/features/units/services/unitService'
+import { useExport } from '@/composables/useExport'
+import { fetchUnits, deleteUnit, updateUnit, startUnitExport } from '@/features/units/services/unitService'
 import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
@@ -234,6 +247,7 @@ const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
+const showToast = inject('showToast')
 
 const units = ref([])
 const loading = ref(false)
@@ -290,11 +304,30 @@ const {
   resetPage,
 } = useClientPagination(sortedUnits)
 
-const visibleIds = computed(() => paginatedUnits.value.map(u => String(u.id)))
+const selectableIds = computed(() => sortedUnits.value.map(u => String(u.id)))
 const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
-} = useRowSelection({ eligibleIds: visibleIds })
+} = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
+
+const { exporting, run: runExport } = useExport({
+  start: () => {
+    const params = {
+      search: searchQuery.value.trim() || undefined,
+      status: statusFilter.value || undefined,
+    }
+    if (selectedIds.value.size > 0) {
+      params.ids = Array.from(selectedIds.value)
+    }
+    params.columns = columnVisibility.togglableColumns
+      .filter((col) => columnVisibility.isVisible(col.key))
+      .map((col) => col.key)
+    return startUnitExport({ storeId: currentStore.value.id, params })
+  },
+  defaultFilename: (id) => `units-${id}.xlsx`,
+  onSuccess: () => showToast('Unit export ready.', 'success'),
+  onError:   (msg) => showToast(msg, 'error'),
+})
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), noun: 'unit',
@@ -399,6 +432,10 @@ const handleToggle = async () => {
 <style scoped>
 .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
+
+.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #111; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; }
+.btn-export:hover:not(:disabled) { background: #000; }
+.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 

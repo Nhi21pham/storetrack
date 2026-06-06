@@ -3,8 +3,13 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\ExportScope;
 use App\Enums\PermissionEnum;
 use App\Exceptions\UnitException;
+use App\Exports\UnitExport;
+use App\Jobs\Exports\ExportUnitJob;
+use App\Models\Export;
+use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
 use App\Repositories\UnitRepository;
@@ -20,6 +25,7 @@ class UnitService
         private UnitRepository $unitRepository,
         private PermissionService $permissionService,
         private UnitAuditLogger $auditLogger,
+        private ExportService $exportService,
     ) {}
 
     public function getAll(User $user, int $storeId, bool $includeInactive = false): Collection
@@ -156,6 +162,58 @@ class UnitService
             $this->unitRepository->delete($unit);
             $this->auditLogger->unitDeleted($actor, $unitId, $name, $storeId);
         });
+    }
+
+    public function queueExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->authorizeView($user, $storeId);
+
+        $type              = ExportUnitJob::TYPE;
+        $scope             = ExportScope::STORE;
+        $scopeName         = Store::find($storeId)?->name;
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        $jobClass          = ExportUnitJob::class;
+
+        return $this->exportService->queue(
+            $user,
+            $type,
+            $scope,
+            $storeId,
+            $scopeName,
+            $normalizedFilters,
+            $jobClass,
+            $clientId,
+        );
+    }
+
+    private function normalizeExportFilters(array $filters): array
+    {
+        $clean = [];
+
+        if (!empty($filters['search'])) {
+            $clean['search'] = (string) $filters['search'];
+        }
+        if (in_array($filters['status'] ?? null, ['active', 'inactive'], true)) {
+            $clean['status'] = (string) $filters['status'];
+        }
+        if (!empty($filters['ids']) && is_array($filters['ids'])) {
+            $ids = array_values(array_unique(array_map('intval', $filters['ids'])));
+            sort($ids);
+            if (count($ids) > 0) {
+                $clean['ids'] = $ids;
+            }
+        }
+        if (!empty($filters['columns']) && is_array($filters['columns'])) {
+            $columns = array_values(array_filter(
+                UnitExport::COLUMN_KEYS,
+                fn ($key) => in_array($key, $filters['columns'], true),
+            ));
+            if (count($columns) > 0 && count($columns) < count(UnitExport::COLUMN_KEYS)) {
+                $clean['columns'] = $columns;
+            }
+        }
+
+        return $clean;
     }
 
     private function authorizeView(User $user, int $storeId): void

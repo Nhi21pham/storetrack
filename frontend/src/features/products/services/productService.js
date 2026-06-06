@@ -1,4 +1,4 @@
-import { graphql } from '@/api'
+import { graphql, rest } from '@/api'
 
 const PRODUCT_FIELDS = `
   id store_id product_category_id unit_id code name is_active created_at updated_at
@@ -89,3 +89,6 @@ export const fetchProductsByTag = async ({ storeId, tagId, tagValueId = null, in
   })
   return data.productsByTag
 }
+
+export const startProductExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/products/${storeId}`, { params })

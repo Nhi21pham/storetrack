@@ -5,9 +5,13 @@ namespace App\Http\Controllers;
 use App\Exceptions\AppException;
 use App\Models\Export;
 use App\Services\AuditLog\AuditLogExportService;
+use App\Services\BankService;
 use App\Services\CustomerService;
 use App\Services\ExportService;
+use App\Services\ProductService;
 use App\Services\SupplierService;
+use App\Services\Tag\TagService;
+use App\Services\UnitService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -19,70 +23,70 @@ class ExportController extends Controller
         private ExportService $exportService,
         private CustomerService $customerService,
         private SupplierService $supplierService,
+        private UnitService $unitService,
+        private TagService $tagService,
+        private ProductService $productService,
+        private BankService $bankService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
     {
-        try {
-            $export = $this->auditLogExportService->queueStoreExport(
-                $request->user(),
-                $storeId,
-                $this->extractFilters($request),
-                $this->extractClientId($request),
-            );
-
-            return $this->exportResponse($export, 202);
-        } catch (AppException $e) {
-            return $this->appExceptionResponse($e);
-        }
+        return $this->queued(fn () => $this->auditLogExportService->queueStoreExport(
+            $request->user(),
+            $storeId,
+            $this->extractFilters($request),
+            $this->extractClientId($request),
+        ));
     }
 
     public function queueAuditLogBusiness(Request $request, int $businessId): JsonResponse
     {
-        try {
-            $export = $this->auditLogExportService->queueBusinessExport(
-                $request->user(),
-                $businessId,
-                $this->extractFilters($request),
-                $this->extractClientId($request),
-            );
-
-            return $this->exportResponse($export, 202);
-        } catch (AppException $e) {
-            return $this->appExceptionResponse($e);
-        }
+        return $this->queued(fn () => $this->auditLogExportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractFilters($request),
+            $this->extractClientId($request),
+        ));
     }
 
     public function queueCustomers(Request $request, int $businessId): JsonResponse
     {
-        try {
-            $export = $this->customerService->queueExport(
-                $request->user(),
-                $businessId,
-                $this->extractPartyExportFilters($request),
-                $this->extractClientId($request),
-            );
-
-            return $this->exportResponse($export, 202);
-        } catch (AppException $e) {
-            return $this->appExceptionResponse($e);
-        }
+        return $this->queueEntityExport($request, $businessId, $this->customerService);
     }
 
     public function queueSuppliers(Request $request, int $businessId): JsonResponse
     {
-        try {
-            $export = $this->supplierService->queueExport(
-                $request->user(),
-                $businessId,
-                $this->extractPartyExportFilters($request),
-                $this->extractClientId($request),
-            );
+        return $this->queueEntityExport($request, $businessId, $this->supplierService);
+    }
 
-            return $this->exportResponse($export, 202);
-        } catch (AppException $e) {
-            return $this->appExceptionResponse($e);
-        }
+    public function queueUnits(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queueEntityExport($request, $storeId, $this->unitService);
+    }
+
+    public function queueTags(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queueEntityExport($request, $storeId, $this->tagService);
+    }
+
+    public function queueProducts(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->productService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractProductExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueBanks(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->bankService->queueExport(
+            $request->user(),
+            $businessId,
+            $this->extractBankExportFilters($request),
+            $this->extractClientId($request),
+        ));
     }
 
     public function status(Request $request, int $exportId): JsonResponse
@@ -157,11 +161,35 @@ class ExportController extends Controller
             $ids = null;
         }
 
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
         return [
             'store_id' => $request->query('store_id'),
             'search'   => $request->query('search'),
+            'status'   => $request->query('status'),
             'ids'      => $ids,
+            'columns'  => $columns,
         ];
+    }
+
+    private function extractProductExportFilters(Request $request): array
+    {
+        return array_merge($this->extractPartyExportFilters($request), [
+            'unit_id'      => $request->query('unit_id'),
+            'category_id'  => $request->query('category_id'),
+            'tag_id'       => $request->query('tag_id'),
+            'tag_value_id' => $request->query('tag_value_id'),
+        ]);
+    }
+
+    private function extractBankExportFilters(Request $request): array
+    {
+        return array_merge($this->extractPartyExportFilters($request), [
+            'include_inactive' => $request->query('include_inactive'),
+        ]);
     }
 
     private function exportResponse(Export $export, int $status): JsonResponse
@@ -183,5 +211,24 @@ class ExportController extends Controller
             'code' => $e->getErrorCode()->value,
             'message' => $e->getMessage(),
         ], $e->getStatusCode());
+    }
+
+    private function queued(callable $resolve): JsonResponse
+    {
+        try {
+            return $this->exportResponse($resolve(), 202);
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    private function queueEntityExport(Request $request, int $scopeId, object $service): JsonResponse
+    {
+        return $this->queued(fn () => $service->queueExport(
+            $request->user(),
+            $scopeId,
+            $this->extractPartyExportFilters($request),
+            $this->extractClientId($request),
+        ));
     }
 }

@@ -2,16 +2,16 @@
 
 namespace App\Exports;
 
-use App\Models\Supplier;
+use App\Models\Unit;
 use Illuminate\Database\Eloquent\Builder;
 
-class SupplierExport extends BaseExport
+class UnitExport extends BaseExport
 {
-    public const COLUMN_KEYS = ['id', 'name', 'tax_code', 'email', 'phone', 'address'];
+    public const COLUMN_KEYS = ['id', 'name', 'status', 'created_at', 'updated_at'];
 
     /**
-     * @param  Builder  $query  filtered, ordered query of Supplier
-     * @param  string  $title  e.g. "Suppliers of My Store"
+     * @param  Builder  $query  filtered, ordered query of Unit
+     * @param  string  $title  e.g. "Units of store My Store"
      * @param  string[]  $metaLines
      * @param  string[]|null  $columns  selected column keys; null exports every column
      */
@@ -43,7 +43,7 @@ class SupplierExport extends BaseExport
     }
 
     /**
-     * @param  Supplier  $row
+     * @param  Unit  $row
      */
     public function map($row): array
     {
@@ -63,12 +63,11 @@ class SupplierExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'id'       => ['heading' => 'ID',       'width' => 8,  'value' => fn ($row) => (int) $row->id],
-            'name'     => ['heading' => 'Name',     'width' => 26, 'value' => fn ($row) => (string) $row->name],
-            'tax_code' => ['heading' => 'Tax Code', 'width' => 18, 'value' => fn ($row) => (string) ($row->tax_code ?? '')],
-            'email'    => ['heading' => 'Email',    'width' => 28, 'value' => fn ($row) => (string) ($row->email ?? '')],
-            'phone'    => ['heading' => 'Phone',    'width' => 16, 'value' => fn ($row) => (string) ($row->phone ?? '')],
-            'address'  => ['heading' => 'Address',  'width' => 30, 'value' => fn ($row) => (string) ($row->address ?? '')],
+            'id'         => ['heading' => 'ID',        'width' => 8,  'value' => fn ($row) => (int) $row->id],
+            'name'       => ['heading' => 'Unit Name', 'width' => 26, 'value' => fn ($row) => (string) $row->name],
+            'status'     => ['heading' => 'Status',    'width' => 14, 'value' => fn ($row) => $row->is_active ? 'Active' : 'Inactive'],
+            'created_at' => ['heading' => 'Created',   'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at' => ['heading' => 'Updated',   'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

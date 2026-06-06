@@ -8,4 +8,4 @@ export const TAG_COLUMNS = [
   { key: 'actions',     label: '',            sortable: false },
 ]
 
-export const TAG_INITIAL_COL_WIDTHS = [44, 70, 200, 320, 250, 160, 150]
+export const TAG_INITIAL_COL_WIDTHS = [44, 70, 200, 320, 250, 160, 90]

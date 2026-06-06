@@ -2,18 +2,17 @@
 
 namespace App\Jobs\Exports;
 
+use App\Exports\BankExport;
 use App\Exports\BaseExport;
-use App\Exports\SupplierExport;
 use App\Models\Business;
 use App\Models\Export;
-use App\Models\Store;
 use App\Models\User;
-use App\Repositories\SupplierRepository;
-use App\Services\AuditLog\Loggers\SupplierAuditLogger;
+use App\Repositories\BankRepository;
+use App\Services\AuditLog\Loggers\BankAuditLogger;
 
-class ExportSupplierJob extends BaseExportJob
+class ExportBankJob extends BaseExportJob
 {
-    public const TYPE = 'suppliers';
+    public const TYPE = 'banks';
 
     protected function buildExport(Export $export): BaseExport
     {
@@ -27,23 +26,22 @@ class ExportSupplierJob extends BaseExportJob
         $filters = $export->metadata['filters'] ?? [];
         $columns = isset($filters['columns']) && is_array($filters['columns']) ? $filters['columns'] : null;
 
-        return new SupplierExport($query, $title, $metaLines, $columns);
+        return new BankExport($query, $title, $metaLines, $columns);
     }
 
     protected function filename(Export $export): string
     {
         $metadata = $export->metadata ?? [];
-        $filters = $metadata['filters'] ?? [];
-        $storeId = isset($filters['store_id']) ? (int) $filters['store_id'] : null;
+        $businessId = (int) ($metadata['scope_id'] ?? 0);
 
-        $name = $storeId
-            ? (Store::find($storeId)?->name ?? '')
+        $name = $businessId
+            ? (Business::find($businessId)?->name ?? '')
             : ($metadata['scope_name'] ?? 'unknown');
 
         $slug = BaseExport::slugForFilename((string) $name);
         $datetime = now()->format('YmdHis');
 
-        return "suppliers-{$slug}-{$datetime}.xlsx";
+        return "banks-{$slug}-{$datetime}.xlsx";
     }
 
     protected function onCompleted(Export $export): void
@@ -55,13 +53,10 @@ class ExportSupplierJob extends BaseExportJob
 
         $metadata = $export->metadata ?? [];
         $businessId = (int) ($metadata['scope_id'] ?? 0);
-        $filters = $metadata['filters'] ?? [];
-        $storeId = isset($filters['store_id']) ? (int) $filters['store_id'] : null;
 
-        app(SupplierAuditLogger::class)->supplierExported(
+        app(BankAuditLogger::class)->bankExported(
             $user,
             $businessId,
-            $storeId,
             $export,
             $metadata['scope_name'] ?? '',
         );
@@ -80,18 +75,14 @@ class ExportSupplierJob extends BaseExportJob
         $metadata = $export->metadata ?? [];
         $businessId = (int) ($metadata['scope_id'] ?? 0);
         $filters = $metadata['filters'] ?? [];
-        $storeId = isset($filters['store_id']) ? (int) $filters['store_id'] : null;
         $search = $filters['search'] ?? null;
         $ids = isset($filters['ids']) && is_array($filters['ids']) ? $filters['ids'] : null;
+        $includeInactive = $filters['include_inactive'] ?? true;
 
-        $business = Business::find($businessId);
-        $businessName = $metadata['scope_name'] ?? ($business?->name ?? '');
+        $businessName = $metadata['scope_name'] ?? (Business::find($businessId)?->name ?? '');
+        $title = 'Banks of business '.$businessName;
 
-        $title = $storeId
-            ? 'Suppliers of store '.(Store::find($storeId)?->name ?? '')
-            : 'Suppliers of business '.$businessName;
-
-        $query = app(SupplierRepository::class)->listQuery($businessId, $storeId, $search, $ids);
+        $query = app(BankRepository::class)->listQuery($businessId, $search, $ids, $includeInactive);
 
         return [$user, $title, $query];
     }

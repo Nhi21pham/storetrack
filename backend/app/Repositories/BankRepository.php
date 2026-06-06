@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Bank;
+use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -80,6 +81,33 @@ class BankRepository
             $query->where('is_active', true);
         }
         return $query->orderBy('short_name')->get();
+    }
+
+    public function listQuery(int $businessId, ?string $search = null, ?array $ids = null, bool $includeInactive = true): Builder
+    {
+        $query = Bank::query()->where('business_id', $businessId);
+
+        if ($ids !== null && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        if (!$includeInactive) {
+            $query->where('is_active', true);
+        }
+
+        if ($search !== null && $search !== '') {
+            $needle = TextNormalizer::normalize($search);
+            if ($needle !== '') {
+                $like = '%'.$needle.'%';
+                $query->where(function (Builder $q) use ($like) {
+                    $q->where('short_name_normalized', 'like', $like)
+                        ->orWhere('full_name_vi_normalized', 'like', $like)
+                        ->orWhere('full_name_en_normalized', 'like', $like);
+                });
+            }
+        }
+
+        return $query->orderBy('id');
     }
 
     public function searchQuery(int $businessId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder

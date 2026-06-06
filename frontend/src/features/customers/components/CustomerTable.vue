@@ -4,7 +4,7 @@
       <SelectCheckbox
         :checked="allVisibleSelected"
         :indeterminate="someVisibleSelected"
-        title="Select all on this page"
+        title="Select all"
         @change="$emit('toggleSelectAll')"
       />
     </template>
