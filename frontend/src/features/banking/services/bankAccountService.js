@@ -1,4 +1,4 @@
-import { graphql } from '@/api'
+import { graphql, rest } from '@/api'
 
 const BANK_ACCOUNT_FIELDS = `
   id
@@ -79,3 +79,6 @@ export const updateBankAccount = async ({ id, input }) => {
 export const deleteBankAccount = async ({ id }) => {
   await graphql(DELETE_BANK_ACCOUNT_MUTATION, { id })
 }
+
+export const startBankAccountExport = ({ businessId, params }) =>
+  rest('post', `/api/exports/bank-accounts/${businessId}`, { params })

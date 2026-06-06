@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exceptions\AppException;
 use App\Models\Export;
 use App\Services\AuditLog\AuditLogExportService;
+use App\Services\BankAccountService;
 use App\Services\BankService;
 use App\Services\CustomerService;
 use App\Services\ExportService;
@@ -27,6 +28,7 @@ class ExportController extends Controller
         private TagService $tagService,
         private ProductService $productService,
         private BankService $bankService,
+        private BankAccountService $bankAccountService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -87,6 +89,11 @@ class ExportController extends Controller
             $this->extractBankExportFilters($request),
             $this->extractClientId($request),
         ));
+    }
+
+    public function queueBankAccounts(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queueEntityExport($request, $businessId, $this->bankAccountService);
     }
 
     public function status(Request $request, int $exportId): JsonResponse

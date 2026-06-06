@@ -3,11 +3,16 @@
 namespace App\Services;
 
 use App\Enums\ErrorCode;
+use App\Enums\ExportScope;
 use App\Enums\PartyTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Exceptions\BankAccountException;
 use App\Exceptions\BankException;
+use App\Exports\BankAccountExport;
+use App\Jobs\Exports\ExportBankAccountJob;
 use App\Models\BankAccount;
+use App\Models\Business;
+use App\Models\Export;
 use App\Models\Party;
 use App\Models\User;
 use App\Repositories\BankAccountRepository;
@@ -23,6 +28,7 @@ class BankAccountService
         private BankRepository $bankRepository,
         private PermissionService $permissionService,
         private BankAccountAuditLogger $auditLogger,
+        private ExportService $exportService,
     ) {}
 
     public function listForParty(User $actor, int $partyId): Collection
@@ -193,6 +199,55 @@ class BankAccountService
             $businessId,
             $context['store_ids'] ?? []
         );
+    }
+
+    public function queueExport(User $actor, int $businessId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->permissionService->authorizeAnyStoreInBusiness($actor, PermissionEnum::UPDATE_BANK_ACCOUNT, $businessId);
+
+        $type              = ExportBankAccountJob::TYPE;
+        $scope             = ExportScope::BUSINESS;
+        $scopeName         = Business::find($businessId)?->name;
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        $jobClass          = ExportBankAccountJob::class;
+
+        return $this->exportService->queue(
+            $actor,
+            $type,
+            $scope,
+            $businessId,
+            $scopeName,
+            $normalizedFilters,
+            $jobClass,
+            $clientId,
+        );
+    }
+
+    private function normalizeExportFilters(array $filters): array
+    {
+        $clean = [];
+
+        if (!empty($filters['search'])) {
+            $clean['search'] = (string) $filters['search'];
+        }
+        if (!empty($filters['ids']) && is_array($filters['ids'])) {
+            $ids = array_values(array_unique(array_map('intval', $filters['ids'])));
+            sort($ids);
+            if (count($ids) > 0) {
+                $clean['ids'] = $ids;
+            }
+        }
+        if (!empty($filters['columns']) && is_array($filters['columns'])) {
+            $columns = array_values(array_filter(
+                BankAccountExport::COLUMN_KEYS,
+                fn ($key) => in_array($key, $filters['columns'], true),
+            ));
+            if (count($columns) > 0 && count($columns) < count(BankAccountExport::COLUMN_KEYS)) {
+                $clean['columns'] = $columns;
+            }
+        }
+
+        return $clean;
     }
 
     private function mustFind(int $id): BankAccount

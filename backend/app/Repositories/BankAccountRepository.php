@@ -72,4 +72,16 @@ class BankAccountRepository
 
         return $query->orderBy('id', 'desc');
     }
+
+    public function listQuery(int $businessId, ?string $search = null, ?array $ids = null): Builder
+    {
+        $query = $this->businessScopedQuery($businessId, $search)
+            ->with(['party.supplier', 'party.customer', 'party.business']);
+
+        if ($ids !== null && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        return $query;
+    }
 }
