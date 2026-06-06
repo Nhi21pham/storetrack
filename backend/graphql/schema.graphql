@@ -4,6 +4,9 @@
 #import Types/*.graphql
 #import Enums/*.graphql
 #import Tag/*.graphql
+#import Types/Invoice/*.graphql
+#import Queries/Invoice/*.graphql
+#import Mutations/Invoice/*.graphql
 
 type Query
 type Mutation
