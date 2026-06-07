@@ -11,9 +11,11 @@ use App\Exceptions\TaxException;
 use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Product;
+use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\Tax;
 use App\Models\User;
+use App\Repositories\Invoice\InventoryBatchRepository;
 use App\Repositories\Invoice\InvoiceRepository;
 use App\Repositories\Invoice\InvoiceSequenceRepository;
 use App\Services\AuditLog\Loggers\InvoiceAuditLogger;
@@ -26,6 +28,7 @@ class InvoiceService
     public function __construct(
         private InvoiceRepository $invoiceRepository,
         private InvoiceSequenceRepository $sequenceRepository,
+        private InventoryBatchRepository $batchRepository,
         private InventoryCostingService $costingService,
         private PermissionService $permissionService,
         private InvoiceAuditLogger $auditLogger,
@@ -73,6 +76,72 @@ class InvoiceService
             $this->auditLogger->invoiceCreated($actor, $invoice);
 
             return $this->invoiceRepository->findById((int) $invoice->id);
+        });
+    }
+
+    public function updatePurchase(User $actor, int $id, array $data): Invoice
+    {
+        $items = $data['items'] ?? [];
+        if (empty($items)) {
+            throw new InvoiceException(ErrorCode::INVOICE_NO_ITEMS, 'An invoice must have at least one item.');
+        }
+
+        return DB::transaction(function () use ($actor, $id, $data, $items) {
+            $invoice = $this->invoiceRepository->lockById($id);
+            if (!$invoice) {
+                throw new InvoiceException(ErrorCode::INVOICE_NOT_FOUND, 'Invoice not found.');
+            }
+            $storeId = (int) $invoice->store_id;
+            $this->permissionService->authorizeStore($actor, PermissionEnum::UPDATE_INVOICE, $storeId);
+            $this->assertPurchase($invoice);
+            $this->assertSupplier((int) $data['party_id'], $storeId);
+
+            // Reverse the invoice's old stock effects, then re-apply the new lines from scratch.
+            $this->reversePurchaseStock($invoice);
+            $this->invoiceRepository->deleteItems($invoice);
+
+            $this->invoiceRepository->update($invoice, [
+                'party_id'       => (int) $data['party_id'],
+                'description'    => $data['description'] ?? null,
+                'invoice_date'   => $data['invoice_date'],
+                'payment_method' => $data['payment_method'],
+                'payment_status' => $data['payment_status'] ?? InvoicePaymentStatusEnum::UNPAID->value,
+            ]);
+
+            $subtotal = 0.0;
+            $taxTotal = 0.0;
+            foreach ($items as $item) {
+                $line = $this->addPurchaseLine($invoice, $storeId, $item, (string) $data['invoice_date']);
+                $subtotal += (float) $line->subtotal;
+                $taxTotal += (float) $line->tax_total;
+            }
+
+            $invoice = $this->applyTotals($invoice, $subtotal, $taxTotal);
+            $this->auditLogger->invoiceUpdated($actor, $invoice);
+
+            return $this->invoiceRepository->findById((int) $invoice->id);
+        });
+    }
+
+    public function delete(User $actor, int $id): void
+    {
+        DB::transaction(function () use ($actor, $id) {
+            $invoice = $this->invoiceRepository->lockById($id);
+            if (!$invoice) {
+                throw new InvoiceException(ErrorCode::INVOICE_NOT_FOUND, 'Invoice not found.');
+            }
+            $storeId = (int) $invoice->store_id;
+            $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_INVOICE, $storeId);
+            $this->assertPurchase($invoice);
+
+            $this->reversePurchaseStock($invoice);
+
+            $invoiceId = (int) $invoice->id;
+            $code = (string) $invoice->code;
+            $type = $invoice->type->value;
+
+            $this->invoiceRepository->delete($invoice);
+            $this->auditLogger->invoiceDeleted($actor, $invoiceId, $code, $type, $storeId);
         });
     }
 
@@ -171,15 +240,48 @@ class InvoiceService
 
     private function assertSupplier(int $partyId, int $storeId): void
     {
-        $supplier = Supplier::query()
-            ->where('party_id', $partyId)
-            ->whereHas('stores', fn ($q) => $q->where('stores.id', $storeId))
-            ->first();
+        // Suppliers are business-scoped — a supplier in the store's business can
+        // be invoiced even if it isn't linked to this specific store.
+        $businessId = Store::whereKey($storeId)->value('business_id');
 
-        if (!$supplier) {
+        $exists = Supplier::query()
+            ->where('party_id', $partyId)
+            ->where('business_id', $businessId)
+            ->exists();
+
+        if (!$exists) {
             throw new InvoiceException(
                 ErrorCode::INVOICE_PARTY_INVALID,
-                'Supplier not found in this store.'
+                'Supplier not found in this business.'
+            );
+        }
+    }
+
+    /** Removes the batches + stock this purchase created. Blocks if any has been sold. */
+    private function reversePurchaseStock(Invoice $invoice): void
+    {
+        $batches = $this->batchRepository->lockBySourceInvoice((int) $invoice->id);
+
+        foreach ($batches as $batch) {
+            if ((float) $batch->quantity_remaining < (float) $batch->quantity_received) {
+                throw new InvoiceException(
+                    ErrorCode::INVOICE_STOCK_CONSUMED,
+                    'Some items from this invoice have already been sold, so it can no longer be edited or deleted.'
+                );
+            }
+        }
+
+        foreach ($batches as $batch) {
+            $this->costingService->removeBatch($batch);
+        }
+    }
+
+    private function assertPurchase(Invoice $invoice): void
+    {
+        if ($invoice->type !== InvoiceTypeEnum::PURCHASE) {
+            throw new InvoiceException(
+                ErrorCode::INVOICE_IMMUTABLE,
+                'Only purchase invoices can be edited or deleted here.'
             );
         }
     }

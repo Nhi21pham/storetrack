@@ -36,6 +36,27 @@ class InvoiceRepository
         return $invoice;
     }
 
+    public function lockById(int $id): ?Invoice
+    {
+        return Invoice::whereKey($id)->lockForUpdate()->first();
+    }
+
+    public function update(Invoice $invoice, array $data): Invoice
+    {
+        $invoice->update($data);
+        return $invoice;
+    }
+
+    public function deleteItems(Invoice $invoice): void
+    {
+        $invoice->items()->delete();
+    }
+
+    public function delete(Invoice $invoice): void
+    {
+        $invoice->delete();
+    }
+
     public function createItem(array $data): InvoiceProduct
     {
         return InvoiceProduct::create($data);

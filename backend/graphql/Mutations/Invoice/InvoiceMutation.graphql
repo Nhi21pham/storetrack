@@ -2,6 +2,14 @@ extend type Mutation {
     createPurchaseInvoice(store_id: ID!, input: CreatePurchaseInvoiceInput! @spread): Invoice!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\Invoice\\InvoiceResolver@createPurchase")
+
+    updatePurchaseInvoice(id: ID!, input: CreatePurchaseInvoiceInput! @spread): Invoice!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Invoice\\InvoiceResolver@updatePurchase")
+
+    deleteInvoice(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Invoice\\InvoiceResolver@delete")
 }
 
 input CreatePurchaseInvoiceInput {
@@ -15,7 +23,7 @@ input CreatePurchaseInvoiceInput {
 
 input PurchaseInvoiceItemInput {
     product_id: ID! @rules(apply: ["required"])
-    quantity: Float! @rules(apply: ["required", "numeric", "gt:0"])
+    quantity: Float! @rules(apply: ["required", "numeric", "min:0.001"])
     unit_price: Float! @rules(apply: ["required", "numeric", "min:0"])
     taxes: [InvoiceItemTaxInput!] @rules(apply: ["sometimes", "array"])
 }

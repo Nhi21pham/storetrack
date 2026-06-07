@@ -38,4 +38,15 @@ class InventoryCostingService
 
         return $batch;
     }
+
+    /** Reverse a batch (decrement its remaining stock, delete it). Caller must hold a FOR UPDATE lock on $batch. */
+    public function removeBatch(InventoryBatch $batch): void
+    {
+        $this->stockRepository->decrement(
+            (int) $batch->store_id,
+            (int) $batch->product_id,
+            (float) $batch->quantity_remaining,
+        );
+        $this->batchRepository->delete($batch);
+    }
 }

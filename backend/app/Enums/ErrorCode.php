@@ -84,6 +84,7 @@ enum ErrorCode: string
     case INVOICE_NO_ITEMS = 'INVOICE_NO_ITEMS';
     case INVOICE_IMMUTABLE = 'INVOICE_IMMUTABLE';
     case INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK';
+    case INVOICE_STOCK_CONSUMED = 'INVOICE_STOCK_CONSUMED';
 
     // Province
     case PROVINCE_NOT_FOUND = 'PROVINCE_NOT_FOUND';
@@ -150,6 +151,7 @@ enum ErrorCode: string
             self::INVOICE_NO_ITEMS,
             self::INVOICE_IMMUTABLE,
             self::INSUFFICIENT_STOCK,
+            self::INVOICE_STOCK_CONSUMED,
             self::CANNOT_CHANGE_OWNER_ROLE,
             self::CANNOT_REMOVE_OWNER,
             self::INVITATION_EXPIRED,

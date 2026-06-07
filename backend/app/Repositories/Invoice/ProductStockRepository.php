@@ -22,4 +22,13 @@ class ProductStockRepository
             ->where('product_id', $productId)
             ->increment('quantity', $quantity, ['updated_at' => now()]);
     }
+
+    /** Decrease on-hand quantity. Atomic at the DB level. */
+    public function decrement(int $storeId, int $productId, float $quantity): void
+    {
+        DB::table('product_stocks')
+            ->where('store_id', $storeId)
+            ->where('product_id', $productId)
+            ->decrement('quantity', $quantity, ['updated_at' => now()]);
+    }
 }

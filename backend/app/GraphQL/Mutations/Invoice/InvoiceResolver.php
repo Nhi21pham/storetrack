@@ -17,4 +17,21 @@ class InvoiceResolver extends BaseResolver
             return $this->invoiceService->createPurchase($this->user(), $storeId, $args);
         });
     }
+
+    public function updatePurchase($_, array $args)
+    {
+        return $this->safe(function () use ($args) {
+            $id = (int) $args['id'];
+            unset($args['id']);
+            return $this->invoiceService->updatePurchase($this->user(), $id, $args);
+        });
+    }
+
+    public function delete($_, array $args): bool
+    {
+        return $this->safe(function () use ($args) {
+            $this->invoiceService->delete($this->user(), (int) $args['id']);
+            return true;
+        });
+    }
 }
