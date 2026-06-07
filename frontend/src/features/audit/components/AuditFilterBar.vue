@@ -1,26 +1,13 @@
 <template>
   <div class="filter-bar">
     <div class="filter-row">
-      <div class="filter-group">
-        <label>From</label>
-        <input
-          type="date"
-          :value="startDate"
-          :max="endDate || undefined"
-          @input="$emit('update:startDate', $event.target.value)"
-          @change="$emit('apply')"
-        />
-      </div>
-      <div class="filter-group">
-        <label>To</label>
-        <input
-          type="date"
-          :value="endDate"
-          :min="startDate || undefined"
-          @input="$emit('update:endDate', $event.target.value)"
-          @change="$emit('apply')"
-        />
-      </div>
+      <DateRangeFilter
+        :start-date="startDate"
+        :end-date="endDate"
+        @update:startDate="$emit('update:startDate', $event)"
+        @update:endDate="$emit('update:endDate', $event)"
+        @change="$emit('apply')"
+      />
       <div class="filter-group">
         <label>Type</label>
         <SearchableSelect
@@ -57,6 +44,7 @@
 
 <script setup>
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { OBJECT_OPTIONS, ACTION_OPTIONS } from '@/features/audit/constants'
 
 defineProps({
