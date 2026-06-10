@@ -47,4 +47,19 @@ class InvoiceProduct extends Model
     {
         return $this->hasMany(InvoiceProductCost::class);
     }
+
+    /** COGS for this line: the value drawn from FIFO batches (sales only; 0 for purchases). */
+    public function getCostTotalAttribute(): float
+    {
+        $total = $this->costs->sum(
+            fn (InvoiceProductCost $cost) => (float) $cost->quantity * (float) $cost->unit_cost,
+        );
+        return round($total, 2);
+    }
+
+    /** Pre-tax revenue minus COGS. */
+    public function getProfitAttribute(): float
+    {
+        return round((float) $this->subtotal - $this->cost_total, 2);
+    }
 }

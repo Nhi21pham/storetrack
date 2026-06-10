@@ -6,4 +6,8 @@ extend type Query {
     invoice(id: ID!): Invoice
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\Invoice\\InvoiceResolver@findById")
+
+    productStocks(store_id: ID!): [ProductStock!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Invoice\\InvoiceResolver@productStocks")
 }

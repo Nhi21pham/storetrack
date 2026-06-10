@@ -26,4 +26,11 @@ class InvoiceResolver extends BaseResolver
             $this->invoiceService->getById($this->user(), (int) $args['id'])
         );
     }
+
+    public function productStocks($_, array $args)
+    {
+        return $this->safe(fn() =>
+            $this->invoiceService->getStockLevels($this->user(), (int) $args['store_id'])
+        );
+    }
 }

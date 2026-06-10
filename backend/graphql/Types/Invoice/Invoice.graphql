@@ -28,9 +28,16 @@ type InvoiceProduct {
     subtotal: Float!
     tax_total: Float!
     grand_total: Float!
+    cost_total: Float!
+    profit: Float!
     taxes: [InvoiceProductTax!]!
     created_at: DateTime!
     updated_at: DateTime!
+}
+
+type ProductStock {
+    product_id: ID!
+    quantity: Float!
 }
 
 type InvoiceProductTax {

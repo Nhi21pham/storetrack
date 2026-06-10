@@ -7,6 +7,14 @@ extend type Mutation {
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\Invoice\\InvoiceResolver@updatePurchase")
 
+    createSaleInvoice(store_id: ID!, input: CreateSaleInvoiceInput! @spread): Invoice!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Invoice\\InvoiceResolver@createSale")
+
+    updateSaleInvoice(id: ID!, input: CreateSaleInvoiceInput! @spread): Invoice!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Invoice\\InvoiceResolver@updateSale")
+
     deleteInvoice(id: ID!): Boolean!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\Invoice\\InvoiceResolver@delete")
@@ -22,6 +30,22 @@ input CreatePurchaseInvoiceInput {
 }
 
 input PurchaseInvoiceItemInput {
+    product_id: ID! @rules(apply: ["required"])
+    quantity: Float! @rules(apply: ["required", "numeric", "min:0.001"])
+    unit_price: Float! @rules(apply: ["required", "numeric", "min:0"])
+    taxes: [InvoiceItemTaxInput!] @rules(apply: ["sometimes", "array"])
+}
+
+input CreateSaleInvoiceInput {
+    party_id: ID! @rules(apply: ["required"])
+    invoice_date: String! @rules(apply: ["required", "date"])
+    payment_method: InvoicePaymentMethod!
+    payment_status: InvoicePaymentStatus
+    description: String @rules(apply: ["sometimes", "nullable", "string", "max:1000"])
+    items: [SaleInvoiceItemInput!]! @rules(apply: ["required", "array", "min:1"])
+}
+
+input SaleInvoiceItemInput {
     product_id: ID! @rules(apply: ["required"])
     quantity: Float! @rules(apply: ["required", "numeric", "min:0.001"])
     unit_price: Float! @rules(apply: ["required", "numeric", "min:0"])

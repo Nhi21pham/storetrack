@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class InvoiceRepository
 {
-    private const RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.product', 'items.taxes'];
+    private const RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.product', 'items.taxes', 'items.costs'];
 
     private const LIST_RELATIONS = ['party.supplier', 'party.customer', 'creator'];
 
