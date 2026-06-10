@@ -36,15 +36,7 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
-        <button
-          class="btn-export"
-          :disabled="exporting || sortedBanks.length === 0"
-          :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
-          @click="runExport"
-        >
-          <Icon name="download" :size="14" />
-          <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
-        </button>
+        <ExportButton :exporting="exporting" :disabled="sortedBanks.length === 0" @click="runExport" />
       </div>
 
       <BulkStatusBar
@@ -208,6 +200,7 @@ import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import ExportButton from '@/components/common/ExportButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
@@ -421,9 +414,6 @@ const handleToggle = async () => {
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
 .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; cursor: pointer; flex-shrink: 0; }
 
-.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #111; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; }
-.btn-export:hover:not(:disabled) { background: #000; }
-.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .btn-create { display: flex; align-items: center; gap: 6px; padding: 9px 16px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-create:hover { background: #333; }

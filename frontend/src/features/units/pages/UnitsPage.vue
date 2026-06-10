@@ -33,15 +33,7 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
-        <button
-          class="btn-export"
-          :disabled="exporting || sortedUnits.length === 0"
-          :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
-          @click="runExport"
-        >
-          <Icon name="download" :size="14" />
-          <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
-        </button>
+        <ExportButton :exporting="exporting" :disabled="sortedUnits.length === 0" @click="runExport" />
       </div>
 
       <BulkStatusBar
@@ -217,6 +209,7 @@ import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
+import ExportButton from '@/components/common/ExportButton.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
@@ -433,9 +426,6 @@ const handleToggle = async () => {
 .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
 
-.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #111; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; }
-.btn-export:hover:not(:disabled) { background: #000; }
-.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 
