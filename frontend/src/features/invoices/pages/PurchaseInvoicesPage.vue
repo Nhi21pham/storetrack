@@ -30,14 +30,17 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <ExportButton :exporting="exporting" :disabled="sortedInvoices.length === 0" @click="run" />
       </div>
 
       <InvoiceSelectionBar
         v-if="selectedIds.size > 0"
         :count="selectedIds.size"
+        :exporting="exporting"
         :bulkDeleting="bulkDeleting"
         :canDelete="!!currentStore?.is_active && canDelete"
         @clear="clearSelection"
+        @export="run"
         @delete="confirmBulkDelete"
       />
 
@@ -194,6 +197,7 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import ExportButton from '@/components/common/ExportButton.vue'
 import Icon from '@/components/common/Icon.vue'
 import InvoiceSelectionBar from '@/features/invoices/components/InvoiceSelectionBar.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
@@ -202,9 +206,10 @@ import { useInvoices } from '@/features/invoices/composables/useInvoices'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
-import { fetchInvoice } from '@/features/invoices/services/invoiceService'
+import { useExport } from '@/composables/useExport'
+import { fetchInvoice, startInvoiceExport } from '@/features/invoices/services/invoiceService'
 import {
-  INVOICE_COLUMNS, INVOICE_INITIAL_COL_WIDTHS,
+  INVOICE_COLUMNS, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
   PAYMENT_METHODS, PAYMENT_STATUSES,
   formatMoney, formatInvoiceDate, paymentMethodLabel,
 } from '@/features/invoices/constants'
@@ -296,6 +301,30 @@ const handleBulkDelete = async () => {
     bulkDeleting.value = false
   }
 }
+
+const { exporting, run } = useExport({
+  start: () => {
+    const params = {
+      type: INVOICE_TYPE.PURCHASE,
+      search: searchQuery.value.trim() || undefined,
+      payment_method: methodFilter.value || undefined,
+      payment_status: statusFilter.value || undefined,
+      party_id: supplierFilter.value || undefined,
+      start_date: startDate.value || undefined,
+      end_date: endDate.value || undefined,
+    }
+    if (selectedIds.value.size > 0) {
+      params.ids = Array.from(selectedIds.value)
+    }
+    params.columns = columnVisibility.togglableColumns
+      .filter((col) => columnVisibility.isVisible(col.key))
+      .map((col) => col.key)
+    return startInvoiceExport({ storeId: currentStore.value.id, params })
+  },
+  defaultFilename: (id) => `purchase-invoices-${id}.xlsx`,
+  onSuccess: () => showToast('Invoice export ready.', 'success'),
+  onError:   (msg) => showToast(msg, 'error'),
+})
 
 // Filters/search/sort only reset paging — the selection narrows automatically to
 // the still-visible rows (scopeToEligible), so a filter keeps the ones that match.

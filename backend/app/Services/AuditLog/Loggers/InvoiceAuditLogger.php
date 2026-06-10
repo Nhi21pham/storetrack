@@ -4,6 +4,8 @@ namespace App\Services\AuditLog\Loggers;
 
 use App\Enums\AuditAction;
 use App\Enums\AuditObjectType;
+use App\Enums\InvoiceTypeEnum;
+use App\Models\Export;
 use App\Models\Invoice\Invoice;
 use App\Models\Store;
 use App\Models\User;
@@ -69,5 +71,38 @@ class InvoiceAuditLogger extends AuditLogger
             ],
             $businessId
         );
+    }
+
+    public function invoiceExported(User $actor, int $storeId, Export $export, string $scopeName): void
+    {
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+        $storeName = $store?->name ?? $scopeName;
+        $metadata = $export->metadata ?? [];
+        $type = $metadata['filters']['type'] ?? null;
+        $label = $this->invoiceTypeLabel($type);
+
+        $this->log($storeId, $actor, AuditObjectType::INVOICE, AuditAction::EXPORTED,
+            self::actor($actor) . " has EXPORTED {$label} of store {$storeName}.",
+            [
+                'store_id'    => $storeId,
+                'store_name'  => $storeName,
+                'business_id' => $businessId,
+                'export_id'   => $export->id,
+                'filename'    => $export->filename,
+                'type'        => $type,
+                'filters'     => $metadata['filters'] ?? null,
+            ],
+            $businessId
+        );
+    }
+
+    private function invoiceTypeLabel(?string $type): string
+    {
+        return match (InvoiceTypeEnum::tryFrom((string) $type)) {
+            InvoiceTypeEnum::PURCHASE => 'purchase invoices',
+            InvoiceTypeEnum::SALE     => 'sale invoices',
+            default                   => 'invoices',
+        };
     }
 }

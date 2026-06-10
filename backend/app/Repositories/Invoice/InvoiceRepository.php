@@ -5,11 +5,14 @@ namespace App\Repositories\Invoice;
 use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Invoice\InvoiceProductTax;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 class InvoiceRepository
 {
     private const RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.product', 'items.taxes'];
+
+    private const LIST_RELATIONS = ['party.supplier', 'party.customer', 'creator'];
 
     public function findById(int $id): ?Invoice
     {
@@ -18,11 +21,63 @@ class InvoiceRepository
 
     public function all(int $storeId, ?string $type = null): Collection
     {
-        $query = Invoice::with(['party.supplier', 'party.customer', 'creator'])->where('store_id', $storeId);
+        $query = Invoice::with(self::LIST_RELATIONS)->where('store_id', $storeId);
         if ($type !== null) {
             $query->where('type', $type);
         }
         return $query->orderByDesc('id')->get();
+    }
+
+    /**
+     * A filtered, ordered query of invoices for a store. Used by the export job,
+     * which streams it in chunks, so this returns a Builder rather than a result.
+     */
+    public function listQuery(int $storeId, array $filters = []): Builder
+    {
+        $query = Invoice::query()
+            ->with(self::LIST_RELATIONS)
+            ->where('store_id', $storeId);
+
+        if (!empty($filters['type'])) {
+            $query->where('type', (string) $filters['type']);
+        }
+
+        $ids = $filters['ids'] ?? null;
+        if (is_array($ids) && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        if (!empty($filters['party_id'])) {
+            $query->where('party_id', (int) $filters['party_id']);
+        }
+
+        if (!empty($filters['payment_method'])) {
+            $query->where('payment_method', (string) $filters['payment_method']);
+        }
+
+        if (!empty($filters['payment_status'])) {
+            $query->where('payment_status', (string) $filters['payment_status']);
+        }
+
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('invoice_date', '>=', (string) $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('invoice_date', '<=', (string) $filters['end_date']);
+        }
+
+        $search = $filters['search'] ?? null;
+        if (is_string($search) && $search !== '') {
+            $like = '%'.$search.'%';
+            $query->where(function (Builder $q) use ($like) {
+                $q->where('code', 'like', $like)
+                    ->orWhereHas('party.supplier', fn ($s) => $s->where('name', 'like', $like))
+                    ->orWhereHas('party.customer', fn ($c) => $c->where('name', 'like', $like));
+            });
+        }
+
+        return $query->orderByDesc('id');
     }
 
     public function create(array $data): Invoice

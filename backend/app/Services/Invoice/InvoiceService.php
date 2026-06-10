@@ -3,11 +3,16 @@
 namespace App\Services\Invoice;
 
 use App\Enums\ErrorCode;
+use App\Enums\ExportScope;
+use App\Enums\InvoicePaymentMethodEnum;
 use App\Enums\InvoicePaymentStatusEnum;
 use App\Enums\InvoiceTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Exceptions\InvoiceException;
 use App\Exceptions\TaxException;
+use App\Exports\InvoiceExport;
+use App\Jobs\Exports\ExportInvoiceJob;
+use App\Models\Export;
 use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Product;
@@ -19,6 +24,7 @@ use App\Repositories\Invoice\InventoryBatchRepository;
 use App\Repositories\Invoice\InvoiceRepository;
 use App\Repositories\Invoice\InvoiceSequenceRepository;
 use App\Services\AuditLog\Loggers\InvoiceAuditLogger;
+use App\Services\ExportService;
 use App\Services\PermissionService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +38,7 @@ class InvoiceService
         private InventoryCostingService $costingService,
         private PermissionService $permissionService,
         private InvoiceAuditLogger $auditLogger,
+        private ExportService $exportService,
     ) {}
 
     public function getAll(User $user, int $storeId, ?string $type = null): Collection
@@ -143,6 +150,79 @@ class InvoiceService
             $this->invoiceRepository->delete($invoice);
             $this->auditLogger->invoiceDeleted($actor, $invoiceId, $code, $type, $storeId);
         });
+    }
+
+    public function queueExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
+
+        $type              = ExportInvoiceJob::TYPE;
+        $scope             = ExportScope::STORE;
+        $scopeName         = Store::find($storeId)?->name;
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        $jobClass          = ExportInvoiceJob::class;
+
+        return $this->exportService->queue(
+            $user,
+            $type,
+            $scope,
+            $storeId,
+            $scopeName,
+            $normalizedFilters,
+            $jobClass,
+            $clientId,
+        );
+    }
+
+    private function normalizeExportFilters(array $filters): array
+    {
+        $clean = [];
+
+        $invoiceType = InvoiceTypeEnum::tryFrom(strtolower((string) ($filters['type'] ?? '')));
+        if ($invoiceType !== null) {
+            $clean['type'] = $invoiceType->value;
+        }
+
+        if (!empty($filters['search'])) {
+            $clean['search'] = (string) $filters['search'];
+        }
+
+        $paymentMethod = InvoicePaymentMethodEnum::tryFrom(strtolower((string) ($filters['payment_method'] ?? '')));
+        if ($paymentMethod !== null) {
+            $clean['payment_method'] = $paymentMethod->value;
+        }
+
+        $paymentStatus = InvoicePaymentStatusEnum::tryFrom(strtolower((string) ($filters['payment_status'] ?? '')));
+        if ($paymentStatus !== null) {
+            $clean['payment_status'] = $paymentStatus->value;
+        }
+
+        if (!empty($filters['party_id'])) {
+            $clean['party_id'] = (int) $filters['party_id'];
+        }
+
+        if (!empty($filters['start_date'])) {
+            $clean['start_date'] = (string) $filters['start_date'];
+        }
+        if (!empty($filters['end_date'])) {
+            $clean['end_date'] = (string) $filters['end_date'];
+        }
+
+        if (is_array($filters['ids'] ?? null) && count($filters['ids']) > 0) {
+            $clean['ids'] = array_values(array_map('intval', $filters['ids']));
+        }
+
+        if (is_array($filters['columns'] ?? null)) {
+            $columns = array_values(array_filter(
+                $filters['columns'],
+                fn ($column) => in_array($column, InvoiceExport::COLUMN_KEYS, true),
+            ));
+            if ($columns !== []) {
+                $clean['columns'] = $columns;
+            }
+        }
+
+        return $clean;
     }
 
     private function createHeader(User $actor, int $storeId, InvoiceTypeEnum $type, array $data): Invoice

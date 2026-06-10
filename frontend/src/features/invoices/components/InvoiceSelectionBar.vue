@@ -3,6 +3,7 @@
     <span class="selection-count">{{ count }} selected</span>
     <div class="selection-actions">
       <button class="btn-selection-action" @click="$emit('clear')">Clear</button>
+      <ExportButton variant="ghost" label="Export selected" :exporting="exporting" @click="$emit('export')" />
       <button
         v-if="canDelete"
         class="btn-selection-action danger"
@@ -17,13 +18,16 @@
 </template>
 
 <script setup>
+import ExportButton from '@/components/common/ExportButton.vue'
+
 defineProps({
   count:        { type: Number,  required: true },
+  exporting:    { type: Boolean, required: true },
   bulkDeleting: { type: Boolean, required: true },
   canDelete:    { type: Boolean, required: true },
 })
 
-defineEmits(['clear', 'delete'])
+defineEmits(['clear', 'export', 'delete'])
 </script>
 
 <style scoped>

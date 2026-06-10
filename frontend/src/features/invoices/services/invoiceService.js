@@ -1,4 +1,4 @@
-import { graphql } from '@/api'
+import { graphql, rest } from '@/api'
 
 const INVOICE_LIST_FIELDS = `
   id store_id type code party_id party_name created_by description
@@ -69,3 +69,6 @@ export const updatePurchaseInvoice = async ({ id, input }) => {
 export const deleteInvoice = async ({ id }) => {
   await graphql(DELETE_INVOICE_MUTATION, { id })
 }
+
+export const startInvoiceExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/invoices/${storeId}`, { params })
