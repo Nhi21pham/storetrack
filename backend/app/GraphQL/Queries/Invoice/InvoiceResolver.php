@@ -33,4 +33,11 @@ class InvoiceResolver extends BaseResolver
             $this->invoiceService->getStockLevels($this->user(), (int) $args['store_id'])
         );
     }
+
+    public function inventoryBatches($_, array $args)
+    {
+        return $this->safe(fn() =>
+            $this->invoiceService->getOpenBatches($this->user(), (int) $args['store_id'])
+        );
+    }
 }

@@ -20,6 +20,16 @@ class InventoryBatchRepository
             ->get();
     }
 
+    /** Open batches across a store in FIFO order — read-only, for cost previews. */
+    public function openForStore(int $storeId): Collection
+    {
+        return InventoryBatch::where('store_id', $storeId)
+            ->where('quantity_remaining', '>', 0)
+            ->orderBy('received_at')
+            ->orderBy('id')
+            ->get(['id', 'product_id', 'unit_cost', 'quantity_remaining', 'received_at']);
+    }
+
     /**
      * Open batches for a product in FIFO order (oldest received first, id as
      * tie-breaker), locked for update so a concurrent sale can't double-spend them.

@@ -4,7 +4,7 @@
       <div class="modal-header">
         <div class="title-wrap">
           <h2>{{ invoice.code }}</h2>
-          <span class="type-badge">Purchase</span>
+          <span class="type-badge" :class="{ sale: isSale }">{{ isSale ? 'Sale' : 'Purchase' }}</span>
         </div>
         <button class="close-btn" @click="$emit('close')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -13,7 +13,7 @@
 
       <div class="modal-body">
         <div class="meta-grid">
-          <div class="meta"><label>Supplier</label><span>{{ invoice.party_name || '—' }}</span></div>
+          <div class="meta"><label>{{ isSale ? 'Customer' : 'Supplier' }}</label><span>{{ invoice.party_name || '—' }}</span></div>
           <div class="meta"><label>Invoice date</label><span>{{ formatInvoiceDate(invoice.invoice_date) }}</span></div>
           <div class="meta"><label>Payment method</label><span>{{ paymentMethodLabel(invoice.payment_method) }}</span></div>
           <div class="meta"><label>Status</label><PaymentStatusBadge :status="invoice.payment_status" /></div>
@@ -25,9 +25,10 @@
             <tr>
               <th>Product</th>
               <th class="num">Qty</th>
-              <th class="num">Unit price</th>
+              <th class="num">{{ isSale ? 'Sale price' : 'Unit price' }}</th>
               <th>Taxes</th>
               <th class="num">Subtotal</th>
+              <th v-if="isSale" class="num">Cost</th>
               <th class="num">Total</th>
             </tr>
           </thead>
@@ -43,6 +44,12 @@
                 </span>
               </td>
               <td class="num">{{ formatMoney(item.subtotal) }}</td>
+              <td v-if="isSale" class="num cost-cell">
+                <span class="cost-total">{{ formatMoney(item.cost_total) }}</span>
+                <span v-for="c in (item.costs || [])" :key="c.id" class="cost-draw">
+                  {{ formatQuantity(c.quantity) }} × {{ formatMoney(c.unit_cost) }}
+                </span>
+              </td>
               <td class="num strong">{{ formatMoney(item.grand_total) }}</td>
             </tr>
           </tbody>
@@ -60,6 +67,7 @@
           <div class="t-row"><span>Subtotal</span><span>{{ formatMoney(invoice.subtotal) }}</span></div>
           <div class="t-row"><span>Tax</span><span>{{ formatMoney(invoice.tax_total) }}</span></div>
           <div class="t-row grand"><span>Grand total</span><span>{{ formatMoney(invoice.grand_total) }}</span></div>
+          <div v-if="isSale" class="t-row cogs"><span>Cost of goods</span><span>{{ formatMoney(costTotal) }}</span></div>
         </div>
       </div>
     </div>
@@ -67,20 +75,28 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
 import {
+  INVOICE_TYPE,
   formatMoney,
   formatQuantity,
   formatInvoiceDate,
   paymentMethodLabel,
 } from '@/features/invoices/constants'
 
-defineProps({
+const props = defineProps({
   invoice: { type: Object, required: true },
   canManage: { type: Boolean, default: false },
 })
 
 defineEmits(['close', 'edit', 'delete'])
+
+const isSale = computed(() => props.invoice.type === INVOICE_TYPE.SALE)
+
+const costTotal = computed(() =>
+  (props.invoice.items || []).reduce((sum, it) => sum + Number(it.cost_total || 0), 0),
+)
 
 const trimRate = (rate) => String(parseFloat(rate))
 </script>
@@ -93,6 +109,10 @@ const trimRate = (rate) => String(parseFloat(rate))
 .title-wrap { display: flex; align-items: center; gap: 10px; }
 .title-wrap h2 { font-size: 18px; font-weight: 700; color: #111; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .type-badge { padding: 3px 10px; border-radius: 999px; background: #eef2ff; color: #4338ca; font-size: 12px; font-weight: 600; }
+.type-badge.sale { background: #ecfdf5; color: #047857; }
+.cost-cell { vertical-align: top; }
+.cost-total { display: block; }
+.cost-draw { display: block; font-size: 11.5px; font-weight: 400; color: #9ca3af; font-variant-numeric: tabular-nums; }
 .close-btn { background: none; border: none; color: #9ca3af; cursor: pointer; padding: 4px; border-radius: 6px; }
 .close-btn:hover { color: #374151; background: #f3f4f6; }
 
@@ -123,4 +143,5 @@ const trimRate = (rate) => String(parseFloat(rate))
 .totals { width: 280px; display: flex; flex-direction: column; gap: 8px; }
 .t-row { display: flex; justify-content: space-between; font-size: 14px; color: #374151; font-variant-numeric: tabular-nums; }
 .t-row.grand { padding-top: 8px; border-top: 1px solid #eef0f2; font-size: 16px; font-weight: 700; color: #111; }
+.t-row.cogs { padding-top: 8px; border-top: 1px solid #eef0f2; color: #6b7280; }
 </style>

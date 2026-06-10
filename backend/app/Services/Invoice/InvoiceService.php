@@ -19,6 +19,7 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\Tax;
 use App\Models\User;
+use App\Repositories\Invoice\InventoryBatchRepository;
 use App\Repositories\Invoice\InvoiceRepository;
 use App\Repositories\Invoice\InvoiceSequenceRepository;
 use App\Repositories\Invoice\ProductStockRepository;
@@ -37,6 +38,7 @@ class InvoiceService
         private InvoiceSequenceRepository $sequenceRepository,
         private InvoiceStockHandlerFactory $stockHandlerFactory,
         private ProductStockRepository $stockRepository,
+        private InventoryBatchRepository $batchRepository,
         private PermissionService $permissionService,
         private InvoiceAuditLogger $auditLogger,
         private ExportService $exportService,
@@ -62,6 +64,12 @@ class InvoiceService
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
         return $this->stockRepository->allForStore($storeId);
+    }
+
+    public function getOpenBatches(User $user, int $storeId): Collection
+    {
+        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
+        return $this->batchRepository->openForStore($storeId);
     }
 
     public function createPurchase(User $actor, int $storeId, array $data): Invoice

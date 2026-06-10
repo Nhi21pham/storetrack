@@ -56,10 +56,4 @@ class InvoiceProduct extends Model
         );
         return round($total, 2);
     }
-
-    /** Pre-tax revenue minus COGS. */
-    public function getProfitAttribute(): float
-    {
-        return round((float) $this->subtotal - $this->cost_total, 2);
-    }
 }

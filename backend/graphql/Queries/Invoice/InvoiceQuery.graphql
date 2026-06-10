@@ -10,4 +10,8 @@ extend type Query {
     productStocks(store_id: ID!): [ProductStock!]!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Queries\\Invoice\\InvoiceResolver@productStocks")
+
+    inventoryBatches(store_id: ID!): [InventoryBatch!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Invoice\\InvoiceResolver@inventoryBatches")
 }

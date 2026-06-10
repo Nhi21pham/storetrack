@@ -50,11 +50,13 @@ export const todayInputDate = () => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-export const INVOICE_COLUMNS = [
+// Column set for an invoice list; the party column is labelled per type
+// ("Supplier" for purchases, "Customer" for sales).
+export const makeInvoiceColumns = (partyLabel) => [
   { key: 'select',         label: '',            sortable: false },
   { key: 'code',           label: 'Code',        sortable: true  },
   { key: 'invoice_date',   label: 'Date',        sortable: true  },
-  { key: 'party_name',     label: 'Supplier',    sortable: true  },
+  { key: 'party_name',     label: partyLabel,    sortable: true  },
   { key: 'payment_method', label: 'Payment',     sortable: true  },
   { key: 'payment_status', label: 'Status',      sortable: true  },
   { key: 'subtotal',       label: 'Subtotal',    sortable: true  },
@@ -62,5 +64,7 @@ export const INVOICE_COLUMNS = [
   { key: 'grand_total',    label: 'Grand total', sortable: true  },
   { key: 'actions',        label: '',            sortable: false },
 ]
+
+export const INVOICE_COLUMNS = makeInvoiceColumns('Supplier')
 
 export const INVOICE_INITIAL_COL_WIDTHS = [40, 120, 120, 190, 110, 110, 120, 110, 130, 90]

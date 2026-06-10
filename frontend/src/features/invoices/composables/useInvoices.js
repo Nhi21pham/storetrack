@@ -23,15 +23,15 @@ const matchesSearch = (invoice, query) => {
   )
 }
 
-export const useInvoices = ({ currentStore, currentBusiness, onError }) => {
-  const invoices       = ref([])
-  const loading        = ref(false)
-  const searchQuery    = ref('')
-  const statusFilter   = ref('')
-  const methodFilter   = ref('')
-  const supplierFilter = ref('')
-  const startDate      = ref('')
-  const endDate        = ref('')
+export const useInvoices = ({ currentStore, currentBusiness, onError, type = INVOICE_TYPE.PURCHASE }) => {
+  const invoices     = ref([])
+  const loading      = ref(false)
+  const searchQuery  = ref('')
+  const statusFilter = ref('')
+  const methodFilter = ref('')
+  const partyFilter  = ref('')
+  const startDate    = ref('')
+  const endDate      = ref('')
 
   const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 
@@ -42,13 +42,13 @@ export const useInvoices = ({ currentStore, currentBusiness, onError }) => {
   })
 
   const hasActiveFilters = computed(() =>
-    !!(statusFilter.value || methodFilter.value || supplierFilter.value || startDate.value || endDate.value),
+    !!(statusFilter.value || methodFilter.value || partyFilter.value || startDate.value || endDate.value),
   )
 
   const clearFilters = () => {
     statusFilter.value = ''
     methodFilter.value = ''
-    supplierFilter.value = ''
+    partyFilter.value = ''
     startDate.value = ''
     endDate.value = ''
   }
@@ -57,7 +57,7 @@ export const useInvoices = ({ currentStore, currentBusiness, onError }) => {
     let list = invoices.value
     if (statusFilter.value) list = list.filter((i) => i.payment_status === statusFilter.value)
     if (methodFilter.value) list = list.filter((i) => i.payment_method === methodFilter.value)
-    if (supplierFilter.value) list = list.filter((i) => String(i.party_id) === supplierFilter.value)
+    if (partyFilter.value) list = list.filter((i) => String(i.party_id) === partyFilter.value)
     if (startDate.value || endDate.value) {
       list = list.filter((i) => {
         const d = String(i.invoice_date).slice(0, 10)
@@ -77,8 +77,8 @@ export const useInvoices = ({ currentStore, currentBusiness, onError }) => {
   const sort = useSortCriteria()
   const sortedInvoices = computed(() => sort.sortItems(filteredInvoices.value, getSortValue))
 
-  // Distinct suppliers present in the loaded invoices, for the column filter.
-  const supplierOptions = computed(() => {
+  // Distinct parties present in the loaded invoices, for the column filter.
+  const partyOptions = computed(() => {
     const seen = new Map()
     for (const i of invoices.value) {
       const id = i.party_id != null ? String(i.party_id) : null
@@ -91,7 +91,7 @@ export const useInvoices = ({ currentStore, currentBusiness, onError }) => {
     if (!currentStore.value?.id) return
     loading.value = true
     try {
-      invoices.value = await fetchInvoices({ storeId: currentStore.value.id, type: INVOICE_TYPE.PURCHASE })
+      invoices.value = await fetchInvoices({ storeId: currentStore.value.id, type })
     } catch (err) {
       onError?.(err.message)
     } finally {
@@ -116,9 +116,9 @@ export const useInvoices = ({ currentStore, currentBusiness, onError }) => {
   }, { immediate: true })
 
   return {
-    invoices, loading, searchQuery, statusFilter, methodFilter, supplierFilter, startDate, endDate,
+    invoices, loading, searchQuery, statusFilter, methodFilter, partyFilter, startDate, endDate,
     canDelete, hasActiveFilters, clearFilters,
-    baseInvoices, filteredInvoices, sortedInvoices, supplierOptions,
+    baseInvoices, filteredInvoices, sortedInvoices, partyOptions,
     sort,
     load, removeOne, removeMany,
   }

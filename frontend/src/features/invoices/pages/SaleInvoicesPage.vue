@@ -1,6 +1,6 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Purchase Invoices" subtitle="Purchases recorded from your suppliers.">
+    <PageHeader title="Sale Invoices" subtitle="Sales recorded to your customers.">
       <template v-if="currentStore?.is_active" #actions>
         <button class="btn-create" @click="goToCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -12,7 +12,7 @@
     <EmptyState
       v-if="!currentStore"
       title="No store selected"
-      description="Select a store to view its purchase invoices."
+      description="Select a store to view its sale invoices."
     />
 
     <template v-else>
@@ -21,7 +21,7 @@
       </InactiveBanner>
 
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by code or supplier..." />
+        <SearchBar v-model="searchQuery" placeholder="Search by code or customer..." />
         <DateRangeFilter v-model:startDate="startDate" v-model:endDate="endDate" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
@@ -48,8 +48,8 @@
 
       <EmptyState
         v-else-if="invoices.length === 0"
-        title="No purchase invoices yet"
-        description="Record your first purchase to start tracking stock and costs."
+        title="No sale invoices yet"
+        description="Record your first sale to start tracking revenue and profit."
       />
 
       <div v-else class="table-wrap">
@@ -76,8 +76,8 @@
             <SearchableSelect
               :modelValue="partyFilter"
               :options="partyOptions"
-              all-label="(All suppliers)"
-              search-placeholder="Filter supplier..."
+              all-label="(All customers)"
+              search-placeholder="Filter customer..."
               teleport
               @update:modelValue="partyFilter = $event"
             />
@@ -157,7 +157,7 @@
       <ConfirmDialog
         v-if="deletingInvoice"
         title="Delete invoice?"
-        :message="`This permanently deletes ${deletingInvoice.code} and reverses the stock it added. This can't be undone.`"
+        :message="`This permanently deletes ${deletingInvoice.code} and returns the stock it consumed to inventory. This can't be undone.`"
         confirm-text="Yes, delete"
         cancel-text="Cancel"
         type="danger"
@@ -168,7 +168,7 @@
       <ConfirmDialog
         v-if="showBulkDeleteConfirm"
         title="Delete invoices?"
-        :message="`Delete ${selectedIds.size} invoice${selectedIds.size === 1 ? '' : 's'} and reverse the stock they added? This can't be undone.`"
+        :message="`Delete ${selectedIds.size} invoice${selectedIds.size === 1 ? '' : 's'} and return the stock they consumed to inventory? This can't be undone.`"
         confirm-text="Yes, delete"
         cancel-text="Cancel"
         type="danger"
@@ -209,7 +209,7 @@ import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
 import { fetchInvoice, startInvoiceExport } from '@/features/invoices/services/invoiceService'
 import {
-  INVOICE_COLUMNS, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
+  makeInvoiceColumns, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
   PAYMENT_METHODS, PAYMENT_STATUSES,
   formatMoney, formatInvoiceDate, paymentMethodLabel,
 } from '@/features/invoices/constants'
@@ -219,9 +219,11 @@ const showToast = inject('showToast')
 const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 
+const SALE_COLUMNS = makeInvoiceColumns('Customer')
+
 const columnVisibility = useColumnVisibility({
-  storageKey: 'purchase-invoices',
-  columns: INVOICE_COLUMNS,
+  storageKey: 'sale-invoices',
+  columns: SALE_COLUMNS,
   lockedKeys: ['select', 'actions'],
 })
 const visibleWidths = computed(() => columnVisibility.filterWidths(INVOICE_INITIAL_COL_WIDTHS))
@@ -236,7 +238,7 @@ const {
   currentStore,
   currentBusiness,
   onError: (msg) => showToast(msg, 'error'),
-  type: INVOICE_TYPE.PURCHASE,
+  type: INVOICE_TYPE.SALE,
 })
 
 const {
@@ -255,8 +257,8 @@ const deletingInvoice = ref(null)
 const bulkDeleting = ref(false)
 const showBulkDeleteConfirm = ref(false)
 
-const goToCreate = () => router.push('/purchase-invoices/new')
-const openEdit = (inv) => { detailInvoice.value = null; router.push(`/purchase-invoices/${inv.id}/edit`) }
+const goToCreate = () => router.push('/sale-invoices/new')
+const openEdit = (inv) => { detailInvoice.value = null; router.push(`/sale-invoices/${inv.id}/edit`) }
 
 const openDetail = async (inv) => {
   try {
@@ -292,7 +294,7 @@ const handleBulkDelete = async () => {
     showBulkDeleteConfirm.value = false
     clearSelection()
     if (failed > 0) {
-      showToast(`Deleted ${deleted}. ${failed} could not be deleted (stock already sold).`, 'error')
+      showToast(`Deleted ${deleted}. ${failed} could not be deleted.`, 'error')
     } else {
       showToast(`Deleted ${deleted} invoice${deleted === 1 ? '' : 's'}.`)
     }
@@ -306,7 +308,7 @@ const handleBulkDelete = async () => {
 const { exporting, run } = useExport({
   start: () => {
     const params = {
-      type: INVOICE_TYPE.PURCHASE,
+      type: INVOICE_TYPE.SALE,
       search: searchQuery.value.trim() || undefined,
       payment_method: methodFilter.value || undefined,
       payment_status: statusFilter.value || undefined,
@@ -322,13 +324,11 @@ const { exporting, run } = useExport({
       .map((col) => col.key)
     return startInvoiceExport({ storeId: currentStore.value.id, params })
   },
-  defaultFilename: (id) => `purchase-invoices-${id}.xlsx`,
+  defaultFilename: (id) => `sale-invoices-${id}.xlsx`,
   onSuccess: () => showToast('Invoice export ready.', 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-// Filters/search/sort only reset paging — the selection narrows automatically to
-// the still-visible rows (scopeToEligible), so a filter keeps the ones that match.
 watch([searchQuery, statusFilter, methodFilter, partyFilter, startDate, endDate, () => sort.sortCriteria.value], resetPage, { deep: true })
 watch(() => currentStore.value?.id, clearSelection)
 </script>

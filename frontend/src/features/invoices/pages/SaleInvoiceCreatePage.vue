@@ -1,6 +1,6 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader :title="isEdit ? 'Edit Purchase Invoice' : 'New Purchase Invoice'" subtitle="Record a purchase from a supplier and add it to stock.">
+    <PageHeader :title="isEdit ? 'Edit Sale Invoice' : 'New Sale Invoice'" subtitle="Record a sale to a customer and draw it from stock.">
       <template #actions>
         <button class="btn-secondary" @click="goBack">Cancel</button>
       </template>
@@ -9,7 +9,7 @@
     <EmptyState
       v-if="!currentStore"
       title="No store selected"
-      description="Select a store to create a purchase invoice."
+      description="Select a store to create a sale invoice."
     />
 
     <template v-else>
@@ -17,7 +17,7 @@
         This store is deactivated. You cannot create invoices until it is reactivated.
       </InactiveBanner>
 
-      <LoadingState v-if="optionsLoading">Loading suppliers, products and taxes…</LoadingState>
+      <LoadingState v-if="optionsLoading">Loading customers, products and taxes…</LoadingState>
 
       <template v-else>
         <!-- Details -->
@@ -25,16 +25,16 @@
           <h3 class="card-title">Details</h3>
           <div class="details-grid">
             <div class="form-group">
-              <label>Supplier <span class="required">*</span></label>
+              <label>Customer <span class="required">*</span></label>
               <div class="picker-row">
                 <SearchableSelect
                   v-model="form.party_id"
-                  :options="supplierOptions"
+                  :options="customerOptions"
                   :allow-all="false"
-                  placeholder="Select a supplier"
-                  search-placeholder="Search suppliers…"
+                  placeholder="Select a customer"
+                  search-placeholder="Search customers…"
                 />
-                <AddItemButton title="Create a new supplier" @click="showSupplierForm = true" />
+                <AddItemButton title="Create a new customer" @click="showCustomerForm = true" />
               </div>
               <span v-if="errors.party_id" class="error-text">{{ errors.party_id }}</span>
             </div>
@@ -69,6 +69,7 @@
         <!-- Items -->
         <section class="card">
           <h3 class="card-title">Items</h3>
+
           <ResizableTable :columns="ITEM_COLUMNS" :initial-widths="ITEM_COL_WIDTHS">
             <template v-for="(item, i) in items" :key="i">
               <tr class="item-row">
@@ -85,9 +86,12 @@
                     />
                     <AddItemButton size="small" title="Create a new product" @click="openProductForm(i)" />
                   </div>
+                  <span v-if="item.product_id" class="stock-hint" :class="{ warn: exceedsStock(item) }">
+                    {{ stockHint(item) }}
+                  </span>
                 </td>
                 <td class="c-qty">
-                  <NumberInput v-model="item.quantity" :decimals="3" class="num-input" placeholder="0" />
+                  <NumberInput v-model="item.quantity" :decimals="3" class="num-input" :class="{ error: exceedsStock(item) }" placeholder="0" />
                 </td>
                 <td class="c-price">
                   <NumberInput v-model="item.unit_price" :decimals="2" class="num-input" placeholder="0.00" />
@@ -97,6 +101,16 @@
                     <span class="tax-summary">{{ taxSummary(item) }}</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
+                </td>
+                <td class="c-cost">
+                  <template v-if="item.product_id">
+                    <div v-for="(b, bi) in batchesFor(item.product_id)" :key="bi" class="cost-line">
+                      <span class="cl-amount">{{ formatQuantity(b.remaining) }} × {{ formatMoney(b.unit_cost) }}</span>
+                      <span class="cl-date">{{ formatInvoiceDate(b.received_at) }}</span>
+                    </div>
+                    <span v-if="batchesFor(item.product_id).length === 0" class="muted">No stock</span>
+                  </template>
+                  <span v-else class="muted">—</span>
                 </td>
                 <td class="c-num">{{ formatMoney(lineSubtotal(item)) }}</td>
                 <td class="c-num strong">{{ formatMoney(lineTotal(item)) }}</td>
@@ -123,6 +137,9 @@
             Add item
           </button>
           <span v-if="errors.items" class="error-text">{{ errors.items }}</span>
+          <p v-if="hasStockWarning" class="stock-warning-note">
+            Some lines exceed available stock. You can still try to save, but the sale will be rejected if stock is insufficient.
+          </p>
         </section>
 
         <!-- Totals + submit -->
@@ -142,11 +159,11 @@
           </div>
         </section>
 
-        <SupplierFormModal
-          v-if="showSupplierForm"
-          :supplier="null"
-          @close="showSupplierForm = false"
-          @saved="onSupplierCreated"
+        <CustomerFormModal
+          v-if="showCustomerForm"
+          :customer="null"
+          @close="showCustomerForm = false"
+          @saved="onCustomerCreated"
         />
 
         <ProductFormModal
@@ -188,16 +205,18 @@ import AddItemButton from '@/components/common/AddItemButton.vue'
 import NumberInput from '@/components/common/NumberInput.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import InvoiceLineTaxEditor from '@/features/invoices/components/InvoiceLineTaxEditor.vue'
-import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
+import CustomerFormModal from '@/features/customers/components/CustomerFormModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
-import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
+import { fetchCustomers } from '@/features/customers/services/customerService'
 import { fetchProducts } from '@/features/products/services/productService'
 import { fetchTaxes } from '@/features/taxes/services/taxService'
-import { createPurchaseInvoice, updatePurchaseInvoice, fetchInvoice } from '@/features/invoices/services/invoiceService'
+import { createSaleInvoice, updateSaleInvoice, fetchInvoice, fetchProductStocks, fetchInventoryBatches } from '@/features/invoices/services/invoiceService'
 import {
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
   formatMoney,
+  formatQuantity,
+  formatInvoiceDate,
   todayInputDate,
 } from '@/features/invoices/constants'
 
@@ -205,13 +224,14 @@ const ITEM_COLUMNS = [
   { key: 'idx',      label: '#' },
   { key: 'product',  label: 'Product' },
   { key: 'quantity', label: 'Qty' },
-  { key: 'price',    label: 'Unit price' },
+  { key: 'price',    label: 'Sale price' },
   { key: 'taxes',    label: 'Taxes' },
+  { key: 'cost',     label: 'Cost' },
   { key: 'subtotal', label: 'Subtotal' },
   { key: 'total',    label: 'Total' },
   { key: 'remove',   label: '' },
 ]
-const ITEM_COL_WIDTHS = [44, 300, 100, 130, 170, 120, 120, 48]
+const ITEM_COL_WIDTHS = [44, 270, 90, 120, 150, 168, 110, 110, 48]
 
 const router = useRouter()
 const route = useRoute()
@@ -225,15 +245,18 @@ const invoiceId = computed(() => route.params.id ?? null)
 const isEdit = computed(() => !!invoiceId.value)
 
 const optionsLoading = ref(false)
-const suppliers = ref([])
+const customers = ref([])
 const products = ref([])
 const taxes = ref([])
+const stockByProduct = ref({})
+const originalByProduct = ref({})
+const batchesByProduct = ref({})
 
 const submitting = ref(false)
 const apiError = ref('')
 const errors = ref({ party_id: '', invoice_date: '', items: '' })
 
-const showSupplierForm = ref(false)
+const showCustomerForm = ref(false)
 const showProductForm = ref(false)
 const productFormLine = ref(null)
 
@@ -274,30 +297,63 @@ const isDirty = computed(() => snapshot() !== baseline.value)
 
 const activeTaxes = computed(() => taxes.value.filter((t) => t.is_active))
 
-const inCurrentStore = (s) => {
+const inCurrentStore = (c) => {
   const sid = String(storeId.value ?? '')
-  return String(s.store_id) === sid || (s.stores || []).some((st) => String(st.id) === sid)
+  return String(c.store_id) === sid || (c.stores || []).some((st) => String(st.id) === sid)
 }
 
-// Suppliers are business-wide; surface the ones linked to this store first and
+// Customers are business-wide; surface the ones linked to this store first and
 // tag each option so the scope (store vs business) is clear in the picker.
-const supplierOptions = computed(() =>
-  suppliers.value
-    .filter((s) => s.party?.id)
-    .map((s) => ({ supplier: s, store: inCurrentStore(s) }))
+const customerOptions = computed(() =>
+  customers.value
+    .filter((c) => c.party?.id)
+    .map((c) => ({ customer: c, store: inCurrentStore(c) }))
     .sort((a, b) => (a.store === b.store ? 0 : a.store ? -1 : 1))
-    .map(({ supplier, store }) => ({
-      value: String(supplier.party.id),
-      label: supplier.name,
-      sublabel: [store ? 'This store' : 'Business', supplier.phone || supplier.tax_code].filter(Boolean).join(' · '),
+    .map(({ customer, store }) => ({
+      value: String(customer.party.id),
+      label: customer.name,
+      sublabel: [store ? 'This store' : 'Business', customer.phone || customer.tax_code].filter(Boolean).join(' · '),
     })),
 )
+
+// On-hand a sale may draw on. When editing, this invoice's own consumption is
+// added back, since the edit reverses it before re-applying.
+const availableForProduct = (productId) => {
+  const id = String(productId)
+  return Number(stockByProduct.value[id] || 0) + Number(originalByProduct.value[id] || 0)
+}
+
+// The product's open FIFO batches (quantity remaining + unit cost), for the cost column.
+const batchesFor = (productId) => batchesByProduct.value[String(productId)] || []
+
+// Total quantity the form is requesting per product (a product may span lines).
+const requestedByProduct = computed(() => {
+  const map = {}
+  for (const it of items.value) {
+    if (!it.product_id) continue
+    map[it.product_id] = (map[it.product_id] || 0) + Number(it.quantity || 0)
+  }
+  return map
+})
+
+const exceedsStock = (item) => {
+  if (!item.product_id) return false
+  return (requestedByProduct.value[item.product_id] || 0) > availableForProduct(item.product_id)
+}
+
+const stockHint = (item) => {
+  const avail = availableForProduct(item.product_id)
+  if (exceedsStock(item)) return `Only ${formatQuantity(avail)} in stock`
+  return `In stock: ${formatQuantity(avail)}`
+}
+
+const hasStockWarning = computed(() => items.value.some((it) => exceedsStock(it)))
 
 const productOptions = computed(() =>
   products.value.map((p) => ({
     value: String(p.id),
     label: `${p.code} — ${p.name}`,
-    sublabel: p.unit?.name || '',
+    sublabel: [p.unit?.name, `In stock: ${formatQuantity(availableForProduct(p.id))}`].filter(Boolean).join(' · '),
   })),
 )
 
@@ -338,18 +394,40 @@ const removeItem = (i) => {
   if (items.value.length === 0) items.value.push(newItem())
 }
 
+const buildStockMap = (stocks) =>
+  Object.fromEntries((stocks || []).map((s) => [String(s.product_id), Number(s.quantity)]))
+
+// Group open batches by product, preserving the FIFO order they arrive in.
+const buildBatchMap = (batches) => {
+  const map = {}
+  for (const b of batches || []) {
+    const id = String(b.product_id)
+    ;(map[id] ||= []).push({
+      remaining: Number(b.quantity_remaining),
+      unit_cost: Number(b.unit_cost),
+      received_at: b.received_at,
+    })
+  }
+  return map
+}
+
+
 const loadOptions = async () => {
   if (!storeId.value) return
   optionsLoading.value = true
   try {
-    const [supplierList, productList, taxList] = await Promise.all([
-      fetchSuppliers({ storeId: storeId.value, businessId: businessId.value }),
+    const [customerList, productList, taxList, stockList, batchList] = await Promise.all([
+      fetchCustomers({ storeId: storeId.value, businessId: businessId.value }),
       fetchProducts({ storeId: storeId.value }),
       fetchTaxes({ storeId: storeId.value }),
+      fetchProductStocks({ storeId: storeId.value }),
+      fetchInventoryBatches({ storeId: storeId.value }),
     ])
-    suppliers.value = supplierList
+    customers.value = customerList
     products.value = productList
     taxes.value = taxList
+    stockByProduct.value = buildStockMap(stockList)
+    batchesByProduct.value = buildBatchMap(batchList)
   } catch (err) {
     apiError.value = err.message
   } finally {
@@ -375,6 +453,12 @@ const loadInvoice = async () => {
       taxes: Object.fromEntries((it.taxes || []).map((t) => [String(t.tax_id), String(parseFloat(t.tax_rate))])),
       expanded: false,
     }))
+    // Stock this invoice already consumed — re-allocatable while editing it.
+    originalByProduct.value = (inv.items || []).reduce((map, it) => {
+      const id = String(it.product_id)
+      map[id] = (map[id] || 0) + Number(it.quantity || 0)
+      return map
+    }, {})
     if (items.value.length === 0) items.value = [newItem()]
   } catch (err) {
     apiError.value = err.message
@@ -390,7 +474,7 @@ watch(storeId, loadOptions)
 
 const validate = () => {
   errors.value = { party_id: '', invoice_date: '', items: '' }
-  if (!form.value.party_id) errors.value.party_id = 'Supplier is required.'
+  if (!form.value.party_id) errors.value.party_id = 'Customer is required.'
   if (!form.value.invoice_date) errors.value.invoice_date = 'Invoice date is required.'
 
   const valid = items.value.filter(
@@ -427,14 +511,14 @@ const submit = async () => {
     const input = buildInput()
     let invoice
     if (isEdit.value) {
-      invoice = await updatePurchaseInvoice({ id: invoiceId.value, input })
-      showToast(`Purchase invoice ${invoice.code} updated.`, 'success')
+      invoice = await updateSaleInvoice({ id: invoiceId.value, input })
+      showToast(`Sale invoice ${invoice.code} updated.`, 'success')
     } else {
-      invoice = await createPurchaseInvoice({ storeId: storeId.value, input })
-      showToast(`Purchase invoice ${invoice.code} created.`, 'success')
+      invoice = await createSaleInvoice({ storeId: storeId.value, input })
+      showToast(`Sale invoice ${invoice.code} created.`, 'success')
     }
     leaveConfirmed.value = true
-    router.push('/purchase-invoices')
+    router.push('/sale-invoices')
   } catch (err) {
     apiError.value = err.message
   } finally {
@@ -452,12 +536,12 @@ const closeProductForm = () => {
   productFormLine.value = null
 }
 
-const onSupplierCreated = async (supplier) => {
-  showSupplierForm.value = false
+const onCustomerCreated = async (customer) => {
+  showCustomerForm.value = false
   if (storeId.value) {
-    suppliers.value = await fetchSuppliers({ storeId: storeId.value, businessId: businessId.value })
+    customers.value = await fetchCustomers({ storeId: storeId.value, businessId: businessId.value })
   }
-  const partyId = supplier?.party?.id
+  const partyId = customer?.party?.id
   if (partyId != null) form.value.party_id = String(partyId)
 }
 
@@ -465,14 +549,21 @@ const onProductCreated = async (product) => {
   const index = productFormLine.value
   closeProductForm()
   if (storeId.value) {
-    products.value = await fetchProducts({ storeId: storeId.value })
+    const [productList, stockList, batchList] = await Promise.all([
+      fetchProducts({ storeId: storeId.value }),
+      fetchProductStocks({ storeId: storeId.value }),
+      fetchInventoryBatches({ storeId: storeId.value }),
+    ])
+    products.value = productList
+    stockByProduct.value = buildStockMap(stockList)
+    batchesByProduct.value = buildBatchMap(batchList)
   }
   if (product?.id != null && index != null && items.value[index]) {
     items.value[index].product_id = String(product.id)
   }
 }
 
-const goBack = () => router.push('/purchase-invoices')
+const goBack = () => router.push('/sale-invoices')
 
 // Prompt on any exit (Cancel, sidebar, browser back) while the form is dirty.
 onBeforeRouteLeave((to) => {
@@ -485,7 +576,7 @@ onBeforeRouteLeave((to) => {
 const discardAndLeave = () => {
   leaveConfirmed.value = true
   showUnsavedWarning.value = false
-  router.push(pendingTo.value || '/purchase-invoices')
+  router.push(pendingTo.value || '/sale-invoices')
 }
 
 const keepEditing = () => {
@@ -511,15 +602,27 @@ const keepEditing = () => {
 .text-input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
 .text-input.error { border-color: #dc2626; }
 
-/* Editable item rows inside ResizableTable: tighten the cell padding and top-align. */
+/* Editable item rows inside ResizableTable: tighten the cell padding and top-align
+   so the per-row stock hint / batch costs extend downward without misaligning inputs. */
 .item-row :deep(td) { padding: 8px 12px; vertical-align: top; }
 .c-idx { color: #9ca3af; font-size: 13px; }
 .c-num { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; color: #111; }
 .c-num.strong { font-weight: 700; }
+.c-cost { text-align: right; }
+.cost-line { margin-bottom: 6px; }
+.cost-line:last-child { margin-bottom: 0; }
+.cl-amount { display: block; font-size: 12px; color: #374151; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cl-date { display: block; font-size: 10.5px; color: #9ca3af; white-space: nowrap; }
+.c-cost .muted, .c-product .muted { color: #9ca3af; }
 .c-rm { text-align: center; }
+
+.stock-hint { display: block; margin-top: 4px; font-size: 11.5px; color: #6b7280; }
+.stock-hint.warn { color: #dc2626; font-weight: 600; }
+.stock-warning-note { margin: 10px 0 0; font-size: 12.5px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; padding: 8px 12px; border-radius: 8px; }
 
 .num-input { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; text-align: right; outline: none; box-sizing: border-box; }
 .num-input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
+.num-input.error { border-color: #dc2626; }
 
 .tax-toggle { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; font-size: 13px; color: #374151; cursor: pointer; }
 .tax-toggle:hover { border-color: #9ca3af; }

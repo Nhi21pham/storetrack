@@ -38,7 +38,11 @@ class PurchaseStockHandler implements InvoiceStockHandler
         }
     }
 
-    /** The purchase price is the net unit cost; it fills a FIFO batch and raises stock. */
+    /**
+     * Fills a FIFO batch and raises stock. The stored unit cost is tax-inclusive
+     * (the line's grand total ÷ quantity), so a later sale's COGS carries the
+     * purchase taxes too.
+     */
     public function applyLine(
         Invoice $invoice,
         InvoiceProduct $line,
@@ -47,12 +51,16 @@ class PurchaseStockHandler implements InvoiceStockHandler
         float $unitPrice,
         string $invoiceDate,
     ): void {
+        $unitCost = $quantity > 0
+            ? round((float) $line->grand_total / $quantity, 2)
+            : $unitPrice;
+
         $this->costingService->addBatch(
             (int) $invoice->store_id,
             (int) $product->id,
             (int) $invoice->id,
             (int) $line->id,
-            $unitPrice,
+            $unitCost,
             $quantity,
             $invoiceDate,
         );

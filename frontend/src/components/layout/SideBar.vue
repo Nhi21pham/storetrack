@@ -82,14 +82,23 @@
         Suppliers
       </router-link>
 
-      <router-link to="/purchase-invoices" class="menu-item" :class="{ active: isActive('/purchase-invoices') }" @click="$emit('close')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/>
-          <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
-          <path d="M12 17.5v-11"/>
-        </svg>
-        Purchase Invoices
-      </router-link>
+      <div class="menu-item has-sub" :class="{ active: isActive('/purchase-invoices') || isActive('/sale-invoices') }" @mouseenter="invoicesOpen = true" @mouseleave="invoicesOpen = false">
+        <div class="menu-item-inner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="8" y1="13" x2="16" y2="13"/>
+            <line x1="8" y1="17" x2="16" y2="17"/>
+            <line x1="8" y1="9" x2="10" y2="9"/>
+          </svg>
+          Invoices
+          <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+        </div>
+        <div class="submenu" :class="{ open: invoicesOpen }">
+          <router-link to="/purchase-invoices" class="submenu-item" :class="{ active: isActive('/purchase-invoices') }" @click="$emit('close')">Purchase Invoices</router-link>
+          <router-link to="/sale-invoices" class="submenu-item" :class="{ active: isActive('/sale-invoices') }" @click="$emit('close')">Sale Invoices</router-link>
+        </div>
+      </div>
 
       <div class="menu-item has-sub" @mouseenter="openOthers" @mouseleave="closeOthersSoon">
         <div class="menu-item-inner">
@@ -147,6 +156,7 @@ defineEmits(['close'])
 
 const route = useRoute()
 const reportsOpen = ref(false)
+const invoicesOpen = ref(false)
 const othersOpen = ref(false)
 const bankingOpen = ref(false)
 
