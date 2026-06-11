@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\Report;
 
+use App\Exports\BaseExport;
 use App\Models\Invoice\InventoryBatch;
 use Illuminate\Database\Eloquent\Builder;
 

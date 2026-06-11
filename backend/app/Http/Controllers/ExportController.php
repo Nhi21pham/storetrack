@@ -11,6 +11,7 @@ use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\Invoice\InvoiceService;
 use App\Services\ProductService;
+use App\Services\Report\SaleReportService;
 use App\Services\Report\StockReportService;
 use App\Services\SupplierService;
 use App\Services\Tag\TagService;
@@ -33,6 +34,7 @@ class ExportController extends Controller
         private BankAccountService $bankAccountService,
         private InvoiceService $invoiceService,
         private StockReportService $stockReportService,
+        private SaleReportService $saleReportService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -116,6 +118,16 @@ class ExportController extends Controller
             $request->user(),
             $storeId,
             $this->extractStockReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueSaleReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->saleReportService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractSaleReportExportFilters($request),
             $this->extractClientId($request),
         ));
     }
@@ -272,6 +284,32 @@ class ExportController extends Controller
             'end_date'             => $request->query('end_date'),
             'ids'                  => $ids,
             'columns'              => $columns,
+        ];
+    }
+
+    private function extractSaleReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        return [
+            'search'       => $request->query('search'),
+            'customer_id'  => $request->query('customer_id'),
+            'tag_id'       => $request->query('tag_id'),
+            'tag_value_id' => $request->query('tag_value_id'),
+            'min_quantity' => $request->query('min_quantity'),
+            'max_quantity' => $request->query('max_quantity'),
+            'start_date'   => $request->query('start_date'),
+            'end_date'     => $request->query('end_date'),
+            'ids'          => $ids,
+            'columns'      => $columns,
         ];
     }
 

@@ -4,27 +4,27 @@ namespace App\Services\Report;
 
 use App\Enums\ExportScope;
 use App\Enums\PermissionEnum;
-use App\Exports\Report\StockReportExport;
-use App\Jobs\Exports\ExportStockReportJob;
+use App\Exports\Report\SaleReportExport;
+use App\Jobs\Exports\ExportSaleReportJob;
 use App\Models\Export;
-use App\Models\Invoice\InventoryBatch;
+use App\Models\Invoice\InvoiceProduct;
 use App\Models\Store;
 use App\Models\User;
-use App\Repositories\Report\StockReportRepository;
+use App\Repositories\Report\SaleReportRepository;
 use App\Services\ExportService;
 use App\Services\PermissionService;
 
-class StockReportService
+class SaleReportService
 {
     public function __construct(
-        private StockReportRepository $stockReportRepository,
+        private SaleReportRepository $saleReportRepository,
         private PermissionService $permissionService,
         private ExportService $exportService,
     ) {}
 
     /**
-     * The full stock report for a store: one row per purchase lot. The frontend
-     * filters/searches/sorts these client-side, mirroring the invoice list.
+     * The full sale report for a store: one row per sold product line. The
+     * frontend filters/searches/sorts these client-side, mirroring the invoice list.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -32,8 +32,8 @@ class StockReportService
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
 
-        return $this->stockReportRepository->all($storeId)
-            ->map(fn (InventoryBatch $batch) => $this->toRow($batch))
+        return $this->saleReportRepository->all($storeId)
+            ->map(fn (InvoiceProduct $item) => $this->toRow($item))
             ->all();
     }
 
@@ -43,39 +43,35 @@ class StockReportService
 
         return $this->exportService->queue(
             $user,
-            ExportStockReportJob::TYPE,
+            ExportSaleReportJob::TYPE,
             ExportScope::STORE,
             $storeId,
             Store::find($storeId)?->name,
             $this->normalizeExportFilters($filters),
-            ExportStockReportJob::class,
+            ExportSaleReportJob::class,
             $clientId,
         );
     }
 
-    /** Projects a batch into the report row shape exposed by GraphQL. */
-    private function toRow(InventoryBatch $batch): array
+    /** Projects a sold line into the report row shape exposed by GraphQL. */
+    private function toRow(InvoiceProduct $item): array
     {
-        $invoice = $batch->sourceInvoice;
-        $received = (float) $batch->quantity_received;
-        $remaining = (float) $batch->quantity_remaining;
-        $unitCost = (float) $batch->unit_cost;
+        $invoice = $item->invoice;
 
         return [
-            'id'                 => (int) $batch->id,
-            'product_id'         => (int) $batch->product_id,
-            'product_name'       => $batch->product?->name,
-            'product_code'       => $batch->product?->code,
-            'tags'               => $batch->product?->tags ?? [],
-            'supplier_party_id'  => $invoice?->party_id !== null ? (int) $invoice->party_id : null,
-            'supplier_name'      => $invoice?->party_name,
-            'invoice_id'         => $batch->source_invoice_id !== null ? (int) $batch->source_invoice_id : null,
-            'invoice_code'       => $invoice?->code,
-            'purchase_date'      => $batch->received_at,
-            'quantity_received'  => (float) $batch->quantity_received,
-            'quantity_remaining' => $remaining,
-            'unit_cost'          => $unitCost,
-            'total_cost'         => round($received * $unitCost, 2),
+            'id'                => (int) $item->id,
+            'product_id'        => (int) $item->product_id,
+            'product_name'      => $item->product?->name ?? $item->product_name,
+            'product_code'      => $item->product?->code,
+            'tags'              => $item->product?->tags ?? [],
+            'customer_party_id' => $invoice?->party_id !== null ? (int) $invoice->party_id : null,
+            'customer_name'     => $invoice?->party_name,
+            'invoice_id'        => $item->invoice_id !== null ? (int) $item->invoice_id : null,
+            'invoice_code'      => $invoice?->code,
+            'invoice_date'      => $invoice?->invoice_date,
+            'quantity'          => (float) $item->quantity,
+            'unit_price'        => (float) $item->unit_price,
+            'total_sale'        => round((float) $item->subtotal, 2),
         ];
     }
 
@@ -87,8 +83,8 @@ class StockReportService
             $clean['search'] = (string) $filters['search'];
         }
 
-        if (!empty($filters['supplier_id'])) {
-            $clean['supplier_id'] = (int) $filters['supplier_id'];
+        if (!empty($filters['customer_id'])) {
+            $clean['customer_id'] = (int) $filters['customer_id'];
         }
 
         if (!empty($filters['tag_id'])) {
@@ -105,10 +101,6 @@ class StockReportService
             $clean['max_quantity'] = (float) $filters['max_quantity'];
         }
 
-        if ($this->isTruthy($filters['include_out_of_stock'] ?? null)) {
-            $clean['include_out_of_stock'] = true;
-        }
-
         if (!empty($filters['start_date'])) {
             $clean['start_date'] = (string) $filters['start_date'];
         }
@@ -123,7 +115,7 @@ class StockReportService
         if (is_array($filters['columns'] ?? null)) {
             $columns = array_values(array_filter(
                 $filters['columns'],
-                fn ($column) => in_array($column, StockReportExport::COLUMN_KEYS, true),
+                fn ($column) => in_array($column, SaleReportExport::COLUMN_KEYS, true),
             ));
             if ($columns !== []) {
                 $clean['columns'] = $columns;
@@ -131,11 +123,5 @@ class StockReportService
         }
 
         return $clean;
-    }
-
-    /** Query-string booleans arrive as "1"/"true"/"on"; treat those as true. */
-    private function isTruthy(mixed $value): bool
-    {
-        return in_array($value, [true, 1, '1', 'true', 'on', 'yes'], true);
     }
 }

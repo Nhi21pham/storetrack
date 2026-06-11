@@ -3,16 +3,16 @@
 namespace App\Jobs\Exports;
 
 use App\Exports\BaseExport;
-use App\Exports\Report\StockReportExport;
+use App\Exports\Report\SaleReportExport;
 use App\Models\Export;
 use App\Models\Store;
 use App\Models\User;
-use App\Repositories\Report\StockReportRepository;
+use App\Repositories\Report\SaleReportRepository;
 use App\Services\AuditLog\Loggers\ReportAuditLogger;
 
-class ExportStockReportJob extends BaseExportJob
+class ExportSaleReportJob extends BaseExportJob
 {
-    public const TYPE = 'stock-report';
+    public const TYPE = 'sale-report';
 
     protected function buildExport(Export $export): BaseExport
     {
@@ -26,7 +26,7 @@ class ExportStockReportJob extends BaseExportJob
         $filters = $metadata['filters'] ?? [];
 
         $storeName = $metadata['scope_name'] ?? (Store::find($storeId)?->name ?? '');
-        $title = 'Stock report of store '.$storeName;
+        $title = 'Sale report of store '.$storeName;
 
         $metaLines = [
             'Exported by '.$user->name.' ('.$user->email.')',
@@ -34,9 +34,9 @@ class ExportStockReportJob extends BaseExportJob
         ];
 
         $columns = isset($filters['columns']) && is_array($filters['columns']) ? $filters['columns'] : null;
-        $query = app(StockReportRepository::class)->listQuery($storeId, $filters);
+        $query = app(SaleReportRepository::class)->listQuery($storeId, $filters);
 
-        return new StockReportExport($query, $title, $metaLines, $columns);
+        return new SaleReportExport($query, $title, $metaLines, $columns);
     }
 
     protected function filename(Export $export): string
@@ -51,7 +51,7 @@ class ExportStockReportJob extends BaseExportJob
         $slug = BaseExport::slugForFilename((string) $name);
         $datetime = now()->format('YmdHis');
 
-        return "stock-report-{$slug}-{$datetime}.xlsx";
+        return "sale-report-{$slug}-{$datetime}.xlsx";
     }
 
     protected function onCompleted(Export $export): void
@@ -69,7 +69,7 @@ class ExportStockReportJob extends BaseExportJob
             $storeId,
             $export,
             $metadata['scope_name'] ?? '',
-            'stock',
+            'sale',
         );
     }
 }
