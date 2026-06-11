@@ -14,6 +14,7 @@ use App\Services\AuditLog\Loggers\BusinessAuditLogger;
 use App\Services\AuditLog\Loggers\StoreAuditLogger;
 use App\Services\AuditLog\Loggers\UserAuditLogger;
 use Database\Seeders\ProductCategorySeeder;
+use Database\Seeders\TaxSeeder;
 use Database\Seeders\UnitSeeder;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\StoreException;
@@ -46,6 +47,7 @@ class StoreService
             $store->users()->attach($user->id, ['role' => RoleEnum::OWNER->value]);
             UnitSeeder::seedDefaultsForStore((int) $store->id);
             ProductCategorySeeder::seedDefaultsForStore((int) $store->id);
+            TaxSeeder::seedDefaultsForStore((int) $store->id);
             return $store;
         });
 

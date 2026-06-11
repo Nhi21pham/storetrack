@@ -1,0 +1,13 @@
+extend type Query {
+    taxes(store_id: ID!, include_inactive: Boolean): [Tax!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\TaxResolver@all")
+
+    tax(id: ID!): Tax
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\TaxResolver@findById")
+
+    searchTaxes(store_id: ID!, q: String!, include_inactive: Boolean, limit: Int): [Tax!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\TaxResolver@search")
+}

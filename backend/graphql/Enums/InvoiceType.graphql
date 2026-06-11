@@ -1,0 +1,4 @@
+enum InvoiceType {
+    PURCHASE @enum(value: "purchase")
+    SALE     @enum(value: "sale")
+}

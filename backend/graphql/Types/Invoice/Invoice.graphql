@@ -1,0 +1,64 @@
+type Invoice {
+    id: ID!
+    store_id: ID!
+    type: InvoiceType!
+    code: String!
+    party_id: ID!
+    party_name: String
+    created_by: ID
+    description: String
+    invoice_date: DateTime!
+    payment_method: InvoicePaymentMethod!
+    payment_status: InvoicePaymentStatus!
+    subtotal: Float!
+    tax_total: Float!
+    grand_total: Float!
+    items: [InvoiceProduct!]!
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+type InvoiceProduct {
+    id: ID!
+    invoice_id: ID!
+    product_id: ID!
+    product_name: String!
+    quantity: Float!
+    unit_price: Float!
+    subtotal: Float!
+    tax_total: Float!
+    grand_total: Float!
+    cost_total: Float!
+    taxes: [InvoiceProductTax!]!
+    costs: [InvoiceProductCost!]!
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+type InvoiceProductCost {
+    id: ID!
+    inventory_batch_id: ID!
+    quantity: Float!
+    unit_cost: Float!
+}
+
+type ProductStock {
+    product_id: ID!
+    quantity: Float!
+}
+
+type InventoryBatch {
+    id: ID!
+    product_id: ID!
+    unit_cost: Float!
+    quantity_remaining: Float!
+    received_at: DateTime!
+}
+
+type InvoiceProductTax {
+    id: ID!
+    tax_id: ID
+    tax_name: String!
+    tax_rate: Float!
+    tax_amount: Float!
+}

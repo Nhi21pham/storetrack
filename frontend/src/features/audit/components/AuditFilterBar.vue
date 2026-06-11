@@ -1,26 +1,13 @@
 <template>
   <div class="filter-bar">
     <div class="filter-row">
-      <div class="filter-group">
-        <label>From</label>
-        <input
-          type="date"
-          :value="startDate"
-          :max="endDate || undefined"
-          @input="$emit('update:startDate', $event.target.value)"
-          @change="$emit('apply')"
-        />
-      </div>
-      <div class="filter-group">
-        <label>To</label>
-        <input
-          type="date"
-          :value="endDate"
-          :min="startDate || undefined"
-          @input="$emit('update:endDate', $event.target.value)"
-          @change="$emit('apply')"
-        />
-      </div>
+      <DateRangeFilter
+        :start-date="startDate"
+        :end-date="endDate"
+        @update:startDate="$emit('update:startDate', $event)"
+        @update:endDate="$emit('update:endDate', $event)"
+        @change="$emit('apply')"
+      />
       <div class="filter-group">
         <label>Type</label>
         <SearchableSelect
@@ -42,21 +29,15 @@
         />
       </div>
       <button v-if="hasActiveFilter" class="btn-clear" @click="$emit('clear')">Clear</button>
-      <button
-        class="btn-export"
-        :disabled="exporting || total === 0"
-        :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
-        @click="$emit('export')"
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
-      </button>
+      <ExportButton class="export-push" size="md" :exporting="exporting" :disabled="total === 0" @click="$emit('export')" />
     </div>
   </div>
 </template>
 
 <script setup>
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
+import ExportButton from '@/components/common/ExportButton.vue'
 import { OBJECT_OPTIONS, ACTION_OPTIONS } from '@/features/audit/constants'
 
 defineProps({
@@ -95,7 +76,5 @@ defineEmits([
 .btn-clear { padding: 7px 13px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 12.5px; font-weight: 500; font-family: inherit; color: #374151; background: #fff; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; height: 36px; align-self: flex-end; }
 .btn-clear:hover { background: #f3f4f6; border-color: #9ca3af; color: #111; }
 
-.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border: 1px solid #111; border-radius: 10px; font-size: 12.5px; font-weight: 600; font-family: inherit; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; height: 36px; align-self: flex-end; margin-left: auto; }
-.btn-export:hover:not(:disabled) { background: #000; }
-.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
+.export-push { align-self: flex-end; margin-left: auto; }
 </style>

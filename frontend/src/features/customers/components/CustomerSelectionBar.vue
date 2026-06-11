@@ -3,14 +3,7 @@
     <span class="selection-count">{{ count }} selected</span>
     <div class="selection-actions">
       <button class="btn-selection-action" @click="$emit('clear')">Clear</button>
-      <button
-        class="btn-selection-action"
-        :disabled="exporting"
-        @click="$emit('export')"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        {{ exporting ? 'Exporting...' : 'Export selected' }}
-      </button>
+      <ExportButton variant="ghost" label="Export selected" :exporting="exporting" @click="$emit('export')" />
       <button
         v-if="canDelete"
         class="btn-selection-action danger"
@@ -25,6 +18,8 @@
 </template>
 
 <script setup>
+import ExportButton from '@/components/common/ExportButton.vue'
+
 defineProps({
   count:        { type: Number,  required: true },
   exporting:    { type: Boolean, required: true },

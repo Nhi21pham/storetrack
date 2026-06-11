@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             ProvinceSeeder::class,
             UnitSeeder::class,
             ProductCategorySeeder::class,
+            TaxSeeder::class,
         ]);
     }
 }

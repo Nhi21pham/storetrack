@@ -9,6 +9,7 @@ use App\Services\BankAccountService;
 use App\Services\BankService;
 use App\Services\CustomerService;
 use App\Services\ExportService;
+use App\Services\Invoice\InvoiceService;
 use App\Services\ProductService;
 use App\Services\SupplierService;
 use App\Services\Tag\TagService;
@@ -29,6 +30,7 @@ class ExportController extends Controller
         private ProductService $productService,
         private BankService $bankService,
         private BankAccountService $bankAccountService,
+        private InvoiceService $invoiceService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -94,6 +96,16 @@ class ExportController extends Controller
     public function queueBankAccounts(Request $request, int $businessId): JsonResponse
     {
         return $this->queueEntityExport($request, $businessId, $this->bankAccountService);
+    }
+
+    public function queueInvoices(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->invoiceService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractInvoiceExportFilters($request),
+            $this->extractClientId($request),
+        ));
     }
 
     public function status(Request $request, int $exportId): JsonResponse
@@ -197,6 +209,31 @@ class ExportController extends Controller
         return array_merge($this->extractPartyExportFilters($request), [
             'include_inactive' => $request->query('include_inactive'),
         ]);
+    }
+
+    private function extractInvoiceExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        return [
+            'type'           => $request->query('type'),
+            'search'         => $request->query('search'),
+            'payment_method' => $request->query('payment_method'),
+            'payment_status' => $request->query('payment_status'),
+            'party_id'       => $request->query('party_id'),
+            'start_date'     => $request->query('start_date'),
+            'end_date'       => $request->query('end_date'),
+            'ids'            => $ids,
+            'columns'        => $columns,
+        ];
     }
 
     private function exportResponse(Export $export, int $status): JsonResponse

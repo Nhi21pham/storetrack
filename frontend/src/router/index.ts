@@ -20,6 +20,10 @@ import UnitsPage from '@/features/units/pages/UnitsPage.vue'
 import ProductsPage from '@/features/products/pages/ProductsPage.vue'
 import ProductCategoriesPage from '@/features/productCategories/pages/ProductCategoriesPage.vue'
 import TagsPage from '@/features/tags/pages/TagsPage.vue'
+import PurchaseInvoicesPage from '@/features/invoices/pages/PurchaseInvoicesPage.vue'
+import PurchaseInvoiceCreatePage from '@/features/invoices/pages/PurchaseInvoiceCreatePage.vue'
+import SaleInvoicesPage from '@/features/invoices/pages/SaleInvoicesPage.vue'
+import SaleInvoiceCreatePage from '@/features/invoices/pages/SaleInvoiceCreatePage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -132,6 +136,76 @@ const router = createRouter({
             breadcrumb: [
               { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Suppliers' },
+            ],
+          },
+        },
+        {
+          path: 'purchase-invoices',
+          name: 'purchase-invoices',
+          component: PurchaseInvoicesPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Purchase Invoices' },
+            ],
+          },
+        },
+        {
+          path: 'purchase-invoices/new',
+          name: 'purchase-invoice-create',
+          component: PurchaseInvoiceCreatePage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Purchase Invoices', to: '/purchase-invoices' },
+              { label: 'New' },
+            ],
+          },
+        },
+        {
+          path: 'purchase-invoices/:id/edit',
+          name: 'purchase-invoice-edit',
+          component: PurchaseInvoiceCreatePage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Purchase Invoices', to: '/purchase-invoices' },
+              { label: 'Edit' },
+            ],
+          },
+        },
+        {
+          path: 'sale-invoices',
+          name: 'sale-invoices',
+          component: SaleInvoicesPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Sale Invoices' },
+            ],
+          },
+        },
+        {
+          path: 'sale-invoices/new',
+          name: 'sale-invoice-create',
+          component: SaleInvoiceCreatePage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Sale Invoices', to: '/sale-invoices' },
+              { label: 'New' },
+            ],
+          },
+        },
+        {
+          path: 'sale-invoices/:id/edit',
+          name: 'sale-invoice-edit',
+          component: SaleInvoiceCreatePage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Sale Invoices', to: '/sale-invoices' },
+              { label: 'Edit' },
             ],
           },
         },

@@ -1,0 +1,17 @@
+extend type Query {
+    invoices(store_id: ID!, type: InvoiceType): [Invoice!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Invoice\\InvoiceResolver@all")
+
+    invoice(id: ID!): Invoice
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Invoice\\InvoiceResolver@findById")
+
+    productStocks(store_id: ID!): [ProductStock!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Invoice\\InvoiceResolver@productStocks")
+
+    inventoryBatches(store_id: ID!): [InventoryBatch!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Invoice\\InvoiceResolver@inventoryBatches")
+}

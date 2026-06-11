@@ -20,20 +20,13 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       Clear sort
     </button>
-    <button
-      class="btn-export"
-      :disabled="exporting || !canExport"
-      :title="exporting ? 'Preparing export...' : 'Export current view to Excel'"
-      @click="$emit('export')"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>{{ exporting ? 'Exporting...' : 'Export' }}</span>
-    </button>
+    <ExportButton class="export-push" :exporting="exporting" :disabled="!canExport" @click="$emit('export')" />
   </div>
 </template>
 
 <script setup>
 import SearchBar from '@/components/common/SearchBar.vue'
+import ExportButton from '@/components/common/ExportButton.vue'
 
 defineProps({
   searchQuery: { type: String, required: true },
@@ -57,7 +50,5 @@ defineEmits(['update:searchQuery', 'update:storeFilter', 'clearSort', 'export'])
 .btn-clear-sort { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid #e5e7eb; background: #fff; color: #6b7280; border-radius: 7px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0; }
 .btn-clear-sort:hover { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
 
-.btn-export { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border: 1px solid #111; border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff; background: #111; cursor: pointer; transition: background 0.2s, opacity 0.2s; white-space: nowrap; flex-shrink: 0; margin-left: auto; }
-.btn-export:hover:not(:disabled) { background: #000; }
-.btn-export:disabled { opacity: 0.55; cursor: not-allowed; }
+.export-push { margin-left: auto; }
 </style>

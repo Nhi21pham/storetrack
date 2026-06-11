@@ -58,6 +58,11 @@ enum PermissionEnum: string
     case UPDATE_PRODUCT_CATEGORY = 'product_category.update';
     case DELETE_PRODUCT_CATEGORY = 'product_category.delete';
 
+    // Tax
+    case CREATE_TAX = 'tax.create';
+    case UPDATE_TAX = 'tax.update';
+    case DELETE_TAX = 'tax.delete';
+
     // Tag
     case CREATE_TAG       = 'tag.create';
     case UPDATE_TAG       = 'tag.update';

@@ -1,0 +1,4 @@
+enum InvoicePaymentMethod {
+    CASH @enum(value: "cash")
+    CARD @enum(value: "card")
+}

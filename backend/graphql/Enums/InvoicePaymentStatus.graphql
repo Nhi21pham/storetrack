@@ -1,0 +1,4 @@
+enum InvoicePaymentStatus {
+    UNPAID @enum(value: "unpaid")
+    PAID   @enum(value: "paid")
+}
