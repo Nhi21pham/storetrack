@@ -24,7 +24,7 @@
         <section class="card">
           <h3 class="card-title">Details</h3>
           <div class="details-grid">
-            <div class="form-group">
+            <div ref="partyFieldRef" class="form-group">
               <label>Supplier <span class="required">*</span></label>
               <div class="picker-row">
                 <SearchableSelect
@@ -36,13 +36,13 @@
                 />
                 <AddItemButton title="Create a new supplier" @click="showSupplierForm = true" />
               </div>
-              <span v-if="errors.party_id" class="error-text">{{ errors.party_id }}</span>
+              <FormMessage v-if="errors.party_id" :text="errors.party_id" />
             </div>
 
             <div class="form-group">
               <label>Invoice date <span class="required">*</span></label>
-              <input v-model="form.invoice_date" type="date" class="text-input" :class="{ error: errors.invoice_date }" />
-              <span v-if="errors.invoice_date" class="error-text">{{ errors.invoice_date }}</span>
+              <input ref="dateInputRef" v-model="form.invoice_date" type="date" class="text-input" :class="{ error: errors.invoice_date }" />
+              <FormMessage v-if="errors.invoice_date" :text="errors.invoice_date" />
             </div>
 
             <div class="form-group">
@@ -67,8 +67,11 @@
         </section>
 
         <!-- Items -->
-        <section class="card">
+        <section ref="itemsSectionRef" class="card">
           <h3 class="card-title">Items</h3>
+
+          <FormMessage v-if="apiError" block :text="apiError" style="margin-bottom: 14px" />
+
           <ResizableTable :columns="ITEM_COLUMNS" :initial-widths="ITEM_COL_WIDTHS">
             <template v-for="(item, i) in items" :key="i">
               <tr class="item-row">
@@ -118,11 +121,13 @@
             </template>
           </ResizableTable>
 
-          <button type="button" class="add-item" @click="addItem">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add item
-          </button>
-          <span v-if="errors.items" class="error-text">{{ errors.items }}</span>
+          <div class="items-footer">
+            <button type="button" class="add-item" @click="addItem">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add item
+            </button>
+            <FormMessage v-if="errors.items" :text="errors.items" />
+          </div>
         </section>
 
         <!-- Totals + submit -->
@@ -132,7 +137,6 @@
             <div class="total-row"><span>Tax</span><span>{{ formatMoney(totals.tax) }}</span></div>
             <div class="total-row grand"><span>Grand total</span><span>{{ formatMoney(totals.grand) }}</span></div>
           </div>
-          <div v-if="apiError" class="api-error">{{ apiError }}</div>
           <div class="actions">
             <button class="btn-secondary" :disabled="submitting" @click="goBack">Cancel</button>
             <button class="btn-primary" :disabled="submitting || !currentStore.is_active" @click="submit">
@@ -174,7 +178,7 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted, watch } from 'vue'
+import { ref, computed, inject, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
@@ -187,6 +191,7 @@ import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import AddItemButton from '@/components/common/AddItemButton.vue'
 import NumberInput from '@/components/common/NumberInput.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
+import FormMessage from '@/components/common/FormMessage.vue'
 import InvoiceLineTaxEditor from '@/features/invoices/components/InvoiceLineTaxEditor.vue'
 import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
@@ -240,6 +245,10 @@ const productFormLine = ref(null)
 const showUnsavedWarning = ref(false)
 const leaveConfirmed = ref(false)
 const pendingTo = ref(null)
+
+const partyFieldRef = ref(null)
+const dateInputRef = ref(null)
+const itemsSectionRef = ref(null)
 
 const newItem = () => ({ product_id: '', quantity: '', unit_price: '', taxes: {}, expanded: false })
 
@@ -388,6 +397,29 @@ onMounted(async () => {
 })
 watch(storeId, loadOptions)
 
+// Clear each field's error the moment it becomes valid, so the warning disappears
+// as soon as the user fixes it.
+watch(() => form.value.party_id, (v) => { if (v) errors.value.party_id = '' })
+watch(() => form.value.invoice_date, (v) => { if (v) errors.value.invoice_date = '' })
+watch(items, () => {
+  if (!errors.value.items) return
+  const hasValid = items.value.some((it) => it.product_id && Number(it.quantity) > 0 && Number(it.unit_price) >= 0)
+  if (hasValid) errors.value.items = ''
+}, { deep: true })
+
+// On a failed submit, bring the first invalid field into view.
+const scrollToError = async () => {
+  await nextTick()
+  if (errors.value.party_id && partyFieldRef.value) {
+    partyFieldRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  } else if (errors.value.invoice_date && dateInputRef.value) {
+    dateInputRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    dateInputRef.value.focus()
+  } else if (errors.value.items && itemsSectionRef.value) {
+    itemsSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
+
 const validate = () => {
   errors.value = { party_id: '', invoice_date: '', items: '' }
   if (!form.value.party_id) errors.value.party_id = 'Supplier is required.'
@@ -420,7 +452,10 @@ const buildInput = () => ({
 
 const submit = async () => {
   apiError.value = ''
-  if (!validate()) return
+  if (!validate()) {
+    scrollToError()
+    return
+  }
 
   submitting.value = true
   try {
@@ -437,6 +472,8 @@ const submit = async () => {
     router.push('/purchase-invoices')
   } catch (err) {
     apiError.value = err.message
+    await nextTick()
+    itemsSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } finally {
     submitting.value = false
   }
@@ -505,7 +542,6 @@ const keepEditing = () => {
 .required { color: #dc2626; }
 .picker-row { display: flex; align-items: stretch; gap: 8px; }
 .picker-row > :first-child { flex: 1; min-width: 0; }
-.error-text { font-size: 12px; color: #dc2626; }
 
 .text-input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; color: #111; outline: none; box-sizing: border-box; transition: border-color 0.15s; }
 .text-input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
@@ -531,15 +567,14 @@ const keepEditing = () => {
 
 .tax-expand-row :deep(td) { padding: 0 12px 14px; background: #fff; }
 
-.add-item { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; padding: 9px 14px; border: 1px dashed #d1d5db; border-radius: 10px; background: #fff; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; }
+.items-footer { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+.add-item { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border: 1px dashed #d1d5db; border-radius: 10px; background: #fff; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; }
 .add-item:hover { border-color: #111; color: #111; }
 
 .footer-bar { display: flex; flex-direction: column; gap: 14px; align-items: flex-end; }
 .totals { width: 280px; display: flex; flex-direction: column; gap: 8px; }
 .total-row { display: flex; justify-content: space-between; font-size: 14px; color: #374151; font-variant-numeric: tabular-nums; }
 .total-row.grand { padding-top: 8px; border-top: 1px solid #eef0f2; font-size: 16px; font-weight: 700; color: #111; }
-
-.api-error { width: 100%; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
 
 .actions { display: flex; gap: 10px; }
 .btn-secondary { padding: 10px 20px; background: #f3f4f6; color: #111; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }

@@ -97,15 +97,24 @@ class InventoryCostingService
         }
 
         if ($outstanding > 0.0001) {
+            $inStock = $this->formatQty($quantity - $outstanding);
+            $wanted  = $this->formatQty($quantity);
             throw new InvoiceException(
                 ErrorCode::INSUFFICIENT_STOCK,
-                "Not enough stock to sell {$quantity} of '{$productName}'."
+                "Not enough stock for '{$productName}': only {$inStock} in stock, but you're selling {$wanted}."
             );
         }
 
         $this->stockRepository->decrement($storeId, $productId, $quantity);
 
         return round($cogs, 2);
+    }
+
+    /** A quantity as a plain string with trailing zeros trimmed (5.000 -> "5", 1.500 -> "1.5"). */
+    private function formatQty(float $quantity): string
+    {
+        $formatted = number_format($quantity, 3, '.', '');
+        return rtrim(rtrim($formatted, '0'), '.');
     }
 
     /**
