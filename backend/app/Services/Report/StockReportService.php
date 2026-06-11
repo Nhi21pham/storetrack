@@ -57,6 +57,7 @@ class StockReportService
     private function toRow(InventoryBatch $batch): array
     {
         $invoice = $batch->sourceInvoice;
+        $received = (float) $batch->quantity_received;
         $remaining = (float) $batch->quantity_remaining;
         $unitCost = (float) $batch->unit_cost;
 
@@ -65,6 +66,7 @@ class StockReportService
             'product_id'         => (int) $batch->product_id,
             'product_name'       => $batch->product?->name,
             'product_code'       => $batch->product?->code,
+            'tags'               => $batch->product?->tags ?? [],
             'supplier_party_id'  => $invoice?->party_id !== null ? (int) $invoice->party_id : null,
             'supplier_name'      => $invoice?->party_name,
             'invoice_id'         => $batch->source_invoice_id !== null ? (int) $batch->source_invoice_id : null,
@@ -73,7 +75,7 @@ class StockReportService
             'quantity_received'  => (float) $batch->quantity_received,
             'quantity_remaining' => $remaining,
             'unit_cost'          => $unitCost,
-            'total_cost'         => round($remaining * $unitCost, 2),
+            'total_cost'         => round($received * $unitCost, 2),
         ];
     }
 
@@ -87,6 +89,13 @@ class StockReportService
 
         if (!empty($filters['supplier_id'])) {
             $clean['supplier_id'] = (int) $filters['supplier_id'];
+        }
+
+        if (!empty($filters['tag_id'])) {
+            $clean['tag_id'] = (int) $filters['tag_id'];
+        }
+        if (!empty($filters['tag_value_id'])) {
+            $clean['tag_value_id'] = (int) $filters['tag_value_id'];
         }
 
         if (isset($filters['min_quantity']) && is_numeric($filters['min_quantity'])) {

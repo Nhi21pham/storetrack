@@ -58,10 +58,8 @@
 
       <div class="modal-footer">
         <div class="footer-left">
-          <template v-if="canManage">
-            <button class="btn-edit" @click="$emit('edit')">Edit</button>
-            <button class="btn-delete" @click="$emit('delete')">Delete</button>
-          </template>
+          <button v-if="canManage || canEdit" class="btn-edit" @click="$emit('edit')">Edit</button>
+          <button v-if="canManage" class="btn-delete" @click="$emit('delete')">Delete</button>
         </div>
         <div class="totals">
           <div class="t-row"><span>Subtotal</span><span>{{ formatMoney(invoice.subtotal) }}</span></div>
@@ -88,6 +86,7 @@ import {
 const props = defineProps({
   invoice: { type: Object, required: true },
   canManage: { type: Boolean, default: false },
+  canEdit: { type: Boolean, default: false },
 })
 
 defineEmits(['close', 'edit', 'delete'])

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 class StockReportExport extends BaseExport
 {
     public const COLUMN_KEYS = [
-        'product_name', 'product_code', 'supplier_name', 'invoice_code',
+        'product_name', 'product_code', 'tags', 'supplier_name', 'invoice_code',
         'purchase_date', 'quantity_received', 'quantity_remaining', 'unit_cost', 'total_cost',
     ];
 
@@ -68,14 +68,25 @@ class StockReportExport extends BaseExport
         return [
             'product_name'       => ['heading' => 'Product',          'width' => 28, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->name ?? '')],
             'product_code'       => ['heading' => 'Code',             'width' => 16, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->code ?? '')],
+            'tags'               => ['heading' => 'Tags',             'width' => 30, 'value' => fn (InventoryBatch $row) => $this->formatTags($row)],
             'supplier_name'      => ['heading' => 'Supplier',         'width' => 26, 'value' => fn (InventoryBatch $row) => (string) ($row->sourceInvoice?->party_name ?? '')],
             'invoice_code'       => ['heading' => 'Purchase Invoice', 'width' => 18, 'value' => fn (InventoryBatch $row) => (string) ($row->sourceInvoice?->code ?? '')],
             'purchase_date'      => ['heading' => 'Purchase Date',    'width' => 16, 'value' => fn (InventoryBatch $row) => optional($row->received_at)->format('Y-m-d') ?? ''],
             'quantity_received'  => ['heading' => 'Purchased',        'width' => 14, 'value' => fn (InventoryBatch $row) => (float) $row->quantity_received],
             'quantity_remaining' => ['heading' => 'In Stock',        'width' => 14, 'value' => fn (InventoryBatch $row) => (float) $row->quantity_remaining],
             'unit_cost'          => ['heading' => 'Cost / Unit',      'width' => 16, 'value' => fn (InventoryBatch $row) => (float) $row->unit_cost],
-            'total_cost'         => ['heading' => 'Total Cost',       'width' => 18, 'value' => fn (InventoryBatch $row) => round((float) $row->quantity_remaining * (float) $row->unit_cost, 2)],
+            'total_cost'         => ['heading' => 'Total Cost',       'width' => 18, 'value' => fn (InventoryBatch $row) => round((float) $row->quantity_received * (float) $row->unit_cost, 2)],
         ];
+    }
+
+    private function formatTags(InventoryBatch $row): string
+    {
+        $tags = $row->product?->tags ?? [];
+
+        return collect($tags)
+            ->map(fn ($tag) => $tag['value'] !== null ? "{$tag['tag_name']}: {$tag['value']}" : $tag['tag_name'])
+            ->filter()
+            ->implode(', ');
     }
 
     private function activeColumns(): array

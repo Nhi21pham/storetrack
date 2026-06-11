@@ -2,6 +2,7 @@ import { graphql, rest } from '@/api'
 
 const STOCK_REPORT_FIELDS = `
   id product_id product_name product_code
+  tags { tag_id tag_name tag_value_id value }
   supplier_party_id supplier_name
   invoice_id invoice_code purchase_date
   quantity_received quantity_remaining unit_cost total_cost

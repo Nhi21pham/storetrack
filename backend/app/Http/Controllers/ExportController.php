@@ -263,6 +263,8 @@ class ExportController extends Controller
         return [
             'search'               => $request->query('search'),
             'supplier_id'          => $request->query('supplier_id'),
+            'tag_id'               => $request->query('tag_id'),
+            'tag_value_id'         => $request->query('tag_value_id'),
             'min_quantity'         => $request->query('min_quantity'),
             'max_quantity'         => $request->query('max_quantity'),
             'include_out_of_stock' => $request->query('include_out_of_stock'),

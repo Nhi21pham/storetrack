@@ -62,6 +62,16 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
+          <template #filter-tags>
+            <SearchableSelect
+              :modelValue="tagFilter"
+              :options="tagOptions"
+              all-label="(All tags)"
+              search-placeholder="Filter tag..."
+              teleport
+              @update:modelValue="tagFilter = $event"
+            />
+          </template>
           <template #filter-supplier_name>
             <SearchableSelect
               :modelValue="supplierFilter"
@@ -91,6 +101,12 @@
             <td v-if="columnVisibility.isVisible('product_name')">{{ row.product_name }}</td>
             <td v-if="columnVisibility.isVisible('product_code')">
               <button v-if="row.product_code" class="code-link" @click="openProductDetail(row)">{{ row.product_code }}</button>
+              <span v-else class="empty-val">—</span>
+            </td>
+            <td v-if="columnVisibility.isVisible('tags')">
+              <span v-if="row.tags && row.tags.length" class="tags-list">
+                <TagChip v-for="(t, i) in row.tags" :key="i" :tag-name="t.tag_name" :value="t.value" />
+              </span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('supplier_name')">
@@ -132,15 +148,25 @@
       <ProductDetailModal
         v-if="detailProduct"
         :product="detailProduct"
-        :can-edit="false"
+        :can-edit="canManage"
         @close="detailProduct = null"
+        @edit="onProductEdit"
+      />
+
+      <ProductFormModal
+        v-if="editingProduct"
+        :product="editingProduct"
+        :store-id="currentStore?.id"
+        @close="editingProduct = null"
+        @saved="onProductSaved"
       />
 
       <InvoiceDetailModal
         v-if="detailInvoice"
         :invoice="detailInvoice"
-        :can-manage="false"
+        :can-edit="canManage"
         @close="detailInvoice = null"
+        @edit="onInvoiceEdit"
       />
     </template>
   </PageContainer>
@@ -148,6 +174,7 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue'
+import { useRouter } from 'vue-router'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -162,8 +189,10 @@ import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import TagChip from '@/components/common/TagChip.vue'
 import StockReportSelectionBar from '@/features/reports/components/StockReportSelectionBar.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
+import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import { useStockReport } from '@/features/reports/composables/useStockReport'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
@@ -178,8 +207,10 @@ import {
   formatMoney, formatQuantity, formatDate,
 } from '@/features/reports/constants'
 
+const router = useRouter()
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
+const canManage = computed(() => !!currentStore.value?.is_active)
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'stock-report',
@@ -190,9 +221,9 @@ const visibleWidths = computed(() => columnVisibility.filterWidths(STOCK_REPORT_
 const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 
 const {
-  rows, loading, searchQuery, supplierFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
+  rows, loading, searchQuery, supplierFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
   hasActiveFilters, clearFilters,
-  sortedRows, supplierOptions, totals, sort,
+  sortedRows, supplierOptions, tagOptions, totals, sort, load,
 } = useStockReport({
   currentStore,
   onError: (msg) => showToast(msg, 'error'),
@@ -211,6 +242,7 @@ const {
 
 const detailProduct = ref(null)
 const detailInvoice = ref(null)
+const editingProduct = ref(null)
 
 const openProductDetail = async (row) => {
   try {
@@ -228,6 +260,24 @@ const openInvoiceDetail = async (row) => {
   }
 }
 
+const onProductEdit = (product) => {
+  detailProduct.value = null
+  editingProduct.value = product
+}
+
+const onProductSaved = async () => {
+  editingProduct.value = null
+  showToast('Product updated.', 'success')
+  await load()
+}
+
+// The purchase invoice has a full edit page, so open it in a new tab.
+const onInvoiceEdit = () => {
+  const invoice = detailInvoice.value
+  detailInvoice.value = null
+  window.open(router.resolve(`/purchase-invoices/${invoice.id}/edit`).href, '_blank')
+}
+
 const { exporting, run } = useExport({
   start: () => {
     const params = {
@@ -238,6 +288,11 @@ const { exporting, run } = useExport({
       include_out_of_stock: includeOutOfStock.value ? '1' : undefined,
       start_date: startDate.value || undefined,
       end_date: endDate.value || undefined,
+    }
+    if (tagFilter.value) {
+      const [kind, id] = tagFilter.value.split(':')
+      if (kind === 'tag') params.tag_id = id
+      else if (kind === 'val') params.tag_value_id = id
     }
     if (selectedIds.value.size > 0) {
       params.ids = Array.from(selectedIds.value)
@@ -252,7 +307,7 @@ const { exporting, run } = useExport({
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-watch([searchQuery, supplierFilter, minQty, maxQty, includeOutOfStock, startDate, endDate, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, supplierFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate, () => sort.sortCriteria.value], resetPage, { deep: true })
 watch(() => currentStore.value?.id, clearSelection)
 </script>
 
@@ -268,6 +323,7 @@ watch(() => currentStore.value?.id, clearSelection)
 
 .code-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #4338ca; cursor: pointer; text-align: left; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .code-link:hover { text-decoration: underline; }
+.tags-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .empty-val { color: #d1d5db; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .num.strong { font-weight: 700; color: #111; }
@@ -281,7 +337,7 @@ watch(() => currentStore.value?.id, clearSelection)
 
 .totals-bar { display: flex; flex-wrap: wrap; gap: 24px; padding: 14px 18px; margin-top: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13.5px; color: #374151; }
 .total-item { display: inline-flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
-.total-item.strong { font-weight: 700; color: #111; margin-left: auto; }
+.total-item.strong { font-weight: 800; font-size: 19px; color: #111; margin-left: auto; }
 .total-label { font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
 
 tbody tr.row-selected { background: #f0f7ff; }

@@ -3,6 +3,7 @@ type StockReportRow {
     product_id: ID!
     product_name: String!
     product_code: String
+    tags: [ProductTag!]!
     supplier_party_id: ID
     supplier_name: String
     invoice_id: ID

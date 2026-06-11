@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
  */
 class StockReportRepository
 {
-    private const RELATIONS = ['product', 'sourceInvoice.party.supplier'];
+    private const RELATIONS = ['product.taggables.tag', 'product.taggables.tagValue', 'sourceInvoice.party.supplier'];
 
     /** Every batch in the store (including depleted ones), for the list view. */
     public function all(int $storeId): Collection
@@ -45,6 +45,16 @@ class StockReportRepository
         if (!empty($filters['supplier_id'])) {
             $partyId = (int) $filters['supplier_id'];
             $query->whereHas('sourceInvoice', fn (Builder $q) => $q->where('party_id', $partyId));
+        }
+
+        if (!empty($filters['tag_id'])) {
+            $tagId = (int) $filters['tag_id'];
+            $query->whereHas('product.taggables', fn (Builder $q) => $q->where('tag_id', $tagId));
+        }
+
+        if (!empty($filters['tag_value_id'])) {
+            $tagValueId = (int) $filters['tag_value_id'];
+            $query->whereHas('product.taggables', fn (Builder $q) => $q->where('tag_value_id', $tagValueId));
         }
 
         if (!empty($filters['start_date'])) {

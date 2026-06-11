@@ -26,6 +26,7 @@ export const useStockReport = ({ currentStore, onError }) => {
   const loading           = ref(false)
   const searchQuery       = ref('')
   const supplierFilter    = ref('')
+  const tagFilter         = ref('')
   const minQty            = ref('')
   const maxQty            = ref('')
   const includeOutOfStock = ref(false)
@@ -33,12 +34,13 @@ export const useStockReport = ({ currentStore, onError }) => {
   const endDate           = ref('')
 
   const hasActiveFilters = computed(() =>
-    !!(supplierFilter.value || minQty.value !== '' || maxQty.value !== '' ||
+    !!(supplierFilter.value || tagFilter.value || minQty.value !== '' || maxQty.value !== '' ||
        includeOutOfStock.value || startDate.value || endDate.value),
   )
 
   const clearFilters = () => {
     supplierFilter.value = ''
+    tagFilter.value = ''
     minQty.value = ''
     maxQty.value = ''
     includeOutOfStock.value = false
@@ -54,6 +56,15 @@ export const useStockReport = ({ currentStore, onError }) => {
     }
     if (supplierFilter.value) {
       list = list.filter((r) => String(r.supplier_party_id) === supplierFilter.value)
+    }
+    if (tagFilter.value) {
+      const [kind, id] = tagFilter.value.split(':')
+      list = list.filter((r) => {
+        const tags = r.tags || []
+        if (kind === 'tag') return tags.some((t) => String(t.tag_id) === id)
+        if (kind === 'val') return tags.some((t) => String(t.tag_value_id) === id)
+        return true
+      })
     }
     if (minQty.value !== '') {
       const min = Number(minQty.value)
@@ -93,6 +104,26 @@ export const useStockReport = ({ currentStore, onError }) => {
     return Array.from(seen, ([value, label]) => ({ value, label }))
   })
 
+  // Tags present in the loaded rows: each tag offers an "(any)" option plus one
+  // per distinct value. Filter value is "tag:<id>" or "val:<id>" (mirrors products).
+  const tagOptions = computed(() => {
+    const byTag = new Map()
+    for (const r of rows.value) {
+      for (const t of (r.tags || [])) {
+        if (!byTag.has(t.tag_id)) byTag.set(t.tag_id, { name: t.tag_name, values: new Map() })
+        if (t.tag_value_id != null) byTag.get(t.tag_id).values.set(t.tag_value_id, t.value)
+      }
+    }
+    const opts = []
+    for (const [tagId, { name, values }] of byTag) {
+      opts.push({ value: `tag:${tagId}`, label: `${name} (any)` })
+      for (const [valueId, value] of values) {
+        opts.push({ value: `val:${valueId}`, label: `${name}: ${value}` })
+      }
+    }
+    return opts
+  })
+
   // Footer totals over the full filtered set (independent of pagination).
   const totals = computed(() => {
     const list = filteredRows.value
@@ -126,9 +157,9 @@ export const useStockReport = ({ currentStore, onError }) => {
   }, { immediate: true })
 
   return {
-    rows, loading, searchQuery, supplierFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
+    rows, loading, searchQuery, supplierFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
     hasActiveFilters, clearFilters,
-    baseRows, filteredRows, sortedRows, supplierOptions, totals,
+    baseRows, filteredRows, sortedRows, supplierOptions, tagOptions, totals,
     sort, load,
   }
 }
