@@ -11,6 +11,7 @@ use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\Invoice\InvoiceService;
 use App\Services\ProductService;
+use App\Services\Report\StockReportService;
 use App\Services\SupplierService;
 use App\Services\Tag\TagService;
 use App\Services\UnitService;
@@ -31,6 +32,7 @@ class ExportController extends Controller
         private BankService $bankService,
         private BankAccountService $bankAccountService,
         private InvoiceService $invoiceService,
+        private StockReportService $stockReportService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -104,6 +106,16 @@ class ExportController extends Controller
             $request->user(),
             $storeId,
             $this->extractInvoiceExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueStockReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->stockReportService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractStockReportExportFilters($request),
             $this->extractClientId($request),
         ));
     }
@@ -233,6 +245,31 @@ class ExportController extends Controller
             'end_date'       => $request->query('end_date'),
             'ids'            => $ids,
             'columns'        => $columns,
+        ];
+    }
+
+    private function extractStockReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        return [
+            'search'               => $request->query('search'),
+            'supplier_id'          => $request->query('supplier_id'),
+            'min_quantity'         => $request->query('min_quantity'),
+            'max_quantity'         => $request->query('max_quantity'),
+            'include_out_of_stock' => $request->query('include_out_of_stock'),
+            'start_date'           => $request->query('start_date'),
+            'end_date'             => $request->query('end_date'),
+            'ids'                  => $ids,
+            'columns'              => $columns,
         ];
     }
 

@@ -18,4 +18,5 @@ enum AuditObjectType: string
     case TAG              = 'tag';
     case TAX              = 'tax';
     case INVOICE          = 'invoice';
+    case REPORT           = 'report';
 }

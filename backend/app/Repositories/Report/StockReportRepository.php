@@ -1,0 +1,87 @@
+<?php
+
+namespace App\Repositories\Report;
+
+use App\Models\Invoice\InventoryBatch;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+
+/**
+ * Reads inventory batches for the stock report. Each batch is one purchase lot,
+ * so a report row carries its product, the purchase invoice that created it
+ * (and thus the supplier), the purchase date, quantities, and unit cost.
+ */
+class StockReportRepository
+{
+    private const RELATIONS = ['product', 'sourceInvoice.party.supplier'];
+
+    /** Every batch in the store (including depleted ones), for the list view. */
+    public function all(int $storeId): Collection
+    {
+        return $this->baseQuery($storeId)->get();
+    }
+
+    /**
+     * A filtered, ordered query of batches for a store. Used by the export job,
+     * which streams it in chunks, so this returns a Builder rather than a result.
+     */
+    public function listQuery(int $storeId, array $filters = []): Builder
+    {
+        $query = $this->baseQuery($storeId);
+
+        // Out-of-stock (fully depleted) lots are hidden unless explicitly asked for.
+        if (empty($filters['include_out_of_stock'])) {
+            $query->where('quantity_remaining', '>', 0);
+        }
+
+        if (isset($filters['min_quantity']) && $filters['min_quantity'] !== null) {
+            $query->where('quantity_remaining', '>=', (float) $filters['min_quantity']);
+        }
+
+        if (isset($filters['max_quantity']) && $filters['max_quantity'] !== null) {
+            $query->where('quantity_remaining', '<=', (float) $filters['max_quantity']);
+        }
+
+        if (!empty($filters['supplier_id'])) {
+            $partyId = (int) $filters['supplier_id'];
+            $query->whereHas('sourceInvoice', fn (Builder $q) => $q->where('party_id', $partyId));
+        }
+
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('received_at', '>=', (string) $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('received_at', '<=', (string) $filters['end_date']);
+        }
+
+        $ids = $filters['ids'] ?? null;
+        if (is_array($ids) && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        $search = $filters['search'] ?? null;
+        if (is_string($search) && $search !== '') {
+            $like = '%'.$search.'%';
+            $query->where(function (Builder $q) use ($like) {
+                $q->whereHas('product', fn (Builder $p) => $p
+                    ->where('name', 'like', $like)
+                    ->orWhere('code', 'like', $like))
+                    ->orWhereHas('sourceInvoice', fn (Builder $i) => $i->where('code', 'like', $like))
+                    ->orWhereHas('sourceInvoice.party.supplier', fn (Builder $s) => $s->where('name', 'like', $like));
+            });
+        }
+
+        return $query;
+    }
+
+    private function baseQuery(int $storeId): Builder
+    {
+        return InventoryBatch::query()
+            ->with(self::RELATIONS)
+            ->where('store_id', $storeId)
+            ->orderBy('product_id')
+            ->orderBy('received_at')
+            ->orderBy('id');
+    }
+}
