@@ -44,7 +44,7 @@
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
         </div>
         <div class="submenu" :class="{ open: reportsOpen }">
-          <div class="submenu-item">Sales Report</div>
+          <router-link to="/reports/sales" class="submenu-item" :class="{ active: isActive('/reports/sales') }" @click="$emit('close')">Sales Report</router-link>
           <router-link to="/reports/stock" class="submenu-item" :class="{ active: isActive('/reports/stock') }" @click="$emit('close')">Stock Report</router-link>
           <div class="submenu-item">Revenue Report</div>
           <div class="submenu-item">Customer Report</div>

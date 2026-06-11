@@ -1,21 +1,17 @@
 <template>
   <PageContainer :maxWidth="1200">
-    <PageHeader title="Stock Report" subtitle="Inventory on hand, one row per purchase lot." />
+    <PageHeader title="Sale Report" subtitle="Products sold, one row per sale invoice line." />
 
     <EmptyState
       v-if="!currentStore"
       title="No store selected"
-      description="Select a store to view its stock report."
+      description="Select a store to view its sale report."
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search product, supplier, or invoice..." />
+        <SearchBar v-model="searchQuery" placeholder="Search product, customer, or invoice..." />
         <DateRangeFilter v-model:startDate="startDate" v-model:endDate="endDate" />
-        <label class="oos-toggle">
-          <input type="checkbox" v-model="includeOutOfStock" />
-          Show out-of-stock
-        </label>
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
@@ -34,12 +30,12 @@
         @export="run"
       />
 
-      <LoadingState v-if="loading">Loading stock report…</LoadingState>
+      <LoadingState v-if="loading">Loading sale report…</LoadingState>
 
       <EmptyState
         v-else-if="rows.length === 0"
-        title="No stock yet"
-        description="Record a purchase invoice to start tracking inventory on hand."
+        title="No sales yet"
+        description="Record a sale invoice to start tracking products sold."
       />
 
       <div v-else class="table-wrap">
@@ -72,17 +68,17 @@
               @update:modelValue="tagFilter = $event"
             />
           </template>
-          <template #filter-supplier_name>
+          <template #filter-customer_name>
             <SearchableSelect
-              :modelValue="supplierFilter"
-              :options="supplierOptions"
-              all-label="(All suppliers)"
-              search-placeholder="Filter supplier..."
+              :modelValue="customerFilter"
+              :options="customerOptions"
+              all-label="(All customers)"
+              search-placeholder="Filter customer..."
               teleport
-              @update:modelValue="supplierFilter = $event"
+              @update:modelValue="customerFilter = $event"
             />
           </template>
-          <template #filter-quantity_remaining>
+          <template #filter-quantity>
             <div class="qty-range">
               <input v-model="minQty" type="number" min="0" placeholder="Min" class="qty-input" />
               <input v-model="maxQty" type="number" min="0" placeholder="Max" class="qty-input" />
@@ -91,13 +87,14 @@
 
           <tr v-if="sortedRows.length === 0">
             <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
-              No stock matches the current filters.
+              No sales match the current filters.
             </td>
           </tr>
-          <tr v-for="row in paginatedRows" :key="row.id" :class="{ 'row-selected': isSelected(row.id) }">
+          <tr v-for="(row, idx) in paginatedRows" :key="row.id" :class="{ 'row-selected': isSelected(row.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(row.id)" @change="toggleRow(row.id)" />
             </td>
+            <td v-if="columnVisibility.isVisible('order_number')" class="num">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('product_name')">{{ row.product_name }}</td>
             <td v-if="columnVisibility.isVisible('product_code')">
               <button v-if="row.product_code" class="code-link" @click="openProductDetail(row)">{{ row.product_code }}</button>
@@ -109,29 +106,25 @@
               </span>
               <span v-else class="empty-val">—</span>
             </td>
-            <td v-if="columnVisibility.isVisible('supplier_name')">
-              <span v-if="row.supplier_name">{{ row.supplier_name }}</span>
+            <td v-if="columnVisibility.isVisible('customer_name')">
+              <span v-if="row.customer_name">{{ row.customer_name }}</span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('invoice_code')">
               <button v-if="row.invoice_code" class="code-link" @click="openInvoiceDetail(row)">{{ row.invoice_code }}</button>
               <span v-else class="empty-val">—</span>
             </td>
-            <td v-if="columnVisibility.isVisible('purchase_date')">{{ formatDate(row.purchase_date) }}</td>
-            <td v-if="columnVisibility.isVisible('quantity_received')" class="num">{{ formatQuantity(row.quantity_received) }}</td>
-            <td v-if="columnVisibility.isVisible('quantity_remaining')" class="num">
-              <span :class="{ 'out-of-stock': Number(row.quantity_remaining) === 0 }">{{ formatQuantity(row.quantity_remaining) }}</span>
-            </td>
-            <td v-if="columnVisibility.isVisible('unit_cost')" class="num">{{ formatMoney(row.unit_cost) }}</td>
-            <td v-if="columnVisibility.isVisible('total_cost')" class="num strong">{{ formatMoney(row.total_cost) }}</td>
+            <td v-if="columnVisibility.isVisible('invoice_date')">{{ formatDate(row.invoice_date) }}</td>
+            <td v-if="columnVisibility.isVisible('quantity')" class="num">{{ formatQuantity(row.quantity) }}</td>
+            <td v-if="columnVisibility.isVisible('unit_price')" class="num">{{ formatMoney(row.unit_price) }}</td>
+            <td v-if="columnVisibility.isVisible('total_sale')" class="num strong">{{ formatMoney(row.total_sale) }}</td>
           </tr>
         </ResizableTable>
 
         <div class="totals-bar">
-          <span class="total-item"><span class="total-label">Products</span> {{ totals.productCount }}</span>
-          <span class="total-item"><span class="total-label">Purchased</span> {{ formatQuantity(totals.totalPurchased) }}</span>
-          <span class="total-item"><span class="total-label">In stock</span> {{ formatQuantity(totals.totalRemaining) }}</span>
-          <span class="total-item strong"><span class="total-label">Total cost</span> {{ formatMoney(totals.totalCost) }}</span>
+          <span class="total-item"><span class="total-label">Lines</span> {{ totals.lineCount }}</span>
+          <span class="total-item"><span class="total-label">Qty sold</span> {{ formatQuantity(totals.totalQty) }}</span>
+          <span class="total-item strong"><span class="total-label">Total sale</span> {{ formatMoney(totals.totalSale) }}</span>
         </div>
 
         <Pagination
@@ -194,16 +187,16 @@ import ReportSelectionBar from '@/features/reports/components/ReportSelectionBar
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
-import { useStockReport } from '@/features/reports/composables/useStockReport'
+import { useSaleReport } from '@/features/reports/composables/useSaleReport'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
-import { startStockReportExport } from '@/features/reports/services/reportService'
+import { startSaleReportExport } from '@/features/reports/services/reportService'
 import { fetchProduct } from '@/features/products/services/productService'
 import { fetchInvoice } from '@/features/invoices/services/invoiceService'
 import {
-  STOCK_REPORT_COLUMNS, STOCK_REPORT_INITIAL_COL_WIDTHS,
+  SALE_REPORT_COLUMNS, SALE_REPORT_INITIAL_COL_WIDTHS,
   formatMoney, formatQuantity, formatDate,
 } from '@/features/reports/constants'
 
@@ -213,18 +206,18 @@ const currentStore = inject('currentStore')
 const canManage = computed(() => !!currentStore.value?.is_active)
 
 const columnVisibility = useColumnVisibility({
-  storageKey: 'stock-report',
-  columns: STOCK_REPORT_COLUMNS,
-  lockedKeys: ['select'],
+  storageKey: 'sale-report',
+  columns: SALE_REPORT_COLUMNS,
+  lockedKeys: ['select', 'order_number'],
 })
-const visibleWidths = computed(() => columnVisibility.filterWidths(STOCK_REPORT_INITIAL_COL_WIDTHS))
+const visibleWidths = computed(() => columnVisibility.filterWidths(SALE_REPORT_INITIAL_COL_WIDTHS))
 const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 
 const {
-  rows, loading, searchQuery, supplierFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
+  rows, loading, searchQuery, customerFilter, tagFilter, minQty, maxQty, startDate, endDate,
   hasActiveFilters, clearFilters,
-  sortedRows, supplierOptions, tagOptions, totals, sort, load,
-} = useStockReport({
+  sortedRows, customerOptions, tagOptions, totals, sort, load,
+} = useSaleReport({
   currentStore,
   onError: (msg) => showToast(msg, 'error'),
 })
@@ -271,21 +264,20 @@ const onProductSaved = async () => {
   await load()
 }
 
-// The purchase invoice has a full edit page, so open it in a new tab.
+// The sale invoice has a full edit page, so open it in a new tab.
 const onInvoiceEdit = () => {
   const invoice = detailInvoice.value
   detailInvoice.value = null
-  window.open(router.resolve(`/purchase-invoices/${invoice.id}/edit`).href, '_blank')
+  window.open(router.resolve(`/sale-invoices/${invoice.id}/edit`).href, '_blank')
 }
 
 const { exporting, run } = useExport({
   start: () => {
     const params = {
       search: searchQuery.value.trim() || undefined,
-      supplier_id: supplierFilter.value || undefined,
+      customer_id: customerFilter.value || undefined,
       min_quantity: minQty.value !== '' ? minQty.value : undefined,
       max_quantity: maxQty.value !== '' ? maxQty.value : undefined,
-      include_out_of_stock: includeOutOfStock.value ? '1' : undefined,
       start_date: startDate.value || undefined,
       end_date: endDate.value || undefined,
     }
@@ -300,23 +292,20 @@ const { exporting, run } = useExport({
     params.columns = columnVisibility.togglableColumns
       .filter((col) => columnVisibility.isVisible(col.key))
       .map((col) => col.key)
-    return startStockReportExport({ storeId: currentStore.value.id, params })
+    return startSaleReportExport({ storeId: currentStore.value.id, params })
   },
-  defaultFilename: (id) => `stock-report-${id}.xlsx`,
-  onSuccess: () => showToast('Stock report export ready.', 'success'),
+  defaultFilename: (id) => `sale-report-${id}.xlsx`,
+  onSuccess: () => showToast('Sale report export ready.', 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-watch([searchQuery, supplierFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, customerFilter, tagFilter, minQty, maxQty, startDate, endDate, () => sort.sortCriteria.value], resetPage, { deep: true })
 watch(() => currentStore.value?.id, clearSelection)
 </script>
 
 <style scoped>
 .toolbar { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
-
-.oos-toggle { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: #374151; cursor: pointer; white-space: nowrap; padding-bottom: 8px; }
-.oos-toggle input { width: 15px; height: 15px; cursor: pointer; accent-color: #111; }
 
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 .empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
@@ -327,7 +316,6 @@ watch(() => currentStore.value?.id, clearSelection)
 .empty-val { color: #d1d5db; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .num.strong { font-weight: 700; color: #111; }
-.out-of-stock { color: #dc2626; font-weight: 600; }
 
 .qty-range { display: flex; flex-direction: column; gap: 4px; }
 .qty-input { width: 100%; min-width: 0; box-sizing: border-box; padding: 5px 8px; min-height: 26px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; }

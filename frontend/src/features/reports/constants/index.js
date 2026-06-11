@@ -15,3 +15,19 @@ export const STOCK_REPORT_COLUMNS = [
 ]
 
 export const STOCK_REPORT_INITIAL_COL_WIDTHS = [40, 200, 130, 200, 180, 150, 130, 110, 140, 120, 130]
+
+export const SALE_REPORT_COLUMNS = [
+  { key: 'select',        label: '',                  sortable: false },
+  { key: 'order_number',  label: '#',                 sortable: false },
+  { key: 'product_name',  label: 'Product',           sortable: true  },
+  { key: 'product_code',  label: 'Code',              sortable: true  },
+  { key: 'tags',          label: 'Tags',              sortable: false },
+  { key: 'customer_name', label: 'Customer',          sortable: true  },
+  { key: 'invoice_code',  label: 'Sale invoice',      sortable: true  },
+  { key: 'invoice_date',  label: 'Sale date',         sortable: true  },
+  { key: 'quantity',      label: 'Qty sold',          sortable: true  },
+  { key: 'unit_price',    label: 'Sale price / unit', sortable: true  },
+  { key: 'total_sale',    label: 'Total sale',        sortable: true  },
+]
+
+export const SALE_REPORT_INITIAL_COL_WIDTHS = [40, 50, 200, 130, 200, 180, 150, 130, 110, 150, 130]
