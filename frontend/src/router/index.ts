@@ -24,6 +24,7 @@ import PurchaseInvoicesPage from '@/features/invoices/pages/PurchaseInvoicesPage
 import PurchaseInvoiceCreatePage from '@/features/invoices/pages/PurchaseInvoiceCreatePage.vue'
 import SaleInvoicesPage from '@/features/invoices/pages/SaleInvoicesPage.vue'
 import SaleInvoiceCreatePage from '@/features/invoices/pages/SaleInvoiceCreatePage.vue'
+import StockReportPage from '@/features/reports/pages/StockReportPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -206,6 +207,18 @@ const router = createRouter({
               { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Sale Invoices', to: '/sale-invoices' },
               { label: 'Edit' },
+            ],
+          },
+        },
+        {
+          path: 'reports/stock',
+          name: 'stock-report',
+          component: StockReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Stock Report' },
             ],
           },
         },
