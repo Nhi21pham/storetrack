@@ -6,6 +6,7 @@ use App\Enums\InvoicePaymentMethodEnum;
 use App\Enums\InvoicePaymentStatusEnum;
 use App\Enums\InvoiceTypeEnum;
 use App\Models\Party;
+use App\Models\Payment\PaymentAllocation;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +28,7 @@ class Invoice extends Model
         'subtotal',
         'tax_total',
         'grand_total',
+        'paid_amount',
     ];
 
     protected $casts = [
@@ -37,6 +39,7 @@ class Invoice extends Model
         'subtotal'       => 'decimal:2',
         'tax_total'      => 'decimal:2',
         'grand_total'    => 'decimal:2',
+        'paid_amount'    => 'decimal:2',
     ];
 
     public function store(): BelongsTo
@@ -59,6 +62,11 @@ class Invoice extends Model
         return $this->hasMany(InvoiceProduct::class);
     }
 
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(PaymentAllocation::class);
+    }
+
     public function getPartyNameAttribute(): ?string
     {
         if (!$this->party) {
@@ -67,5 +75,10 @@ class Invoice extends Model
         return $this->type === InvoiceTypeEnum::PURCHASE
             ? $this->party->supplier?->name
             : $this->party->customer?->name;
+    }
+
+    public function getBalanceAttribute(): float
+    {
+        return round((float) $this->grand_total - (float) $this->paid_amount, 2);
     }
 }
