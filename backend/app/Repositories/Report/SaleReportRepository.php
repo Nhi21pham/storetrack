@@ -90,7 +90,7 @@ class SaleReportRepository
             ->whereHas('invoice', fn (Builder $q) => $q
                 ->where('store_id', $storeId)
                 ->where('type', InvoiceTypeEnum::SALE->value))
-            ->orderBy('invoice_id')
-            ->orderBy('id');
+            ->orderByDesc('invoice_id')
+            ->orderByDesc('id');
     }
 }

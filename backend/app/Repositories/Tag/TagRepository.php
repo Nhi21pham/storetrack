@@ -46,7 +46,7 @@ class TagRepository
         return Tag::query()
             ->with('values')
             ->where('store_id', $storeId)
-            ->orderBy('name')
+            ->orderByDesc('id')
             ->get();
     }
 

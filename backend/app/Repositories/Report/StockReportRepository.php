@@ -90,8 +90,7 @@ class StockReportRepository
         return InventoryBatch::query()
             ->with(self::RELATIONS)
             ->where('store_id', $storeId)
-            ->orderBy('product_id')
-            ->orderBy('received_at')
-            ->orderBy('id');
+            ->orderByDesc('received_at')
+            ->orderByDesc('id');
     }
 }

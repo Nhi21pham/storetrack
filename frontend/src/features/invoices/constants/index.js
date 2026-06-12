@@ -20,11 +20,12 @@ export const paymentMethodLabel = (value) =>
 export const paymentStatusLabel = (value) =>
   PAYMENT_STATUSES.find((s) => s.value === value)?.label || value || '—'
 
-// Money as a fixed 2-decimal, thousands-separated string.
+// Money as VND: dot-grouped, no decimals, with the ₫ symbol (e.g. "5.400.000 ₫").
 export const formatMoney = (value) =>
-  Number(value || 0).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+  Number(value || 0).toLocaleString('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
   })
 
 // Quantity trimmed of trailing zeros (10.000 -> "10", 1.500 -> "1.5").

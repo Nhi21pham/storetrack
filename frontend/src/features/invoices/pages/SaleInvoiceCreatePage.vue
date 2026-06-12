@@ -96,7 +96,7 @@
                   <NumberInput v-model="item.quantity" :decimals="3" class="num-input" :class="{ error: exceedsStock(item) }" placeholder="0" />
                 </td>
                 <td class="c-price">
-                  <NumberInput v-model="item.unit_price" :decimals="2" class="num-input" placeholder="0.00" />
+                  <NumberInput v-model="item.unit_price" :decimals="2" class="num-input" placeholder="0" />
                 </td>
                 <td class="c-tax">
                   <button type="button" class="tax-toggle" :class="{ active: item.expanded }" @click="item.expanded = !item.expanded">
