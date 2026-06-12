@@ -16,6 +16,10 @@ class SaleReportExport extends BaseExport
     /** Running ordinal (STT) assigned to rows in export order. */
     private int $counter = 0;
 
+    /** Running totals accumulated during map(), emitted in the summary row. */
+    private float $totalQty = 0;
+    private float $totalSale = 0;
+
     /**
      * @param  Builder  $query  filtered, ordered query of InvoiceProduct
      * @param  string  $title  e.g. "Sale report of store My Store"
@@ -56,6 +60,9 @@ class SaleReportExport extends BaseExport
      */
     public function map($row): array
     {
+        $this->totalQty += (float) $row->quantity;
+        $this->totalSale += round((float) $row->subtotal, 2);
+
         return array_map(fn ($column) => $column['value']($row), $this->activeColumns());
     }
 
@@ -90,9 +97,9 @@ class SaleReportExport extends BaseExport
             'customer_name' => ['heading' => 'Customer',     'width' => 26, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->party_name ?? '')],
             'invoice_code' => ['heading' => 'Sale Invoice',  'width' => 18, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->code ?? '')],
             'invoice_date' => ['heading' => 'Sale Date',     'width' => 16, 'value' => fn (InvoiceProduct $row) => optional($row->invoice?->invoice_date)->format('Y-m-d') ?? ''],
-            'quantity'     => ['heading' => 'Qty Sold',      'width' => 14, 'value' => fn (InvoiceProduct $row) => (float) $row->quantity],
+            'quantity'     => ['heading' => 'Qty Sold',      'width' => 14, 'value' => fn (InvoiceProduct $row) => (float) $row->quantity,            'total' => fn () => $this->totalQty],
             'unit_price'   => ['heading' => 'Sale Price / Unit', 'width' => 18, 'value' => fn (InvoiceProduct $row) => (float) $row->unit_price],
-            'total_sale'   => ['heading' => 'Total Sale',    'width' => 18, 'value' => fn (InvoiceProduct $row) => round((float) $row->subtotal, 2)],
+            'total_sale'   => ['heading' => 'Total Sale',    'width' => 18, 'value' => fn (InvoiceProduct $row) => round((float) $row->subtotal, 2), 'total' => fn () => round($this->totalSale, 2)],
         ];
     }
 
@@ -104,6 +111,20 @@ class SaleReportExport extends BaseExport
             ->map(fn ($tag) => $tag['value'] !== null ? "{$tag['tag_name']}: {$tag['value']}" : $tag['tag_name'])
             ->filter()
             ->implode(', ');
+    }
+
+    protected function totalsRow(): array
+    {
+        $row = array_map(
+            fn ($column) => isset($column['total']) ? ($column['total'])() : '',
+            $this->activeColumns(),
+        );
+
+        if ($row !== [] && ($row[0] === '' || $row[0] === null)) {
+            $row[0] = 'TOTAL';
+        }
+
+        return $row;
     }
 
     private function activeColumns(): array

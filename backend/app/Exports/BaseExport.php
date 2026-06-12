@@ -29,6 +29,9 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
  */
 abstract class BaseExport implements FromQuery, WithChunkReading, WithEvents, WithHeadings, WithMapping
 {
+    /** Shared grey fill for the column-header row and the totals row (keeps them consistent). */
+    private const HEADER_FILL_RGB = 'E5E7EB';
+
     abstract public function title(): string;
 
     /** @return string[] */
@@ -71,6 +74,18 @@ abstract class BaseExport implements FromQuery, WithChunkReading, WithEvents, Wi
         return [];
     }
 
+    /**
+     * Optional summary row appended (after a blank gap) below the body, aligned
+     * to the columns. Return [] for no totals row. Compute the values during
+     * map() — this is read in the AfterSheet hook, after every row is mapped.
+     *
+     * @return array<int, string|int|float>
+     */
+    protected function totalsRow(): array
+    {
+        return [];
+    }
+
     public function registerEvents(): array
     {
         $title = $this->title();
@@ -106,12 +121,27 @@ abstract class BaseExport implements FromQuery, WithChunkReading, WithEvents, Wi
                 $sheet->getStyle($headingsRange)->getFont()->setBold(true);
                 $sheet->getStyle($headingsRange)->getFill()
                     ->setFillType(Fill::FILL_SOLID)
-                    ->getStartColor()->setRGB('E5E7EB');
+                    ->getStartColor()->setRGB(self::HEADER_FILL_RGB);
 
                 foreach (range(1, $columnCount) as $i) {
                     $width = $columnWidths[$i] ?? 24;
                     $letter = Coordinate::stringFromColumnIndex($i);
                     $sheet->getColumnDimension($letter)->setWidth($width);
+                }
+
+                // Summary row below the body (values were accumulated during map()).
+                $totals = $this->totalsRow();
+                if ($totals !== []) {
+                    $totalsRow = $sheet->getHighestRow() + 2;
+                    foreach (array_values($totals) as $index => $value) {
+                        $letter = Coordinate::stringFromColumnIndex($index + 1);
+                        $sheet->setCellValue("{$letter}{$totalsRow}", $value);
+                    }
+                    $totalsRange = "A{$totalsRow}:{$lastColumn}{$totalsRow}";
+                    $sheet->getStyle($totalsRange)->getFont()->setBold(true);
+                    $sheet->getStyle($totalsRange)->getFill()
+                        ->setFillType(Fill::FILL_SOLID)
+                        ->getStartColor()->setRGB(self::HEADER_FILL_RGB);
                 }
             },
         ];
