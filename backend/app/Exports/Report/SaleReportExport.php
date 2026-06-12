@@ -21,12 +21,14 @@ class SaleReportExport extends BaseExport
      * @param  string  $title  e.g. "Sale report of store My Store"
      * @param  string[]  $metaLines
      * @param  string[]|null  $columns  selected column keys; null exports every column
+     * @param  bool  $includeStore  add a Store column (consolidated business export)
      */
     public function __construct(
         private Builder $query,
         private string $title,
         private array $metaLines,
         private ?array $columns = null,
+        private bool $includeStore = false,
     ) {}
 
     public function title(): string
@@ -73,6 +75,12 @@ class SaleReportExport extends BaseExport
         return ['heading' => 'No.', 'width' => 8, 'value' => fn (InvoiceProduct $row) => ++$this->counter];
     }
 
+    /** The Store column is added for consolidated business exports, after the STT column. */
+    private function storeColumn(): array
+    {
+        return ['heading' => 'Store', 'width' => 24, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->store?->name ?? '')];
+    }
+
     private function columnDefinitions(): array
     {
         return [
@@ -116,6 +124,11 @@ class SaleReportExport extends BaseExport
             }
         }
 
-        return array_merge([$this->orderNumberColumn()], $selected);
+        $leading = [$this->orderNumberColumn()];
+        if ($this->includeStore) {
+            $leading[] = $this->storeColumn();
+        }
+
+        return array_merge($leading, $selected);
     }
 }

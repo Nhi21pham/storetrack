@@ -6,6 +6,7 @@ use App\Enums\ExportScope;
 use App\Enums\PermissionEnum;
 use App\Exports\Report\StockReportExport;
 use App\Jobs\Exports\ExportStockReportJob;
+use App\Models\Business;
 use App\Models\Export;
 use App\Models\Invoice\InventoryBatch;
 use App\Models\Store;
@@ -37,16 +38,47 @@ class StockReportService
             ->all();
     }
 
+    /**
+     * The consolidated stock report across every store in a business: one row
+     * per purchase lot, each carrying its store. Owner-only.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getBusinessReport(User $user, int $businessId): array
+    {
+        $this->permissionService->authorizeBusinessOwner($user, $businessId);
+
+        return $this->stockReportRepository->allForBusiness($businessId)
+            ->map(fn (InventoryBatch $batch) => $this->toRow($batch))
+            ->all();
+    }
+
     public function queueExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
 
         return $this->exportService->queue(
             $user,
-            ExportStockReportJob::TYPE,
+            ExportStockReportJob::TYPE_STORE,
             ExportScope::STORE,
             $storeId,
             Store::find($storeId)?->name,
+            $this->normalizeExportFilters($filters),
+            ExportStockReportJob::class,
+            $clientId,
+        );
+    }
+
+    public function queueBusinessExport(User $user, int $businessId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->permissionService->authorizeBusinessOwner($user, $businessId);
+
+        return $this->exportService->queue(
+            $user,
+            ExportStockReportJob::TYPE_BUSINESS,
+            ExportScope::BUSINESS,
+            $businessId,
+            Business::find($businessId)?->name,
             $this->normalizeExportFilters($filters),
             ExportStockReportJob::class,
             $clientId,
@@ -63,6 +95,8 @@ class StockReportService
 
         return [
             'id'                 => (int) $batch->id,
+            'store_id'           => $batch->store_id !== null ? (int) $batch->store_id : null,
+            'store_name'         => $batch->relationLoaded('store') ? $batch->store?->name : null,
             'product_id'         => (int) $batch->product_id,
             'product_name'       => $batch->product?->name,
             'product_code'       => $batch->product?->code,
@@ -89,6 +123,10 @@ class StockReportService
 
         if (!empty($filters['supplier_id'])) {
             $clean['supplier_id'] = (int) $filters['supplier_id'];
+        }
+
+        if (is_array($filters['store_ids'] ?? null) && count($filters['store_ids']) > 0) {
+            $clean['store_ids'] = array_values(array_map('intval', $filters['store_ids']));
         }
 
         if (!empty($filters['tag_id'])) {

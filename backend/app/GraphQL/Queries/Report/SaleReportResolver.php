@@ -15,4 +15,11 @@ class SaleReportResolver extends BaseResolver
             $this->saleReportService->getReport($this->user(), (int) $args['store_id'])
         );
     }
+
+    public function allForBusiness($_, array $args)
+    {
+        return $this->safe(fn () =>
+            $this->saleReportService->getBusinessReport($this->user(), (int) $args['business_id'])
+        );
+    }
 }

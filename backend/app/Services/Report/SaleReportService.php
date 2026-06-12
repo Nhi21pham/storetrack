@@ -6,6 +6,7 @@ use App\Enums\ExportScope;
 use App\Enums\PermissionEnum;
 use App\Exports\Report\SaleReportExport;
 use App\Jobs\Exports\ExportSaleReportJob;
+use App\Models\Business;
 use App\Models\Export;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Store;
@@ -37,16 +38,47 @@ class SaleReportService
             ->all();
     }
 
+    /**
+     * The consolidated sale report across every store in a business: one row per
+     * sold line, each carrying its store. Owner-only.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getBusinessReport(User $user, int $businessId): array
+    {
+        $this->permissionService->authorizeBusinessOwner($user, $businessId);
+
+        return $this->saleReportRepository->allForBusiness($businessId)
+            ->map(fn (InvoiceProduct $item) => $this->toRow($item))
+            ->all();
+    }
+
     public function queueExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
 
         return $this->exportService->queue(
             $user,
-            ExportSaleReportJob::TYPE,
+            ExportSaleReportJob::TYPE_STORE,
             ExportScope::STORE,
             $storeId,
             Store::find($storeId)?->name,
+            $this->normalizeExportFilters($filters),
+            ExportSaleReportJob::class,
+            $clientId,
+        );
+    }
+
+    public function queueBusinessExport(User $user, int $businessId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->permissionService->authorizeBusinessOwner($user, $businessId);
+
+        return $this->exportService->queue(
+            $user,
+            ExportSaleReportJob::TYPE_BUSINESS,
+            ExportScope::BUSINESS,
+            $businessId,
+            Business::find($businessId)?->name,
             $this->normalizeExportFilters($filters),
             ExportSaleReportJob::class,
             $clientId,
@@ -60,6 +92,8 @@ class SaleReportService
 
         return [
             'id'                => (int) $item->id,
+            'store_id'          => $invoice?->store_id !== null ? (int) $invoice->store_id : null,
+            'store_name'        => $invoice?->relationLoaded('store') ? $invoice->store?->name : null,
             'product_id'        => (int) $item->product_id,
             'product_name'      => $item->product?->name ?? $item->product_name,
             'product_code'      => $item->product?->code,
@@ -85,6 +119,10 @@ class SaleReportService
 
         if (!empty($filters['customer_id'])) {
             $clean['customer_id'] = (int) $filters['customer_id'];
+        }
+
+        if (is_array($filters['store_ids'] ?? null) && count($filters['store_ids']) > 0) {
+            $clean['store_ids'] = array_values(array_map('intval', $filters['store_ids']));
         }
 
         if (!empty($filters['tag_id'])) {

@@ -31,8 +31,12 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('storeId');
     Route::post('/exports/stock-report/{storeId}', [ExportController::class, 'queueStockReport'])
         ->whereNumber('storeId');
+    Route::post('/exports/stock-report/business/{businessId}', [ExportController::class, 'queueStockReportBusiness'])
+        ->whereNumber('businessId');
     Route::post('/exports/sale-report/{storeId}', [ExportController::class, 'queueSaleReport'])
         ->whereNumber('storeId');
+    Route::post('/exports/sale-report/business/{businessId}', [ExportController::class, 'queueSaleReportBusiness'])
+        ->whereNumber('businessId');
     Route::get('/exports/{exportId}', [ExportController::class, 'status'])
         ->whereNumber('exportId');
     Route::get('/exports/{exportId}/download', [ExportController::class, 'download'])

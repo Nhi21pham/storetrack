@@ -4,15 +4,23 @@ namespace App\Jobs\Exports;
 
 use App\Exports\BaseExport;
 use App\Exports\Report\SaleReportExport;
+use App\Models\Business;
 use App\Models\Export;
 use App\Models\Store;
 use App\Models\User;
 use App\Repositories\Report\SaleReportRepository;
 use App\Services\AuditLog\Loggers\ReportAuditLogger;
 
+/**
+ * Generates a sale-report Excel export. The Export record carries the scope
+ * (a single store, or every store in a business) and filter context in
+ * metadata; the query is rebuilt here to avoid serializing the whole builder.
+ */
 class ExportSaleReportJob extends BaseExportJob
 {
-    public const TYPE = 'sale-report';
+    public const TYPE_STORE = 'sale-report';
+
+    public const TYPE_BUSINESS = 'sale-report-business';
 
     protected function buildExport(Export $export): BaseExport
     {
@@ -22,11 +30,21 @@ class ExportSaleReportJob extends BaseExportJob
         }
 
         $metadata = $export->metadata ?? [];
-        $storeId = (int) ($metadata['scope_id'] ?? 0);
+        $scopeId = (int) ($metadata['scope_id'] ?? 0);
         $filters = $metadata['filters'] ?? [];
+        $isBusinessView = ($export->type === self::TYPE_BUSINESS);
 
-        $storeName = $metadata['scope_name'] ?? (Store::find($storeId)?->name ?? '');
-        $title = 'Sale report of store '.$storeName;
+        $repository = app(SaleReportRepository::class);
+
+        if ($isBusinessView) {
+            $scopeName = $metadata['scope_name'] ?? (Business::find($scopeId)?->name ?? '');
+            $title = 'Sale report of business '.$scopeName;
+            $query = $repository->listQueryForBusiness($scopeId, $filters);
+        } else {
+            $scopeName = $metadata['scope_name'] ?? (Store::find($scopeId)?->name ?? '');
+            $title = 'Sale report of store '.$scopeName;
+            $query = $repository->listQuery($scopeId, $filters);
+        }
 
         $metaLines = [
             'Exported by '.$user->name.' ('.$user->email.')',
@@ -34,21 +52,16 @@ class ExportSaleReportJob extends BaseExportJob
         ];
 
         $columns = isset($filters['columns']) && is_array($filters['columns']) ? $filters['columns'] : null;
-        $query = app(SaleReportRepository::class)->listQuery($storeId, $filters);
 
-        return new SaleReportExport($query, $title, $metaLines, $columns);
+        return new SaleReportExport($query, $title, $metaLines, $columns, $isBusinessView);
     }
 
     protected function filename(Export $export): string
     {
         $metadata = $export->metadata ?? [];
-        $storeId = (int) ($metadata['scope_id'] ?? 0);
+        $scopeName = $metadata['scope_name'] ?? 'unknown';
 
-        $name = $storeId
-            ? (Store::find($storeId)?->name ?? '')
-            : ($metadata['scope_name'] ?? 'unknown');
-
-        $slug = BaseExport::slugForFilename((string) $name);
+        $slug = BaseExport::slugForFilename((string) $scopeName);
         $datetime = now()->format('YmdHis');
 
         return "sale-report-{$slug}-{$datetime}.xlsx";
@@ -62,14 +75,13 @@ class ExportSaleReportJob extends BaseExportJob
         }
 
         $metadata = $export->metadata ?? [];
-        $storeId = (int) ($metadata['scope_id'] ?? 0);
+        $scopeId = (int) ($metadata['scope_id'] ?? 0);
+        $scopeName = (string) ($metadata['scope_name'] ?? '');
 
-        app(ReportAuditLogger::class)->reportExported(
-            $user,
-            $storeId,
-            $export,
-            $metadata['scope_name'] ?? '',
-            'sale',
-        );
+        if ($export->type === self::TYPE_BUSINESS) {
+            app(ReportAuditLogger::class)->reportExportedForBusiness($user, $scopeId, $scopeName, $export, 'sale');
+        } else {
+            app(ReportAuditLogger::class)->reportExported($user, $scopeId, $export, $scopeName, 'sale');
+        }
     }
 }

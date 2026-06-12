@@ -122,11 +122,31 @@ class ExportController extends Controller
         ));
     }
 
+    public function queueStockReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->stockReportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractStockReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
     public function queueSaleReport(Request $request, int $storeId): JsonResponse
     {
         return $this->queued(fn () => $this->saleReportService->queueExport(
             $request->user(),
             $storeId,
+            $this->extractSaleReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueSaleReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->saleReportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
             $this->extractSaleReportExportFilters($request),
             $this->extractClientId($request),
         ));
@@ -272,9 +292,15 @@ class ExportController extends Controller
             $columns = null;
         }
 
+        $storeIds = $request->query('store_ids');
+        if (!is_array($storeIds)) {
+            $storeIds = null;
+        }
+
         return [
             'search'               => $request->query('search'),
             'supplier_id'          => $request->query('supplier_id'),
+            'store_ids'            => $storeIds,
             'tag_id'               => $request->query('tag_id'),
             'tag_value_id'         => $request->query('tag_value_id'),
             'min_quantity'         => $request->query('min_quantity'),
@@ -299,9 +325,15 @@ class ExportController extends Controller
             $columns = null;
         }
 
+        $storeIds = $request->query('store_ids');
+        if (!is_array($storeIds)) {
+            $storeIds = null;
+        }
+
         return [
             'search'       => $request->query('search'),
             'customer_id'  => $request->query('customer_id'),
+            'store_ids'    => $storeIds,
             'tag_id'       => $request->query('tag_id'),
             'tag_value_id' => $request->query('tag_value_id'),
             'min_quantity' => $request->query('min_quantity'),

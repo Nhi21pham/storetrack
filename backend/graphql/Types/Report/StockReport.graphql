@@ -1,5 +1,7 @@
 type StockReportRow {
     id: ID!
+    store_id: ID
+    store_name: String
     product_id: ID!
     product_name: String!
     product_code: String

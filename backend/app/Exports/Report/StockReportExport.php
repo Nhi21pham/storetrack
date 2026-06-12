@@ -18,12 +18,14 @@ class StockReportExport extends BaseExport
      * @param  string  $title  e.g. "Stock report of store My Store"
      * @param  string[]  $metaLines
      * @param  string[]|null  $columns  selected column keys; null exports every column
+     * @param  bool  $includeStore  prepend a Store column (consolidated business export)
      */
     public function __construct(
         private Builder $query,
         private string $title,
         private array $metaLines,
         private ?array $columns = null,
+        private bool $includeStore = false,
     ) {}
 
     public function title(): string
@@ -64,6 +66,12 @@ class StockReportExport extends BaseExport
         return $widths;
     }
 
+    /** The Store column is prepended for consolidated business exports, ahead of the selectable columns. */
+    private function storeColumn(): array
+    {
+        return ['heading' => 'Store', 'width' => 24, 'value' => fn (InventoryBatch $row) => (string) ($row->store?->name ?? '')];
+    }
+
     private function columnDefinitions(): array
     {
         return [
@@ -95,16 +103,23 @@ class StockReportExport extends BaseExport
         $definitions = $this->columnDefinitions();
 
         if (empty($this->columns)) {
-            return array_values($definitions);
-        }
-
-        $selected = [];
-        foreach ($definitions as $key => $definition) {
-            if (in_array($key, $this->columns, true)) {
-                $selected[] = $definition;
+            $selected = array_values($definitions);
+        } else {
+            $selected = [];
+            foreach ($definitions as $key => $definition) {
+                if (in_array($key, $this->columns, true)) {
+                    $selected[] = $definition;
+                }
+            }
+            if ($selected === []) {
+                $selected = array_values($definitions);
             }
         }
 
-        return $selected !== [] ? $selected : array_values($definitions);
+        if ($this->includeStore) {
+            return array_merge([$this->storeColumn()], $selected);
+        }
+
+        return $selected;
     }
 }

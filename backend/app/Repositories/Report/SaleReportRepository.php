@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Collection;
  * Reads sold product lines for the sale report. Each row is one line item of a
  * sale invoice, so it carries its product (name/code/tags), the sale invoice
  * (and thus the customer), the sale date, the quantity sold, and the unit price.
+ *
+ * The same row shape serves two scopes: a single store, or every store in a
+ * business (the consolidated owner view, where the invoice's store is loaded so
+ * each row can name its store).
  */
 class SaleReportRepository
 {
@@ -19,7 +23,13 @@ class SaleReportRepository
     /** Every sold line in the store, for the list view. */
     public function all(int $storeId): Collection
     {
-        return $this->baseQuery($storeId)->get();
+        return $this->storeBaseQuery($storeId)->get();
+    }
+
+    /** Every sold line across all of the business's stores, for the consolidated list view. */
+    public function allForBusiness(int $businessId): Collection
+    {
+        return $this->businessBaseQuery($businessId)->get();
     }
 
     /**
@@ -28,8 +38,17 @@ class SaleReportRepository
      */
     public function listQuery(int $storeId, array $filters = []): Builder
     {
-        $query = $this->baseQuery($storeId);
+        return $this->applyFilters($this->storeBaseQuery($storeId), $filters);
+    }
 
+    /** As listQuery(), but scoped to every store in the business. */
+    public function listQueryForBusiness(int $businessId, array $filters = []): Builder
+    {
+        return $this->applyFilters($this->businessBaseQuery($businessId), $filters);
+    }
+
+    private function applyFilters(Builder $query, array $filters): Builder
+    {
         if (isset($filters['min_quantity']) && $filters['min_quantity'] !== null) {
             $query->where('quantity', '>=', (float) $filters['min_quantity']);
         }
@@ -41,6 +60,12 @@ class SaleReportRepository
         if (!empty($filters['customer_id'])) {
             $partyId = (int) $filters['customer_id'];
             $query->whereHas('invoice', fn (Builder $q) => $q->where('party_id', $partyId));
+        }
+
+        // Narrow a consolidated business report to a subset of its stores.
+        if (!empty($filters['store_ids']) && is_array($filters['store_ids'])) {
+            $storeIds = array_map('intval', $filters['store_ids']);
+            $query->whereHas('invoice', fn (Builder $q) => $q->whereIn('store_id', $storeIds));
         }
 
         if (!empty($filters['tag_id'])) {
@@ -83,13 +108,24 @@ class SaleReportRepository
         return $query;
     }
 
-    private function baseQuery(int $storeId): Builder
+    private function storeBaseQuery(int $storeId): Builder
     {
         return InvoiceProduct::query()
             ->with(self::RELATIONS)
             ->whereHas('invoice', fn (Builder $q) => $q
                 ->where('store_id', $storeId)
                 ->where('type', InvoiceTypeEnum::SALE->value))
+            ->orderByDesc('invoice_id')
+            ->orderByDesc('id');
+    }
+
+    private function businessBaseQuery(int $businessId): Builder
+    {
+        return InvoiceProduct::query()
+            ->with(array_merge(self::RELATIONS, ['invoice.store']))
+            ->whereHas('invoice', fn (Builder $q) => $q
+                ->where('type', InvoiceTypeEnum::SALE->value)
+                ->whereHas('store', fn (Builder $s) => $s->where('business_id', $businessId)))
             ->orderByDesc('invoice_id')
             ->orderByDesc('id');
     }
