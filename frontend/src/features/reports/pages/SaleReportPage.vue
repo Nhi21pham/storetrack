@@ -1,13 +1,6 @@
 <template>
   <PageContainer :maxWidth="1200">
-    <PageHeader title="Sale Report" subtitle="Products sold, one row per sale invoice line.">
-      <template v-if="isBusinessOwner" #actions>
-        <div class="view-toggle">
-          <button :class="{ active: scope === 'store' }" @click="switchMode('store')">Store</button>
-          <button :class="{ active: scope === 'business' }" @click="switchMode('business')">Business</button>
-        </div>
-      </template>
-    </PageHeader>
+    <PageHeader title="Sale Report" subtitle="Products sold, one row per sale invoice line." />
 
     <EmptyState
       v-if="scope === 'store' && !currentStore"
@@ -234,8 +227,10 @@ const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 const canManage = computed(() => !!currentStore.value?.is_active)
 
-const scope = ref('store')
 const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
+// Scope follows the store switcher: a selected store → that store's report;
+// "Business level" (owner, no store selected) → consolidated all-stores report.
+const scope = computed(() => (!currentStore.value && isBusinessOwner.value) ? 'business' : 'store')
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'sale-report',
@@ -356,38 +351,13 @@ const { exporting, run } = useExport({
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-const switchMode = (mode) => {
-  if (scope.value === mode) return
-  scope.value = mode
-  storeFilter.value = ''
-  clearSelection()
-}
-
-// Owners landing here with no store selected (business-level selection, or no
-// stores yet) start in the business view instead of the "No store" empty state.
-let initialModeResolved = false
-const applyInitialMode = () => {
-  if (initialModeResolved || !currentBusiness.value) return
-  initialModeResolved = true
-  if (!currentStore.value && currentBusiness.value.role === 'owner') {
-    scope.value = 'business'
-  }
-}
-
 watch([searchQuery, customerFilter, storeFilter, tagFilter, minQty, maxQty, startDate, endDate, () => scope.value, () => sort.sortCriteria.value], resetPage, { deep: true })
-watch(() => currentStore.value?.id, () => { applyInitialMode(); clearSelection() }, { immediate: true })
-watch(() => currentBusiness.value?.id, () => {
-  applyInitialMode()
-  if (!isBusinessOwner.value && scope.value === 'business') scope.value = 'store'
-  clearSelection()
-})
+// Switching store/business (via the switcher) clears the cross-store filter and selection.
+watch(scope, () => { storeFilter.value = '' })
+watch([() => currentStore.value?.id, () => currentBusiness.value?.id], clearSelection)
 </script>
 
 <style scoped>
-.view-toggle { display: flex; background: #f3f4f6; border-radius: 10px; padding: 3px; gap: 2px; }
-.view-toggle button { padding: 7px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; background: none; color: #6b7280; transition: all 0.15s; }
-.view-toggle button.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-
 .toolbar { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
 
