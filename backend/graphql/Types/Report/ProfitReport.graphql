@@ -1,0 +1,22 @@
+type ProfitReportRow {
+    id: ID!
+    store_id: ID
+    store_name: String
+    product_id: ID
+    product_name: String!
+    product_code: String
+    tags: [ProductTag!]!
+    purchase_invoice_id: ID
+    purchase_invoice_code: String
+    purchase_date: DateTime
+    invoice_id: ID
+    invoice_code: String
+    invoice_date: DateTime
+    batch_id: ID
+    quantity: Float!
+    unit_cost: Float!
+    unit_price: Float!
+    revenue: Float!
+    cost: Float!
+    profit: Float!
+}

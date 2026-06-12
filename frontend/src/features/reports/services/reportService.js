@@ -71,3 +71,39 @@ export const startSaleReportExport = ({ storeId, params }) =>
 
 export const startSaleReportBusinessExport = ({ businessId, params }) =>
   rest('post', `/api/exports/sale-report/business/${businessId}`, { params })
+
+const PROFIT_REPORT_FIELDS = `
+  id store_id store_name product_id product_name product_code
+  tags { tag_id tag_name tag_value_id value }
+  purchase_invoice_id purchase_invoice_code purchase_date
+  invoice_id invoice_code invoice_date
+  batch_id quantity unit_cost unit_price revenue cost profit
+`
+
+const PROFIT_REPORT_QUERY = `
+  query ProfitReport($store_id: ID!) {
+    profitReport(store_id: $store_id) { ${PROFIT_REPORT_FIELDS} }
+  }
+`
+
+const PROFIT_REPORT_BUSINESS_QUERY = `
+  query ProfitReportByBusiness($business_id: ID!) {
+    profitReportByBusiness(business_id: $business_id) { ${PROFIT_REPORT_FIELDS} }
+  }
+`
+
+export const fetchProfitReport = async ({ storeId }) => {
+  const data = await graphql(PROFIT_REPORT_QUERY, { store_id: storeId })
+  return data.profitReport
+}
+
+export const fetchProfitReportByBusiness = async ({ businessId }) => {
+  const data = await graphql(PROFIT_REPORT_BUSINESS_QUERY, { business_id: businessId })
+  return data.profitReportByBusiness
+}
+
+export const startProfitReportExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/profit-report/${storeId}`, { params })
+
+export const startProfitReportBusinessExport = ({ businessId, params }) =>
+  rest('post', `/api/exports/profit-report/business/${businessId}`, { params })

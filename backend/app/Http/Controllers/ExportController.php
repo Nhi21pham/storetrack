@@ -11,6 +11,7 @@ use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\Invoice\InvoiceService;
 use App\Services\ProductService;
+use App\Services\Report\ProfitReportService;
 use App\Services\Report\SaleReportService;
 use App\Services\Report\StockReportService;
 use App\Services\SupplierService;
@@ -35,6 +36,7 @@ class ExportController extends Controller
         private InvoiceService $invoiceService,
         private StockReportService $stockReportService,
         private SaleReportService $saleReportService,
+        private ProfitReportService $profitReportService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -148,6 +150,26 @@ class ExportController extends Controller
             $request->user(),
             $businessId,
             $this->extractSaleReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueProfitReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->profitReportService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractProfitReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueProfitReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->profitReportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractProfitReportExportFilters($request),
             $this->extractClientId($request),
         ));
     }
@@ -333,6 +355,37 @@ class ExportController extends Controller
         return [
             'search'       => $request->query('search'),
             'customer_id'  => $request->query('customer_id'),
+            'store_ids'    => $storeIds,
+            'tag_id'       => $request->query('tag_id'),
+            'tag_value_id' => $request->query('tag_value_id'),
+            'min_quantity' => $request->query('min_quantity'),
+            'max_quantity' => $request->query('max_quantity'),
+            'start_date'   => $request->query('start_date'),
+            'end_date'     => $request->query('end_date'),
+            'ids'          => $ids,
+            'columns'      => $columns,
+        ];
+    }
+
+    private function extractProfitReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        $storeIds = $request->query('store_ids');
+        if (!is_array($storeIds)) {
+            $storeIds = null;
+        }
+
+        return [
+            'search'       => $request->query('search'),
             'store_ids'    => $storeIds,
             'tag_id'       => $request->query('tag_id'),
             'tag_value_id' => $request->query('tag_value_id'),

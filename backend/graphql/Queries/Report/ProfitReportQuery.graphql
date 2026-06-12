@@ -1,0 +1,9 @@
+extend type Query {
+    profitReport(store_id: ID!): [ProfitReportRow!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\ProfitReportResolver@all")
+
+    profitReportByBusiness(business_id: ID!): [ProfitReportRow!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\ProfitReportResolver@allForBusiness")
+}

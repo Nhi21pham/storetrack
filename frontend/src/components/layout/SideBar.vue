@@ -46,6 +46,7 @@
         <div class="submenu" :class="{ open: reportsOpen }">
           <router-link to="/reports/sales" class="submenu-item" :class="{ active: isActive('/reports/sales') }" @click="$emit('close')">Sales Report</router-link>
           <router-link to="/reports/stock" class="submenu-item" :class="{ active: isActive('/reports/stock') }" @click="$emit('close')">Stock Report</router-link>
+          <router-link to="/reports/profit" class="submenu-item" :class="{ active: isActive('/reports/profit') }" @click="$emit('close')">Profit Report</router-link>
           <div class="submenu-item">Revenue Report</div>
           <div class="submenu-item">Customer Report</div>
         </div>
