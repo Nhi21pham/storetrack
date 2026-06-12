@@ -1,5 +1,10 @@
 export { formatMoney, formatQuantity, formatInvoiceDate as formatDate } from '@/features/invoices/constants'
 
+// Shown only in the consolidated business view, where the same product spans
+// multiple stores; inserted right after the leading select column.
+export const REPORT_STORE_COLUMN = { key: 'store_name', label: 'Store', sortable: true }
+export const REPORT_STORE_COLUMN_WIDTH = 170
+
 export const STOCK_REPORT_COLUMNS = [
   { key: 'select',             label: '',                 sortable: false },
   { key: 'product_name',       label: 'Product',          sortable: true  },

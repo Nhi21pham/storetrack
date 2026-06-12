@@ -1,11 +1,24 @@
 <template>
   <PageContainer :maxWidth="1200">
-    <PageHeader title="Stock Report" subtitle="Inventory on hand, one row per purchase lot." />
+    <PageHeader title="Stock Report" subtitle="Inventory on hand, one row per purchase lot.">
+      <template v-if="isBusinessOwner" #actions>
+        <div class="view-toggle">
+          <button :class="{ active: scope === 'store' }" @click="switchMode('store')">Store</button>
+          <button :class="{ active: scope === 'business' }" @click="switchMode('business')">Business</button>
+        </div>
+      </template>
+    </PageHeader>
 
     <EmptyState
-      v-if="!currentStore"
+      v-if="scope === 'store' && !currentStore"
       title="No store selected"
       description="Select a store to view its stock report."
+    />
+
+    <EmptyState
+      v-else-if="scope === 'business' && !currentBusiness"
+      title="No business selected"
+      description="Select a business to view its consolidated stock report."
     />
 
     <template v-else>
@@ -43,8 +56,8 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
-          <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
+        <ResizableTable :key="tableKey" :columns="tableColumns" :initial-widths="tableWidths">
+          <template v-for="col in tableColumns" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
@@ -62,6 +75,16 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
+          <template #filter-store_name>
+            <SearchableSelect
+              :modelValue="storeFilter"
+              :options="storeOptions"
+              all-label="(All stores)"
+              search-placeholder="Filter store..."
+              teleport
+              @update:modelValue="storeFilter = $event"
+            />
+          </template>
           <template #filter-tags>
             <SearchableSelect
               :modelValue="tagFilter"
@@ -90,13 +113,17 @@
           </template>
 
           <tr v-if="sortedRows.length === 0">
-            <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
+            <td :colspan="tableColumns.length" class="empty-row">
               No stock matches the current filters.
             </td>
           </tr>
           <tr v-for="row in paginatedRows" :key="row.id" :class="{ 'row-selected': isSelected(row.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(row.id)" @change="toggleRow(row.id)" />
+            </td>
+            <td v-if="scope === 'business'">
+              <span v-if="row.store_name">{{ row.store_name }}</span>
+              <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('product_name')">{{ row.product_name }}</td>
             <td v-if="columnVisibility.isVisible('product_code')">
@@ -199,18 +226,23 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
-import { startStockReportExport } from '@/features/reports/services/reportService'
+import { startStockReportExport, startStockReportBusinessExport } from '@/features/reports/services/reportService'
 import { fetchProduct } from '@/features/products/services/productService'
 import { fetchInvoice } from '@/features/invoices/services/invoiceService'
 import {
   STOCK_REPORT_COLUMNS, STOCK_REPORT_INITIAL_COL_WIDTHS,
+  REPORT_STORE_COLUMN, REPORT_STORE_COLUMN_WIDTH,
   formatMoney, formatQuantity, formatDate,
 } from '@/features/reports/constants'
 
 const router = useRouter()
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
+const currentBusiness = inject('currentBusiness')
 const canManage = computed(() => !!currentStore.value?.is_active)
+
+const scope = ref('store')
+const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'stock-report',
@@ -218,14 +250,35 @@ const columnVisibility = useColumnVisibility({
   lockedKeys: ['select'],
 })
 const visibleWidths = computed(() => columnVisibility.filterWidths(STOCK_REPORT_INITIAL_COL_WIDTHS))
-const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
+
+// In business scope the Store column is inserted right after the leading select
+// column (it is not user-togglable — it's what disambiguates rows across stores).
+const tableColumns = computed(() => {
+  const cols = columnVisibility.visibleColumns.value
+  if (scope.value !== 'business') return cols
+  const out = [...cols]
+  const idx = out.findIndex((c) => c.key === 'select')
+  out.splice(idx + 1, 0, REPORT_STORE_COLUMN)
+  return out
+})
+const tableWidths = computed(() => {
+  if (scope.value !== 'business') return visibleWidths.value
+  const cols = columnVisibility.visibleColumns.value
+  const idx = cols.findIndex((c) => c.key === 'select')
+  const out = [...visibleWidths.value]
+  out.splice(idx + 1, 0, REPORT_STORE_COLUMN_WIDTH)
+  return out
+})
+const tableKey = computed(() => [scope.value, ...columnVisibility.visibleColumnKeys.value].join('|'))
 
 const {
-  rows, loading, searchQuery, supplierFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
+  rows, loading, searchQuery, supplierFilter, storeFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
   hasActiveFilters, clearFilters,
-  sortedRows, supplierOptions, tagOptions, totals, sort, load,
+  sortedRows, supplierOptions, storeOptions, tagOptions, totals, sort, load,
 } = useStockReport({
   currentStore,
+  currentBusiness,
+  scope,
   onError: (msg) => showToast(msg, 'error'),
 })
 
@@ -300,6 +353,10 @@ const { exporting, run } = useExport({
     params.columns = columnVisibility.togglableColumns
       .filter((col) => columnVisibility.isVisible(col.key))
       .map((col) => col.key)
+    if (scope.value === 'business') {
+      if (storeFilter.value) params.store_ids = [storeFilter.value]
+      return startStockReportBusinessExport({ businessId: currentBusiness.value.id, params })
+    }
     return startStockReportExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `stock-report-${id}.xlsx`,
@@ -307,11 +364,38 @@ const { exporting, run } = useExport({
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-watch([searchQuery, supplierFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate, () => sort.sortCriteria.value], resetPage, { deep: true })
-watch(() => currentStore.value?.id, clearSelection)
+const switchMode = (mode) => {
+  if (scope.value === mode) return
+  scope.value = mode
+  storeFilter.value = ''
+  clearSelection()
+}
+
+// Owners landing here with no store selected (business-level selection, or no
+// stores yet) start in the business view instead of the "No store" empty state.
+let initialModeResolved = false
+const applyInitialMode = () => {
+  if (initialModeResolved || !currentBusiness.value) return
+  initialModeResolved = true
+  if (!currentStore.value && currentBusiness.value.role === 'owner') {
+    scope.value = 'business'
+  }
+}
+
+watch([searchQuery, supplierFilter, storeFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate, () => scope.value, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch(() => currentStore.value?.id, () => { applyInitialMode(); clearSelection() }, { immediate: true })
+watch(() => currentBusiness.value?.id, () => {
+  applyInitialMode()
+  if (!isBusinessOwner.value && scope.value === 'business') scope.value = 'store'
+  clearSelection()
+})
 </script>
 
 <style scoped>
+.view-toggle { display: flex; background: #f3f4f6; border-radius: 10px; padding: 3px; gap: 2px; }
+.view-toggle button { padding: 7px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; background: none; color: #6b7280; transition: all 0.15s; }
+.view-toggle button.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
 .toolbar { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
 

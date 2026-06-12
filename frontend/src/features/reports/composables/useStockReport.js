@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import { fetchStockReport } from '@/features/reports/services/reportService'
+import { fetchStockReport, fetchStockReportByBusiness } from '@/features/reports/services/reportService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 
 const NUMERIC_KEYS = new Set(['quantity_received', 'quantity_remaining', 'unit_cost', 'total_cost'])
@@ -17,15 +17,17 @@ const matchesSearch = (row, query) => {
     (row.product_name || '').toLowerCase().includes(q) ||
     (row.product_code || '').toLowerCase().includes(q) ||
     (row.supplier_name || '').toLowerCase().includes(q) ||
-    (row.invoice_code || '').toLowerCase().includes(q)
+    (row.invoice_code || '').toLowerCase().includes(q) ||
+    (row.store_name || '').toLowerCase().includes(q)
   )
 }
 
-export const useStockReport = ({ currentStore, onError }) => {
+export const useStockReport = ({ currentStore, currentBusiness, scope, onError }) => {
   const rows              = ref([])
   const loading           = ref(false)
   const searchQuery       = ref('')
   const supplierFilter    = ref('')
+  const storeFilter       = ref('')
   const tagFilter         = ref('')
   const minQty            = ref('')
   const maxQty            = ref('')
@@ -33,13 +35,16 @@ export const useStockReport = ({ currentStore, onError }) => {
   const startDate         = ref('')
   const endDate           = ref('')
 
+  const isBusinessScope = computed(() => scope?.value === 'business')
+
   const hasActiveFilters = computed(() =>
-    !!(supplierFilter.value || tagFilter.value || minQty.value !== '' || maxQty.value !== '' ||
+    !!(supplierFilter.value || storeFilter.value || tagFilter.value || minQty.value !== '' || maxQty.value !== '' ||
        includeOutOfStock.value || startDate.value || endDate.value),
   )
 
   const clearFilters = () => {
     supplierFilter.value = ''
+    storeFilter.value = ''
     tagFilter.value = ''
     minQty.value = ''
     maxQty.value = ''
@@ -56,6 +61,9 @@ export const useStockReport = ({ currentStore, onError }) => {
     }
     if (supplierFilter.value) {
       list = list.filter((r) => String(r.supplier_party_id) === supplierFilter.value)
+    }
+    if (storeFilter.value) {
+      list = list.filter((r) => String(r.store_id) === storeFilter.value)
     }
     if (tagFilter.value) {
       const [kind, id] = tagFilter.value.split(':')
@@ -104,6 +112,16 @@ export const useStockReport = ({ currentStore, onError }) => {
     return Array.from(seen, ([value, label]) => ({ value, label }))
   })
 
+  // Distinct stores present in the loaded rows, for the column filter (business scope only).
+  const storeOptions = computed(() => {
+    const seen = new Map()
+    for (const r of rows.value) {
+      const id = r.store_id != null ? String(r.store_id) : null
+      if (id && !seen.has(id)) seen.set(id, r.store_name || `#${id}`)
+    }
+    return Array.from(seen, ([value, label]) => ({ value, label }))
+  })
+
   // Tags present in the loaded rows: each tag offers an "(any)" option plus one
   // per distinct value. Filter value is "tag:<id>" or "val:<id>" (mirrors products).
   const tagOptions = computed(() => {
@@ -141,10 +159,15 @@ export const useStockReport = ({ currentStore, onError }) => {
   })
 
   const load = async () => {
-    if (!currentStore.value?.id) return
+    const businessScope = isBusinessScope.value
+    const id = businessScope ? currentBusiness?.value?.id : currentStore.value?.id
+    if (!id) return
+
     loading.value = true
     try {
-      rows.value = await fetchStockReport({ storeId: currentStore.value.id })
+      rows.value = businessScope
+        ? await fetchStockReportByBusiness({ businessId: id })
+        : await fetchStockReport({ storeId: id })
     } catch (err) {
       onError?.(err.message)
     } finally {
@@ -152,14 +175,20 @@ export const useStockReport = ({ currentStore, onError }) => {
     }
   }
 
-  watch(() => currentStore.value?.id, (id) => {
-    if (id) load()
-  }, { immediate: true })
+  // Reload whenever the active scope or its selected store/business changes.
+  watch(
+    [() => scope?.value, () => currentStore.value?.id, () => currentBusiness?.value?.id],
+    () => {
+      const id = isBusinessScope.value ? currentBusiness?.value?.id : currentStore.value?.id
+      if (id) load()
+    },
+    { immediate: true },
+  )
 
   return {
-    rows, loading, searchQuery, supplierFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
+    rows, loading, searchQuery, supplierFilter, storeFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
     hasActiveFilters, clearFilters,
-    baseRows, filteredRows, sortedRows, supplierOptions, tagOptions, totals,
+    baseRows, filteredRows, sortedRows, supplierOptions, storeOptions, tagOptions, totals,
     sort, load,
   }
 }

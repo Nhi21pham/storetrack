@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import { fetchSaleReport } from '@/features/reports/services/reportService'
+import { fetchSaleReport, fetchSaleReportByBusiness } from '@/features/reports/services/reportService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 
 const NUMERIC_KEYS = new Set(['quantity', 'unit_price', 'total_sale'])
@@ -17,28 +17,33 @@ const matchesSearch = (row, query) => {
     (row.product_name || '').toLowerCase().includes(q) ||
     (row.product_code || '').toLowerCase().includes(q) ||
     (row.customer_name || '').toLowerCase().includes(q) ||
-    (row.invoice_code || '').toLowerCase().includes(q)
+    (row.invoice_code || '').toLowerCase().includes(q) ||
+    (row.store_name || '').toLowerCase().includes(q)
   )
 }
 
-export const useSaleReport = ({ currentStore, onError }) => {
+export const useSaleReport = ({ currentStore, currentBusiness, scope, onError }) => {
   const rows           = ref([])
   const loading        = ref(false)
   const searchQuery    = ref('')
   const customerFilter = ref('')
+  const storeFilter    = ref('')
   const tagFilter      = ref('')
   const minQty         = ref('')
   const maxQty         = ref('')
   const startDate      = ref('')
   const endDate        = ref('')
 
+  const isBusinessScope = computed(() => scope?.value === 'business')
+
   const hasActiveFilters = computed(() =>
-    !!(customerFilter.value || tagFilter.value || minQty.value !== '' || maxQty.value !== '' ||
+    !!(customerFilter.value || storeFilter.value || tagFilter.value || minQty.value !== '' || maxQty.value !== '' ||
        startDate.value || endDate.value),
   )
 
   const clearFilters = () => {
     customerFilter.value = ''
+    storeFilter.value = ''
     tagFilter.value = ''
     minQty.value = ''
     maxQty.value = ''
@@ -51,6 +56,9 @@ export const useSaleReport = ({ currentStore, onError }) => {
 
     if (customerFilter.value) {
       list = list.filter((r) => String(r.customer_party_id) === customerFilter.value)
+    }
+    if (storeFilter.value) {
+      list = list.filter((r) => String(r.store_id) === storeFilter.value)
     }
     if (tagFilter.value) {
       const [kind, id] = tagFilter.value.split(':')
@@ -99,6 +107,16 @@ export const useSaleReport = ({ currentStore, onError }) => {
     return Array.from(seen, ([value, label]) => ({ value, label }))
   })
 
+  // Distinct stores present in the loaded rows, for the column filter (business scope only).
+  const storeOptions = computed(() => {
+    const seen = new Map()
+    for (const r of rows.value) {
+      const id = r.store_id != null ? String(r.store_id) : null
+      if (id && !seen.has(id)) seen.set(id, r.store_name || `#${id}`)
+    }
+    return Array.from(seen, ([value, label]) => ({ value, label }))
+  })
+
   // Tags present in the loaded rows: each tag offers an "(any)" option plus one
   // per distinct value. Filter value is "tag:<id>" or "val:<id>" (mirrors products).
   const tagOptions = computed(() => {
@@ -132,10 +150,15 @@ export const useSaleReport = ({ currentStore, onError }) => {
   })
 
   const load = async () => {
-    if (!currentStore.value?.id) return
+    const businessScope = isBusinessScope.value
+    const id = businessScope ? currentBusiness?.value?.id : currentStore.value?.id
+    if (!id) return
+
     loading.value = true
     try {
-      rows.value = await fetchSaleReport({ storeId: currentStore.value.id })
+      rows.value = businessScope
+        ? await fetchSaleReportByBusiness({ businessId: id })
+        : await fetchSaleReport({ storeId: id })
     } catch (err) {
       onError?.(err.message)
     } finally {
@@ -143,14 +166,20 @@ export const useSaleReport = ({ currentStore, onError }) => {
     }
   }
 
-  watch(() => currentStore.value?.id, (id) => {
-    if (id) load()
-  }, { immediate: true })
+  // Reload whenever the active scope or its selected store/business changes.
+  watch(
+    [() => scope?.value, () => currentStore.value?.id, () => currentBusiness?.value?.id],
+    () => {
+      const id = isBusinessScope.value ? currentBusiness?.value?.id : currentStore.value?.id
+      if (id) load()
+    },
+    { immediate: true },
+  )
 
   return {
-    rows, loading, searchQuery, customerFilter, tagFilter, minQty, maxQty, startDate, endDate,
+    rows, loading, searchQuery, customerFilter, storeFilter, tagFilter, minQty, maxQty, startDate, endDate,
     hasActiveFilters, clearFilters,
-    baseRows, filteredRows, sortedRows, customerOptions, tagOptions, totals,
+    baseRows, filteredRows, sortedRows, customerOptions, storeOptions, tagOptions, totals,
     sort, load,
   }
 }
