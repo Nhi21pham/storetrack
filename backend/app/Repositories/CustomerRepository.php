@@ -20,6 +20,13 @@ class CustomerRepository
         $customer->stores()->attach($storeId);
     }
 
+    /** Link the customer (by party) to a store it transacted at, idempotently. */
+    public function attachStoreByParty(int $partyId, int $storeId): void
+    {
+        $customer = Customer::where('party_id', $partyId)->first();
+        $customer?->stores()->syncWithoutDetaching([$storeId]);
+    }
+
     public function findById(int $id): ?Customer
     {
         return Customer::find($id);
@@ -61,7 +68,10 @@ class CustomerRepository
             ->with('party')
             ->where('business_id', $businessId)
             ->select('customers.*')
-            ->addSelect(['outstanding' => $this->outstandingSubquery($storeId)])
+            ->addSelect([
+                'outstanding'          => $this->outstandingSubquery($storeId),
+                'business_outstanding' => $this->outstandingSubquery(null),
+            ])
             ->latest()
             ->get();
     }

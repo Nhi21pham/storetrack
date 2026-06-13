@@ -46,6 +46,10 @@
         <span v-if="customer.address" :title="customer.address" class="truncate">{{ customer.address }}</span>
         <span v-else class="empty-val">—</span>
       </td>
+      <td v-if="isVisible('outstanding')">
+        <span v-if="Number(customer.outstanding) > 0" class="owed">{{ formatMoney(customer.outstanding) }}</span>
+        <span v-else class="empty-val">—</span>
+      </td>
       <td class="actions-col">
         <div v-if="rowActionsEnabled && canManageRow(customer)" class="row-actions">
           <button class="action-btn" @click="$emit('edit', customer)" title="Edit">
@@ -66,6 +70,7 @@ import ResizableTable from '@/components/common/ResizableTable.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import Icon from '@/components/common/Icon.vue'
+import { formatMoney } from '@/features/invoices/constants'
 
 const props = defineProps({
   customers:           { type: Array,   required: true },
@@ -95,6 +100,7 @@ defineEmits([
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .mono { font-family: monospace; font-size: 13px; }
 .empty-val { color: #d1d5db; }
+.owed { font-weight: 600; color: #b45309; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 tbody tr.row-selected { background: #f0f7ff; }

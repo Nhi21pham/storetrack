@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Repositories\Invoice\InventoryBatchRepository;
+use App\Repositories\SupplierRepository;
 use App\Services\Invoice\InventoryCostingService;
 
 class PurchaseStockHandler implements InvoiceStockHandler
@@ -17,6 +18,7 @@ class PurchaseStockHandler implements InvoiceStockHandler
     public function __construct(
         private InventoryCostingService $costingService,
         private InventoryBatchRepository $batchRepository,
+        private SupplierRepository $supplierRepository,
     ) {}
 
     public function assertParty(int $partyId, int $storeId): void
@@ -36,6 +38,12 @@ class PurchaseStockHandler implements InvoiceStockHandler
                 'Supplier not found in this business.'
             );
         }
+    }
+
+    /** A purchase at this store links the supplier to it, so it shows under the store. */
+    public function linkPartyToStore(int $partyId, int $storeId): void
+    {
+        $this->supplierRepository->attachStoreByParty($partyId, $storeId);
     }
 
     /**

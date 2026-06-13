@@ -20,6 +20,13 @@ class SupplierRepository
         $supplier->stores()->attach($storeId);
     }
 
+    /** Link the supplier (by party) to a store it transacted at, idempotently. */
+    public function attachStoreByParty(int $partyId, int $storeId): void
+    {
+        $supplier = Supplier::where('party_id', $partyId)->first();
+        $supplier?->stores()->syncWithoutDetaching([$storeId]);
+    }
+
     public function findById(int $id): ?Supplier
     {
         return Supplier::find($id);
@@ -61,7 +68,10 @@ class SupplierRepository
             ->with('party')
             ->where('business_id', $businessId)
             ->select('suppliers.*')
-            ->addSelect(['outstanding' => $this->outstandingSubquery($storeId)])
+            ->addSelect([
+                'outstanding'          => $this->outstandingSubquery($storeId),
+                'business_outstanding' => $this->outstandingSubquery(null),
+            ])
             ->latest()
             ->get();
     }

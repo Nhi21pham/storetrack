@@ -16,6 +16,9 @@ interface InvoiceStockHandler
     /** Validate that the party is a legitimate counterparty for this invoice type. */
     public function assertParty(int $partyId, int $storeId): void;
 
+    /** Link the party to this store — it has now transacted here. */
+    public function linkPartyToStore(int $partyId, int $storeId): void;
+
     /** Apply one line's effect on inventory (a purchase adds stock; a sale draws it down). */
     public function applyLine(
         Invoice $invoice,

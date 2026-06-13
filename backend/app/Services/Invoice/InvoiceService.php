@@ -109,6 +109,7 @@ class InvoiceService
 
         return DB::transaction(function () use ($actor, $storeId, $type, $data, $items, $handler) {
             $handler->assertParty((int) $data['party_id'], $storeId);
+            $handler->linkPartyToStore((int) $data['party_id'], $storeId);
 
             $invoice = $this->createHeader($actor, $storeId, $type, $data);
 
@@ -142,6 +143,7 @@ class InvoiceService
             $this->assertType($invoice, $type);
             $this->assertNoPayments($invoice);
             $handler->assertParty((int) $data['party_id'], $storeId);
+            $handler->linkPartyToStore((int) $data['party_id'], $storeId);
 
             // Reverse the invoice's old stock effects, then re-apply the new lines from scratch.
             $handler->reverse($invoice);

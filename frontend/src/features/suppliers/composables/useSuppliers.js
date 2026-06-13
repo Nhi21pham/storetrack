@@ -8,6 +8,7 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 
 const getSortValue = (supplier, key) => {
   if (key === 'id') return Number(supplier.id)
+  if (key === 'outstanding') return Number(supplier.outstanding || 0)
   const value = supplier[key]
   return value == null ? '' : String(value).toLowerCase()
 }
@@ -37,26 +38,40 @@ export const useSuppliers = ({ currentStore, currentBusiness, onError }) => {
     return role === 'owner' || role === 'accountant'
   })
 
-  // Suppliers can be visible from "all stores" view but only managed when
-  // they belong to a store the user has access to — business owners override.
+  // A supplier belongs to the current store if it's linked via the stores pivot —
+  // that covers the store it was created at plus any store it has transacted at.
+  const inCurrentStore = (supplier) => {
+    const storeId = String(currentStore.value?.id)
+    return (supplier.stores || []).some((s) => String(s.id) === storeId)
+  }
+
   const canManageRow = (supplier) => {
     if (isBusinessOwner.value) return true
     if (!currentStore.value?.id) return false
-    const storeIdStr = String(currentStore.value.id)
-    return (supplier.stores || []).some((s) => String(s.id) === storeIdStr)
+    return inCurrentStore(supplier)
   }
 
+  // Outstanding follows the view: the current store's balance under "this store",
+  // the business-wide total under "all stores".
+  const withScopedOutstanding = (supplier) => ({
+    ...supplier,
+    outstanding: storeFilter.value === 'store'
+      ? Number(supplier.outstanding || 0)
+      : Number(supplier.business_outstanding || 0),
+  })
+
   const baseSuppliers = computed(() => {
-    const storeId = String(currentStore.value?.id)
     if (storeFilter.value === 'store') {
-      return suppliers.value.filter((s) => String(s.store_id) === storeId)
+      return suppliers.value.filter(inCurrentStore).map(withScopedOutstanding)
     }
-    return [...suppliers.value].sort((a, b) => {
-      const aOwn = String(a.store_id) === storeId
-      const bOwn = String(b.store_id) === storeId
-      if (aOwn !== bOwn) return aOwn ? -1 : 1
-      return Number(a.id) - Number(b.id)
-    })
+    return [...suppliers.value]
+      .sort((a, b) => {
+        const aOwn = inCurrentStore(a)
+        const bOwn = inCurrentStore(b)
+        if (aOwn !== bOwn) return aOwn ? -1 : 1
+        return Number(a.id) - Number(b.id)
+      })
+      .map(withScopedOutstanding)
   })
 
   const filteredSuppliers = computed(() => {

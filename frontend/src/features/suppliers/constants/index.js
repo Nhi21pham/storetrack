@@ -10,4 +10,4 @@ export const SUPPLIER_COLUMNS = [
   { key: 'actions',     label: '',            sortable: false },
 ]
 
-export const SUPPLIER_INITIAL_COL_WIDTHS = [40, 70, 160, 120, 190, 130, 220, 130, 80]
+export const SUPPLIER_INITIAL_COL_WIDTHS = [40, 70, 150, 110, 160, 120, 170, 130, 80]

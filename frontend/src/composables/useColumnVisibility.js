@@ -2,20 +2,26 @@ import { ref, computed, watch } from 'vue'
 
 const STORAGE_PREFIX = 'columns:'
 
-const readStored = (storageKey) => {
+// Persist the HIDDEN columns (not the visible ones) as { hidden: [...] }. Anything
+// not listed is visible — so a column added to a table later shows by default
+// instead of being hidden for everyone who used the page before it existed.
+// The old format (a plain array of visible keys) is ignored — treated as
+// "nothing hidden" — so it migrates cleanly to all-visible.
+const readHidden = (storageKey, togglableKeys) => {
   try {
-    const raw = localStorage.getItem(STORAGE_PREFIX + storageKey)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : null
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storageKey) || 'null')
+    if (parsed && Array.isArray(parsed.hidden)) {
+      return parsed.hidden.filter((k) => togglableKeys.includes(k))
+    }
+    return []
   } catch {
-    return null
+    return []
   }
 }
 
-const writeStored = (storageKey, keys) => {
+const writeHidden = (storageKey, hiddenKeys) => {
   try {
-    localStorage.setItem(STORAGE_PREFIX + storageKey, JSON.stringify(keys))
+    localStorage.setItem(STORAGE_PREFIX + storageKey, JSON.stringify({ hidden: hiddenKeys }))
   } catch {
     /* ignore quota / privacy errors */
   }
@@ -24,21 +30,15 @@ const writeStored = (storageKey, keys) => {
 export const useColumnVisibility = ({ storageKey, columns, lockedKeys = [] }) => {
   const lockedSet = new Set(lockedKeys)
 
-  const allKeys = columns.map(c => c.key)
-  const togglableKeys = allKeys.filter(k => !lockedSet.has(k))
+  const togglableKeys = columns.map((c) => c.key).filter((k) => !lockedSet.has(k))
 
-  const stored = readStored(storageKey)
-  const initialHidden = stored
-    ? togglableKeys.filter(k => !stored.includes(k))
-    : []
-
-  const hiddenKeys = ref(new Set(initialHidden))
+  const hiddenKeys = ref(new Set(readHidden(storageKey, togglableKeys)))
 
   const isVisible = (key) => !hiddenKeys.value.has(key)
 
-  const visibleColumns = computed(() => columns.filter(c => isVisible(c.key)))
+  const visibleColumns = computed(() => columns.filter((c) => isVisible(c.key)))
 
-  const visibleColumnKeys = computed(() => visibleColumns.value.map(c => c.key))
+  const visibleColumnKeys = computed(() => visibleColumns.value.map((c) => c.key))
 
   const toggleColumn = (key) => {
     if (lockedSet.has(key)) return
@@ -52,8 +52,8 @@ export const useColumnVisibility = ({ storageKey, columns, lockedKeys = [] }) =>
     hiddenKeys.value = new Set()
   }
 
-  watch(visibleColumnKeys, (keys) => {
-    writeStored(storageKey, keys)
+  watch(hiddenKeys, (keys) => {
+    writeHidden(storageKey, [...keys])
   })
 
   const filterWidths = (allWidths) => {
