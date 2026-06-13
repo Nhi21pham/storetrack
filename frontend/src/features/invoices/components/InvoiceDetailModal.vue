@@ -65,6 +65,8 @@
           <div class="t-row"><span>Subtotal</span><span>{{ formatMoney(invoice.subtotal) }}</span></div>
           <div class="t-row"><span>Tax</span><span>{{ formatMoney(invoice.tax_total) }}</span></div>
           <div class="t-row grand"><span>Grand total</span><span>{{ formatMoney(invoice.grand_total) }}</span></div>
+          <div class="t-row"><span>Paid</span><span>{{ formatMoney(invoice.paid_amount) }}</span></div>
+          <div class="t-row" :style="Number(invoice.balance) > 0 ? 'color:#b45309;font-weight:600' : null"><span>Balance</span><span>{{ formatMoney(invoice.balance) }}</span></div>
           <div v-if="isSale" class="t-row cogs"><span>Cost of goods</span><span>{{ formatMoney(costTotal) }}</span></div>
         </div>
       </div>

@@ -89,6 +89,11 @@
         </div>
       </div>
 
+      <router-link to="/payments" class="menu-item" :class="{ active: isActive('/payments') }" @click="$emit('close')">
+        <Icon name="invoice" :size="18" />
+        Payments
+      </router-link>
+
       <div class="menu-item has-sub" @mouseenter="openOthers" @mouseleave="closeOthersSoon">
         <div class="menu-item-inner">
           <Icon name="more" :size="18" />

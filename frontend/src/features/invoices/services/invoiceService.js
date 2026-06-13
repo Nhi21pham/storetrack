@@ -2,13 +2,13 @@ import { graphql, rest } from '@/api'
 
 const INVOICE_LIST_FIELDS = `
   id store_id type code party_id party_name created_by description
-  invoice_date payment_method payment_status subtotal tax_total grand_total
+  invoice_date payment_method payment_status subtotal tax_total grand_total paid_amount balance
   created_at updated_at
 `
 
 const INVOICE_DETAIL_FIELDS = `
   id store_id type code party_id party_name created_by description
-  invoice_date payment_method payment_status subtotal tax_total grand_total
+  invoice_date payment_method payment_status subtotal tax_total grand_total paid_amount balance
   created_at updated_at
   items {
     id product_id product_name quantity unit_price subtotal tax_total grand_total

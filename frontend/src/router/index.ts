@@ -27,6 +27,7 @@ import SaleInvoiceCreatePage from '@/features/invoices/pages/SaleInvoiceCreatePa
 import StockReportPage from '@/features/reports/pages/StockReportPage.vue'
 import SaleReportPage from '@/features/reports/pages/SaleReportPage.vue'
 import ProfitReportPage from '@/features/reports/pages/ProfitReportPage.vue'
+import PaymentsPage from '@/features/payments/pages/PaymentsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -256,6 +257,17 @@ const router = createRouter({
             breadcrumb: [
               { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Customers' },
+            ],
+          },
+        },
+        {
+          path: 'payments',
+          name: 'payments',
+          component: PaymentsPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Payments' },
             ],
           },
         },
