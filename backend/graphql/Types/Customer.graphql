@@ -8,6 +8,7 @@ type Customer {
     tax_code: String
     party: Party! @belongsTo
     stores: [Store!]! @belongsToMany
+    outstanding: Float
     created_at: DateTime!
     updated_at: DateTime!
 }

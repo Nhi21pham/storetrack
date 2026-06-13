@@ -96,6 +96,18 @@ class InvoiceRepository
         return Invoice::whereKey($id)->lockForUpdate()->first();
     }
 
+    /** A party's still-owing invoices of a type in a store, oldest first — for the payment allocation picker. */
+    public function openForParty(int $storeId, int $partyId, string $type): Collection
+    {
+        return Invoice::where('store_id', $storeId)
+            ->where('party_id', $partyId)
+            ->where('type', $type)
+            ->whereColumn('paid_amount', '<', 'grand_total')
+            ->orderBy('invoice_date')
+            ->orderBy('id')
+            ->get();
+    }
+
     public function update(Invoice $invoice, array $data): Invoice
     {
         $invoice->update($data);

@@ -40,7 +40,7 @@ class SupplierService
             throw new AuthorizationException('You do not have access to this store.');
         }
 
-        return $this->supplierRepository->all($businessId);
+        return $this->supplierRepository->all($businessId, $storeId);
     }
 
     public function getById(int $id): Supplier

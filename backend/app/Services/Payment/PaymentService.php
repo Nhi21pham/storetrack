@@ -41,6 +41,14 @@ class PaymentService
         return $this->paymentRepository->allForParty($storeId, $partyId);
     }
 
+    /** The party's still-owing invoices in this store — the options for a record-payment allocation. */
+    public function getOpenInvoices(User $user, int $storeId, int $partyId): Collection
+    {
+        $this->permissionService->authorizeStore($user, PermissionEnum::CREATE_PAYMENT, $storeId);
+        $type = $this->resolveLedger($partyId, $storeId);
+        return $this->invoiceRepository->openForParty($storeId, $partyId, $type->value);
+    }
+
     /**
      * Record a payment against a party and apply it to the invoices the caller
      * chose, in the amounts they specified. Each targeted invoice is locked and

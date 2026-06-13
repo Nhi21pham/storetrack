@@ -2,8 +2,11 @@
 
 namespace App\Repositories;
 
+use App\Enums\InvoiceTypeEnum;
 use App\Models\Customer;
+use App\Models\Invoice\Invoice;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class CustomerRepository
 {
@@ -52,9 +55,26 @@ class CustomerRepository
         return Customer::whereIn('id', array_values(array_unique($ids)))->delete();
     }
 
-    public function all(int $businessId)
+    public function all(int $businessId, ?int $storeId = null): Collection
     {
-        return Customer::with('party')->where('business_id', $businessId)->latest()->get();
+        return Customer::query()
+            ->with('party')
+            ->where('business_id', $businessId)
+            ->select('customers.*')
+            ->addSelect(['outstanding' => $this->outstandingSubquery($storeId)])
+            ->latest()
+            ->get();
+    }
+
+    /** Open sale-invoice balance owed by each customer's party (scoped to a store when given). */
+    private function outstandingSubquery(?int $storeId): Builder
+    {
+        return Invoice::query()
+            ->selectRaw('COALESCE(SUM(grand_total - paid_amount), 0)')
+            ->whereColumn('party_id', 'customers.party_id')
+            ->where('type', InvoiceTypeEnum::SALE->value)
+            ->whereColumn('paid_amount', '<', 'grand_total')
+            ->when($storeId !== null, fn ($q) => $q->where('store_id', $storeId));
     }
 
     public function listQuery(int $businessId, ?int $storeId = null, ?string $search = null, ?array $ids = null): Builder

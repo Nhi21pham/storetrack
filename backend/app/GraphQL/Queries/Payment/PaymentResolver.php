@@ -19,4 +19,15 @@ class PaymentResolver extends BaseResolver
             );
         });
     }
+
+    public function partyOpenInvoices($_, array $args)
+    {
+        return $this->safe(function () use ($args) {
+            return $this->paymentService->getOpenInvoices(
+                $this->user(),
+                (int) $args['store_id'],
+                (int) $args['party_id'],
+            );
+        });
+    }
 }

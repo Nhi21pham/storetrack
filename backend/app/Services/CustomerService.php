@@ -40,7 +40,7 @@ class CustomerService
             throw new AuthorizationException('You do not have access to this store.');
         }
 
-        return $this->customerRepository->all($businessId);
+        return $this->customerRepository->all($businessId, $storeId);
     }
 
     public function getById(int $id): Customer
