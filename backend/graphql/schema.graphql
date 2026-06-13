@@ -9,6 +9,9 @@
 #import Mutations/Invoice/*.graphql
 #import Types/Report/*.graphql
 #import Queries/Report/*.graphql
+#import Types/Payment/*.graphql
+#import Queries/Payment/*.graphql
+#import Mutations/Payment/*.graphql
 
 type Query
 type Mutation

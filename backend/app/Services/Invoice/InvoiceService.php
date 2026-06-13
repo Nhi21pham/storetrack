@@ -23,10 +23,12 @@ use App\Repositories\Invoice\InventoryBatchRepository;
 use App\Repositories\Invoice\InvoiceRepository;
 use App\Repositories\Invoice\InvoiceSequenceRepository;
 use App\Repositories\Invoice\ProductStockRepository;
+use App\Repositories\Payment\PaymentAllocationRepository;
 use App\Services\AuditLog\Loggers\InvoiceAuditLogger;
 use App\Services\ExportService;
 use App\Services\Invoice\Stock\InvoiceStockHandler;
 use App\Services\Invoice\Stock\InvoiceStockHandlerFactory;
+use App\Services\Payment\PaymentService;
 use App\Services\PermissionService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +44,8 @@ class InvoiceService
         private PermissionService $permissionService,
         private InvoiceAuditLogger $auditLogger,
         private ExportService $exportService,
+        private PaymentService $paymentService,
+        private PaymentAllocationRepository $allocationRepository,
     ) {}
 
     public function getAll(User $user, int $storeId, ?string $type = null): Collection
@@ -113,6 +117,8 @@ class InvoiceService
             $invoice = $this->applyTotals($invoice, $subtotal, $taxTotal);
             $this->auditLogger->invoiceCreated($actor, $invoice);
 
+            $this->settleOnCreation($actor, $storeId, $invoice, $data);
+
             return $this->invoiceRepository->findById((int) $invoice->id);
         });
     }
@@ -134,6 +140,7 @@ class InvoiceService
             $storeId = (int) $invoice->store_id;
             $this->permissionService->authorizeStore($actor, PermissionEnum::UPDATE_INVOICE, $storeId);
             $this->assertType($invoice, $type);
+            $this->assertNoPayments($invoice);
             $handler->assertParty((int) $data['party_id'], $storeId);
 
             // Reverse the invoice's old stock effects, then re-apply the new lines from scratch.
@@ -145,7 +152,7 @@ class InvoiceService
                 'description'    => $data['description'] ?? null,
                 'invoice_date'   => $data['invoice_date'],
                 'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_status'] ?? InvoicePaymentStatusEnum::UNPAID->value,
+                'payment_status' => InvoicePaymentStatusEnum::UNPAID->value,
             ]);
 
             [$subtotal, $taxTotal] = $this->addLines($invoice, $storeId, $handler, $items, (string) $data['invoice_date']);
@@ -166,6 +173,7 @@ class InvoiceService
             }
             $storeId = (int) $invoice->store_id;
             $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_INVOICE, $storeId);
+            $this->assertNoPayments($invoice);
 
             $this->stockHandlerFactory->for($invoice->type)->reverse($invoice);
 
@@ -265,11 +273,47 @@ class InvoiceService
             'description'    => $data['description'] ?? null,
             'invoice_date'   => $data['invoice_date'],
             'payment_method' => $data['payment_method'],
-            'payment_status' => $data['payment_status'] ?? InvoicePaymentStatusEnum::UNPAID->value,
+            'payment_status' => InvoicePaymentStatusEnum::UNPAID->value,
             'subtotal'       => 0,
             'tax_total'      => 0,
             'grand_total'    => 0,
+            'paid_amount'    => 0,
         ]);
+    }
+
+    /**
+     * "Paid" at creation records an immediate payment that settles THIS invoice in
+     * full (an empty invoice has nothing to settle). Status stays derived: the
+     * payment is what flips it to PAID.
+     */
+    private function settleOnCreation(User $actor, int $storeId, Invoice $invoice, array $data): void
+    {
+        if (($data['payment_status'] ?? null) !== InvoicePaymentStatusEnum::PAID->value) {
+            return;
+        }
+        if ((float) $invoice->grand_total <= 0) {
+            return;
+        }
+
+        $this->paymentService->record($actor, $storeId, [
+            'party_id'    => (int) $invoice->party_id,
+            'paid_at'     => $data['invoice_date'],
+            'method'      => $data['payment_method'],
+            'allocations' => [
+                ['invoice_id' => (int) $invoice->id, 'amount' => (float) $invoice->grand_total],
+            ],
+        ]);
+    }
+
+    /** An invoice with payments allocated against it can't be edited or deleted until they're removed. */
+    private function assertNoPayments(Invoice $invoice): void
+    {
+        if ($this->allocationRepository->existsForInvoice((int) $invoice->id)) {
+            throw new InvoiceException(
+                ErrorCode::INVOICE_HAS_PAYMENTS,
+                'This invoice has payments recorded against it. Remove the payments before editing or deleting it.'
+            );
+        }
     }
 
     /** Creates each line (tax snapshot + stock effect) and returns the [subtotal, taxTotal] running totals. */

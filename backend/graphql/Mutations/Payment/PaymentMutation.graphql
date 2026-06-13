@@ -1,0 +1,22 @@
+extend type Mutation {
+    recordPayment(store_id: ID!, input: RecordPaymentInput! @spread): Payment!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Payment\\PaymentResolver@record")
+
+    deletePayment(id: ID!): Boolean!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\Payment\\PaymentResolver@delete")
+}
+
+input RecordPaymentInput {
+    party_id: ID! @rules(apply: ["required"])
+    paid_at: String! @rules(apply: ["required", "date"])
+    method: InvoicePaymentMethod!
+    note: String @rules(apply: ["sometimes", "nullable", "string", "max:1000"])
+    allocations: [PaymentAllocationInput!]! @rules(apply: ["required", "array", "min:1"])
+}
+
+input PaymentAllocationInput {
+    invoice_id: ID! @rules(apply: ["required"])
+    amount: Float! @rules(apply: ["required", "numeric", "min:0.01"])
+}
