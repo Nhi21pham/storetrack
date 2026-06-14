@@ -74,7 +74,10 @@
             </thead>
             <tbody>
               <tr v-for="inv in openInvoices" :key="inv.id">
-                <td class="mono"><button class="code-link" @click="openInvoiceDetail(inv.id)">{{ inv.code }}</button></td>
+                <td class="mono">
+                  <button class="code-link" @click="openInvoiceDetail(inv.id)">{{ inv.code }}</button>
+                  <span v-if="!currentStore && inv.store" class="store-tag">{{ inv.store.name }}</span>
+                </td>
                 <td>{{ formatDate(inv.invoice_date) }}</td>
                 <td class="num">{{ formatMoney(inv.grand_total) }}</td>
                 <td class="num">{{ formatMoney(inv.paid_amount) }}</td>
@@ -97,12 +100,10 @@
                 <td>{{ formatDate(p.paid_at) }}</td>
                 <td>{{ paymentMethodLabel(p.method) }}</td>
                 <td class="applied">
-                  <button
-                    v-for="a in p.allocations"
-                    :key="a.id"
-                    class="code-link"
-                    @click="openInvoiceDetail(a.invoice_id)"
-                  >{{ a.invoice?.code }}</button>
+                  <span v-for="a in p.allocations" :key="a.id" class="alloc">
+                    <button class="code-link" @click="openInvoiceDetail(a.invoice_id)">{{ a.invoice?.code }}</button>
+                    <span v-if="!currentStore && a.invoice?.store" class="store-tag">{{ a.invoice.store.name }}</span>
+                  </span>
                 </td>
                 <td class="num strong">{{ formatMoney(p.amount) }}</td>
                 <td class="num">
@@ -326,8 +327,10 @@ loadParties()
 .data-table .strong { font-weight: 600; color: #111; }
 .data-table .mono { font-family: monospace; font-weight: 600; color: #111; }
 .applied { font-family: monospace; font-size: 12.5px; color: #6b7280; }
-.code-link { background: none; border: none; padding: 0; margin-right: 8px; font: inherit; font-family: monospace; font-weight: 600; color: #2563eb; cursor: pointer; }
+.code-link { background: none; border: none; padding: 0; font: inherit; font-family: monospace; font-weight: 600; color: #2563eb; cursor: pointer; }
 .code-link:hover { text-decoration: underline; }
+.alloc { display: inline-flex; align-items: center; gap: 4px; margin-right: 12px; }
+.store-tag { display: inline-block; margin-left: 6px; padding: 1px 7px; background: #eef2ff; color: #4338ca; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: inherit; white-space: nowrap; }
 .link-danger { background: none; border: none; padding: 0; font: inherit; font-size: 13px; color: #dc2626; cursor: pointer; }
 .link-danger:hover { text-decoration: underline; }
 .empty { padding: 16px; text-align: center; color: #9ca3af; font-size: 13.5px; background: #f9fafb; border-radius: 10px; }

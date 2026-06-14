@@ -1,6 +1,7 @@
 type Invoice {
     id: ID!
     store_id: ID!
+    store: Store @belongsTo
     type: InvoiceType!
     code: String!
     party_id: ID!

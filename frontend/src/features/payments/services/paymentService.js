@@ -4,12 +4,12 @@ const PAYMENT_FIELDS = `
   id store_id party_id amount paid_at method note created_at
   allocations {
     id invoice_id amount
-    invoice { id code invoice_date type grand_total }
+    invoice { id code invoice_date type grand_total store { id name } }
   }
 `
 
 const OPEN_INVOICE_FIELDS = `
-  id code type invoice_date grand_total paid_amount balance payment_status
+  id code type invoice_date grand_total paid_amount balance payment_status store { id name }
 `
 
 const PAYMENTS_QUERY = `
