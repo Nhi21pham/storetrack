@@ -143,6 +143,6 @@ const trimRate = (rate) => String(parseFloat(rate))
 .btn-delete:hover { background: #fef2f2; }
 .totals { width: 280px; display: flex; flex-direction: column; gap: 8px; }
 .t-row { display: flex; justify-content: space-between; font-size: 14px; color: #374151; font-variant-numeric: tabular-nums; }
-.t-row.grand { padding-top: 8px; border-top: 1px solid #eef0f2; font-size: 16px; font-weight: 700; color: #111; }
+.t-row.grand { padding-top: 8px; border-top: 1px solid #eef0f2; font-size: 16px; font-weight: 800; color: #111; }
 .t-row.cogs { padding-top: 8px; border-top: 1px solid #eef0f2; color: #6b7280; }
 </style>

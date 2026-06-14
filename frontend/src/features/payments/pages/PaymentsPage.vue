@@ -142,14 +142,16 @@
       v-if="detailInvoice"
       :invoice="detailInvoice"
       :can-manage="false"
-      :can-edit="false"
+      :can-edit="canManage"
       @close="detailInvoice = null"
+      @edit="onInvoiceEdit"
     />
   </PageContainer>
 </template>
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue'
+import { useRouter } from 'vue-router'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -164,11 +166,14 @@ import { fetchCustomers } from '@/features/customers/services/customerService'
 import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
 import { fetchPartyOpenInvoices, fetchPayments, deletePayment, fetchPaymentsByBusiness, fetchPartyOpenInvoicesByBusiness } from '@/features/payments/services/paymentService'
 import { fetchInvoice } from '@/features/invoices/services/invoiceService'
-import { formatMoney, formatInvoiceDate as formatDate, paymentMethodLabel } from '@/features/invoices/constants'
+import { INVOICE_TYPE, formatMoney, formatInvoiceDate as formatDate, paymentMethodLabel } from '@/features/invoices/constants'
 
+const router = useRouter()
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
+
+const canManage = computed(() => !!currentStore.value?.is_active)
 
 const partyType = ref('customer')
 const parties = ref([])
@@ -180,6 +185,12 @@ const loadingDetail = ref(false)
 const showRecord = ref(false)
 const deletingPayment = ref(null)
 const detailInvoice = ref(null)
+
+const savedPartyType = localStorage.getItem('paymentsPartyType')
+if (savedPartyType === 'customer' || savedPartyType === 'supplier') {
+  partyType.value = savedPartyType
+}
+let pendingRestorePartyId = localStorage.getItem('paymentsPartyId') || ''
 
 const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 const canDeletePayment = computed(() => {
@@ -222,12 +233,27 @@ const openInvoiceDetail = async (id) => {
   }
 }
 
+const onInvoiceEdit = () => {
+  const invoice = detailInvoice.value
+  detailInvoice.value = null
+  const base = invoice.type === INVOICE_TYPE.SALE ? 'sale-invoices' : 'purchase-invoices'
+  window.open(router.resolve(`/${base}/${invoice.id}/edit`).href, '_blank')
+}
+
 const loadParties = async () => {
   if (!currentBusiness.value?.id) return
   loadingParties.value = true
   try {
     const args = { storeId: currentStore.value?.id ?? null, businessId: currentBusiness.value.id }
     parties.value = partyType.value === 'customer' ? await fetchCustomers(args) : await fetchSuppliers(args)
+    if (pendingRestorePartyId) {
+      const stillSelectable = partyOptions.value.some((o) => String(o.value) === String(pendingRestorePartyId))
+      if (stillSelectable) {
+        selectedPartyId.value = pendingRestorePartyId
+        loadDetail()
+      }
+      pendingRestorePartyId = ''
+    }
   } catch (err) {
     showToast(err.message, 'error')
   } finally {
@@ -296,6 +322,11 @@ watch(() => [currentStore.value?.id, currentBusiness.value?.id], () => {
   openInvoices.value = []
   payments.value = []
   loadParties()
+})
+
+watch([partyType, selectedPartyId], () => {
+  localStorage.setItem('paymentsPartyType', partyType.value)
+  localStorage.setItem('paymentsPartyId', selectedPartyId.value)
 })
 
 loadParties()

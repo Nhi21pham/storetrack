@@ -135,13 +135,15 @@
           </tr>
         </ResizableTable>
 
-        <div class="totals-bar">
-          <span class="total-item"><span class="total-label">Lines</span> {{ totals.lineCount }}</span>
-          <span class="total-item"><span class="total-label">Qty sold</span> {{ formatQuantity(totals.totalQty) }}</span>
-          <span class="total-item"><span class="total-label">Cost</span> {{ formatMoney(totals.totalCost) }}</span>
-          <span class="total-item"><span class="total-label">Revenue</span> {{ formatMoney(totals.totalRevenue) }}</span>
-          <span class="total-item strong" :class="{ loss: totals.totalProfit < 0 }"><span class="total-label">Profit</span> {{ formatMoney(totals.totalProfit) }}</span>
-        </div>
+        <TotalsBar
+          :items="[
+            { label: 'Lines', value: totals.lineCount },
+            { label: 'Qty sold', value: formatQuantity(totals.totalQty) },
+            { label: 'Cost', value: formatMoney(totals.totalCost) },
+            { label: 'Revenue', value: formatMoney(totals.totalRevenue) },
+            { label: 'Profit', value: formatMoney(totals.totalProfit), strong: true, variant: totals.totalProfit < 0 ? 'loss' : null },
+          ]"
+        />
 
         <Pagination
           v-if="total > 0"
@@ -199,6 +201,7 @@ import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import TotalsBar from '@/components/common/TotalsBar.vue'
 import ReportSelectionBar from '@/features/reports/components/ReportSelectionBar.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
@@ -378,11 +381,6 @@ watch([() => currentStore.value?.id, () => currentBusiness.value?.id], clearSele
 .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .qty-input { -moz-appearance: textfield; appearance: textfield; }
 
-.totals-bar { display: flex; flex-wrap: wrap; gap: 24px; padding: 14px 18px; margin-top: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13.5px; color: #374151; }
-.total-item { display: inline-flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
-.total-item.strong { font-weight: 800; font-size: 19px; color: #111; margin-left: auto; }
-.total-item.strong.loss { color: #dc2626; }
-.total-label { font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
 
 tbody tr.row-selected { background: #f0f7ff; }
 tbody tr.row-selected:hover { background: #e6f0fb; }
