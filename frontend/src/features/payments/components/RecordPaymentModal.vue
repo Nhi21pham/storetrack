@@ -28,11 +28,12 @@
             </span>
             <span class="c-num balance">{{ formatMoney(row.balance) }}</span>
             <span class="c-num">
-              <input
+              <NumberInput
                 class="amount-input"
-                type="number" min="0" step="any" :max="row.balance"
-                v-model="row.amount" :disabled="!row.selected"
-                @input="clampRow(row)"
+                :decimals="0"
+                v-model="row.amount"
+                :disabled="!row.selected"
+                @update:model-value="clampRow(row)"
               />
             </span>
           </label>
@@ -76,6 +77,7 @@
 import { ref, computed, inject } from 'vue'
 import { formatMoney, formatInvoiceDate as formatDate, PAYMENT_METHODS, todayInputDate } from '@/features/invoices/constants'
 import { recordPayment } from '@/features/payments/services/paymentService'
+import NumberInput from '@/components/common/NumberInput.vue'
 
 const props = defineProps({
   storeId: { type: [String, Number], required: true },
