@@ -121,11 +121,11 @@
                 </td>
                 <td class="c-cost">
                   <template v-if="item.product_id">
-                    <div v-for="(b, bi) in batchesFor(item.product_id)" :key="bi" class="cost-line">
+                    <div v-for="(b, bi) in costLinesFor(item.product_id)" :key="bi" class="cost-line">
                       <span class="cl-amount">{{ formatQuantity(b.remaining) }} × {{ formatMoney(b.unit_cost) }}</span>
                       <span class="cl-date">{{ formatInvoiceDate(b.received_at) }}</span>
                     </div>
-                    <span v-if="batchesFor(item.product_id).length === 0" class="muted">No stock</span>
+                    <span v-if="costLinesFor(item.product_id).length === 0" class="muted">No stock</span>
                   </template>
                   <span v-else class="muted">—</span>
                 </td>
@@ -274,6 +274,7 @@ const products = ref([])
 const taxes = ref([])
 const stockByProduct = ref({})
 const originalByProduct = ref({})
+const originalBatchInfo = ref({})
 const batchesByProduct = ref({})
 
 const submitting = ref(false)
@@ -376,6 +377,36 @@ const exceedsStock = (item) => {
 const remainingAfterSale = (productId) =>
   availableForProduct(productId) - (requestedByProduct.value[productId] || 0)
 
+// The FIFO batches for the cost column, each showing what it holds after this sale's
+// requested quantity is drawn (oldest first). On edit the invoice's own draw is
+// restored first — including any batch it had fully emptied — so the figures stay in
+// step with the In-stock hint and update as lines change.
+const costLinesFor = (productId) => {
+  const open = batchesFor(productId)
+  const openIds = new Set(open.map((b) => String(b.id)))
+  const info = originalBatchInfo.value
+
+  const released = Object.entries(info)
+    .filter(([id]) => !openIds.has(id))
+    .map(([id, b]) => ({ id: Number(id), remaining: b.quantity, unit_cost: b.unit_cost, received_at: null }))
+    .sort((a, b) => a.id - b.id)
+
+  const restored = open.map((b) => ({
+    ...b,
+    remaining: b.remaining + (info[String(b.id)]?.quantity || 0),
+  }))
+
+  let outstanding = Math.max(requestedByProduct.value[productId] || 0, 0)
+  const lines = []
+  for (const b of [...released, ...restored]) {
+    const taken = Math.min(b.remaining, outstanding)
+    outstanding -= taken
+    const remaining = b.remaining - taken
+    if (remaining > 0.0001) lines.push({ ...b, remaining })
+  }
+  return lines
+}
+
 const stockHint = (item) => {
   if (exceedsStock(item)) return `Only ${formatQuantity(availableForProduct(item.product_id))} in stock`
   return `In stock: ${formatQuantity(remainingAfterSale(item.product_id))}`
@@ -453,6 +484,7 @@ const buildBatchMap = (batches) => {
   for (const b of batches || []) {
     const id = String(b.product_id)
     ;(map[id] ||= []).push({
+      id: Number(b.id),
       remaining: Number(b.quantity_remaining),
       unit_cost: Number(b.unit_cost),
       received_at: b.received_at,
@@ -508,6 +540,16 @@ const loadInvoice = async () => {
     originalByProduct.value = (inv.items || []).reduce((map, it) => {
       const id = String(it.product_id)
       map[id] = (map[id] || 0) + Number(it.quantity || 0)
+      return map
+    }, {})
+    // The same consumption broken down per FIFO batch, so the cost column can show
+    // each batch as it'll be after this invoice releases its draw on save.
+    originalBatchInfo.value = (inv.items || []).reduce((map, it) => {
+      for (const c of it.costs || []) {
+        const id = String(c.inventory_batch_id)
+        if (!map[id]) map[id] = { quantity: 0, unit_cost: Number(c.unit_cost) }
+        map[id].quantity += Number(c.quantity || 0)
+      }
       return map
     }, {})
     if (items.value.length === 0) items.value = [newItem()]
