@@ -90,7 +90,7 @@
       </div>
 
       <router-link to="/payments" class="menu-item" :class="{ active: isActive('/payments') }" @click="$emit('close')">
-        <Icon name="invoice" :size="18" />
+        <Icon name="payment" :size="18" />
         Payments
       </router-link>
 
@@ -100,7 +100,7 @@
           Others
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
         </div>
-        <div class="submenu" :class="{ open: othersOpen }">
+        <div class="submenu submenu-up" :class="{ open: othersOpen }">
           <div class="submenu-item has-nested" @mouseenter="openBanking" @mouseleave="closeBankingSoon">
             <span class="submenu-item-label">
               <Icon name="bank" :size="15" color="currentColor" />
@@ -203,6 +203,8 @@ const closeBankingSoon = () => {
 .submenu { display: none; position: absolute; left: 100%; top: -4px; min-width: 200px; background: #f7f7f8; border: 1px solid #ececef; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 10px 25px -5px rgba(0,0,0,0.12); flex-direction: column; padding: 8px; margin-left: 10px; z-index: 999; opacity: 0; transform: translateX(-4px); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
 .submenu.open { display: flex; opacity: 1; transform: translateX(0); pointer-events: auto; }
 .submenu::before { content: ''; position: absolute; top: 0; left: -10px; width: 10px; height: 100%; }
+/* "Others" sits at the sidebar bottom; grow its menu upward so lower items stay on-screen. */
+.submenu-up { top: auto; bottom: -4px; }
 .submenu-item { padding: 9px 12px; font-size: 13.5px; font-weight: 500; color: #4b5563; border-radius: 8px; cursor: pointer; text-decoration: none; display: block; transition: background 0.12s, color 0.12s; }
 .submenu-item-label { display: inline-flex; align-items: center; gap: 10px; }
 .submenu-item:hover { background: #ebebef; color: #111; }
