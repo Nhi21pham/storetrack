@@ -1,0 +1,17 @@
+extend type Query {
+    receivablesReport(store_id: ID!): [DebtReportRow!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\DebtReportResolver@receivablesForStore")
+
+    receivablesReportByBusiness(business_id: ID!): [DebtReportRow!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\DebtReportResolver@receivablesForBusiness")
+
+    payablesReport(store_id: ID!): [DebtReportRow!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\DebtReportResolver@payablesForStore")
+
+    payablesReportByBusiness(business_id: ID!): [DebtReportRow!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\DebtReportResolver@payablesForBusiness")
+}

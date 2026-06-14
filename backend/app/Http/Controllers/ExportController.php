@@ -11,6 +11,7 @@ use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\Invoice\InvoiceService;
 use App\Services\ProductService;
+use App\Services\Report\DebtReportService;
 use App\Services\Report\ProfitReportService;
 use App\Services\Report\SaleReportService;
 use App\Services\Report\StockReportService;
@@ -37,6 +38,7 @@ class ExportController extends Controller
         private StockReportService $stockReportService,
         private SaleReportService $saleReportService,
         private ProfitReportService $profitReportService,
+        private DebtReportService $debtReportService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -170,6 +172,46 @@ class ExportController extends Controller
             $request->user(),
             $businessId,
             $this->extractProfitReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueReceivablesReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->debtReportService->queueReceivablesExport(
+            $request->user(),
+            $storeId,
+            $this->extractDebtReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueReceivablesReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->debtReportService->queueReceivablesBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractDebtReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queuePayablesReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->debtReportService->queuePayablesExport(
+            $request->user(),
+            $storeId,
+            $this->extractDebtReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queuePayablesReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->debtReportService->queuePayablesBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractDebtReportExportFilters($request),
             $this->extractClientId($request),
         ));
     }
@@ -395,6 +437,27 @@ class ExportController extends Controller
             'end_date'     => $request->query('end_date'),
             'ids'          => $ids,
             'columns'      => $columns,
+        ];
+    }
+
+    private function extractDebtReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        return [
+            'search'     => $request->query('search'),
+            'start_date' => $request->query('start_date'),
+            'end_date'   => $request->query('end_date'),
+            'ids'        => $ids,
+            'columns'    => $columns,
         ];
     }
 

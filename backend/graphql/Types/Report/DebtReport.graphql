@@ -1,0 +1,34 @@
+type DebtReportRow {
+    party_id: ID
+    party_record_id: ID!
+    name: String!
+    phone: String
+    email: String
+    invoices: [DebtReportInvoice!]!
+    payments: [DebtReportPayment!]!
+}
+
+type DebtReportInvoice {
+    id: ID!
+    code: String
+    invoice_date: DateTime
+    grand_total: Float!
+    store_id: ID
+    store_name: String
+}
+
+type DebtReportPayment {
+    id: ID!
+    paid_at: DateTime
+    amount: Float!
+    method: InvoicePaymentMethod
+    store_id: ID
+    store_name: String
+    allocations: [DebtReportPaymentAllocation!]!
+}
+
+type DebtReportPaymentAllocation {
+    invoice_id: ID!
+    invoice_code: String
+    amount: Float!
+}
