@@ -346,8 +346,8 @@ const customerOptions = computed(() =>
     })),
 )
 
-// On-hand a sale may draw on. When editing, this invoice's own consumption is
-// added back, since the edit reverses it before re-applying.
+// The most a sale may draw on: current on-hand plus, when editing, this invoice's
+// own consumption — the edit reverses it before re-applying the new lines.
 const availableForProduct = (productId) => {
   const id = String(productId)
   return Number(stockByProduct.value[id] || 0) + Number(originalByProduct.value[id] || 0)
@@ -371,10 +371,14 @@ const exceedsStock = (item) => {
   return (requestedByProduct.value[item.product_id] || 0) > availableForProduct(item.product_id)
 }
 
+// On-hand the warehouse keeps once this sale's requested quantity is drawn — a live
+// figure that counts down as the user types, so it matches the resulting stock.
+const remainingAfterSale = (productId) =>
+  availableForProduct(productId) - (requestedByProduct.value[productId] || 0)
+
 const stockHint = (item) => {
-  const avail = availableForProduct(item.product_id)
-  if (exceedsStock(item)) return `Only ${formatQuantity(avail)} in stock`
-  return `In stock: ${formatQuantity(avail)}`
+  if (exceedsStock(item)) return `Only ${formatQuantity(availableForProduct(item.product_id))} in stock`
+  return `In stock: ${formatQuantity(remainingAfterSale(item.product_id))}`
 }
 
 const hasStockWarning = computed(() => items.value.some((it) => exceedsStock(it)))
@@ -383,7 +387,7 @@ const productOptions = computed(() =>
   products.value.map((p) => ({
     value: String(p.id),
     label: `${p.code} — ${p.name}`,
-    sublabel: [p.unit?.name, `In stock: ${formatQuantity(availableForProduct(p.id))}`].filter(Boolean).join(' · '),
+    sublabel: [p.unit?.name, `In stock: ${formatQuantity(Math.max(0, remainingAfterSale(p.id)))}`].filter(Boolean).join(' · '),
   })),
 )
 

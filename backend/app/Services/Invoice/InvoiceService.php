@@ -30,8 +30,8 @@ use App\Services\Invoice\Stock\InvoiceStockHandler;
 use App\Services\Invoice\Stock\InvoiceStockHandlerFactory;
 use App\Services\Payment\PaymentService;
 use App\Services\PermissionService;
+use App\Support\TransactionRunner;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
 class InvoiceService
 {
@@ -107,7 +107,7 @@ class InvoiceService
 
         $handler = $this->stockHandlerFactory->for($type);
 
-        return DB::transaction(function () use ($actor, $storeId, $type, $data, $items, $handler) {
+        return TransactionRunner::run(function () use ($actor, $storeId, $type, $data, $items, $handler) {
             $handler->assertParty((int) $data['party_id'], $storeId);
             $handler->linkPartyToStore((int) $data['party_id'], $storeId);
 
@@ -133,7 +133,7 @@ class InvoiceService
 
         $handler = $this->stockHandlerFactory->for($type);
 
-        return DB::transaction(function () use ($actor, $id, $type, $data, $items, $handler) {
+        return TransactionRunner::run(function () use ($actor, $id, $type, $data, $items, $handler) {
             $invoice = $this->invoiceRepository->lockById($id);
             if (!$invoice) {
                 throw new InvoiceException(ErrorCode::INVOICE_NOT_FOUND, 'Invoice not found.');
@@ -171,7 +171,7 @@ class InvoiceService
 
     public function delete(User $actor, int $id): void
     {
-        DB::transaction(function () use ($actor, $id) {
+        TransactionRunner::run(function () use ($actor, $id) {
             $invoice = $this->invoiceRepository->lockById($id);
             if (!$invoice) {
                 throw new InvoiceException(ErrorCode::INVOICE_NOT_FOUND, 'Invoice not found.');
