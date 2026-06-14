@@ -46,6 +46,28 @@ export const fetchPartyOpenInvoices = async ({ storeId, partyId }) => {
   return data.partyOpenInvoices
 }
 
+const PAYMENTS_BY_BUSINESS_QUERY = `
+  query PaymentsByBusiness($business_id: ID!, $party_id: ID!) {
+    paymentsByBusiness(business_id: $business_id, party_id: $party_id) { ${PAYMENT_FIELDS} }
+  }
+`
+
+const PARTY_OPEN_INVOICES_BY_BUSINESS_QUERY = `
+  query PartyOpenInvoicesByBusiness($business_id: ID!, $party_id: ID!) {
+    partyOpenInvoicesByBusiness(business_id: $business_id, party_id: $party_id) { ${OPEN_INVOICE_FIELDS} }
+  }
+`
+
+export const fetchPaymentsByBusiness = async ({ businessId, partyId }) => {
+  const data = await graphql(PAYMENTS_BY_BUSINESS_QUERY, { business_id: businessId, party_id: partyId })
+  return data.paymentsByBusiness
+}
+
+export const fetchPartyOpenInvoicesByBusiness = async ({ businessId, partyId }) => {
+  const data = await graphql(PARTY_OPEN_INVOICES_BY_BUSINESS_QUERY, { business_id: businessId, party_id: partyId })
+  return data.partyOpenInvoicesByBusiness
+}
+
 export const recordPayment = async ({ storeId, input }) => {
   const data = await graphql(RECORD_PAYMENT_MUTATION, { store_id: storeId, input })
   return data.recordPayment

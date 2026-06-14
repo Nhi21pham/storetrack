@@ -118,7 +118,7 @@ class InvoiceService
             $invoice = $this->applyTotals($invoice, $subtotal, $taxTotal);
             $this->auditLogger->invoiceCreated($actor, $invoice);
 
-            $this->settleOnCreation($actor, $storeId, $invoice, $data);
+            $this->applyPaymentIntent($actor, $storeId, $invoice, $data);
 
             return $this->invoiceRepository->findById((int) $invoice->id);
         });
@@ -141,11 +141,12 @@ class InvoiceService
             $storeId = (int) $invoice->store_id;
             $this->permissionService->authorizeStore($actor, PermissionEnum::UPDATE_INVOICE, $storeId);
             $this->assertType($invoice, $type);
-            $this->assertNoPayments($invoice);
             $handler->assertParty((int) $data['party_id'], $storeId);
             $handler->linkPartyToStore((int) $data['party_id'], $storeId);
 
-            // Reverse the invoice's old stock effects, then re-apply the new lines from scratch.
+            // Reverse the invoice's old stock effects, then re-apply the new lines. Existing
+            // payments are KEPT — the status re-derives from paid_amount vs the new total
+            // (e.g. a fully-paid 200 invoice edited up to 210 becomes PARTIAL, 10 owed).
             $handler->reverse($invoice);
             $this->invoiceRepository->deleteItems($invoice);
 
@@ -154,12 +155,14 @@ class InvoiceService
                 'description'    => $data['description'] ?? null,
                 'invoice_date'   => $data['invoice_date'],
                 'payment_method' => $data['payment_method'],
-                'payment_status' => InvoicePaymentStatusEnum::UNPAID->value,
             ]);
 
             [$subtotal, $taxTotal] = $this->addLines($invoice, $storeId, $handler, $items, (string) $data['invoice_date']);
 
             $invoice = $this->applyTotals($invoice, $subtotal, $taxTotal);
+            $this->invoiceRepository->update($invoice, [
+                'payment_status' => InvoicePaymentStatusEnum::fromAmounts((float) $invoice->paid_amount, (float) $invoice->grand_total)->value,
+            ]);
             $this->auditLogger->invoiceUpdated($actor, $invoice);
 
             return $this->invoiceRepository->findById((int) $invoice->id);
@@ -284,16 +287,28 @@ class InvoiceService
     }
 
     /**
-     * "Paid" at creation records an immediate payment that settles THIS invoice in
-     * full (an empty invoice has nothing to settle). Status stays derived: the
-     * payment is what flips it to PAID.
+     * Apply the form's payment intent (Unpaid / Partial / Paid + amount) by recording
+     * a payment against the invoice. Used on create, and on edit after the invoice's
+     * prior payments have been released. Status stays derived from the resulting paid_amount.
      */
-    private function settleOnCreation(User $actor, int $storeId, Invoice $invoice, array $data): void
+    private function applyPaymentIntent(User $actor, int $storeId, Invoice $invoice, array $data): void
     {
-        if (($data['payment_status'] ?? null) !== InvoicePaymentStatusEnum::PAID->value) {
+        $grandTotal = (float) $invoice->grand_total;
+        if ($grandTotal <= 0) {
             return;
         }
-        if ((float) $invoice->grand_total <= 0) {
+
+        $status = $data['payment_status'] ?? InvoicePaymentStatusEnum::UNPAID->value;
+        if ($status === InvoicePaymentStatusEnum::PAID->value) {
+            $amount = $grandTotal;
+        } elseif ($status === InvoicePaymentStatusEnum::PARTIAL->value) {
+            // A "partial" that happens to cover the whole invoice just settles it.
+            $amount = min(round((float) ($data['paid_amount'] ?? 0), 2), $grandTotal);
+        } else {
+            return;
+        }
+
+        if ($amount <= 0) {
             return;
         }
 
@@ -302,7 +317,7 @@ class InvoiceService
             'paid_at'     => $data['invoice_date'],
             'method'      => $data['payment_method'],
             'allocations' => [
-                ['invoice_id' => (int) $invoice->id, 'amount' => (float) $invoice->grand_total],
+                ['invoice_id' => (int) $invoice->id, 'amount' => $amount],
             ],
         ]);
     }

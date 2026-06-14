@@ -30,4 +30,26 @@ class PaymentResolver extends BaseResolver
             );
         });
     }
+
+    public function paymentsByBusiness($_, array $args)
+    {
+        return $this->safe(function () use ($args) {
+            return $this->paymentService->getForPartyInBusiness(
+                $this->user(),
+                (int) $args['business_id'],
+                (int) $args['party_id'],
+            );
+        });
+    }
+
+    public function partyOpenInvoicesByBusiness($_, array $args)
+    {
+        return $this->safe(function () use ($args) {
+            return $this->paymentService->getOpenInvoicesInBusiness(
+                $this->user(),
+                (int) $args['business_id'],
+                (int) $args['party_id'],
+            );
+        });
+    }
 }

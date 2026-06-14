@@ -11,6 +11,7 @@ export const PAYMENT_METHODS = [
 
 export const PAYMENT_STATUSES = [
   { value: 'UNPAID', label: 'Unpaid' },
+  { value: 'PARTIAL', label: 'Partial' },
   { value: 'PAID', label: 'Paid' },
 ]
 

@@ -108,6 +108,18 @@ class InvoiceRepository
             ->get();
     }
 
+    /** Same as openForParty but across every store in a business — owner business view. */
+    public function openForPartyInBusiness(int $businessId, int $partyId, string $type): Collection
+    {
+        return Invoice::where('party_id', $partyId)
+            ->where('type', $type)
+            ->whereColumn('paid_amount', '<', 'grand_total')
+            ->whereHas('store', fn ($q) => $q->where('business_id', $businessId))
+            ->orderBy('invoice_date')
+            ->orderBy('id')
+            ->get();
+    }
+
     public function update(Invoice $invoice, array $data): Invoice
     {
         $invoice->update($data);

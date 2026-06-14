@@ -3,9 +3,9 @@
     <PageHeader title="Payments" subtitle="Record customer and supplier payments against their open invoices." />
 
     <EmptyState
-      v-if="!currentStore"
-      title="No store selected"
-      description="Select a store to record payments."
+      v-if="!currentStore && !isBusinessOwner"
+      title="Pick a store"
+      description="Payments are recorded per store — switch to a specific store from the store switcher."
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -15,7 +15,10 @@
     </EmptyState>
 
     <template v-else>
-      <InactiveBanner v-if="!currentStore.is_active">
+      <InactiveBanner v-if="!currentStore">
+        Business level — balances and payments across every store. Switch to a specific store to record a payment.
+      </InactiveBanner>
+      <InactiveBanner v-else-if="!currentStore.is_active">
         This store is deactivated. Payments are read-only until the store is reactivated.
       </InactiveBanner>
 
@@ -54,7 +57,7 @@
             <span class="summary-value" :class="{ owed: outstanding > 0 }">{{ formatMoney(outstanding) }}</span>
           </div>
           <button
-            v-if="currentStore.is_active"
+            v-if="currentStore && currentStore.is_active"
             class="btn-record"
             :disabled="openInvoices.length === 0"
             @click="showRecord = true"
@@ -71,7 +74,7 @@
             </thead>
             <tbody>
               <tr v-for="inv in openInvoices" :key="inv.id">
-                <td class="mono">{{ inv.code }}</td>
+                <td class="mono"><button class="code-link" @click="openInvoiceDetail(inv.id)">{{ inv.code }}</button></td>
                 <td>{{ formatDate(inv.invoice_date) }}</td>
                 <td class="num">{{ formatMoney(inv.grand_total) }}</td>
                 <td class="num">{{ formatMoney(inv.paid_amount) }}</td>
@@ -93,10 +96,17 @@
               <tr v-for="p in payments" :key="p.id">
                 <td>{{ formatDate(p.paid_at) }}</td>
                 <td>{{ paymentMethodLabel(p.method) }}</td>
-                <td class="applied">{{ appliedCodes(p) }}</td>
+                <td class="applied">
+                  <button
+                    v-for="a in p.allocations"
+                    :key="a.id"
+                    class="code-link"
+                    @click="openInvoiceDetail(a.invoice_id)"
+                  >{{ a.invoice?.code }}</button>
+                </td>
                 <td class="num strong">{{ formatMoney(p.amount) }}</td>
                 <td class="num">
-                  <button v-if="currentStore.is_active" class="link-danger" @click="confirmDelete(p)">Delete</button>
+                  <button v-if="canDeletePayment && (!currentStore || currentStore.is_active)" class="link-danger" @click="confirmDelete(p)">Delete</button>
                 </td>
               </tr>
             </tbody>
@@ -126,6 +136,14 @@
       @confirm="handleDelete"
       @cancel="deletingPayment = null"
     />
+
+    <InvoiceDetailModal
+      v-if="detailInvoice"
+      :invoice="detailInvoice"
+      :can-manage="false"
+      :can-edit="false"
+      @close="detailInvoice = null"
+    />
   </PageContainer>
 </template>
 
@@ -139,10 +157,12 @@ import InactiveBanner from '@/components/common/InactiveBanner.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
+import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import RecordPaymentModal from '@/features/payments/components/RecordPaymentModal.vue'
 import { fetchCustomers } from '@/features/customers/services/customerService'
 import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
-import { fetchPartyOpenInvoices, fetchPayments, deletePayment } from '@/features/payments/services/paymentService'
+import { fetchPartyOpenInvoices, fetchPayments, deletePayment, fetchPaymentsByBusiness, fetchPartyOpenInvoicesByBusiness } from '@/features/payments/services/paymentService'
+import { fetchInvoice } from '@/features/invoices/services/invoiceService'
 import { formatMoney, formatInvoiceDate as formatDate, paymentMethodLabel } from '@/features/invoices/constants'
 
 const showToast = inject('showToast')
@@ -158,14 +178,31 @@ const payments = ref([])
 const loadingDetail = ref(false)
 const showRecord = ref(false)
 const deletingPayment = ref(null)
+const detailInvoice = ref(null)
 
-const partyOptions = computed(() =>
-  parties.value.map((p) => ({
-    value: String(p.party?.id ?? ''),
-    label: p.name,
-    sublabel: Number(p.outstanding) > 0 ? `Outstanding ${formatMoney(p.outstanding)}` : '',
-  })),
-)
+const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
+const canDeletePayment = computed(() => {
+  if (isBusinessOwner.value) return true
+  const role = currentStore.value?.my_role
+  return role === 'owner' || role === 'accountant'
+})
+
+// Store mode: only parties linked to the current store (so staff/accountants can't
+// see parties from stores they have no access to). Business mode (owner): every
+// party, shown with their business-wide balance.
+const partyOptions = computed(() => {
+  const list = currentStore.value
+    ? parties.value.filter((p) => (p.stores || []).some((s) => String(s.id) === String(currentStore.value.id)))
+    : parties.value
+  return list.map((p) => {
+    const balance = currentStore.value ? Number(p.outstanding) : Number(p.business_outstanding)
+    return {
+      value: String(p.party?.id ?? ''),
+      label: p.name,
+      sublabel: balance > 0 ? `Outstanding ${formatMoney(balance)}` : '',
+    }
+  })
+})
 
 const selectedPartyName = computed(() => {
   const p = parties.value.find((x) => String(x.party?.id) === String(selectedPartyId.value))
@@ -176,14 +213,19 @@ const outstanding = computed(() =>
   openInvoices.value.reduce((sum, i) => sum + Number(i.balance || 0), 0),
 )
 
-const appliedCodes = (payment) =>
-  payment.allocations.map((a) => a.invoice?.code).filter(Boolean).join(', ')
+const openInvoiceDetail = async (id) => {
+  try {
+    detailInvoice.value = await fetchInvoice({ id })
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
 
 const loadParties = async () => {
-  if (!currentStore.value?.id || !currentBusiness.value?.id) return
+  if (!currentBusiness.value?.id) return
   loadingParties.value = true
   try {
-    const args = { storeId: currentStore.value.id, businessId: currentBusiness.value.id }
+    const args = { storeId: currentStore.value?.id ?? null, businessId: currentBusiness.value.id }
     parties.value = partyType.value === 'customer' ? await fetchCustomers(args) : await fetchSuppliers(args)
   } catch (err) {
     showToast(err.message, 'error')
@@ -193,15 +235,21 @@ const loadParties = async () => {
 }
 
 const loadDetail = async () => {
-  if (!selectedPartyId.value || !currentStore.value?.id) {
+  if (!selectedPartyId.value) {
     openInvoices.value = []
     payments.value = []
     return
   }
   loadingDetail.value = true
   try {
-    const args = { storeId: currentStore.value.id, partyId: selectedPartyId.value }
-    const [open, history] = await Promise.all([fetchPartyOpenInvoices(args), fetchPayments(args)])
+    let open, history
+    if (currentStore.value?.id) {
+      const args = { storeId: currentStore.value.id, partyId: selectedPartyId.value }
+      ;[open, history] = await Promise.all([fetchPartyOpenInvoices(args), fetchPayments(args)])
+    } else {
+      const args = { businessId: currentBusiness.value.id, partyId: selectedPartyId.value }
+      ;[open, history] = await Promise.all([fetchPartyOpenInvoicesByBusiness(args), fetchPaymentsByBusiness(args)])
+    }
     openInvoices.value = open
     payments.value = history
   } catch (err) {
@@ -242,7 +290,7 @@ const handleDelete = async () => {
   }
 }
 
-watch(() => currentStore.value?.id, () => {
+watch(() => [currentStore.value?.id, currentBusiness.value?.id], () => {
   selectedPartyId.value = ''
   openInvoices.value = []
   payments.value = []
@@ -278,6 +326,8 @@ loadParties()
 .data-table .strong { font-weight: 600; color: #111; }
 .data-table .mono { font-family: monospace; font-weight: 600; color: #111; }
 .applied { font-family: monospace; font-size: 12.5px; color: #6b7280; }
+.code-link { background: none; border: none; padding: 0; margin-right: 8px; font: inherit; font-family: monospace; font-weight: 600; color: #2563eb; cursor: pointer; }
+.code-link:hover { text-decoration: underline; }
 .link-danger { background: none; border: none; padding: 0; font: inherit; font-size: 13px; color: #dc2626; cursor: pointer; }
 .link-danger:hover { text-decoration: underline; }
 .empty { padding: 16px; text-align: center; color: #9ca3af; font-size: 13.5px; background: #f9fafb; border-radius: 10px; }

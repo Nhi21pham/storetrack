@@ -29,6 +29,16 @@ class PaymentRepository
             ->get();
     }
 
+    /** A party's payments across every store in a business — owner business view. */
+    public function allForPartyInBusiness(int $businessId, int $partyId): Collection
+    {
+        return Payment::with(self::RELATIONS)
+            ->where('party_id', $partyId)
+            ->whereHas('store', fn ($q) => $q->where('business_id', $businessId))
+            ->orderByDesc('id')
+            ->get();
+    }
+
     public function lockById(int $id): ?Payment
     {
         return Payment::whereKey($id)->lockForUpdate()->first();

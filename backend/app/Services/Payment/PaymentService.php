@@ -49,6 +49,21 @@ class PaymentService
         return $this->invoiceRepository->openForParty($storeId, $partyId, $type->value);
     }
 
+    /** Owner-only business view: a party's payments across every store in the business. */
+    public function getForPartyInBusiness(User $user, int $businessId, int $partyId): Collection
+    {
+        $this->permissionService->authorizeBusinessOwner($user, $businessId);
+        return $this->paymentRepository->allForPartyInBusiness($businessId, $partyId);
+    }
+
+    /** Owner-only business view: a party's still-owing invoices across every store. */
+    public function getOpenInvoicesInBusiness(User $user, int $businessId, int $partyId): Collection
+    {
+        $this->permissionService->authorizeBusinessOwner($user, $businessId);
+        $type = $this->resolveLedgerForBusiness($partyId, $businessId);
+        return $this->invoiceRepository->openForPartyInBusiness($businessId, $partyId, $type->value);
+    }
+
     /**
      * Record a payment against a party and apply it to the invoices the caller
      * chose, in the amounts they specified. Each targeted invoice is locked and
@@ -214,12 +229,16 @@ class PaymentService
     /** Validate the party belongs to the store's business and return the invoice type it owes on. */
     private function resolveLedger(int $partyId, int $storeId): InvoiceTypeEnum
     {
+        $businessId = (int) $this->storeRepository->findById($storeId)?->business_id;
+        return $this->resolveLedgerForBusiness($partyId, $businessId);
+    }
+
+    private function resolveLedgerForBusiness(int $partyId, int $businessId): InvoiceTypeEnum
+    {
         $party = $this->partyRepository->findWithLedgerRelations($partyId);
         if (!$party) {
             throw new PaymentException(ErrorCode::PAYMENT_PARTY_INVALID, 'Party not found.');
         }
-
-        $businessId = (int) $this->storeRepository->findById($storeId)?->business_id;
 
         return match ($party->type) {
             PartyTypeEnum::CUSTOMER => $this->assertLedger($party->customer, $businessId, InvoiceTypeEnum::SALE, 'Customer'),
