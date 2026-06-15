@@ -5,12 +5,6 @@
         Activity history for
         <strong>{{ viewMode === 'store' ? (currentStore?.name ?? '—') : (currentBusiness?.name ?? '—') }}</strong>
       </template>
-      <template v-if="isBusinessOwner" #actions>
-        <div class="view-toggle">
-          <button :class="{ active: viewMode === 'store' }" @click="switchMode('store')">Store</button>
-          <button :class="{ active: viewMode === 'business' }" @click="switchMode('business')">Business</button>
-        </div>
-      </template>
     </PageHeader>
 
     <EmptyState
@@ -97,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
+import { computed, watch, inject } from 'vue'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -117,15 +111,17 @@ const currentStore    = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 const showToast       = inject('showToast')
 
-const viewMode = ref('store')
 const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
+// View follows the store switcher: a selected store → that store's log;
+// "Business level" (owner, no store selected) → consolidated all-stores log.
+const viewMode = computed(() => (!currentStore.value && isBusinessOwner.value) ? 'business' : 'store')
 
 const {
   logs: entries, loading, fetching,
   currentPage, lastPage, total, perPage,
   startDate, endDate, searchQuery, objectFilter, actionFilter,
   hasActiveFilter,
-  fetchLogs, resetAndFetch, applyFilter, clearFilter, loadPage, changePerPage,
+  resetAndFetch, applyFilter, clearFilter, loadPage, changePerPage,
   exportParams,
 } = useAuditLogs({
   currentStore,
@@ -146,44 +142,13 @@ const { exporting, run } = useExport({
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-const switchMode = (mode) => {
-  if (viewMode.value === mode) return
-  viewMode.value = mode
-  entries.value = []
-  currentPage.value = 1
-  fetchLogs(1)
-}
-
-// Owners landing here with no store (business-level selection or no stores yet)
-// should jump straight to the business view instead of being stranded on the
-// "No store selected" empty state.
-let initialModeResolved = false
-const applyInitialMode = () => {
-  if (initialModeResolved) return
-  if (!currentBusiness.value) return
-  initialModeResolved = true
-  if (!currentStore.value && currentBusiness.value.role === 'owner') {
-    viewMode.value = 'business'
-    resetAndFetch()
-  }
-}
-
-watch(() => currentStore.value?.id, (id) => {
-  applyInitialMode()
-  if (viewMode.value === 'store' && id) resetAndFetch()
-}, { immediate: true })
-
-watch(() => currentBusiness.value?.id, (id) => {
-  applyInitialMode()
-  if (!isBusinessOwner.value && viewMode.value === 'business') {
-    viewMode.value = 'store'
-  }
-  if (viewMode.value === 'business' && id) resetAndFetch()
-})
+// Reload whenever the switcher changes the active scope (store ↔ business level).
+watch(
+  [viewMode, () => currentStore.value?.id, () => currentBusiness.value?.id],
+  () => {
+    const ready = viewMode.value === 'business' ? currentBusiness.value?.id : currentStore.value?.id
+    if (ready) resetAndFetch()
+  },
+  { immediate: true },
+)
 </script>
-
-<style scoped>
-.view-toggle { display: flex; background: #f3f4f6; border-radius: 10px; padding: 3px; gap: 2px; }
-.view-toggle button { padding: 7px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; background: none; color: #6b7280; transition: all 0.15s; }
-.view-toggle button.active { background: #fff; color: #111; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-</style>

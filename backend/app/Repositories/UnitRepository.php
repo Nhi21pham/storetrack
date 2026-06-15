@@ -52,7 +52,7 @@ class UnitRepository
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
-        return $query->orderBy('name')->get();
+        return $query->orderByDesc('id')->get();
     }
 
     public function listQuery(int $storeId, ?string $search = null, ?array $ids = null, ?string $status = null): Builder

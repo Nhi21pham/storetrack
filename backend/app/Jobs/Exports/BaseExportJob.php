@@ -2,7 +2,7 @@
 
 namespace App\Jobs\Exports;
 
-use App\Exports\BaseExport;
+use App\Exports\Contracts\Exportable;
 use App\Models\Export;
 use App\Services\ExportService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -34,9 +34,10 @@ abstract class BaseExportJob implements ShouldQueue
     public function __construct(public int $exportId) {}
 
     /**
-     * Build the BaseExport that will produce the sheet contents.
+     * Build the export that will produce the sheet contents — a single-sheet
+     * BaseExport or a multi-sheet workbook (both are Exportable).
      */
-    abstract protected function buildExport(Export $export): BaseExport;
+    abstract protected function buildExport(Export $export): Exportable;
 
     /**
      * The user-facing filename, including the .xlsx extension. This is what

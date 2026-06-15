@@ -80,7 +80,7 @@ class BankRepository
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
-        return $query->orderBy('short_name')->get();
+        return $query->orderByDesc('id')->get();
     }
 
     public function listQuery(int $businessId, ?string $search = null, ?array $ids = null, bool $includeInactive = true): Builder

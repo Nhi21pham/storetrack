@@ -24,6 +24,13 @@ import PurchaseInvoicesPage from '@/features/invoices/pages/PurchaseInvoicesPage
 import PurchaseInvoiceCreatePage from '@/features/invoices/pages/PurchaseInvoiceCreatePage.vue'
 import SaleInvoicesPage from '@/features/invoices/pages/SaleInvoicesPage.vue'
 import SaleInvoiceCreatePage from '@/features/invoices/pages/SaleInvoiceCreatePage.vue'
+import StockReportPage from '@/features/reports/pages/StockReportPage.vue'
+import SaleReportPage from '@/features/reports/pages/SaleReportPage.vue'
+import ProfitReportPage from '@/features/reports/pages/ProfitReportPage.vue'
+import ReceivablesReportPage from '@/features/reports/pages/ReceivablesReportPage.vue'
+import PayablesReportPage from '@/features/reports/pages/PayablesReportPage.vue'
+import TopProductsReportPage from '@/features/reports/pages/TopProductsReportPage.vue'
+import PaymentsPage from '@/features/payments/pages/PaymentsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -210,6 +217,80 @@ const router = createRouter({
           },
         },
         {
+          path: 'reports/stock',
+          name: 'stock-report',
+          component: StockReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Stock Report' },
+            ],
+          },
+        },
+        {
+          path: 'reports/sales',
+          name: 'sale-report',
+          component: SaleReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Sale Report' },
+            ],
+          },
+        },
+        {
+          path: 'reports/profit',
+          name: 'profit-report',
+          component: ProfitReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Profit Report' },
+            ],
+          },
+        },
+        {
+          path: 'reports/top-products',
+          name: 'top-products-report',
+          component: TopProductsReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Top Products' },
+            ],
+          },
+        },
+        {
+          path: 'reports/receivables',
+          name: 'receivables-report',
+          component: ReceivablesReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Debt Report' },
+              { label: 'Customer Debt' },
+            ],
+          },
+        },
+        {
+          path: 'reports/payables',
+          name: 'payables-report',
+          component: PayablesReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Debt Report' },
+              { label: 'Supplier Debt' },
+            ],
+          },
+        },
+        {
           path: 'customers',
           name: 'customers',
           component: CustomerPage,
@@ -217,6 +298,17 @@ const router = createRouter({
             breadcrumb: [
               { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Customers' },
+            ],
+          },
+        },
+        {
+          path: 'payments',
+          name: 'payments',
+          component: PaymentsPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Payments' },
             ],
           },
         },

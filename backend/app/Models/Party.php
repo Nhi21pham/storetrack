@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\PartyTypeEnum;
+use App\Models\Invoice\Invoice;
+use App\Models\Payment\Payment;
 use Illuminate\Database\Eloquent\Model;
 
 class Party extends Model
@@ -41,5 +43,15 @@ class Party extends Model
     public function bankAccounts()
     {
         return $this->hasMany(BankAccount::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
     }
 }

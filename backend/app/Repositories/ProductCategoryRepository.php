@@ -57,7 +57,7 @@ class ProductCategoryRepository
         if (!$includeInactive) {
             $query->where('is_active', true);
         }
-        return $query->orderBy('code')->get();
+        return $query->orderByDesc('id')->get();
     }
 
     public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder

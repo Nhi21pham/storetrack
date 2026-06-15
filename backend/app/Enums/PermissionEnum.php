@@ -33,6 +33,10 @@ enum PermissionEnum: string
     case UPDATE_INVOICE = 'invoice.update';
     case DELETE_INVOICE = 'invoice.delete';
 
+    // Payment
+    case CREATE_PAYMENT = 'payment.create';
+    case DELETE_PAYMENT = 'payment.delete';
+
     // Bank
     case CREATE_BANK = 'bank.create';
     case UPDATE_BANK = 'bank.update';

@@ -11,6 +11,11 @@ use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\Invoice\InvoiceService;
 use App\Services\ProductService;
+use App\Services\Report\DebtReportService;
+use App\Services\Report\ProfitReportService;
+use App\Services\Report\SaleReportService;
+use App\Services\Report\StockReportService;
+use App\Services\Report\TopProductsReportService;
 use App\Services\SupplierService;
 use App\Services\Tag\TagService;
 use App\Services\UnitService;
@@ -31,6 +36,11 @@ class ExportController extends Controller
         private BankService $bankService,
         private BankAccountService $bankAccountService,
         private InvoiceService $invoiceService,
+        private StockReportService $stockReportService,
+        private SaleReportService $saleReportService,
+        private ProfitReportService $profitReportService,
+        private DebtReportService $debtReportService,
+        private TopProductsReportService $topProductsReportService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -104,6 +114,126 @@ class ExportController extends Controller
             $request->user(),
             $storeId,
             $this->extractInvoiceExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueStockReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->stockReportService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractStockReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueStockReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->stockReportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractStockReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueSaleReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->saleReportService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractSaleReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueSaleReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->saleReportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractSaleReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueProfitReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->profitReportService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractProfitReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueProfitReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->profitReportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractProfitReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueReceivablesReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->debtReportService->queueReceivablesExport(
+            $request->user(),
+            $storeId,
+            $this->extractDebtReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueReceivablesReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->debtReportService->queueReceivablesBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractDebtReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queuePayablesReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->debtReportService->queuePayablesExport(
+            $request->user(),
+            $storeId,
+            $this->extractDebtReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queuePayablesReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->debtReportService->queuePayablesBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractDebtReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueTopProductsReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->topProductsReportService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractTopProductsReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueTopProductsReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->topProductsReportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractTopProductsReportExportFilters($request),
             $this->extractClientId($request),
         ));
     }
@@ -233,6 +363,153 @@ class ExportController extends Controller
             'end_date'       => $request->query('end_date'),
             'ids'            => $ids,
             'columns'        => $columns,
+        ];
+    }
+
+    private function extractStockReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        $storeIds = $request->query('store_ids');
+        if (!is_array($storeIds)) {
+            $storeIds = null;
+        }
+
+        return [
+            'search'               => $request->query('search'),
+            'supplier_id'          => $request->query('supplier_id'),
+            'store_ids'            => $storeIds,
+            'tag_id'               => $request->query('tag_id'),
+            'tag_value_id'         => $request->query('tag_value_id'),
+            'min_quantity'         => $request->query('min_quantity'),
+            'max_quantity'         => $request->query('max_quantity'),
+            'include_out_of_stock' => $request->query('include_out_of_stock'),
+            'start_date'           => $request->query('start_date'),
+            'end_date'             => $request->query('end_date'),
+            'ids'                  => $ids,
+            'columns'              => $columns,
+        ];
+    }
+
+    private function extractSaleReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        $storeIds = $request->query('store_ids');
+        if (!is_array($storeIds)) {
+            $storeIds = null;
+        }
+
+        return [
+            'search'       => $request->query('search'),
+            'customer_id'  => $request->query('customer_id'),
+            'store_ids'    => $storeIds,
+            'tag_id'       => $request->query('tag_id'),
+            'tag_value_id' => $request->query('tag_value_id'),
+            'min_quantity' => $request->query('min_quantity'),
+            'max_quantity' => $request->query('max_quantity'),
+            'start_date'   => $request->query('start_date'),
+            'end_date'     => $request->query('end_date'),
+            'ids'          => $ids,
+            'columns'      => $columns,
+        ];
+    }
+
+    private function extractProfitReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        $storeIds = $request->query('store_ids');
+        if (!is_array($storeIds)) {
+            $storeIds = null;
+        }
+
+        return [
+            'search'       => $request->query('search'),
+            'store_ids'    => $storeIds,
+            'tag_id'       => $request->query('tag_id'),
+            'tag_value_id' => $request->query('tag_value_id'),
+            'min_quantity' => $request->query('min_quantity'),
+            'max_quantity' => $request->query('max_quantity'),
+            'start_date'   => $request->query('start_date'),
+            'end_date'     => $request->query('end_date'),
+            'ids'          => $ids,
+            'columns'      => $columns,
+        ];
+    }
+
+    private function extractDebtReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        return [
+            'search'     => $request->query('search'),
+            'start_date' => $request->query('start_date'),
+            'end_date'   => $request->query('end_date'),
+            'ids'        => $ids,
+            'columns'    => $columns,
+        ];
+    }
+
+    private function extractTopProductsReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        $storeIds = $request->query('store_ids');
+        if (!is_array($storeIds)) {
+            $storeIds = null;
+        }
+
+        return [
+            'search'       => $request->query('search'),
+            'tag_id'       => $request->query('tag_id'),
+            'tag_value_id' => $request->query('tag_value_id'),
+            'start_date'   => $request->query('start_date'),
+            'end_date'     => $request->query('end_date'),
+            'sort'         => $request->query('sort'),
+            'store_ids'    => $storeIds,
+            'ids'          => $ids,
+            'columns'      => $columns,
         ];
     }
 

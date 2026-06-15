@@ -1,0 +1,17 @@
+extend type Query {
+    payments(store_id: ID!, party_id: ID!): [Payment!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Payment\\PaymentResolver@forParty")
+
+    partyOpenInvoices(store_id: ID!, party_id: ID!): [Invoice!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Payment\\PaymentResolver@partyOpenInvoices")
+
+    paymentsByBusiness(business_id: ID!, party_id: ID!): [Payment!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Payment\\PaymentResolver@paymentsByBusiness")
+
+    partyOpenInvoicesByBusiness(business_id: ID!, party_id: ID!): [Invoice!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Payment\\PaymentResolver@partyOpenInvoicesByBusiness")
+}

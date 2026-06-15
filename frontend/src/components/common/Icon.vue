@@ -137,6 +137,11 @@
       <line x1="9" y1="14" x2="15" y2="14"/>
       <polyline points="12 11 15 14 12 17"/>
     </template>
+    <template v-else-if="name === 'payment'">
+      <rect x="2" y="5" width="20" height="14" rx="2"/>
+      <line x1="2" y1="10" x2="22" y2="10"/>
+      <line x1="6" y1="15" x2="10" y2="15"/>
+    </template>
   </svg>
 </template>
 

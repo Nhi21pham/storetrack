@@ -8,6 +8,8 @@ type Supplier {
     tax_code: String
     party: Party! @belongsTo
     stores: [Store!]! @belongsToMany
+    outstanding: Float
+    business_outstanding: Float
     created_at: DateTime!
     updated_at: DateTime!
 }

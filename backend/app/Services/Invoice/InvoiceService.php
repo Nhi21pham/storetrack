@@ -23,13 +23,15 @@ use App\Repositories\Invoice\InventoryBatchRepository;
 use App\Repositories\Invoice\InvoiceRepository;
 use App\Repositories\Invoice\InvoiceSequenceRepository;
 use App\Repositories\Invoice\ProductStockRepository;
+use App\Repositories\Payment\PaymentAllocationRepository;
 use App\Services\AuditLog\Loggers\InvoiceAuditLogger;
 use App\Services\ExportService;
 use App\Services\Invoice\Stock\InvoiceStockHandler;
 use App\Services\Invoice\Stock\InvoiceStockHandlerFactory;
+use App\Services\Payment\PaymentService;
 use App\Services\PermissionService;
+use App\Support\TransactionRunner;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
 class InvoiceService
 {
@@ -42,6 +44,8 @@ class InvoiceService
         private PermissionService $permissionService,
         private InvoiceAuditLogger $auditLogger,
         private ExportService $exportService,
+        private PaymentService $paymentService,
+        private PaymentAllocationRepository $allocationRepository,
     ) {}
 
     public function getAll(User $user, int $storeId, ?string $type = null): Collection
@@ -103,8 +107,9 @@ class InvoiceService
 
         $handler = $this->stockHandlerFactory->for($type);
 
-        return DB::transaction(function () use ($actor, $storeId, $type, $data, $items, $handler) {
+        return TransactionRunner::run(function () use ($actor, $storeId, $type, $data, $items, $handler) {
             $handler->assertParty((int) $data['party_id'], $storeId);
+            $handler->linkPartyToStore((int) $data['party_id'], $storeId);
 
             $invoice = $this->createHeader($actor, $storeId, $type, $data);
 
@@ -112,6 +117,8 @@ class InvoiceService
 
             $invoice = $this->applyTotals($invoice, $subtotal, $taxTotal);
             $this->auditLogger->invoiceCreated($actor, $invoice);
+
+            $this->applyPaymentIntent($actor, $storeId, $invoice, $data);
 
             return $this->invoiceRepository->findById((int) $invoice->id);
         });
@@ -126,7 +133,7 @@ class InvoiceService
 
         $handler = $this->stockHandlerFactory->for($type);
 
-        return DB::transaction(function () use ($actor, $id, $type, $data, $items, $handler) {
+        return TransactionRunner::run(function () use ($actor, $id, $type, $data, $items, $handler) {
             $invoice = $this->invoiceRepository->lockById($id);
             if (!$invoice) {
                 throw new InvoiceException(ErrorCode::INVOICE_NOT_FOUND, 'Invoice not found.');
@@ -135,8 +142,11 @@ class InvoiceService
             $this->permissionService->authorizeStore($actor, PermissionEnum::UPDATE_INVOICE, $storeId);
             $this->assertType($invoice, $type);
             $handler->assertParty((int) $data['party_id'], $storeId);
+            $handler->linkPartyToStore((int) $data['party_id'], $storeId);
 
-            // Reverse the invoice's old stock effects, then re-apply the new lines from scratch.
+            // Reverse the invoice's old stock effects, then re-apply the new lines. Existing
+            // payments are KEPT — the status re-derives from paid_amount vs the new total
+            // (e.g. a fully-paid 200 invoice edited up to 210 becomes PARTIAL, 10 owed).
             $handler->reverse($invoice);
             $this->invoiceRepository->deleteItems($invoice);
 
@@ -145,12 +155,14 @@ class InvoiceService
                 'description'    => $data['description'] ?? null,
                 'invoice_date'   => $data['invoice_date'],
                 'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_status'] ?? InvoicePaymentStatusEnum::UNPAID->value,
             ]);
 
             [$subtotal, $taxTotal] = $this->addLines($invoice, $storeId, $handler, $items, (string) $data['invoice_date']);
 
             $invoice = $this->applyTotals($invoice, $subtotal, $taxTotal);
+            $this->invoiceRepository->update($invoice, [
+                'payment_status' => InvoicePaymentStatusEnum::fromAmounts((float) $invoice->paid_amount, (float) $invoice->grand_total)->value,
+            ]);
             $this->auditLogger->invoiceUpdated($actor, $invoice);
 
             return $this->invoiceRepository->findById((int) $invoice->id);
@@ -159,13 +171,14 @@ class InvoiceService
 
     public function delete(User $actor, int $id): void
     {
-        DB::transaction(function () use ($actor, $id) {
+        TransactionRunner::run(function () use ($actor, $id) {
             $invoice = $this->invoiceRepository->lockById($id);
             if (!$invoice) {
                 throw new InvoiceException(ErrorCode::INVOICE_NOT_FOUND, 'Invoice not found.');
             }
             $storeId = (int) $invoice->store_id;
             $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_INVOICE, $storeId);
+            $this->assertNoPayments($invoice);
 
             $this->stockHandlerFactory->for($invoice->type)->reverse($invoice);
 
@@ -265,11 +278,59 @@ class InvoiceService
             'description'    => $data['description'] ?? null,
             'invoice_date'   => $data['invoice_date'],
             'payment_method' => $data['payment_method'],
-            'payment_status' => $data['payment_status'] ?? InvoicePaymentStatusEnum::UNPAID->value,
+            'payment_status' => InvoicePaymentStatusEnum::UNPAID->value,
             'subtotal'       => 0,
             'tax_total'      => 0,
             'grand_total'    => 0,
+            'paid_amount'    => 0,
         ]);
+    }
+
+    /**
+     * Apply the form's payment intent (Unpaid / Partial / Paid + amount) by recording
+     * a payment against the invoice. Used on create, and on edit after the invoice's
+     * prior payments have been released. Status stays derived from the resulting paid_amount.
+     */
+    private function applyPaymentIntent(User $actor, int $storeId, Invoice $invoice, array $data): void
+    {
+        $grandTotal = (float) $invoice->grand_total;
+        if ($grandTotal <= 0) {
+            return;
+        }
+
+        $status = $data['payment_status'] ?? InvoicePaymentStatusEnum::UNPAID->value;
+        if ($status === InvoicePaymentStatusEnum::PAID->value) {
+            $amount = $grandTotal;
+        } elseif ($status === InvoicePaymentStatusEnum::PARTIAL->value) {
+            // A "partial" that happens to cover the whole invoice just settles it.
+            $amount = min(round((float) ($data['paid_amount'] ?? 0), 2), $grandTotal);
+        } else {
+            return;
+        }
+
+        if ($amount <= 0) {
+            return;
+        }
+
+        $this->paymentService->record($actor, $storeId, [
+            'party_id'    => (int) $invoice->party_id,
+            'paid_at'     => $data['invoice_date'],
+            'method'      => $data['payment_method'],
+            'allocations' => [
+                ['invoice_id' => (int) $invoice->id, 'amount' => $amount],
+            ],
+        ]);
+    }
+
+    /** An invoice with payments allocated against it can't be edited or deleted until they're removed. */
+    private function assertNoPayments(Invoice $invoice): void
+    {
+        if ($this->allocationRepository->existsForInvoice((int) $invoice->id)) {
+            throw new InvoiceException(
+                ErrorCode::INVOICE_HAS_PAYMENTS,
+                'This invoice has payments recorded against it. Remove the payments before editing or deleting it.'
+            );
+        }
     }
 
     /** Creates each line (tax snapshot + stock effect) and returns the [subtotal, taxTotal] running totals. */

@@ -9,12 +9,14 @@ use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Product;
 use App\Models\Store;
+use App\Repositories\CustomerRepository;
 use App\Services\Invoice\InventoryCostingService;
 
 class SaleStockHandler implements InvoiceStockHandler
 {
     public function __construct(
         private InventoryCostingService $costingService,
+        private CustomerRepository $customerRepository,
     ) {}
 
     public function assertParty(int $partyId, int $storeId): void
@@ -33,6 +35,12 @@ class SaleStockHandler implements InvoiceStockHandler
                 'Customer not found in this business.'
             );
         }
+    }
+
+    /** A sale at this store links the customer to it, so it shows under the store. */
+    public function linkPartyToStore(int $partyId, int $storeId): void
+    {
+        $this->customerRepository->attachStoreByParty($partyId, $storeId);
     }
 
     /** The sale price is revenue; the line draws its quantity from FIFO batches for its cost. */

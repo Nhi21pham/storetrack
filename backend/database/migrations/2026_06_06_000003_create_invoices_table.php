@@ -22,6 +22,7 @@ return new class extends Migration
             $table->decimal('subtotal', 15, 2)->default(0);
             $table->decimal('tax_total', 15, 2)->default(0);
             $table->decimal('grand_total', 15, 2)->default(0);
+            $table->decimal('paid_amount', 15, 2)->default(0);
             $table->timestamps();
 
             $table->unique(['store_id', 'code']);

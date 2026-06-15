@@ -85,6 +85,14 @@ enum ErrorCode: string
     case INVOICE_IMMUTABLE = 'INVOICE_IMMUTABLE';
     case INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK';
     case INVOICE_STOCK_CONSUMED = 'INVOICE_STOCK_CONSUMED';
+    case INVOICE_HAS_PAYMENTS = 'INVOICE_HAS_PAYMENTS';
+
+    // Payment
+    case PAYMENT_NOT_FOUND = 'PAYMENT_NOT_FOUND';
+    case PAYMENT_PARTY_INVALID = 'PAYMENT_PARTY_INVALID';
+    case PAYMENT_INVALID_ALLOCATION = 'PAYMENT_INVALID_ALLOCATION';
+    case PAYMENT_EXCEEDS_BALANCE = 'PAYMENT_EXCEEDS_BALANCE';
+    case PAYMENT_INVALID_AMOUNT = 'PAYMENT_INVALID_AMOUNT';
 
     // Province
     case PROVINCE_NOT_FOUND = 'PROVINCE_NOT_FOUND';
@@ -152,6 +160,11 @@ enum ErrorCode: string
             self::INVOICE_IMMUTABLE,
             self::INSUFFICIENT_STOCK,
             self::INVOICE_STOCK_CONSUMED,
+            self::INVOICE_HAS_PAYMENTS,
+            self::PAYMENT_PARTY_INVALID,
+            self::PAYMENT_INVALID_ALLOCATION,
+            self::PAYMENT_EXCEEDS_BALANCE,
+            self::PAYMENT_INVALID_AMOUNT,
             self::CANNOT_CHANGE_OWNER_ROLE,
             self::CANNOT_REMOVE_OWNER,
             self::INVITATION_EXPIRED,
@@ -183,6 +196,7 @@ enum ErrorCode: string
             self::TAG_VALUE_NOT_FOUND,
             self::TAX_NOT_FOUND,
             self::INVOICE_NOT_FOUND,
+            self::PAYMENT_NOT_FOUND,
             self::PROVINCE_NOT_FOUND,
             self::INVITATION_NOT_FOUND,
             self::EXPORT_NOT_FOUND,

@@ -1,0 +1,17 @@
+type SaleReportRow {
+    id: ID!
+    store_id: ID
+    store_name: String
+    product_id: ID!
+    product_name: String!
+    product_code: String
+    tags: [ProductTag!]!
+    customer_party_id: ID
+    customer_name: String
+    invoice_id: ID
+    invoice_code: String
+    invoice_date: DateTime
+    quantity: Float!
+    unit_price: Float!
+    total_sale: Float!
+}

@@ -1,0 +1,10 @@
+type TopProductRow {
+    product_id: ID!
+    product_name: String!
+    product_code: String
+    tags: [ProductTag!]!
+    qty_sold: Float!
+    revenue: Float!
+    profit: Float!
+    orders: Int!
+}

@@ -9,7 +9,7 @@ class InvoiceExport extends BaseExport
 {
     public const COLUMN_KEYS = [
         'code', 'invoice_date', 'party_name', 'payment_method',
-        'payment_status', 'subtotal', 'tax_total', 'grand_total', 'created_at',
+        'payment_status', 'subtotal', 'tax_total', 'grand_total', 'paid_amount', 'balance', 'created_at',
     ];
 
     /**
@@ -77,6 +77,8 @@ class InvoiceExport extends BaseExport
             'subtotal'       => ['heading' => 'Subtotal',      'width' => 16, 'value' => fn ($row) => (float) $row->subtotal],
             'tax_total'      => ['heading' => 'Tax',           'width' => 16, 'value' => fn ($row) => (float) $row->tax_total],
             'grand_total'    => ['heading' => 'Grand Total',   'width' => 18, 'value' => fn ($row) => (float) $row->grand_total],
+            'paid_amount'    => ['heading' => 'Paid',          'width' => 16, 'value' => fn ($row) => (float) $row->paid_amount],
+            'balance'        => ['heading' => 'Balance',       'width' => 16, 'value' => fn ($row) => (float) $row->balance],
             'created_at'     => ['heading' => 'Created',       'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
         ];
     }

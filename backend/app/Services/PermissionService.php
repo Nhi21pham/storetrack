@@ -82,6 +82,14 @@ class PermissionService
         }
     }
 
+    /** Owner-only gate for business-wide views (e.g. consolidated reports across all stores). */
+    public function authorizeBusinessOwner(User $user, int $businessId): void
+    {
+        if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
+            throw new AuthorizationException('You do not have access to this business.');
+        }
+    }
+
     /** Guard against cross-business spoofing: row's actual business must match the claimed one. */
     public function assertSameBusiness(int $rowBusinessId, int $claimedBusinessId): void
     {

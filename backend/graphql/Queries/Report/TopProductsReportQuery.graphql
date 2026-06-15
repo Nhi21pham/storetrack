@@ -1,0 +1,9 @@
+extend type Query {
+    topProductsReport(store_id: ID!, start_date: String, end_date: String): [TopProductRow!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\TopProductsReportResolver@all")
+
+    topProductsReportByBusiness(business_id: ID!, start_date: String, end_date: String): [TopProductRow!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\TopProductsReportResolver@allForBusiness")
+}

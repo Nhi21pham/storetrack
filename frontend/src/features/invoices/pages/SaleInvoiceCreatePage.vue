@@ -52,11 +52,26 @@
               </SelectField>
             </div>
 
-            <div class="form-group">
+            <div v-if="!isEdit" class="form-group">
               <label>Payment status</label>
               <SelectField v-model="form.payment_status">
                 <option v-for="s in PAYMENT_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
               </SelectField>
+            </div>
+
+            <div v-if="!isEdit && form.payment_status === 'PARTIAL'" class="form-group">
+              <label>Amount paid <span class="required">*</span></label>
+              <NumberInput v-model="form.paid_amount" :decimals="2" placeholder="0" class="text-input" />
+              <FormMessage v-if="errors.paid_amount" :text="errors.paid_amount" />
+              <span v-else class="pay-hint">{{ remainingLabel }}</span>
+            </div>
+
+            <div v-if="isEdit" class="form-group">
+              <label>Payment status</label>
+              <div class="pay-readonly">
+                <PaymentStatusBadge :status="derivedStatus" />
+                <span class="pay-hint">Paid {{ formatMoney(loadedPayment.paid) }} · Balance {{ formatMoney(editBalance) }}</span>
+              </div>
             </div>
 
             <div class="form-group full">
@@ -96,7 +111,7 @@
                   <NumberInput v-model="item.quantity" :decimals="3" class="num-input" :class="{ error: exceedsStock(item) }" placeholder="0" />
                 </td>
                 <td class="c-price">
-                  <NumberInput v-model="item.unit_price" :decimals="2" class="num-input" placeholder="0.00" />
+                  <NumberInput v-model="item.unit_price" :decimals="2" class="num-input" placeholder="0" />
                 </td>
                 <td class="c-tax">
                   <button type="button" class="tax-toggle" :class="{ active: item.expanded }" @click="item.expanded = !item.expanded">
@@ -106,11 +121,11 @@
                 </td>
                 <td class="c-cost">
                   <template v-if="item.product_id">
-                    <div v-for="(b, bi) in batchesFor(item.product_id)" :key="bi" class="cost-line">
+                    <div v-for="(b, bi) in costLinesFor(item.product_id)" :key="bi" class="cost-line">
                       <span class="cl-amount">{{ formatQuantity(b.remaining) }} × {{ formatMoney(b.unit_cost) }}</span>
                       <span class="cl-date">{{ formatInvoiceDate(b.received_at) }}</span>
                     </div>
-                    <span v-if="batchesFor(item.product_id).length === 0" class="muted">No stock</span>
+                    <span v-if="costLinesFor(item.product_id).length === 0" class="muted">No stock</span>
                   </template>
                   <span v-else class="muted">—</span>
                 </td>
@@ -212,6 +227,7 @@ import AddItemButton from '@/components/common/AddItemButton.vue'
 import NumberInput from '@/components/common/NumberInput.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import FormMessage from '@/components/common/FormMessage.vue'
+import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
 import InvoiceLineTaxEditor from '@/features/invoices/components/InvoiceLineTaxEditor.vue'
 import CustomerFormModal from '@/features/customers/components/CustomerFormModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
@@ -258,11 +274,13 @@ const products = ref([])
 const taxes = ref([])
 const stockByProduct = ref({})
 const originalByProduct = ref({})
+const originalBatchInfo = ref({})
 const batchesByProduct = ref({})
 
 const submitting = ref(false)
+const loadedPayment = ref({ paid: 0, balance: 0 })
 const apiError = ref('')
-const errors = ref({ party_id: '', invoice_date: '', items: '' })
+const errors = ref({ party_id: '', invoice_date: '', items: '', paid_amount: '' })
 
 const showCustomerForm = ref(false)
 const showProductForm = ref(false)
@@ -289,6 +307,7 @@ const form = ref({
   invoice_date: todayInputDate(),
   payment_method: 'CASH',
   payment_status: 'UNPAID',
+  paid_amount: '',
   description: '',
 })
 const items = ref([newItem()])
@@ -328,8 +347,8 @@ const customerOptions = computed(() =>
     })),
 )
 
-// On-hand a sale may draw on. When editing, this invoice's own consumption is
-// added back, since the edit reverses it before re-applying.
+// The most a sale may draw on: current on-hand plus, when editing, this invoice's
+// own consumption — the edit reverses it before re-applying the new lines.
 const availableForProduct = (productId) => {
   const id = String(productId)
   return Number(stockByProduct.value[id] || 0) + Number(originalByProduct.value[id] || 0)
@@ -353,10 +372,44 @@ const exceedsStock = (item) => {
   return (requestedByProduct.value[item.product_id] || 0) > availableForProduct(item.product_id)
 }
 
+// On-hand the warehouse keeps once this sale's requested quantity is drawn — a live
+// figure that counts down as the user types, so it matches the resulting stock.
+const remainingAfterSale = (productId) =>
+  availableForProduct(productId) - (requestedByProduct.value[productId] || 0)
+
+// The FIFO batches for the cost column, each showing what it holds after this sale's
+// requested quantity is drawn (oldest first). On edit the invoice's own draw is
+// restored first — including any batch it had fully emptied — so the figures stay in
+// step with the In-stock hint and update as lines change.
+const costLinesFor = (productId) => {
+  const open = batchesFor(productId)
+  const openIds = new Set(open.map((b) => String(b.id)))
+  const info = originalBatchInfo.value
+
+  const released = Object.entries(info)
+    .filter(([id]) => !openIds.has(id))
+    .map(([id, b]) => ({ id: Number(id), remaining: b.quantity, unit_cost: b.unit_cost, received_at: null }))
+    .sort((a, b) => a.id - b.id)
+
+  const restored = open.map((b) => ({
+    ...b,
+    remaining: b.remaining + (info[String(b.id)]?.quantity || 0),
+  }))
+
+  let outstanding = Math.max(requestedByProduct.value[productId] || 0, 0)
+  const lines = []
+  for (const b of [...released, ...restored]) {
+    const taken = Math.min(b.remaining, outstanding)
+    outstanding -= taken
+    const remaining = b.remaining - taken
+    if (remaining > 0.0001) lines.push({ ...b, remaining })
+  }
+  return lines
+}
+
 const stockHint = (item) => {
-  const avail = availableForProduct(item.product_id)
-  if (exceedsStock(item)) return `Only ${formatQuantity(avail)} in stock`
-  return `In stock: ${formatQuantity(avail)}`
+  if (exceedsStock(item)) return `Only ${formatQuantity(availableForProduct(item.product_id))} in stock`
+  return `In stock: ${formatQuantity(remainingAfterSale(item.product_id))}`
 }
 
 const hasStockWarning = computed(() => items.value.some((it) => exceedsStock(it)))
@@ -365,7 +418,7 @@ const productOptions = computed(() =>
   products.value.map((p) => ({
     value: String(p.id),
     label: `${p.code} — ${p.name}`,
-    sublabel: [p.unit?.name, `In stock: ${formatQuantity(availableForProduct(p.id))}`].filter(Boolean).join(' · '),
+    sublabel: [p.unit?.name, `In stock: ${formatQuantity(Math.max(0, remainingAfterSale(p.id)))}`].filter(Boolean).join(' · '),
   })),
 )
 
@@ -399,6 +452,22 @@ const totals = computed(() => {
   return { subtotal, tax, grand: round2(subtotal + tax) }
 })
 
+const remaining = computed(() => round2(totals.value.grand - (Number(form.value.paid_amount) || 0)))
+const remainingLabel = computed(() =>
+  remaining.value >= 0
+    ? `Remaining: ${formatMoney(remaining.value)}`
+    : `Overpaid by ${formatMoney(-remaining.value)}`,
+)
+
+// On edit the paid amount is fixed (managed on the Payments page); the status/balance
+// re-derive live from it vs the current total, matching what the backend will store.
+const editBalance = computed(() => round2(totals.value.grand - loadedPayment.value.paid))
+const derivedStatus = computed(() => {
+  const paid = loadedPayment.value.paid
+  if (paid <= 0) return 'UNPAID'
+  return paid >= totals.value.grand ? 'PAID' : 'PARTIAL'
+})
+
 const addItem = () => items.value.push(newItem())
 
 const removeItem = (i) => {
@@ -415,6 +484,7 @@ const buildBatchMap = (batches) => {
   for (const b of batches || []) {
     const id = String(b.product_id)
     ;(map[id] ||= []).push({
+      id: Number(b.id),
       remaining: Number(b.quantity_remaining),
       unit_cost: Number(b.unit_cost),
       received_at: b.received_at,
@@ -458,6 +528,7 @@ const loadInvoice = async () => {
       payment_status: inv.payment_status,
       description: inv.description || '',
     }
+    loadedPayment.value = { paid: Number(inv.paid_amount || 0), balance: Number(inv.balance || 0) }
     items.value = (inv.items || []).map((it) => ({
       product_id: String(it.product_id),
       quantity: trimNumber(it.quantity),
@@ -469,6 +540,16 @@ const loadInvoice = async () => {
     originalByProduct.value = (inv.items || []).reduce((map, it) => {
       const id = String(it.product_id)
       map[id] = (map[id] || 0) + Number(it.quantity || 0)
+      return map
+    }, {})
+    // The same consumption broken down per FIFO batch, so the cost column can show
+    // each batch as it'll be after this invoice releases its draw on save.
+    originalBatchInfo.value = (inv.items || []).reduce((map, it) => {
+      for (const c of it.costs || []) {
+        const id = String(c.inventory_batch_id)
+        if (!map[id]) map[id] = { quantity: 0, unit_cost: Number(c.unit_cost) }
+        map[id].quantity += Number(c.quantity || 0)
+      }
       return map
     }, {})
     if (items.value.length === 0) items.value = [newItem()]
@@ -494,6 +575,10 @@ watch(items, () => {
   if (hasValid) errors.value.items = ''
 }, { deep: true })
 
+watch(() => [form.value.payment_status, form.value.paid_amount], () => {
+  if (errors.value.paid_amount) errors.value.paid_amount = ''
+})
+
 // On a failed submit, bring the first invalid field into view.
 const scrollToError = async () => {
   await nextTick()
@@ -508,7 +593,7 @@ const scrollToError = async () => {
 }
 
 const validate = () => {
-  errors.value = { party_id: '', invoice_date: '', items: '' }
+  errors.value = { party_id: '', invoice_date: '', items: '', paid_amount: '' }
   if (!form.value.party_id) errors.value.party_id = 'Customer is required.'
   if (!form.value.invoice_date) errors.value.invoice_date = 'Invoice date is required.'
 
@@ -518,7 +603,17 @@ const validate = () => {
   if (valid.length === 0) {
     errors.value.items = 'Add at least one item with a product, quantity and price.'
   }
-  return !errors.value.party_id && !errors.value.invoice_date && !errors.value.items
+
+  if (!isEdit.value && form.value.payment_status === 'PARTIAL') {
+    const amt = Number(form.value.paid_amount)
+    if (!(amt > 0)) {
+      errors.value.paid_amount = 'Enter how much was paid.'
+    } else if (amt >= totals.value.grand) {
+      errors.value.paid_amount = 'Partial amount must be less than the grand total.'
+    }
+  }
+
+  return !errors.value.party_id && !errors.value.invoice_date && !errors.value.items && !errors.value.paid_amount
 }
 
 const buildInput = () => ({
@@ -526,6 +621,7 @@ const buildInput = () => ({
   invoice_date: form.value.invoice_date,
   payment_method: form.value.payment_method,
   payment_status: form.value.payment_status,
+  paid_amount: Number(form.value.paid_amount) || 0,
   description: form.value.description?.trim() || null,
   items: items.value
     .filter((it) => it.product_id && Number(it.quantity) > 0)
@@ -634,6 +730,8 @@ const keepEditing = () => {
 .form-group.full { grid-column: 1 / -1; }
 .form-group label { font-size: 13px; font-weight: 500; color: #374151; }
 .required { color: #dc2626; }
+.pay-hint { font-size: 12px; color: #6b7280; }
+.pay-readonly { display: flex; align-items: center; gap: 10px; min-height: 40px; }
 .picker-row { display: flex; align-items: stretch; gap: 8px; }
 .picker-row > :first-child { flex: 1; min-width: 0; }
 

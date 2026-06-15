@@ -2,8 +2,11 @@
 
 namespace App\Repositories;
 
+use App\Enums\InvoiceTypeEnum;
+use App\Models\Invoice\Invoice;
 use App\Models\Supplier;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class SupplierRepository
 {
@@ -15,6 +18,13 @@ class SupplierRepository
     public function attachStore(Supplier $supplier, int $storeId): void
     {
         $supplier->stores()->attach($storeId);
+    }
+
+    /** Link the supplier (by party) to a store it transacted at, idempotently. */
+    public function attachStoreByParty(int $partyId, int $storeId): void
+    {
+        $supplier = Supplier::where('party_id', $partyId)->first();
+        $supplier?->stores()->syncWithoutDetaching([$storeId]);
     }
 
     public function findById(int $id): ?Supplier
@@ -52,9 +62,29 @@ class SupplierRepository
         return Supplier::whereIn('id', array_values(array_unique($ids)))->delete();
     }
 
-    public function all(int $businessId)
+    public function all(int $businessId, ?int $storeId = null): Collection
     {
-        return Supplier::with('party')->where('business_id', $businessId)->latest()->get();
+        return Supplier::query()
+            ->with('party')
+            ->where('business_id', $businessId)
+            ->select('suppliers.*')
+            ->addSelect([
+                'outstanding'          => $this->outstandingSubquery($storeId),
+                'business_outstanding' => $this->outstandingSubquery(null),
+            ])
+            ->latest()
+            ->get();
+    }
+
+    /** Open purchase-invoice balance owed to each supplier's party (scoped to a store when given). */
+    private function outstandingSubquery(?int $storeId): Builder
+    {
+        return Invoice::query()
+            ->selectRaw('COALESCE(SUM(grand_total - paid_amount), 0)')
+            ->whereColumn('party_id', 'suppliers.party_id')
+            ->where('type', InvoiceTypeEnum::PURCHASE->value)
+            ->whereColumn('paid_amount', '<', 'grand_total')
+            ->when($storeId !== null, fn ($q) => $q->where('store_id', $storeId));
     }
 
     public function listQuery(int $businessId, ?int $storeId = null, ?string $search = null, ?array $ids = null): Builder

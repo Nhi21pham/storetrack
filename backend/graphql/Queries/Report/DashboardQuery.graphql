@@ -1,0 +1,9 @@
+extend type Query {
+    dashboard(store_id: ID!, month: String): DashboardSummary!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\DashboardResolver@store")
+
+    dashboardByBusiness(business_id: ID!, month: String): DashboardSummary!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Queries\\Report\\DashboardResolver@business")
+}

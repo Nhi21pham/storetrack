@@ -25,6 +25,7 @@ input CreatePurchaseInvoiceInput {
     invoice_date: String! @rules(apply: ["required", "date"])
     payment_method: InvoicePaymentMethod!
     payment_status: InvoicePaymentStatus
+    paid_amount: Float @rules(apply: ["sometimes", "numeric", "min:0"])
     description: String @rules(apply: ["sometimes", "nullable", "string", "max:1000"])
     items: [PurchaseInvoiceItemInput!]! @rules(apply: ["required", "array", "min:1"])
 }
@@ -41,6 +42,7 @@ input CreateSaleInvoiceInput {
     invoice_date: String! @rules(apply: ["required", "date"])
     payment_method: InvoicePaymentMethod!
     payment_status: InvoicePaymentStatus
+    paid_amount: Float @rules(apply: ["sometimes", "numeric", "min:0"])
     description: String @rules(apply: ["sometimes", "nullable", "string", "max:1000"])
     items: [SaleInvoiceItemInput!]! @rules(apply: ["required", "array", "min:1"])
 }

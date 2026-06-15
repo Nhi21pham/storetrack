@@ -1,6 +1,7 @@
 type Invoice {
     id: ID!
     store_id: ID!
+    store: Store @belongsTo
     type: InvoiceType!
     code: String!
     party_id: ID!
@@ -13,6 +14,8 @@ type Invoice {
     subtotal: Float!
     tax_total: Float!
     grand_total: Float!
+    paid_amount: Float!
+    balance: Float!
     items: [InvoiceProduct!]!
     created_at: DateTime!
     updated_at: DateTime!

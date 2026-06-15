@@ -58,15 +58,15 @@
 
       <div class="modal-footer">
         <div class="footer-left">
-          <template v-if="canManage">
-            <button class="btn-edit" @click="$emit('edit')">Edit</button>
-            <button class="btn-delete" @click="$emit('delete')">Delete</button>
-          </template>
+          <button v-if="canManage || canEdit" class="btn-edit" @click="$emit('edit')">Edit</button>
+          <button v-if="canManage" class="btn-delete" @click="$emit('delete')">Delete</button>
         </div>
         <div class="totals">
           <div class="t-row"><span>Subtotal</span><span>{{ formatMoney(invoice.subtotal) }}</span></div>
           <div class="t-row"><span>Tax</span><span>{{ formatMoney(invoice.tax_total) }}</span></div>
           <div class="t-row grand"><span>Grand total</span><span>{{ formatMoney(invoice.grand_total) }}</span></div>
+          <div class="t-row"><span>Paid</span><span>{{ formatMoney(invoice.paid_amount) }}</span></div>
+          <div class="t-row" :style="Number(invoice.balance) > 0 ? 'color:#b45309;font-weight:600' : null"><span>Balance</span><span>{{ formatMoney(invoice.balance) }}</span></div>
           <div v-if="isSale" class="t-row cogs"><span>Cost of goods</span><span>{{ formatMoney(costTotal) }}</span></div>
         </div>
       </div>
@@ -88,6 +88,7 @@ import {
 const props = defineProps({
   invoice: { type: Object, required: true },
   canManage: { type: Boolean, default: false },
+  canEdit: { type: Boolean, default: false },
 })
 
 defineEmits(['close', 'edit', 'delete'])
@@ -142,6 +143,6 @@ const trimRate = (rate) => String(parseFloat(rate))
 .btn-delete:hover { background: #fef2f2; }
 .totals { width: 280px; display: flex; flex-direction: column; gap: 8px; }
 .t-row { display: flex; justify-content: space-between; font-size: 14px; color: #374151; font-variant-numeric: tabular-nums; }
-.t-row.grand { padding-top: 8px; border-top: 1px solid #eef0f2; font-size: 16px; font-weight: 700; color: #111; }
+.t-row.grand { padding-top: 8px; border-top: 1px solid #eef0f2; font-size: 16px; font-weight: 800; color: #111; }
 .t-row.cogs { padding-top: 8px; border-top: 1px solid #eef0f2; color: #6b7280; }
 </style>

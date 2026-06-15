@@ -21,9 +21,11 @@ const emit = defineEmits(['update:modelValue'])
 const el = ref(null)
 
 const stripLeadingZeros = (intPart) => intPart.replace(/^0+(?=\d)/, '')
-const groupThousands = (intPart) => intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+// Vietnamese grouping: a dot every three digits ("5400000" -> "5.400.000").
+const groupThousands = (intPart) => intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 
-// Raw numeric string -> grouped display (e.g. "1000000.5" -> "1,000,000.5").
+// Raw numeric string (dot-decimal) -> Vietnamese display
+// (e.g. "1000000.5" -> "1.000.000,5").
 const format = (raw) => {
   if (raw === '' || raw == null) return ''
   const cleaned = String(raw).replace(/[^0-9.]/g, '')
@@ -32,14 +34,15 @@ const format = (raw) => {
   if (dot === -1) return groupThousands(stripLeadingZeros(cleaned))
   const intPart = stripLeadingZeros(cleaned.slice(0, dot))
   const decPart = cleaned.slice(dot + 1)
-  return groupThousands(intPart || '0') + '.' + decPart
+  return groupThousands(intPart || '0') + ',' + decPart
 }
 
 const display = computed(() => format(props.modelValue))
 
-// Typed text -> raw numeric string: drop separators, keep one dot, cap decimals.
+// Typed text -> raw numeric string: dots are thousands separators (dropped),
+// the comma is the decimal point. Keeps one decimal, caps its length.
 const sanitize = (value) => {
-  let raw = String(value).replace(/[^0-9.]/g, '')
+  let raw = String(value).replace(/\./g, '').replace(',', '.').replace(/[^0-9.]/g, '')
   const dot = raw.indexOf('.')
   if (dot !== -1) {
     const intPart = raw.slice(0, dot)
@@ -50,7 +53,7 @@ const sanitize = (value) => {
   return raw
 }
 
-const significantLength = (str) => str.replace(/,/g, '').length
+const significantLength = (str) => str.replace(/\./g, '').length
 
 const onInput = (e) => {
   const input = e.target
@@ -61,7 +64,7 @@ const onInput = (e) => {
   emit('update:modelValue', raw)
 
   // Re-apply the grouped value and restore the caret by digit count, since
-  // inserted commas would otherwise drift the cursor.
+  // inserted dots would otherwise drift the cursor.
   const formatted = format(raw)
   requestAnimationFrame(() => {
     if (!el.value) return
@@ -69,7 +72,7 @@ const onInput = (e) => {
     let count = 0
     let pos = 0
     while (pos < formatted.length && count < sigBefore) {
-      if (formatted[pos] !== ',') count++
+      if (formatted[pos] !== '.') count++
       pos++
     }
     el.value.setSelectionRange(pos, pos)

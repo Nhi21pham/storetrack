@@ -29,6 +29,30 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('businessId');
     Route::post('/exports/invoices/{storeId}', [ExportController::class, 'queueInvoices'])
         ->whereNumber('storeId');
+    Route::post('/exports/stock-report/{storeId}', [ExportController::class, 'queueStockReport'])
+        ->whereNumber('storeId');
+    Route::post('/exports/stock-report/business/{businessId}', [ExportController::class, 'queueStockReportBusiness'])
+        ->whereNumber('businessId');
+    Route::post('/exports/sale-report/{storeId}', [ExportController::class, 'queueSaleReport'])
+        ->whereNumber('storeId');
+    Route::post('/exports/sale-report/business/{businessId}', [ExportController::class, 'queueSaleReportBusiness'])
+        ->whereNumber('businessId');
+    Route::post('/exports/profit-report/{storeId}', [ExportController::class, 'queueProfitReport'])
+        ->whereNumber('storeId');
+    Route::post('/exports/profit-report/business/{businessId}', [ExportController::class, 'queueProfitReportBusiness'])
+        ->whereNumber('businessId');
+    Route::post('/exports/receivables-report/{storeId}', [ExportController::class, 'queueReceivablesReport'])
+        ->whereNumber('storeId');
+    Route::post('/exports/receivables-report/business/{businessId}', [ExportController::class, 'queueReceivablesReportBusiness'])
+        ->whereNumber('businessId');
+    Route::post('/exports/payables-report/{storeId}', [ExportController::class, 'queuePayablesReport'])
+        ->whereNumber('storeId');
+    Route::post('/exports/payables-report/business/{businessId}', [ExportController::class, 'queuePayablesReportBusiness'])
+        ->whereNumber('businessId');
+    Route::post('/exports/top-products-report/{storeId}', [ExportController::class, 'queueTopProductsReport'])
+        ->whereNumber('storeId');
+    Route::post('/exports/top-products-report/business/{businessId}', [ExportController::class, 'queueTopProductsReportBusiness'])
+        ->whereNumber('businessId');
     Route::get('/exports/{exportId}', [ExportController::class, 'status'])
         ->whereNumber('exportId');
     Route::get('/exports/{exportId}/download', [ExportController::class, 'download'])

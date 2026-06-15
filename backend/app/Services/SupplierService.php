@@ -31,16 +31,19 @@ class SupplierService
         private ExportService $exportService,
     ) {}
 
-    public function getAll(User $user, int $storeId, int $businessId)
+    public function getAll(User $user, ?int $storeId, int $businessId)
     {
-        $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
-            || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
-
-        if (!$hasAccess) {
-            throw new AuthorizationException('You do not have access to this store.');
+        if ($storeId !== null) {
+            $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
+                || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
+            if (!$hasAccess) {
+                throw new AuthorizationException('You do not have access to this store.');
+            }
+        } elseif (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
+            throw new AuthorizationException('You do not have access to this business.');
         }
 
-        return $this->supplierRepository->all($businessId);
+        return $this->supplierRepository->all($businessId, $storeId);
     }
 
     public function getById(int $id): Supplier

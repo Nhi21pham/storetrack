@@ -1,4 +1,5 @@
 enum InvoicePaymentStatus {
-    UNPAID @enum(value: "unpaid")
-    PAID   @enum(value: "paid")
+    UNPAID  @enum(value: "unpaid")
+    PARTIAL @enum(value: "partial")
+    PAID    @enum(value: "paid")
 }

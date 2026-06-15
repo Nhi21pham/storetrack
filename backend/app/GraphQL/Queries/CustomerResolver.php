@@ -14,7 +14,7 @@ class CustomerResolver extends BaseResolver
         return $this->safe(fn() =>
             $this->customerService->getAll(
                 $this->user(),
-                (int) $args['store_id'],
+                isset($args['store_id']) ? (int) $args['store_id'] : null,
                 (int) $args['business_id']
             )
         );

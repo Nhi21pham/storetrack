@@ -1,9 +1,9 @@
 import { graphql, rest } from '@/api'
 
 const CUSTOMERS_QUERY = `
-  query Customers($store_id: ID!, $business_id: ID!) {
+  query Customers($store_id: ID, $business_id: ID!) {
     customers(store_id: $store_id, business_id: $business_id) {
-      id store_id name email phone address tax_code created_at
+      id store_id name email phone address tax_code outstanding business_outstanding created_at
       party { id }
       stores { id name }
     }

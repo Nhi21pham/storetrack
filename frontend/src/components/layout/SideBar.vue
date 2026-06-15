@@ -44,10 +44,18 @@
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
         </div>
         <div class="submenu" :class="{ open: reportsOpen }">
-          <div class="submenu-item">Sales Report</div>
-          <div class="submenu-item">Stock Report</div>
-          <div class="submenu-item">Revenue Report</div>
-          <div class="submenu-item">Customer Report</div>
+          <router-link to="/reports/sales" class="submenu-item" :class="{ active: isActive('/reports/sales') }" @click="$emit('close')">Sales Report</router-link>
+          <router-link to="/reports/stock" class="submenu-item" :class="{ active: isActive('/reports/stock') }" @click="$emit('close')">Stock Report</router-link>
+          <router-link to="/reports/profit" class="submenu-item" :class="{ active: isActive('/reports/profit') }" @click="$emit('close')">Profit Report</router-link>
+          <router-link to="/reports/top-products" class="submenu-item" :class="{ active: isActive('/reports/top-products') }" @click="$emit('close')">Top Products</router-link>
+          <div class="submenu-item has-nested" :class="{ active: isActive('/reports/receivables') || isActive('/reports/payables') }" @mouseenter="openDebt" @mouseleave="closeDebtSoon">
+            <span class="submenu-item-label">Debt Report</span>
+            <svg class="chevron-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+            <div class="submenu submenu-nested" :class="{ open: debtOpen }">
+              <router-link to="/reports/receivables" class="submenu-item" :class="{ active: isActive('/reports/receivables') }" @click="$emit('close')">Customer Debt</router-link>
+              <router-link to="/reports/payables" class="submenu-item" :class="{ active: isActive('/reports/payables') }" @click="$emit('close')">Supplier Debt</router-link>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -88,13 +96,18 @@
         </div>
       </div>
 
+      <router-link to="/payments" class="menu-item" :class="{ active: isActive('/payments') }" @click="$emit('close')">
+        <Icon name="payment" :size="18" />
+        Payments
+      </router-link>
+
       <div class="menu-item has-sub" @mouseenter="openOthers" @mouseleave="closeOthersSoon">
         <div class="menu-item-inner">
           <Icon name="more" :size="18" />
           Others
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
         </div>
-        <div class="submenu" :class="{ open: othersOpen }">
+        <div class="submenu submenu-up" :class="{ open: othersOpen }">
           <div class="submenu-item has-nested" @mouseenter="openBanking" @mouseleave="closeBankingSoon">
             <span class="submenu-item-label">
               <Icon name="bank" :size="15" color="currentColor" />
@@ -145,12 +158,14 @@ const reportsOpen = ref(false)
 const invoicesOpen = ref(false)
 const othersOpen = ref(false)
 const bankingOpen = ref(false)
+const debtOpen = ref(false)
 
 const isActive = (path) => route.path.startsWith(path)
 
 const CLOSE_DELAY_MS = 150
 let othersCloseTimer = null
 let bankingCloseTimer = null
+let debtCloseTimer = null
 
 const openOthers = () => {
   if (othersCloseTimer) { clearTimeout(othersCloseTimer); othersCloseTimer = null }
@@ -177,6 +192,18 @@ const closeBankingSoon = () => {
     bankingOpen.value = false
   }, CLOSE_DELAY_MS)
 }
+
+const openDebt = () => {
+  if (debtCloseTimer) { clearTimeout(debtCloseTimer); debtCloseTimer = null }
+  debtOpen.value = true
+}
+
+const closeDebtSoon = () => {
+  if (debtCloseTimer) clearTimeout(debtCloseTimer)
+  debtCloseTimer = setTimeout(() => {
+    debtOpen.value = false
+  }, CLOSE_DELAY_MS)
+}
 </script>
 
 <style scoped>
@@ -197,6 +224,8 @@ const closeBankingSoon = () => {
 .submenu { display: none; position: absolute; left: 100%; top: -4px; min-width: 200px; background: #f7f7f8; border: 1px solid #ececef; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 10px 25px -5px rgba(0,0,0,0.12); flex-direction: column; padding: 8px; margin-left: 10px; z-index: 999; opacity: 0; transform: translateX(-4px); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
 .submenu.open { display: flex; opacity: 1; transform: translateX(0); pointer-events: auto; }
 .submenu::before { content: ''; position: absolute; top: 0; left: -10px; width: 10px; height: 100%; }
+/* "Others" sits at the sidebar bottom; grow its menu upward so lower items stay on-screen. */
+.submenu-up { top: auto; bottom: -4px; }
 .submenu-item { padding: 9px 12px; font-size: 13.5px; font-weight: 500; color: #4b5563; border-radius: 8px; cursor: pointer; text-decoration: none; display: block; transition: background 0.12s, color 0.12s; }
 .submenu-item-label { display: inline-flex; align-items: center; gap: 10px; }
 .submenu-item:hover { background: #ebebef; color: #111; }

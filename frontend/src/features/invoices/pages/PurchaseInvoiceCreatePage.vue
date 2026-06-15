@@ -52,11 +52,26 @@
               </SelectField>
             </div>
 
-            <div class="form-group">
+            <div v-if="!isEdit" class="form-group">
               <label>Payment status</label>
               <SelectField v-model="form.payment_status">
                 <option v-for="s in PAYMENT_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
               </SelectField>
+            </div>
+
+            <div v-if="!isEdit && form.payment_status === 'PARTIAL'" class="form-group">
+              <label>Amount paid <span class="required">*</span></label>
+              <NumberInput v-model="form.paid_amount" :decimals="2" placeholder="0" class="text-input" />
+              <FormMessage v-if="errors.paid_amount" :text="errors.paid_amount" />
+              <span v-else class="pay-hint">{{ remainingLabel }}</span>
+            </div>
+
+            <div v-if="isEdit" class="form-group">
+              <label>Payment status</label>
+              <div class="pay-readonly">
+                <PaymentStatusBadge :status="derivedStatus" />
+                <span class="pay-hint">Paid {{ formatMoney(loadedPayment.paid) }} · Balance {{ formatMoney(editBalance) }}</span>
+              </div>
             </div>
 
             <div class="form-group full">
@@ -93,7 +108,7 @@
                   <NumberInput v-model="item.quantity" :decimals="3" class="num-input" placeholder="0" />
                 </td>
                 <td class="c-price">
-                  <NumberInput v-model="item.unit_price" :decimals="2" class="num-input" placeholder="0.00" />
+                  <NumberInput v-model="item.unit_price" :decimals="2" class="num-input" placeholder="0" />
                 </td>
                 <td class="c-tax">
                   <button type="button" class="tax-toggle" :class="{ active: item.expanded }" @click="item.expanded = !item.expanded">
@@ -192,6 +207,7 @@ import AddItemButton from '@/components/common/AddItemButton.vue'
 import NumberInput from '@/components/common/NumberInput.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import FormMessage from '@/components/common/FormMessage.vue'
+import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
 import InvoiceLineTaxEditor from '@/features/invoices/components/InvoiceLineTaxEditor.vue'
 import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
@@ -235,8 +251,9 @@ const products = ref([])
 const taxes = ref([])
 
 const submitting = ref(false)
+const loadedPayment = ref({ paid: 0, balance: 0 })
 const apiError = ref('')
-const errors = ref({ party_id: '', invoice_date: '', items: '' })
+const errors = ref({ party_id: '', invoice_date: '', items: '', paid_amount: '' })
 
 const showSupplierForm = ref(false)
 const showProductForm = ref(false)
@@ -263,6 +280,7 @@ const form = ref({
   invoice_date: todayInputDate(),
   payment_method: 'CASH',
   payment_status: 'UNPAID',
+  paid_amount: '',
   description: '',
 })
 const items = ref([newItem()])
@@ -340,6 +358,22 @@ const totals = computed(() => {
   return { subtotal, tax, grand: round2(subtotal + tax) }
 })
 
+const remaining = computed(() => round2(totals.value.grand - (Number(form.value.paid_amount) || 0)))
+const remainingLabel = computed(() =>
+  remaining.value >= 0
+    ? `Remaining: ${formatMoney(remaining.value)}`
+    : `Overpaid by ${formatMoney(-remaining.value)}`,
+)
+
+// On edit the paid amount is fixed (managed on the Payments page); the status/balance
+// re-derive live from it vs the current total, matching what the backend will store.
+const editBalance = computed(() => round2(totals.value.grand - loadedPayment.value.paid))
+const derivedStatus = computed(() => {
+  const paid = loadedPayment.value.paid
+  if (paid <= 0) return 'UNPAID'
+  return paid >= totals.value.grand ? 'PAID' : 'PARTIAL'
+})
+
 const addItem = () => items.value.push(newItem())
 
 const removeItem = (i) => {
@@ -377,6 +411,7 @@ const loadInvoice = async () => {
       payment_status: inv.payment_status,
       description: inv.description || '',
     }
+    loadedPayment.value = { paid: Number(inv.paid_amount || 0), balance: Number(inv.balance || 0) }
     items.value = (inv.items || []).map((it) => ({
       product_id: String(it.product_id),
       quantity: trimNumber(it.quantity),
@@ -407,6 +442,10 @@ watch(items, () => {
   if (hasValid) errors.value.items = ''
 }, { deep: true })
 
+watch(() => [form.value.payment_status, form.value.paid_amount], () => {
+  if (errors.value.paid_amount) errors.value.paid_amount = ''
+})
+
 // On a failed submit, bring the first invalid field into view.
 const scrollToError = async () => {
   await nextTick()
@@ -421,7 +460,7 @@ const scrollToError = async () => {
 }
 
 const validate = () => {
-  errors.value = { party_id: '', invoice_date: '', items: '' }
+  errors.value = { party_id: '', invoice_date: '', items: '', paid_amount: '' }
   if (!form.value.party_id) errors.value.party_id = 'Supplier is required.'
   if (!form.value.invoice_date) errors.value.invoice_date = 'Invoice date is required.'
 
@@ -431,7 +470,17 @@ const validate = () => {
   if (valid.length === 0) {
     errors.value.items = 'Add at least one item with a product, quantity and price.'
   }
-  return !errors.value.party_id && !errors.value.invoice_date && !errors.value.items
+
+  if (!isEdit.value && form.value.payment_status === 'PARTIAL') {
+    const amt = Number(form.value.paid_amount)
+    if (!(amt > 0)) {
+      errors.value.paid_amount = 'Enter how much was paid.'
+    } else if (amt >= totals.value.grand) {
+      errors.value.paid_amount = 'Partial amount must be less than the grand total.'
+    }
+  }
+
+  return !errors.value.party_id && !errors.value.invoice_date && !errors.value.items && !errors.value.paid_amount
 }
 
 const buildInput = () => ({
@@ -439,6 +488,7 @@ const buildInput = () => ({
   invoice_date: form.value.invoice_date,
   payment_method: form.value.payment_method,
   payment_status: form.value.payment_status,
+  paid_amount: Number(form.value.paid_amount) || 0,
   description: form.value.description?.trim() || null,
   items: items.value
     .filter((it) => it.product_id && Number(it.quantity) > 0)
@@ -540,6 +590,8 @@ const keepEditing = () => {
 .form-group.full { grid-column: 1 / -1; }
 .form-group label { font-size: 13px; font-weight: 500; color: #374151; }
 .required { color: #dc2626; }
+.pay-hint { font-size: 12px; color: #6b7280; }
+.pay-readonly { display: flex; align-items: center; gap: 10px; min-height: 40px; }
 .picker-row { display: flex; align-items: stretch; gap: 8px; }
 .picker-row > :first-child { flex: 1; min-width: 0; }
 

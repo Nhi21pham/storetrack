@@ -1,0 +1,21 @@
+type Payment {
+    id: ID!
+    store_id: ID!
+    party_id: ID!
+    amount: Float!
+    paid_at: DateTime!
+    method: InvoicePaymentMethod!
+    note: String
+    created_by: ID
+    allocations: [PaymentAllocation!]!
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+type PaymentAllocation {
+    id: ID!
+    payment_id: ID!
+    invoice_id: ID!
+    amount: Float!
+    invoice: Invoice
+}

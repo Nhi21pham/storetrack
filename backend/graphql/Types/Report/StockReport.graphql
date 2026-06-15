@@ -1,0 +1,18 @@
+type StockReportRow {
+    id: ID!
+    store_id: ID
+    store_name: String
+    product_id: ID!
+    product_name: String!
+    product_code: String
+    tags: [ProductTag!]!
+    supplier_party_id: ID
+    supplier_name: String
+    invoice_id: ID
+    invoice_code: String
+    purchase_date: DateTime
+    quantity_received: Float!
+    quantity_remaining: Float!
+    unit_cost: Float!
+    total_cost: Float!
+}
