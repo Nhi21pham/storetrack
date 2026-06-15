@@ -27,6 +27,8 @@ import SaleInvoiceCreatePage from '@/features/invoices/pages/SaleInvoiceCreatePa
 import StockReportPage from '@/features/reports/pages/StockReportPage.vue'
 import SaleReportPage from '@/features/reports/pages/SaleReportPage.vue'
 import ProfitReportPage from '@/features/reports/pages/ProfitReportPage.vue'
+import ReceivablesReportPage from '@/features/reports/pages/ReceivablesReportPage.vue'
+import PayablesReportPage from '@/features/reports/pages/PayablesReportPage.vue'
 import PaymentsPage from '@/features/payments/pages/PaymentsPage.vue'
 
 const router = createRouter({
@@ -246,6 +248,32 @@ const router = createRouter({
               { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Reports' },
               { label: 'Profit Report' },
+            ],
+          },
+        },
+        {
+          path: 'reports/receivables',
+          name: 'receivables-report',
+          component: ReceivablesReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Debt Report' },
+              { label: 'Customer Debt' },
+            ],
+          },
+        },
+        {
+          path: 'reports/payables',
+          name: 'payables-report',
+          component: PayablesReportPage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Reports' },
+              { label: 'Debt Report' },
+              { label: 'Supplier Debt' },
             ],
           },
         },

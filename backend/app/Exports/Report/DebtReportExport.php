@@ -119,7 +119,8 @@ class DebtReportExport extends BaseExport
 
         $this->rowSpent = round($spent, 2);
         $this->rowPaid = round($paid, 2);
-        $this->rowOwe = round($spent - $paid, 2);
+        // Owe never goes below 0 (mirrors the on-screen report).
+        $this->rowOwe = round(max(0, $spent - $paid), 2);
         $this->rowInvoiceCount = $count;
     }
 

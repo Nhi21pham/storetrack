@@ -56,3 +56,22 @@ export const PROFIT_REPORT_COLUMNS = [
 ]
 
 export const PROFIT_REPORT_INITIAL_COL_WIDTHS = [40, 50, 200, 130, 200, 160, 130, 150, 130, 110, 140, 150, 130, 130, 130]
+
+// The debt reports (customer / supplier) share one column set; only the party
+// name and "spent" labels differ per ledger, so they are built per page.
+export const makeDebtReportColumns = ({ partyLabel, spentLabel }) => [
+  { key: 'select',        label: '',          sortable: false },
+  { key: 'order_number',  label: '#',         sortable: false },
+  { key: 'name',          label: partyLabel,  sortable: true  },
+  { key: 'phone',         label: 'Phone',     sortable: true  },
+  { key: 'invoice_count', label: '# Invoices', sortable: true  },
+  { key: 'spent',         label: spentLabel,  sortable: true  },
+  { key: 'paid',          label: 'Total Paid', sortable: true  },
+  { key: 'owe',           label: 'Total Owe', sortable: true  },
+  { key: 'email',         label: 'Email',     sortable: true  },
+]
+
+export const DEBT_REPORT_INITIAL_COL_WIDTHS = [40, 50, 220, 150, 100, 160, 160, 160, 220]
+
+// '# Invoices' and 'Email' start hidden; the rest (incl. Phone) show by default.
+export const DEBT_REPORT_DEFAULT_HIDDEN = ['invoice_count', 'email']

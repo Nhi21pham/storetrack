@@ -47,8 +47,15 @@
           <router-link to="/reports/sales" class="submenu-item" :class="{ active: isActive('/reports/sales') }" @click="$emit('close')">Sales Report</router-link>
           <router-link to="/reports/stock" class="submenu-item" :class="{ active: isActive('/reports/stock') }" @click="$emit('close')">Stock Report</router-link>
           <router-link to="/reports/profit" class="submenu-item" :class="{ active: isActive('/reports/profit') }" @click="$emit('close')">Profit Report</router-link>
+          <div class="submenu-item has-nested" :class="{ active: isActive('/reports/receivables') || isActive('/reports/payables') }" @mouseenter="openDebt" @mouseleave="closeDebtSoon">
+            <span class="submenu-item-label">Debt Report</span>
+            <svg class="chevron-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
+            <div class="submenu submenu-nested" :class="{ open: debtOpen }">
+              <router-link to="/reports/receivables" class="submenu-item" :class="{ active: isActive('/reports/receivables') }" @click="$emit('close')">Customer Debt</router-link>
+              <router-link to="/reports/payables" class="submenu-item" :class="{ active: isActive('/reports/payables') }" @click="$emit('close')">Supplier Debt</router-link>
+            </div>
+          </div>
           <div class="submenu-item">Revenue Report</div>
-          <div class="submenu-item">Customer Report</div>
         </div>
       </div>
 
@@ -151,12 +158,14 @@ const reportsOpen = ref(false)
 const invoicesOpen = ref(false)
 const othersOpen = ref(false)
 const bankingOpen = ref(false)
+const debtOpen = ref(false)
 
 const isActive = (path) => route.path.startsWith(path)
 
 const CLOSE_DELAY_MS = 150
 let othersCloseTimer = null
 let bankingCloseTimer = null
+let debtCloseTimer = null
 
 const openOthers = () => {
   if (othersCloseTimer) { clearTimeout(othersCloseTimer); othersCloseTimer = null }
@@ -181,6 +190,18 @@ const closeBankingSoon = () => {
   if (bankingCloseTimer) clearTimeout(bankingCloseTimer)
   bankingCloseTimer = setTimeout(() => {
     bankingOpen.value = false
+  }, CLOSE_DELAY_MS)
+}
+
+const openDebt = () => {
+  if (debtCloseTimer) { clearTimeout(debtCloseTimer); debtCloseTimer = null }
+  debtOpen.value = true
+}
+
+const closeDebtSoon = () => {
+  if (debtCloseTimer) clearTimeout(debtCloseTimer)
+  debtCloseTimer = setTimeout(() => {
+    debtOpen.value = false
   }, CLOSE_DELAY_MS)
 }
 </script>

@@ -7,15 +7,18 @@ const STORAGE_PREFIX = 'columns:'
 // instead of being hidden for everyone who used the page before it existed.
 // The old format (a plain array of visible keys) is ignored — treated as
 // "nothing hidden" — so it migrates cleanly to all-visible.
+// Returns the stored hidden keys, or null when the user has no stored preference
+// yet (so the caller can seed its own defaults). Distinguishing "stored empty"
+// from "never stored" is what lets defaultHiddenKeys apply only on first use.
 const readHidden = (storageKey, togglableKeys) => {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storageKey) || 'null')
     if (parsed && Array.isArray(parsed.hidden)) {
       return parsed.hidden.filter((k) => togglableKeys.includes(k))
     }
-    return []
+    return null
   } catch {
-    return []
+    return null
   }
 }
 
@@ -27,12 +30,14 @@ const writeHidden = (storageKey, hiddenKeys) => {
   }
 }
 
-export const useColumnVisibility = ({ storageKey, columns, lockedKeys = [] }) => {
+export const useColumnVisibility = ({ storageKey, columns, lockedKeys = [], defaultHiddenKeys = [] }) => {
   const lockedSet = new Set(lockedKeys)
 
   const togglableKeys = columns.map((c) => c.key).filter((k) => !lockedSet.has(k))
 
-  const hiddenKeys = ref(new Set(readHidden(storageKey, togglableKeys)))
+  const stored = readHidden(storageKey, togglableKeys)
+  const initialHidden = stored ?? defaultHiddenKeys.filter((k) => togglableKeys.includes(k))
+  const hiddenKeys = ref(new Set(initialHidden))
 
   const isVisible = (key) => !hiddenKeys.value.has(key)
 

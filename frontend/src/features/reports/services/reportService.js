@@ -107,3 +107,68 @@ export const startProfitReportExport = ({ storeId, params }) =>
 
 export const startProfitReportBusinessExport = ({ businessId, params }) =>
   rest('post', `/api/exports/profit-report/business/${businessId}`, { params })
+
+const DEBT_REPORT_FIELDS = `
+  party_id party_record_id name phone email
+  invoices { id code invoice_date grand_total store_id store_name }
+  payments {
+    id paid_at amount method store_id store_name
+    allocations { invoice_id invoice_code amount }
+  }
+`
+
+const RECEIVABLES_REPORT_QUERY = `
+  query ReceivablesReport($store_id: ID!) {
+    receivablesReport(store_id: $store_id) { ${DEBT_REPORT_FIELDS} }
+  }
+`
+
+const RECEIVABLES_REPORT_BUSINESS_QUERY = `
+  query ReceivablesReportByBusiness($business_id: ID!) {
+    receivablesReportByBusiness(business_id: $business_id) { ${DEBT_REPORT_FIELDS} }
+  }
+`
+
+const PAYABLES_REPORT_QUERY = `
+  query PayablesReport($store_id: ID!) {
+    payablesReport(store_id: $store_id) { ${DEBT_REPORT_FIELDS} }
+  }
+`
+
+const PAYABLES_REPORT_BUSINESS_QUERY = `
+  query PayablesReportByBusiness($business_id: ID!) {
+    payablesReportByBusiness(business_id: $business_id) { ${DEBT_REPORT_FIELDS} }
+  }
+`
+
+export const fetchReceivablesReport = async ({ storeId }) => {
+  const data = await graphql(RECEIVABLES_REPORT_QUERY, { store_id: storeId })
+  return data.receivablesReport
+}
+
+export const fetchReceivablesReportByBusiness = async ({ businessId }) => {
+  const data = await graphql(RECEIVABLES_REPORT_BUSINESS_QUERY, { business_id: businessId })
+  return data.receivablesReportByBusiness
+}
+
+export const fetchPayablesReport = async ({ storeId }) => {
+  const data = await graphql(PAYABLES_REPORT_QUERY, { store_id: storeId })
+  return data.payablesReport
+}
+
+export const fetchPayablesReportByBusiness = async ({ businessId }) => {
+  const data = await graphql(PAYABLES_REPORT_BUSINESS_QUERY, { business_id: businessId })
+  return data.payablesReportByBusiness
+}
+
+export const startReceivablesReportExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/receivables-report/${storeId}`, { params })
+
+export const startReceivablesReportBusinessExport = ({ businessId, params }) =>
+  rest('post', `/api/exports/receivables-report/business/${businessId}`, { params })
+
+export const startPayablesReportExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/payables-report/${storeId}`, { params })
+
+export const startPayablesReportBusinessExport = ({ businessId, params }) =>
+  rest('post', `/api/exports/payables-report/business/${businessId}`, { params })
