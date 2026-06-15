@@ -1,0 +1,35 @@
+type DashboardSummary {
+    month: String!
+    total_sales: Float!
+    total_sales_change: Float
+    total_profit: Float!
+    total_profit_change: Float
+    products_in_stock: Float!
+    products_in_stock_change: Float
+    outstanding: Float!
+    outstanding_change: Float
+    sales_trend: [DashboardMonthlyPoint!]!
+    top_products: [DashboardTopProduct!]!
+    store_performance: [DashboardStorePerf!]!
+}
+
+type DashboardMonthlyPoint {
+    label: String!
+    revenue: Float!
+}
+
+type DashboardTopProduct {
+    product_id: ID!
+    product_name: String!
+    qty_sold: Float!
+    revenue: Float!
+    profit: Float!
+    orders: Int!
+}
+
+type DashboardStorePerf {
+    store_id: ID!
+    store_name: String!
+    revenue: Float!
+    profit: Float!
+}

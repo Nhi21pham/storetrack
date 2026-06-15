@@ -56,7 +56,6 @@
               <router-link to="/reports/payables" class="submenu-item" :class="{ active: isActive('/reports/payables') }" @click="$emit('close')">Supplier Debt</router-link>
             </div>
           </div>
-          <div class="submenu-item">Revenue Report</div>
         </div>
       </div>
 
