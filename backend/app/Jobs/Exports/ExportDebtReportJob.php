@@ -4,6 +4,7 @@ namespace App\Jobs\Exports;
 
 use App\Enums\InvoiceTypeEnum;
 use App\Exports\BaseExport;
+use App\Exports\Contracts\Exportable;
 use App\Exports\Report\DebtReportExport;
 use App\Models\Business;
 use App\Models\Customer;
@@ -30,7 +31,7 @@ class ExportDebtReportJob extends BaseExportJob
 
     public const TYPE_PAYABLES_BUSINESS = 'payables-report-business';
 
-    protected function buildExport(Export $export): BaseExport
+    protected function buildExport(Export $export): Exportable
     {
         $user = User::find($export->user_id);
         if (! $user) {
@@ -48,11 +49,11 @@ class ExportDebtReportJob extends BaseExportJob
         if ($isBusinessView) {
             $scopeName = $metadata['scope_name'] ?? (Business::find($scopeId)?->name ?? '');
             $title = "{$ledger['title_label']} debt report of business ".$scopeName;
-            $query = $repository->listQueryForBusiness($ledger['model'], $ledger['type'], $scopeId, $filters);
+            $parties = $repository->listQueryForBusiness($ledger['model'], $ledger['type'], $scopeId, $filters)->get();
         } else {
             $scopeName = $metadata['scope_name'] ?? (Store::find($scopeId)?->name ?? '');
             $title = "{$ledger['title_label']} debt report of store ".$scopeName;
-            $query = $repository->listQueryForStore($ledger['model'], $ledger['type'], $scopeId, $filters);
+            $parties = $repository->listQueryForStore($ledger['model'], $ledger['type'], $scopeId, $filters)->get();
         }
 
         $metaLines = [
@@ -63,7 +64,7 @@ class ExportDebtReportJob extends BaseExportJob
         $columns = isset($filters['columns']) && is_array($filters['columns']) ? $filters['columns'] : null;
 
         return new DebtReportExport(
-            $query,
+            $parties,
             $title,
             $metaLines,
             $ledger['party_label'],

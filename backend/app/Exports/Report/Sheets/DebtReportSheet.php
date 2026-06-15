@@ -1,97 +1,74 @@
 <?php
 
-namespace App\Exports;
+namespace App\Exports\Report\Sheets;
 
-use App\Exports\Contracts\Exportable;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
- * Reusable base for streamed exports that need:
- *   - a bold title row spanning all columns
- *   - meta lines underneath (e.g. exporter, date)
- *   - a styled column-header row
- *   - body rows fed from a query in chunks
+ * One tab of the debt-report workbook. Reproduces BaseExport's look — bold
+ * title row, italic meta lines, a styled header row and a bold TOTAL row — but
+ * is built for the multi-sheet flow: each tab carries its own WithTitle (tab
+ * name) and feeds rows in memory (FromArray) rather than streaming a query.
  *
- * Subclasses implement title(), metaLines(), columnHeadings(), exportQuery(), map().
- *
- * Note: this is meant to be invoked from a regular Laravel queued Job that calls
- * Excel::store(...) synchronously inside its handle() — not from Maatwebsite's
- * "queue export" flow — so the closure inside registerEvents() is safe.
+ * Subclasses build their rows (date-windowed) in their constructor and expose
+ * them via array(), with the tab name, headings, widths and totals.
  */
-abstract class BaseExport implements Exportable, FromQuery, WithChunkReading, WithEvents, WithHeadings, WithMapping
+abstract class DebtReportSheet implements FromArray, WithHeadings, WithTitle, WithEvents
 {
-    /** Shared grey fill for the column-header row and the totals row (keeps them consistent). */
+    /** Shared grey fill for the header row and the TOTAL row (matches BaseExport). */
     private const HEADER_FILL_RGB = 'E5E7EB';
 
+    public function __construct(
+        protected string $bannerTitle,
+        protected array $metaLines,
+        protected ?string $startDate = null,
+        protected ?string $endDate = null,
+    ) {}
+
+    /** The Excel tab name (WithTitle). */
     abstract public function title(): string;
 
-    /** @return string[] */
-    abstract public function metaLines(): array;
+    /** @return array<int, array<int, mixed>> data rows (no headings, no totals) */
+    abstract public function array(): array;
 
     /** @return string[] */
-    abstract public function columnHeadings(): array;
+    abstract public function headings(): array;
 
-    abstract public function exportQuery(): Builder;
+    /** @return array<int, float|int> 1-based column widths */
+    abstract public function columnWidths(): array;
 
-    /**
-     * @param  mixed  $row
-     */
-    abstract public function map($row): array;
+    /** @return array<int, string|int|float> the TOTAL row aligned to the columns; [] for none */
+    abstract protected function totalsRow(): array;
 
-    public function query(): Builder
+    /** A date (Carbon) falls within the report's window. */
+    protected function inRange($date): bool
     {
-        return $this->exportQuery();
-    }
+        if ($date === null) {
+            return false;
+        }
+        $day = $date->format('Y-m-d');
+        if ($this->startDate !== null && $day < $this->startDate) {
+            return false;
+        }
+        if ($this->endDate !== null && $day > $this->endDate) {
+            return false;
+        }
 
-    public function headings(): array
-    {
-        return $this->columnHeadings();
-    }
-
-    public function chunkSize(): int
-    {
-        return 500;
-    }
-
-    /**
-     * Per-column widths in Excel character units. Override in subclasses to
-     * tune layout. Indexed by 1-based column position. Defaults to 24 for
-     * any column without a specific value.
-     *
-     * @return array<int, float|int>
-     */
-    public function columnWidths(): array
-    {
-        return [];
-    }
-
-    /**
-     * Optional summary row appended (after a blank gap) below the body, aligned
-     * to the columns. Return [] for no totals row. Compute the values during
-     * map() — this is read in the AfterSheet hook, after every row is mapped.
-     *
-     * @return array<int, string|int|float>
-     */
-    protected function totalsRow(): array
-    {
-        return [];
+        return true;
     }
 
     public function registerEvents(): array
     {
-        $title = $this->title();
-        $metaLines = $this->metaLines();
-        $columnHeadings = $this->columnHeadings();
+        $title = $this->bannerTitle;
+        $metaLines = $this->metaLines;
+        $columnHeadings = $this->headings();
         $columnWidths = $this->columnWidths();
         $columnCount = max(count($columnHeadings), 1);
 
@@ -130,7 +107,6 @@ abstract class BaseExport implements Exportable, FromQuery, WithChunkReading, Wi
                     $sheet->getColumnDimension($letter)->setWidth($width);
                 }
 
-                // Summary row below the body (values were accumulated during map()).
                 $totals = $this->totalsRow();
                 if ($totals !== []) {
                     $totalsRow = $sheet->getHighestRow() + 2;
@@ -148,13 +124,21 @@ abstract class BaseExport implements Exportable, FromQuery, WithChunkReading, Wi
         ];
     }
 
-    /**
-     * Build a safe filename slug from a display name.
-     */
-    public static function slugForFilename(string $name): string
+    /** Distinct store names across a party's in-scope invoices and payments (business export only). */
+    protected function partyStoreNames($party): string
     {
-        $slug = Str::slug($name, '-');
+        $names = [];
+        foreach ($party?->invoices ?? [] as $invoice) {
+            if ($invoice->store?->name) {
+                $names[$invoice->store->name] = true;
+            }
+        }
+        foreach ($party?->payments ?? [] as $payment) {
+            if ($payment->store?->name) {
+                $names[$payment->store->name] = true;
+            }
+        }
 
-        return $slug !== '' ? $slug : 'unnamed';
+        return implode(', ', array_keys($names));
     }
 }
