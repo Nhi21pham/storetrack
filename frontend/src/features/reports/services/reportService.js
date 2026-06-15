@@ -172,3 +172,37 @@ export const startPayablesReportExport = ({ storeId, params }) =>
 
 export const startPayablesReportBusinessExport = ({ businessId, params }) =>
   rest('post', `/api/exports/payables-report/business/${businessId}`, { params })
+
+const TOP_PRODUCTS_FIELDS = `
+  product_id product_name product_code
+  tags { tag_id tag_name tag_value_id value }
+  qty_sold revenue profit orders
+`
+
+const TOP_PRODUCTS_QUERY = `
+  query TopProductsReport($store_id: ID!, $start_date: String, $end_date: String) {
+    topProductsReport(store_id: $store_id, start_date: $start_date, end_date: $end_date) { ${TOP_PRODUCTS_FIELDS} }
+  }
+`
+
+const TOP_PRODUCTS_BUSINESS_QUERY = `
+  query TopProductsReportByBusiness($business_id: ID!, $start_date: String, $end_date: String) {
+    topProductsReportByBusiness(business_id: $business_id, start_date: $start_date, end_date: $end_date) { ${TOP_PRODUCTS_FIELDS} }
+  }
+`
+
+export const fetchTopProductsReport = async ({ storeId, startDate, endDate }) => {
+  const data = await graphql(TOP_PRODUCTS_QUERY, { store_id: storeId, start_date: startDate || null, end_date: endDate || null })
+  return data.topProductsReport
+}
+
+export const fetchTopProductsReportByBusiness = async ({ businessId, startDate, endDate }) => {
+  const data = await graphql(TOP_PRODUCTS_BUSINESS_QUERY, { business_id: businessId, start_date: startDate || null, end_date: endDate || null })
+  return data.topProductsReportByBusiness
+}
+
+export const startTopProductsReportExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/top-products-report/${storeId}`, { params })
+
+export const startTopProductsReportBusinessExport = ({ businessId, params }) =>
+  rest('post', `/api/exports/top-products-report/business/${businessId}`, { params })

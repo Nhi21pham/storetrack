@@ -47,6 +47,7 @@
           <router-link to="/reports/sales" class="submenu-item" :class="{ active: isActive('/reports/sales') }" @click="$emit('close')">Sales Report</router-link>
           <router-link to="/reports/stock" class="submenu-item" :class="{ active: isActive('/reports/stock') }" @click="$emit('close')">Stock Report</router-link>
           <router-link to="/reports/profit" class="submenu-item" :class="{ active: isActive('/reports/profit') }" @click="$emit('close')">Profit Report</router-link>
+          <router-link to="/reports/top-products" class="submenu-item" :class="{ active: isActive('/reports/top-products') }" @click="$emit('close')">Top Products</router-link>
           <div class="submenu-item has-nested" :class="{ active: isActive('/reports/receivables') || isActive('/reports/payables') }" @mouseenter="openDebt" @mouseleave="closeDebtSoon">
             <span class="submenu-item-label">Debt Report</span>
             <svg class="chevron-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>

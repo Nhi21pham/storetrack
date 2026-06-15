@@ -1,5 +1,5 @@
 <template>
-  <div class="table-wrapper" :class="{ resizing: isResizing }">
+  <div class="table-wrapper" :class="{ resizing: isResizing, 'sticky-header': stickyHeader }">
     <table :style="{ minWidth: totalWidth + 'px' }">
       <colgroup>
         <col v-for="(w, i) in colWidths" :key="i" :style="{ width: w + 'px' }" />
@@ -35,6 +35,8 @@ import { useColumnResize } from '@/composables/useColumnResize'
 const props = defineProps({
   columns: { type: Array, required: true },
   initialWidths: { type: Array, required: true },
+  // Opt-in: pin the header row while the table body scrolls vertically.
+  stickyHeader: { type: Boolean, default: false },
 })
 
 const slots = useSlots()
@@ -52,6 +54,12 @@ defineExpose({ colWidths, isResizing, startResize })
 <style scoped>
 .table-wrapper { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow-x: auto; }
 .table-wrapper.resizing { cursor: col-resize; user-select: none; }
+
+/* Opt-in: the body scrolls within the wrapper and the header row stays pinned. */
+.table-wrapper.sticky-header { max-height: 70vh; overflow: auto; }
+/* A touch more vertical room so the sort arrows don't crowd the pinned top edge. */
+.table-wrapper.sticky-header thead th { position: sticky; top: 0; z-index: 3; background: #f9fafb; padding-top: 15px; padding-bottom: 13px; }
+.table-wrapper.sticky-header .filter-row th { top: 45px; background: #fff; padding-top: 6px; padding-bottom: 6px; }
 
 table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; table-layout: fixed; }
 

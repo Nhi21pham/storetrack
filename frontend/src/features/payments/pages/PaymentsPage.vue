@@ -23,10 +23,11 @@
       </InactiveBanner>
 
       <div class="picker-bar">
-        <div class="type-toggle">
-          <button :class="{ active: partyType === 'customer' }" @click="setPartyType('customer')">Customers</button>
-          <button :class="{ active: partyType === 'supplier' }" @click="setPartyType('supplier')">Suppliers</button>
-        </div>
+        <SegmentedToggle
+          :modelValue="partyType"
+          :options="[{ value: 'customer', label: 'Customers' }, { value: 'supplier', label: 'Suppliers' }]"
+          @update:modelValue="setPartyType"
+        />
         <div class="picker-select">
           <SearchableSelect
             v-model="selectedPartyId"
@@ -159,6 +160,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import InactiveBanner from '@/components/common/InactiveBanner.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
+import SegmentedToggle from '@/components/common/SegmentedToggle.vue'
 import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import RecordPaymentModal from '@/features/payments/components/RecordPaymentModal.vue'
@@ -334,9 +336,6 @@ loadParties()
 
 <style scoped>
 .picker-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
-.type-toggle { display: inline-flex; background: #f3f4f6; border-radius: 10px; padding: 3px; }
-.type-toggle button { padding: 8px 16px; border: none; background: none; border-radius: 8px; font-size: 13.5px; font-weight: 600; color: #6b7280; cursor: pointer; transition: all 0.15s; }
-.type-toggle button.active { background: #fff; color: #111; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
 .picker-select { min-width: 280px; flex: 1; max-width: 420px; }
 
 .summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; background: #f9fafb; border: 1px solid #eef0f2; border-radius: 12px; margin-bottom: 20px; }

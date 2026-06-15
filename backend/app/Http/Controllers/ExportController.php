@@ -15,6 +15,7 @@ use App\Services\Report\DebtReportService;
 use App\Services\Report\ProfitReportService;
 use App\Services\Report\SaleReportService;
 use App\Services\Report\StockReportService;
+use App\Services\Report\TopProductsReportService;
 use App\Services\SupplierService;
 use App\Services\Tag\TagService;
 use App\Services\UnitService;
@@ -39,6 +40,7 @@ class ExportController extends Controller
         private SaleReportService $saleReportService,
         private ProfitReportService $profitReportService,
         private DebtReportService $debtReportService,
+        private TopProductsReportService $topProductsReportService,
     ) {}
 
     public function queueAuditLogStore(Request $request, int $storeId): JsonResponse
@@ -212,6 +214,26 @@ class ExportController extends Controller
             $request->user(),
             $businessId,
             $this->extractDebtReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueTopProductsReport(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->topProductsReportService->queueExport(
+            $request->user(),
+            $storeId,
+            $this->extractTopProductsReportExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
+    public function queueTopProductsReportBusiness(Request $request, int $businessId): JsonResponse
+    {
+        return $this->queued(fn () => $this->topProductsReportService->queueBusinessExport(
+            $request->user(),
+            $businessId,
+            $this->extractTopProductsReportExportFilters($request),
             $this->extractClientId($request),
         ));
     }
@@ -458,6 +480,36 @@ class ExportController extends Controller
             'end_date'   => $request->query('end_date'),
             'ids'        => $ids,
             'columns'    => $columns,
+        ];
+    }
+
+    private function extractTopProductsReportExportFilters(Request $request): array
+    {
+        $ids = $request->query('ids');
+        if (!is_array($ids)) {
+            $ids = null;
+        }
+
+        $columns = $request->query('columns');
+        if (!is_array($columns)) {
+            $columns = null;
+        }
+
+        $storeIds = $request->query('store_ids');
+        if (!is_array($storeIds)) {
+            $storeIds = null;
+        }
+
+        return [
+            'search'       => $request->query('search'),
+            'tag_id'       => $request->query('tag_id'),
+            'tag_value_id' => $request->query('tag_value_id'),
+            'start_date'   => $request->query('start_date'),
+            'end_date'     => $request->query('end_date'),
+            'sort'         => $request->query('sort'),
+            'store_ids'    => $storeIds,
+            'ids'          => $ids,
+            'columns'      => $columns,
         ];
     }
 

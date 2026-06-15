@@ -75,3 +75,27 @@ export const DEBT_REPORT_INITIAL_COL_WIDTHS = [40, 50, 220, 150, 220, 100, 160, 
 
 // '# Invoices' and 'Email' start hidden; the rest (incl. Phone) show by default.
 export const DEBT_REPORT_DEFAULT_HIDDEN = ['invoice_count', 'email']
+
+// Top Products: one ranked row per product. The order_number column is the rank
+// (rows are sorted by the active "Rank by" metric).
+export const TOP_PRODUCTS_COLUMNS = [
+  { key: 'select',       label: '',          sortable: false },
+  { key: 'order_number', label: '#',         sortable: false },
+  { key: 'product_name', label: 'Product',   sortable: true  },
+  { key: 'product_code', label: 'Code',      sortable: true  },
+  { key: 'tags',         label: 'Tags',      sortable: false },
+  { key: 'qty_sold',     label: 'Qty sold',  sortable: true  },
+  { key: 'revenue',      label: 'Revenue',   sortable: true  },
+  { key: 'profit',       label: 'Profit',    sortable: true  },
+  { key: 'orders',       label: '# Orders',  sortable: true  },
+]
+
+export const TOP_PRODUCTS_INITIAL_COL_WIDTHS = [40, 50, 220, 130, 200, 130, 160, 160, 110]
+
+// The metrics the "Rank by" toggle switches between (each sorts that column desc).
+export const TOP_PRODUCTS_RANK_METRICS = [
+  { value: 'qty_sold', label: 'Qty sold' },
+  { value: 'revenue',  label: 'Revenue'  },
+  { value: 'profit',   label: 'Profit'   },
+  { value: 'orders',   label: '# Orders' },
+]
