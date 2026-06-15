@@ -64,14 +64,14 @@ export const makeDebtReportColumns = ({ partyLabel, spentLabel }) => [
   { key: 'order_number',  label: '#',         sortable: false },
   { key: 'name',          label: partyLabel,  sortable: true  },
   { key: 'phone',         label: 'Phone',     sortable: true  },
+  { key: 'email',         label: 'Email',     sortable: true  },
   { key: 'invoice_count', label: '# Invoices', sortable: true  },
   { key: 'spent',         label: spentLabel,  sortable: true  },
   { key: 'paid',          label: 'Total Paid', sortable: true  },
   { key: 'owe',           label: 'Total Owe', sortable: true  },
-  { key: 'email',         label: 'Email',     sortable: true  },
 ]
 
-export const DEBT_REPORT_INITIAL_COL_WIDTHS = [40, 50, 220, 150, 100, 160, 160, 160, 220]
+export const DEBT_REPORT_INITIAL_COL_WIDTHS = [40, 50, 220, 150, 220, 100, 160, 160, 160]
 
 // '# Invoices' and 'Email' start hidden; the rest (incl. Phone) show by default.
 export const DEBT_REPORT_DEFAULT_HIDDEN = ['invoice_count', 'email']

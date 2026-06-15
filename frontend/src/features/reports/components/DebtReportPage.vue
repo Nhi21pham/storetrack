@@ -78,14 +78,14 @@
                 <span v-if="row.phone">{{ row.phone }}</span>
                 <span v-else class="empty-val">—</span>
               </td>
-              <td v-if="columnVisibility.isVisible('invoice_count')" class="num">{{ row.invoice_count }}</td>
-              <td v-if="columnVisibility.isVisible('spent')" class="num">{{ formatMoney(row.spent) }}</td>
-              <td v-if="columnVisibility.isVisible('paid')" class="num">{{ formatMoney(row.paid) }}</td>
-              <td v-if="columnVisibility.isVisible('owe')" class="num strong" :class="{ owed: row.owe > 0 }">{{ formatMoney(row.owe) }}</td>
               <td v-if="columnVisibility.isVisible('email')">
                 <span v-if="row.email">{{ row.email }}</span>
                 <span v-else class="empty-val">—</span>
               </td>
+              <td v-if="columnVisibility.isVisible('invoice_count')" class="num">{{ row.invoice_count }}</td>
+              <td v-if="columnVisibility.isVisible('spent')" class="num">{{ formatMoney(row.spent) }}</td>
+              <td v-if="columnVisibility.isVisible('paid')" class="num">{{ formatMoney(row.paid) }}</td>
+              <td v-if="columnVisibility.isVisible('owe')" class="num strong" :class="{ owed: row.owe > 0 }">{{ formatMoney(row.owe) }}</td>
             </tr>
             <tr v-if="isExpanded(row.id)" class="detail-row">
               <td :colspan="tableColumns.length">

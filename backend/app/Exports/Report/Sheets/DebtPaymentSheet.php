@@ -41,7 +41,7 @@ class DebtPaymentSheet extends DebtReportSheet
 
     public function headings(): array
     {
-        $headings = ['No.', $this->partyLabel];
+        $headings = ['No.', $this->partyLabel, 'Phone'];
         if ($this->includeStore) {
             $headings[] = 'Store';
         }
@@ -52,7 +52,7 @@ class DebtPaymentSheet extends DebtReportSheet
 
     public function columnWidths(): array
     {
-        $widths = [8, 26];
+        $widths = [8, 26, 18];
         if ($this->includeStore) {
             $widths[] = 24;
         }
@@ -68,7 +68,7 @@ class DebtPaymentSheet extends DebtReportSheet
 
     protected function totalsRow(): array
     {
-        $row = ['TOTAL', ''];
+        $row = ['TOTAL', '', ''];
         if ($this->includeStore) {
             $row[] = '';
         }
@@ -83,6 +83,7 @@ class DebtPaymentSheet extends DebtReportSheet
 
         foreach ($parties as $record) {
             $name = (string) ($record->name ?? '');
+            $phone = (string) ($record->phone ?? '');
             foreach ($record->party?->payments ?? [] as $payment) {
                 if (!$this->inRange($payment->paid_at)) {
                     continue;
@@ -96,7 +97,7 @@ class DebtPaymentSheet extends DebtReportSheet
                     ->filter()
                     ->implode(', ');
 
-                $row = [++$counter, $name];
+                $row = [++$counter, $name, $phone];
                 if ($this->includeStore) {
                     $row[] = (string) ($payment->store?->name ?? '');
                 }

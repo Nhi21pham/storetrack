@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Collection;
 class DebtSummarySheet extends DebtReportSheet
 {
     /** Selectable columns, in display order; keys match the frontend column keys. */
-    public const COLUMN_KEYS = ['phone', 'invoice_count', 'spent', 'paid', 'owe', 'email'];
+    public const COLUMN_KEYS = ['phone', 'email', 'invoice_count', 'spent', 'paid', 'owe'];
 
     /** @var array<int, array<int, mixed>> */
     private array $rows = [];

@@ -41,7 +41,7 @@ class DebtInvoiceSheet extends DebtReportSheet
 
     public function headings(): array
     {
-        $headings = ['No.', $this->partyLabel];
+        $headings = ['No.', $this->partyLabel, 'Phone'];
         if ($this->includeStore) {
             $headings[] = 'Store';
         }
@@ -52,7 +52,7 @@ class DebtInvoiceSheet extends DebtReportSheet
 
     public function columnWidths(): array
     {
-        $widths = [8, 26];
+        $widths = [8, 26, 18];
         if ($this->includeStore) {
             $widths[] = 24;
         }
@@ -68,7 +68,7 @@ class DebtInvoiceSheet extends DebtReportSheet
 
     protected function totalsRow(): array
     {
-        $row = ['TOTAL', ''];
+        $row = ['TOTAL', '', ''];
         if ($this->includeStore) {
             $row[] = '';
         }
@@ -83,6 +83,7 @@ class DebtInvoiceSheet extends DebtReportSheet
 
         foreach ($parties as $record) {
             $name = (string) ($record->name ?? '');
+            $phone = (string) ($record->phone ?? '');
             foreach ($record->party?->invoices ?? [] as $invoice) {
                 if (!$this->inRange($invoice->invoice_date)) {
                     continue;
@@ -91,7 +92,7 @@ class DebtInvoiceSheet extends DebtReportSheet
                 $amount = round((float) $invoice->grand_total, 2);
                 $this->total += $amount;
 
-                $row = [++$counter, $name];
+                $row = [++$counter, $name, $phone];
                 if ($this->includeStore) {
                     $row[] = (string) ($invoice->store?->name ?? '');
                 }
