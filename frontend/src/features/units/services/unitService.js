@@ -69,3 +69,19 @@ export const deleteUnit = async ({ id }) => {
 
 export const startUnitExport = ({ storeId, params }) =>
   rest('post', `/api/exports/units/${storeId}`, { params })
+
+export const downloadUnitsImportTemplate = ({ storeId }) =>
+  rest('get', `/api/imports/units/${storeId}/template`, { responseType: 'blob' })
+
+export const previewUnitsImport = ({ storeId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/units/${storeId}/preview`, { data: formData })
+}
+
+export const startUnitsImport = ({ storeId, rows, originalFilename }) =>
+  rest('post', `/api/imports/units/${storeId}`, { data: { rows, original_filename: originalFilename } })
+
+// Generic across entities; lives here until a second importer needs it.
+export const fetchImportStatus = ({ importId }) =>
+  rest('get', `/api/imports/${importId}`)

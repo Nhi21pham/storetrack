@@ -33,6 +33,7 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedUnits.length === 0" @click="runExport" />
       </div>
 
@@ -142,6 +143,19 @@
       @pick-existing="onPickExisting"
     />
 
+    <ImportModal
+      v-if="showImport"
+      title="Import Units"
+      template-filename="units-import-template.xlsx"
+      :required-headers="['Name']"
+      :download-template="() => downloadUnitsImportTemplate({ storeId: currentStore.id })"
+      :preview="(file) => previewUnitsImport({ storeId: currentStore.id, file })"
+      :start="(rows, originalFilename) => startUnitsImport({ storeId: currentStore.id, rows, originalFilename })"
+      :status="(id) => fetchImportStatus({ importId: id })"
+      @close="showImport = false"
+      @imported="onImported"
+    />
+
     <UnitDetailModal
       v-if="detailUnit"
       :unit="detailUnit"
@@ -210,6 +224,8 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
@@ -223,7 +239,10 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
-import { fetchUnits, deleteUnit, updateUnit, startUnitExport } from '@/features/units/services/unitService'
+import {
+  fetchUnits, deleteUnit, updateUnit, startUnitExport,
+  downloadUnitsImportTemplate, previewUnitsImport, startUnitsImport, fetchImportStatus,
+} from '@/features/units/services/unitService'
 import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
@@ -251,6 +270,7 @@ const hasActiveFilters = computed(() => !!statusFilter.value)
 const clearFilters = () => { statusFilter.value = '' }
 
 const showForm = ref(false)
+const showImport = ref(false)
 const editingUnit = ref(null)
 const detailUnit = ref(null)
 const deleteTarget = ref(null)
@@ -365,6 +385,11 @@ const closeForm = () => {
 const onSaved = async () => {
   closeForm()
   await load()
+}
+
+const onImported = async () => {
+  await load()
+  showToast('Units imported.', 'success')
 }
 
 const onPickExisting = (unit) => {
