@@ -25,6 +25,21 @@ class UnitRepository
         return $query->first();
     }
 
+    /**
+     * Normalized names of every unit in the store (active or not), for batched
+     * duplicate detection during import. Matches the (store_id, name_normalized)
+     * unique index, so inactive units count as taken too.
+     *
+     * @return string[]
+     */
+    public function allNormalizedNames(int $storeId): array
+    {
+        return Unit::query()
+            ->where('store_id', $storeId)
+            ->pluck('name_normalized')
+            ->all();
+    }
+
     public function create(array $data): Unit
     {
         return Unit::create($data);

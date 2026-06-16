@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('invitations:expire')->hourly();
 Schedule::command('exports:cleanup')->everyFiveMinutes();
+Schedule::command('imports:cleanup')->hourly();

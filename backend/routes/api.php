@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\ImportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -57,4 +58,13 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('exportId');
     Route::get('/exports/{exportId}/download', [ExportController::class, 'download'])
         ->whereNumber('exportId');
+
+    Route::get('/imports/units/{storeId}/template', [ImportController::class, 'unitsTemplate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/units/{storeId}/preview', [ImportController::class, 'unitsPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/units/{storeId}', [ImportController::class, 'unitsStart'])
+        ->whereNumber('storeId');
+    Route::get('/imports/{importId}', [ImportController::class, 'status'])
+        ->whereNumber('importId');
 });
