@@ -97,7 +97,7 @@
 </template>
 
 <script setup>
-import { ref, computed, toRef, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Pagination from '@/components/common/Pagination.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { useImportHistory } from '@/composables/useImportHistory'
@@ -105,15 +105,20 @@ import { fetchImportDetail } from '@/features/imports/services/importHistoryServ
 import { formatDateTime } from '@/utils/datetime'
 
 const props = defineProps({
-  storeId: { type: [String, Number], required: true },
-  type:    { type: String, required: true },
-  title:   { type: String, default: 'Import History' },
+  // Provide exactly one of storeId / businessId depending on the entity's scope.
+  storeId:    { type: [String, Number], default: null },
+  businessId: { type: [String, Number], default: null },
+  type:       { type: String, required: true },
+  title:      { type: String, default: 'Import History' },
 })
 
 defineEmits(['close'])
 
+const scope = computed(() => (props.businessId != null ? 'business' : 'store'))
+const scopeId = computed(() => (props.businessId != null ? props.businessId : props.storeId))
+
 const { loading, refreshing, error, rows, page, perPage, total, lastPage, startDate, endDate, load, goToPage, refresh } =
-  useImportHistory({ storeId: toRef(props, 'storeId'), type: props.type })
+  useImportHistory({ scope: scope.value, scopeId, type: props.type })
 
 const clearDates = () => {
   startDate.value = ''
@@ -145,7 +150,7 @@ const toggle = async (row) => {
   detail.value = null
   detailLoading.value = true
   try {
-    detail.value = await fetchImportDetail({ storeId: props.storeId, importId: row.id })
+    detail.value = await fetchImportDetail({ scope: scope.value, scopeId: scopeId.value, importId: row.id })
   } catch (e) {
     detail.value = { error_message: e.message }
   } finally {

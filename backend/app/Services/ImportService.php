@@ -100,6 +100,7 @@ class ImportService
             throw new ImportException(ErrorCode::IMPORT_EMPTY_FILE, 'The file has no data rows to import.');
         }
 
+        $importer->prepare($scopeId);
         $existing = $importer->existingKeys($scopeId);
         $seen = [];
         $previewRows = [];
@@ -108,8 +109,8 @@ class ImportService
             $validated = $importer->validateRow($row);
             $status = $this->classify($validated, $seen, $existing);
 
-            if ($validated['key'] !== null) {
-                $seen[$validated['key']] = true;
+            foreach ($validated['keys'] as $key) {
+                $seen[$key] = true;
             }
 
             $previewRows[] = [
@@ -196,6 +197,7 @@ class ImportService
         }
 
         $scopeId = (int) ($import->metadata['scope_id'] ?? 0);
+        $importer->prepare($scopeId);
         $existing = $importer->existingKeys($scopeId);
         $seen = [];
 
@@ -209,15 +211,15 @@ class ImportService
             $rowNumber = (int) ($row['rowNumber'] ?? ($index + 2));
             $values = is_array($row['values'] ?? null) ? $row['values'] : [];
             $validated = $importer->validateRow($values);
-            $key = $validated['key'];
+            $keys = $validated['keys'];
 
             if ($validated['errors'] !== []) {
                 $failed++;
                 $problems[] = $this->problem($rowNumber, self::STATUS_FAILED, $this->firstError($validated['errors']), $validated['values']);
-            } elseif ($key !== null && isset($seen[$key])) {
+            } elseif ($this->anyKeyIn($keys, $seen)) {
                 $skipped++;
                 $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Duplicate of an earlier row in this import.', $validated['values']);
-            } elseif ($key !== null && isset($existing[$key])) {
+            } elseif ($this->anyKeyIn($keys, $existing)) {
                 $skipped++;
                 $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Already exists.', $validated['values']);
             } else {
@@ -229,7 +231,7 @@ class ImportService
                         $skipped++;
                         $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Already exists; nothing new to add.', $validated['values']);
                     }
-                    if ($key !== null) {
+                    foreach ($keys as $key) {
                         $existing[$key] = true;
                     }
                 } catch (AppException $e) {
@@ -246,7 +248,7 @@ class ImportService
                 }
             }
 
-            if ($key !== null) {
+            foreach ($keys as $key) {
                 $seen[$key] = true;
             }
             $processed++;
@@ -296,6 +298,28 @@ class ImportService
     {
         $this->permissionService->authorizeStoreAccess($actor, $scopeId);
 
+        return $this->paginatedHistory($scopeId, $type, $startDate, $endDate, $perPage);
+    }
+
+    /**
+     * Same as history() but for business-scoped imports (banks, bank accounts),
+     * gated by business membership rather than store membership. The scope id
+     * stored on those imports is the business id.
+     *
+     * @return array{data: list<array<string,mixed>>, total: int, current_page: int, last_page: int, per_page: int}
+     */
+    public function businessHistory(User $actor, int $businessId, ?string $type, ?string $startDate, ?string $endDate, int $perPage = 20): array
+    {
+        $this->permissionService->authorizeBusinessAccess($actor, $businessId);
+
+        return $this->paginatedHistory($businessId, $type, $startDate, $endDate, $perPage);
+    }
+
+    /**
+     * @return array{data: list<array<string,mixed>>, total: int, current_page: int, last_page: int, per_page: int}
+     */
+    private function paginatedHistory(int $scopeId, ?string $type, ?string $startDate, ?string $endDate, int $perPage): array
+    {
         $paginator = $this->importRepository->paginateForScope($scopeId, $type, $startDate, $endDate, min(max($perPage, 1), 100));
 
         return [
@@ -340,6 +364,22 @@ class ImportService
     {
         $this->permissionService->authorizeStoreAccess($actor, $scopeId);
 
+        return $this->findInScope($scopeId, $importId);
+    }
+
+    /**
+     * One business-scoped import for the history detail view, gated by business
+     * membership.
+     */
+    public function getForBusiness(User $actor, int $businessId, int $importId): Import
+    {
+        $this->permissionService->authorizeBusinessAccess($actor, $businessId);
+
+        return $this->findInScope($businessId, $importId);
+    }
+
+    private function findInScope(int $scopeId, int $importId): Import
+    {
         $import = $this->importRepository->find($importId);
         if (! $import || (int) ($import->metadata['scope_id'] ?? 0) !== $scopeId) {
             throw new ImportException(ErrorCode::NOT_FOUND, 'Import not found.');
@@ -385,7 +425,7 @@ class ImportService
     }
 
     /**
-     * @param  array{values: array<string,string>, data: array<string,mixed>, errors: array<string,string>, key: ?string, warnings?: string[]}  $validated
+     * @param  array{values: array<string,string>, data: array<string,mixed>, errors: array<string,string>, keys: string[], warnings?: string[]}  $validated
      * @param  array<string,bool>  $seen
      * @param  array<string,true>  $existing
      */
@@ -394,14 +434,34 @@ class ImportService
         if ($validated['errors'] !== []) {
             return self::STATUS_INVALID;
         }
-        if ($validated['key'] !== null && isset($seen[$validated['key']])) {
+        if ($this->anyKeyIn($validated['keys'], $seen)) {
             return self::STATUS_DUPLICATE_FILE;
         }
-        if ($validated['key'] !== null && isset($existing[$validated['key']])) {
+        if ($this->anyKeyIn($validated['keys'], $existing)) {
             return self::STATUS_DUPLICATE_DB;
         }
 
         return self::STATUS_VALID;
+    }
+
+    /**
+     * A row is a duplicate when any of its identity keys is already present in
+     * the set (earlier rows for in-file dedup, or the scope for DB dedup). An
+     * entity may have several unique constraints (e.g. a bank's short / VI / EN
+     * names), so each row carries one key per constraint.
+     *
+     * @param  string[]  $keys
+     * @param  array<string,bool>  $set
+     */
+    private function anyKeyIn(array $keys, array $set): bool
+    {
+        foreach ($keys as $key) {
+            if (isset($set[$key])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -66,6 +66,8 @@ class TagImporter implements RowImporter
         $this->permissionService->authorizeStore($actor, PermissionEnum::CREATE_TAG, $scopeId);
     }
 
+    public function prepare(int $scopeId): void {}
+
     public function validateRow(array $row): array
     {
         $name        = trim((string) ($row['Key'] ?? ''));
@@ -100,7 +102,7 @@ class TagImporter implements RowImporter
                 'values'          => $values,
             ],
             'errors'   => $errors,
-            'key'      => null,
+            'keys'     => [],
             'warnings' => $warnings,
         ];
     }

@@ -6,6 +6,7 @@ use App\Exceptions\AppException;
 use App\Imports\ImporterRegistry;
 use App\Models\Import;
 use App\Models\Store;
+use App\Services\BusinessService;
 use App\Services\ImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class ImportController extends Controller
     public function __construct(
         private ImportService $importService,
         private ImporterRegistry $registry,
+        private BusinessService $businessService,
     ) {}
 
     public function unitsTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
@@ -47,6 +49,21 @@ class ImportController extends Controller
     public function tagsStart(Request $request, int $storeId): JsonResponse
     {
         return $this->start($request, $storeId, 'tags', $this->storeName($storeId));
+    }
+
+    public function banksTemplate(Request $request, int $businessId): BinaryFileResponse|JsonResponse
+    {
+        return $this->template($request, $businessId, 'banks');
+    }
+
+    public function banksPreview(Request $request, int $businessId): JsonResponse
+    {
+        return $this->preview($request, $businessId, 'banks');
+    }
+
+    public function banksStart(Request $request, int $businessId): JsonResponse
+    {
+        return $this->start($request, $businessId, 'banks', $this->businessName($businessId));
     }
 
     public function status(Request $request, int $importId): JsonResponse
@@ -86,6 +103,39 @@ class ImportController extends Controller
     {
         try {
             $import = $this->importService->getForStore($request->user(), $storeId, $importId);
+
+            return $this->importResponse($import);
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    public function businessHistory(Request $request, int $businessId): JsonResponse
+    {
+        $type = $request->query('type');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+
+        try {
+            $result = $this->importService->businessHistory(
+                $request->user(),
+                $businessId,
+                is_string($type) && $type !== '' ? $type : null,
+                is_string($startDate) && $startDate !== '' ? $startDate : null,
+                is_string($endDate) && $endDate !== '' ? $endDate : null,
+                (int) $request->query('per_page', 20),
+            );
+
+            return response()->json($result);
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    public function businessHistoryDetail(Request $request, int $businessId, int $importId): JsonResponse
+    {
+        try {
+            $import = $this->importService->getForBusiness($request->user(), $businessId, $importId);
 
             return $this->importResponse($import);
         } catch (AppException $e) {
@@ -153,6 +203,11 @@ class ImportController extends Controller
     private function storeName(int $storeId): ?string
     {
         return Store::find($storeId)?->name;
+    }
+
+    private function businessName(int $businessId): ?string
+    {
+        return $this->businessService->nameById($businessId);
     }
 
     private function importResponse(Import $import, int $status = 200): JsonResponse

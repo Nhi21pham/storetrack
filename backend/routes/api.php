@@ -71,10 +71,21 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('storeId');
     Route::post('/imports/tags/{storeId}', [ImportController::class, 'tagsStart'])
         ->whereNumber('storeId');
+    Route::get('/imports/banks/{businessId}/template', [ImportController::class, 'banksTemplate'])
+        ->whereNumber('businessId');
+    Route::post('/imports/banks/{businessId}/preview', [ImportController::class, 'banksPreview'])
+        ->whereNumber('businessId');
+    Route::post('/imports/banks/{businessId}', [ImportController::class, 'banksStart'])
+        ->whereNumber('businessId');
     Route::get('/imports/history/store/{storeId}', [ImportController::class, 'storeHistory'])
         ->whereNumber('storeId');
     Route::get('/imports/history/store/{storeId}/{importId}', [ImportController::class, 'storeHistoryDetail'])
         ->whereNumber('storeId')
+        ->whereNumber('importId');
+    Route::get('/imports/history/business/{businessId}', [ImportController::class, 'businessHistory'])
+        ->whereNumber('businessId');
+    Route::get('/imports/history/business/{businessId}/{importId}', [ImportController::class, 'businessHistoryDetail'])
+        ->whereNumber('businessId')
         ->whereNumber('importId');
     Route::get('/imports/{importId}', [ImportController::class, 'status'])
         ->whereNumber('importId');

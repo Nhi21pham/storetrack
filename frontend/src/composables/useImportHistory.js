@@ -3,10 +3,11 @@ import { fetchImportHistory } from '@/features/imports/services/importHistorySer
 
 const REFRESH_MS = 3000
 
-// Loads a store's import history for one entity type (server-side paginated).
-// While any row is still pending/processing it quietly re-polls so the board
-// reflects the background job's progress without a manual refresh.
-export const useImportHistory = ({ storeId, type }) => {
+// Loads a scope's import history for one entity type (server-side paginated).
+// `scope` is 'store' or 'business'; `scopeId` is the matching id ref. While any
+// row is still pending/processing it quietly re-polls so the board reflects the
+// background job's progress without a manual refresh.
+export const useImportHistory = ({ scope = 'store', scopeId, type }) => {
   const loading = ref(true)
   const refreshing = ref(false)
   const error = ref('')
@@ -43,7 +44,8 @@ export const useImportHistory = ({ storeId, type }) => {
     error.value = ''
     try {
       const data = await fetchImportHistory({
-        storeId: storeId.value,
+        scope,
+        scopeId: scopeId.value,
         type,
         page: toPage,
         perPage: perPage.value,

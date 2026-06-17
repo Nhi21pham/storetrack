@@ -50,6 +50,8 @@ class UnitImporter implements RowImporter
         $this->permissionService->authorizeStore($actor, PermissionEnum::CREATE_UNIT, $scopeId);
     }
 
+    public function prepare(int $scopeId): void {}
+
     public function validateRow(array $row): array
     {
         $name = trim((string) ($row['Name'] ?? ''));
@@ -65,7 +67,7 @@ class UnitImporter implements RowImporter
             'values'   => ['Name' => $name],
             'data'     => ['name' => $name],
             'errors'   => $errors,
-            'key'      => $name === '' ? null : TextNormalizer::normalize($name),
+            'keys'     => $name === '' ? [] : [TextNormalizer::normalize($name)],
             'warnings' => [],
         ];
     }
