@@ -123,6 +123,124 @@ class TagService
         }
     }
 
+    /**
+     * Import upsert: create the tag when it's new, otherwise merge into the
+     * existing one — add any values it doesn't already have and (last-wins)
+     * overwrite the description when this row supplies a non-empty one. Bad
+     * values are dropped silently here; the importer has already warned about
+     * them at preview time. Returns true when anything was actually written, so
+     * a re-import of the same file is counted as skipped rather than created.
+     *
+     * @param  array{name: string, name_normalized?: string, description?: ?string, has_description?: bool, values?: list<string>}  $data
+     */
+    public function importUpsert(User $actor, int $storeId, array $data): bool
+    {
+        $this->permissionService->authorizeStore($actor, PermissionEnum::CREATE_TAG, $storeId);
+
+        $name           = trim((string) ($data['name'] ?? ''));
+        $nameNorm       = (string) ($data['name_normalized'] ?? TextNormalizer::normalize($name));
+        $hasDescription = (bool) ($data['has_description'] ?? false);
+        $description    = $hasDescription ? trim((string) ($data['description'] ?? '')) : null;
+        $values         = is_array($data['values'] ?? null) ? $data['values'] : [];
+
+        return DB::transaction(function () use ($actor, $storeId, $name, $nameNorm, $hasDescription, $description, $values) {
+            $tag = $this->tagRepository->findByNameNormalized($storeId, $nameNorm);
+            if ($tag !== null) {
+                return $this->mergeIntoExistingTag($actor, $tag, $hasDescription, $description, $values);
+            }
+
+            try {
+                $tag = $this->tagRepository->create([
+                    'store_id'        => $storeId,
+                    'name'            => $name,
+                    'name_normalized' => $nameNorm,
+                    'description'     => ($description === null || $description === '') ? null : $description,
+                ]);
+            } catch (QueryException $e) {
+                if (($e->errorInfo[1] ?? null) !== 1062) {
+                    throw $e;
+                }
+                $tag = $this->tagRepository->findByNameNormalized($storeId, $nameNorm);
+                if ($tag === null) {
+                    throw $e;
+                }
+                return $this->mergeIntoExistingTag($actor, $tag, $hasDescription, $description, $values);
+            }
+
+            $this->auditLogger->tagCreated($actor, $tag);
+            $this->attachNewValues($actor, $tag, $values);
+
+            return true;
+        });
+    }
+
+    /**
+     * @param  list<string>  $values
+     */
+    private function mergeIntoExistingTag(User $actor, Tag $tag, bool $hasDescription, ?string $description, array $values): bool
+    {
+        $changed = false;
+
+        if ($hasDescription && $description !== null && $description !== '' && $description !== $tag->description) {
+            $tag = $this->tagRepository->update($tag, ['description' => $description]);
+            $this->auditLogger->tagUpdated($actor, $tag);
+            $changed = true;
+        }
+
+        if ($this->attachNewValues($actor, $tag, $values) > 0) {
+            $changed = true;
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Add values the tag doesn't already have, skipping blanks, over-long values
+     * and duplicates. Returns how many were actually created.
+     *
+     * @param  list<string>  $values
+     */
+    private function attachNewValues(User $actor, Tag $tag, array $values): int
+    {
+        $added = 0;
+        $seen = [];
+
+        foreach ($values as $rawValue) {
+            $value = trim((string) $rawValue);
+            if ($value === '' || mb_strlen($value) > 100) {
+                continue;
+            }
+
+            $valueNorm = TextNormalizer::normalize($value);
+            if ($valueNorm === '' || isset($seen[$valueNorm])) {
+                continue;
+            }
+            $seen[$valueNorm] = true;
+
+            if ($this->tagValueRepository->findByValueNormalized((int) $tag->id, $valueNorm) !== null) {
+                continue;
+            }
+
+            try {
+                $tagValue = $this->tagValueRepository->create([
+                    'tag_id'           => (int) $tag->id,
+                    'value'            => $value,
+                    'value_normalized' => $valueNorm,
+                ]);
+            } catch (QueryException $e) {
+                if (($e->errorInfo[1] ?? null) === 1062) {
+                    continue;
+                }
+                throw $e;
+            }
+
+            $this->valueAuditLogger->tagValueCreated($actor, $tag, $tagValue);
+            $added++;
+        }
+
+        return $added;
+    }
+
     public function updateKey(User $actor, int $id, array $data): Tag
     {
         return DB::transaction(function () use ($actor, $id, $data) {

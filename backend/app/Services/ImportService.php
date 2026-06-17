@@ -116,6 +116,7 @@ class ImportService
                 'rowNumber' => $index + 2,
                 'values'    => $validated['values'],
                 'errors'    => $validated['errors'],
+                'warnings'  => $validated['warnings'] ?? [],
                 'status'    => $status,
             ];
         }
@@ -221,8 +222,13 @@ class ImportService
                 $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Already exists.', $validated['values']);
             } else {
                 try {
-                    $importer->create($actor, $scopeId, $validated['data']);
-                    $created++;
+                    $changed = $importer->create($actor, $scopeId, $validated['data']);
+                    if ($changed) {
+                        $created++;
+                    } else {
+                        $skipped++;
+                        $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Already exists; nothing new to add.', $validated['values']);
+                    }
                     if ($key !== null) {
                         $existing[$key] = true;
                     }
@@ -379,7 +385,7 @@ class ImportService
     }
 
     /**
-     * @param  array{values: array<string,string>, data: array<string,mixed>, errors: array<string,string>, key: ?string}  $validated
+     * @param  array{values: array<string,string>, data: array<string,mixed>, errors: array<string,string>, key: ?string, warnings?: string[]}  $validated
      * @param  array<string,bool>  $seen
      * @param  array<string,true>  $existing
      */

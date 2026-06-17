@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Enums\ErrorCode;
 use App\Exceptions\ImportException;
 use App\Imports\Contracts\RowImporter;
+use App\Imports\Importers\TagImporter;
 use App\Imports\Importers\UnitImporter;
 
 /**
@@ -14,12 +15,16 @@ use App\Imports\Importers\UnitImporter;
  */
 class ImporterRegistry
 {
-    public function __construct(private UnitImporter $unitImporter) {}
+    public function __construct(
+        private UnitImporter $unitImporter,
+        private TagImporter $tagImporter,
+    ) {}
 
     public function for(string $type): RowImporter
     {
         return match ($type) {
             'units' => $this->unitImporter,
+            'tags'  => $this->tagImporter,
             default => throw new ImportException(ErrorCode::IMPORT_INVALID_FILE, "Unknown import type: {$type}."),
         };
     }

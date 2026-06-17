@@ -62,10 +62,11 @@ class UnitImporter implements RowImporter
         }
 
         return [
-            'values' => ['Name' => $name],
-            'data'   => ['name' => $name],
-            'errors' => $errors,
-            'key'    => $name === '' ? null : TextNormalizer::normalize($name),
+            'values'   => ['Name' => $name],
+            'data'     => ['name' => $name],
+            'errors'   => $errors,
+            'key'      => $name === '' ? null : TextNormalizer::normalize($name),
+            'warnings' => [],
         ];
     }
 
@@ -79,9 +80,11 @@ class UnitImporter implements RowImporter
         return $keys;
     }
 
-    public function create(User $actor, int $scopeId, array $data): void
+    public function create(User $actor, int $scopeId, array $data): bool
     {
         $this->unitService->create($actor, $scopeId, ['name' => $data['name']]);
+
+        return true;
     }
 
     public function duplicateErrorCode(): ErrorCode

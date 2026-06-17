@@ -69,12 +69,14 @@ export const useImport = ({ templateFilename, downloadTemplate, preview, start, 
     }
   }
 
-  // Optimistically clear a row's error on edit; the server re-validates at commit.
+  // Optimistically clear a row's error/warning on edit; the server re-validates
+  // at commit (warnings are a preview-only hint, so a stale one is dropped here).
   const editCell = (index, header, value) => {
     const row = rows.value[index]
     if (!row) return
     row.values = { ...row.values, [header]: value }
     row.errors = {}
+    row.warnings = []
     row.status = 'valid'
   }
 

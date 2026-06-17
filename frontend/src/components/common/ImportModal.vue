@@ -19,6 +19,10 @@
             <li v-for="h in optionalHeaders" :key="h"><span class="opt">{{ h }}</span></li>
           </ul>
           <p class="hint">Header names must match exactly. Extra columns are ignored. Not sure of the format? Download the template below.</p>
+
+          <ul v-if="instructions.length" class="format-notes">
+            <li v-for="(note, i) in instructions" :key="i">{{ note }}</li>
+          </ul>
         </div>
 
         <div class="select-actions">
@@ -56,26 +60,34 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, i) in pagedRows" :key="row.rowNumber" :class="rowClass(row)">
-                <td class="row-num">{{ row.rowNumber }}</td>
-                <td v-for="col in columns" :key="col">
-                  <input
-                    class="cell-input"
-                    :class="{ error: row.errors && row.errors[col] }"
-                    :value="row.values[col]"
-                    @input="im.editCell(absoluteIndex(i), col, $event.target.value)"
-                  />
-                  <span v-if="row.errors && row.errors[col]" class="cell-error">{{ row.errors[col] }}</span>
-                </td>
-                <td class="status-col">
-                  <span class="badge" :class="statusInfo(row.status).cls">{{ statusInfo(row.status).label }}</span>
-                </td>
-                <td class="actions-col">
-                  <button class="icon-btn" title="Remove row" @click="im.removeRow(absoluteIndex(i))">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
-                </td>
-              </tr>
+              <template v-for="(row, i) in pagedRows" :key="row.rowNumber">
+                <tr :class="rowClass(row)">
+                  <td class="row-num">{{ row.rowNumber }}</td>
+                  <td v-for="col in columns" :key="col">
+                    <input
+                      class="cell-input"
+                      :class="{ error: row.errors && row.errors[col] }"
+                      :value="row.values[col]"
+                      @input="im.editCell(absoluteIndex(i), col, $event.target.value)"
+                    />
+                    <span v-if="row.errors && row.errors[col]" class="cell-error">{{ row.errors[col] }}</span>
+                  </td>
+                  <td class="status-col">
+                    <span class="badge" :class="statusInfo(row.status).cls">{{ statusInfo(row.status).label }}</span>
+                  </td>
+                  <td class="actions-col">
+                    <button class="icon-btn" title="Remove row" @click="im.removeRow(absoluteIndex(i))">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="row.warnings && row.warnings.length" class="warn-row">
+                  <td></td>
+                  <td :colspan="columns.length + 2">
+                    <p v-for="(w, wi) in row.warnings" :key="wi" class="warn-line">⚠ {{ w }}</p>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -161,6 +173,7 @@ const props = defineProps({
   templateFilename: { type: String, required: true },
   requiredHeaders:  { type: Array,  default: () => [] },
   optionalHeaders:  { type: Array,  default: () => [] },
+  instructions:     { type: Array,  default: () => [] },
   downloadTemplate: { type: Function, required: true },
   preview:          { type: Function, required: true },
   start:            { type: Function, required: true },
@@ -282,6 +295,9 @@ watch(() => im.phase.value, (phase) => {
 .col-list .req { background: #eef2ff; color: #3730a3; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
 .col-list .opt { background: #f3f4f6; color: #4b5563; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; }
 .hint { font-size: 12.5px; color: #6b7280; margin: 0; }
+.format-notes { margin: 10px 0 0; padding: 10px 12px; list-style: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; display: flex; flex-direction: column; gap: 5px; }
+.format-notes li { font-size: 12.5px; color: #4b5563; line-height: 1.45; padding-left: 14px; position: relative; }
+.format-notes li::before { content: '•'; position: absolute; left: 2px; color: #9ca3af; }
 
 .select-actions { display: flex; gap: 12px; margin-top: 18px; }
 .file-label { position: relative; overflow: hidden; }
@@ -303,6 +319,8 @@ watch(() => im.phase.value, (phase) => {
 .actions-col { width: 40px; text-align: right; }
 .row-invalid { background: #fef2f2; }
 .row-dup { background: #fffbeb; }
+.warn-row td { padding-top: 0; border-bottom: 1px solid #f3f4f6; }
+.warn-line { margin: 0 0 2px; font-size: 11.5px; color: #854d0e; line-height: 1.4; }
 
 .cell-input { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; font-size: 13px; box-sizing: border-box; outline: none; }
 .cell-input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }

@@ -264,8 +264,9 @@ import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
 import {
   fetchUnits, deleteUnit, updateUnit, startUnitExport,
-  downloadUnitsImportTemplate, previewUnitsImport, startUnitsImport, fetchImportStatus,
+  downloadUnitsImportTemplate, previewUnitsImport, startUnitsImport,
 } from '@/features/units/services/unitService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'

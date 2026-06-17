@@ -32,6 +32,8 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <HistoryButton @click="showHistory = true" />
+        <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedTags.length === 0" @click="runExport" />
       </div>
 
@@ -160,6 +162,29 @@
       @confirm="confirmBulk"
       @cancel="cancelBulk"
     />
+
+    <ImportModal
+      v-if="showImport && currentStore"
+      title="Import Tags"
+      template-filename="tags-import-template.xlsx"
+      :required-headers="['Key']"
+      :optional-headers="['Value', 'Description']"
+      :instructions="tagImportInstructions"
+      :download-template="() => downloadTagsImportTemplate({ storeId: currentStore.id })"
+      :preview="(file) => previewTagsImport({ storeId: currentStore.id, file })"
+      :start="(rows, originalFilename) => startTagsImport({ storeId: currentStore.id, rows, originalFilename })"
+      :status="(id) => fetchImportStatus({ importId: id })"
+      @close="showImport = false"
+      @imported="onImported"
+    />
+
+    <ImportHistoryModal
+      v-if="showHistory && currentStore"
+      title="Tag Import History"
+      type="tags"
+      :store-id="currentStore.id"
+      @close="showHistory = false"
+    />
   </PageContainer>
 </template>
 
@@ -175,6 +200,10 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import TagChip from '@/components/common/TagChip.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
@@ -189,7 +218,11 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
-import { fetchTags, deleteTag, startTagExport } from '@/features/tags/services/tagService'
+import {
+  fetchTags, deleteTag, startTagExport,
+  downloadTagsImportTemplate, previewTagsImport, startTagsImport,
+} from '@/features/tags/services/tagService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { TAG_COLUMNS, TAG_INITIAL_COL_WIDTHS } from '@/features/tags/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
@@ -216,6 +249,19 @@ const editingTag = ref(null)
 const detailTag = ref(null)
 const deleteKeyTarget = ref(null)
 const deleting = ref(false)
+
+const showImport = ref(false)
+const showHistory = ref(false)
+
+// Explains the Value column grammar in the import dialog (kept in sync with
+// TagImporter's parser on the backend).
+const tagImportInstructions = [
+  'Key is required. Value and Description are optional.',
+  'List several values in one cell separated by commas: Red, Blue, Green',
+  'A value may be prefixed with the key, e.g. "Color: Red" — the prefix must match the row\'s Key, otherwise that value is skipped.',
+  'To keep a comma or colon inside one value, wrap the value in double quotes. To include a literal " inside it, double it — "6"" hose, blue" stores: 6" hose, blue.',
+  'A key that already exists gains the new values; the latest non-empty Description wins.',
+]
 
 const role = computed(() => String(currentStore?.value?.my_role || '').toLowerCase())
 const canDeleteKey = computed(() => ['owner', 'accountant'].includes(role.value))
@@ -295,6 +341,10 @@ const load = async () => {
 
 onMounted(load)
 watch(() => currentStore?.value?.id, () => { clearSelection(); load() })
+
+const onImported = async () => {
+  await load()
+}
 
 const openCreate = () => {
   editingTag.value = null

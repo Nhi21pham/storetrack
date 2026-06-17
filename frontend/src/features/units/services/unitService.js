@@ -81,7 +81,3 @@ export const previewUnitsImport = ({ storeId, file }) => {
 
 export const startUnitsImport = ({ storeId, rows, originalFilename }) =>
   rest('post', `/api/imports/units/${storeId}`, { data: { rows, original_filename: originalFilename } })
-
-// Generic across entities; lives here until a second importer needs it.
-export const fetchImportStatus = ({ importId }) =>
-  rest('get', `/api/imports/${importId}`)

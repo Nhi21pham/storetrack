@@ -34,6 +34,21 @@ class ImportController extends Controller
         return $this->start($request, $storeId, 'units', $this->storeName($storeId));
     }
 
+    public function tagsTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
+    {
+        return $this->template($request, $storeId, 'tags');
+    }
+
+    public function tagsPreview(Request $request, int $storeId): JsonResponse
+    {
+        return $this->preview($request, $storeId, 'tags');
+    }
+
+    public function tagsStart(Request $request, int $storeId): JsonResponse
+    {
+        return $this->start($request, $storeId, 'tags', $this->storeName($storeId));
+    }
+
     public function status(Request $request, int $importId): JsonResponse
     {
         try {

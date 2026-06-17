@@ -48,11 +48,13 @@ interface RowImporter
     /**
      * Validate and normalize a single header-keyed row. Returns the cleaned
      * display values (echoed back to the review grid), the domain payload for
-     * create(), per-field errors, and the dedup key (null when the row can't
-     * have one, e.g. a required field is blank).
+     * create(), per-field errors, the dedup key (null when the row can't have
+     * one, e.g. a required field is blank, or when the importer merges rather
+     * than skips duplicates), and any non-fatal warnings (parts of the row that
+     * were dropped but did not invalidate it — e.g. a single malformed value).
      *
      * @param  array<string, string>  $row
-     * @return array{values: array<string, string>, data: array<string, mixed>, errors: array<string, string>, key: ?string}
+     * @return array{values: array<string, string>, data: array<string, mixed>, errors: array<string, string>, key: ?string, warnings: string[]}
      */
     public function validateRow(array $row): array;
 
@@ -66,12 +68,17 @@ interface RowImporter
     public function existingKeys(int $scopeId): array;
 
     /**
-     * Create one record by delegating to the entity's own service (which owns
-     * the validation, dedup, audit logging and race-safety). This is a thin
-     * pass-through — no import logic here. ImportService catches failures and
-     * classifies them.
+     * Create or merge one record by delegating to the entity's own service
+     * (which owns the validation, dedup, audit logging and race-safety). This is
+     * a thin pass-through — no import logic here. ImportService catches failures
+     * and classifies them.
+     *
+     * Returns true when the row actually wrote something (a new record, or a
+     * merge that added/changed data) and false when it was a no-op (e.g. the
+     * record already existed with nothing new to add), so a re-run of the same
+     * file is counted as "skipped" rather than "created".
      */
-    public function create(User $actor, int $scopeId, array $data): void;
+    public function create(User $actor, int $scopeId, array $data): bool;
 
     /**
      * The error code the entity service throws when the record already exists.

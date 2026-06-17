@@ -65,6 +65,12 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('storeId');
     Route::post('/imports/units/{storeId}', [ImportController::class, 'unitsStart'])
         ->whereNumber('storeId');
+    Route::get('/imports/tags/{storeId}/template', [ImportController::class, 'tagsTemplate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/tags/{storeId}/preview', [ImportController::class, 'tagsPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/tags/{storeId}', [ImportController::class, 'tagsStart'])
+        ->whereNumber('storeId');
     Route::get('/imports/history/store/{storeId}', [ImportController::class, 'storeHistory'])
         ->whereNumber('storeId');
     Route::get('/imports/history/store/{storeId}/{importId}', [ImportController::class, 'storeHistoryDetail'])

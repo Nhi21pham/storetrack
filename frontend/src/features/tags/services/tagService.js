@@ -119,3 +119,15 @@ export const deleteTagValue = async ({ id }) => {
 
 export const startTagExport = ({ storeId, params }) =>
   rest('post', `/api/exports/tags/${storeId}`, { params })
+
+export const downloadTagsImportTemplate = ({ storeId }) =>
+  rest('get', `/api/imports/tags/${storeId}/template`, { responseType: 'blob' })
+
+export const previewTagsImport = ({ storeId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/tags/${storeId}/preview`, { data: formData })
+}
+
+export const startTagsImport = ({ storeId, rows, originalFilename }) =>
+  rest('post', `/api/imports/tags/${storeId}`, { data: { rows, original_filename: originalFilename } })
