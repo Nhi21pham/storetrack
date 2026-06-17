@@ -50,7 +50,10 @@ class ImportService
     public const STATUS_SKIPPED = 'skipped';
     public const STATUS_FAILED = 'failed';
 
-    public function __construct(private ImportRepository $importRepository) {}
+    public function __construct(
+        private ImportRepository $importRepository,
+        private PermissionService $permissionService,
+    ) {}
 
     public function template(User $actor, int $scopeId, RowImporter $importer): ImportTemplate
     {
@@ -209,13 +212,13 @@ class ImportService
 
             if ($validated['errors'] !== []) {
                 $failed++;
-                $problems[] = $this->problem($rowNumber, self::STATUS_FAILED, $this->firstError($validated['errors']));
+                $problems[] = $this->problem($rowNumber, self::STATUS_FAILED, $this->firstError($validated['errors']), $validated['values']);
             } elseif ($key !== null && isset($seen[$key])) {
                 $skipped++;
-                $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Duplicate of an earlier row in this import.');
+                $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Duplicate of an earlier row in this import.', $validated['values']);
             } elseif ($key !== null && isset($existing[$key])) {
                 $skipped++;
-                $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Already exists.');
+                $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Already exists.', $validated['values']);
             } else {
                 try {
                     $importer->create($actor, $scopeId, $validated['data']);
@@ -226,14 +229,14 @@ class ImportService
                 } catch (AppException $e) {
                     if ($e->getErrorCode() === $importer->duplicateErrorCode()) {
                         $skipped++;
-                        $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Already exists.');
+                        $problems[] = $this->problem($rowNumber, self::STATUS_SKIPPED, 'Already exists.', $validated['values']);
                     } else {
                         $failed++;
-                        $problems[] = $this->problem($rowNumber, self::STATUS_FAILED, $e->getMessage());
+                        $problems[] = $this->problem($rowNumber, self::STATUS_FAILED, $e->getMessage(), $validated['values']);
                     }
                 } catch (\Throwable $e) {
                     $failed++;
-                    $problems[] = $this->problem($rowNumber, self::STATUS_FAILED, 'Could not be created due to a database error.');
+                    $problems[] = $this->problem($rowNumber, self::STATUS_FAILED, 'Could not be created due to a database error.', $validated['values']);
                 }
             }
 
@@ -270,6 +273,69 @@ class ImportService
     {
         $import = $this->importRepository->findForUser($importId, $user->id);
         if (! $import) {
+            throw new ImportException(ErrorCode::NOT_FOUND, 'Import not found.');
+        }
+
+        return $import;
+    }
+
+    /**
+     * Shaped, paginated import history for a store, optionally filtered to one
+     * entity type (so each page shows only its own imports). Any store member
+     * may view.
+     *
+     * @return array{data: list<array<string,mixed>>, total: int, current_page: int, last_page: int, per_page: int}
+     */
+    public function history(User $actor, int $scopeId, ?string $type, int $perPage = 20): array
+    {
+        $this->permissionService->authorizeStoreAccess($actor, $scopeId);
+
+        $paginator = $this->importRepository->paginateForScope($scopeId, $type, min(max($perPage, 1), 100));
+
+        return [
+            'data'         => array_map(fn (Import $import) => $this->toListItem($import), $paginator->items()),
+            'total'        => $paginator->total(),
+            'current_page' => $paginator->currentPage(),
+            'last_page'    => $paginator->lastPage(),
+            'per_page'     => $paginator->perPage(),
+        ];
+    }
+
+    /**
+     * History-row projection for the board list (counts + who/when, no per-row
+     * results detail — that comes from getForStore()).
+     *
+     * @return array<string,mixed>
+     */
+    private function toListItem(Import $import): array
+    {
+        return [
+            'id'                => $import->id,
+            'type'              => $import->type,
+            'status'            => $import->status,
+            'original_filename' => $import->original_filename,
+            'total_rows'        => $import->total_rows,
+            'created_count'     => $import->created_count,
+            'skipped_count'     => $import->skipped_count,
+            'failed_count'      => $import->failed_count,
+            'error_message'     => $import->error_message,
+            'user_name'         => $import->user?->name,
+            'user_email'        => $import->user?->email,
+            'created_at'        => optional($import->created_at)->toIso8601String(),
+            'completed_at'      => optional($import->completed_at)->toIso8601String(),
+        ];
+    }
+
+    /**
+     * One import for the history detail view, gated by store membership (not the
+     * importing user) so any member can inspect another member's import.
+     */
+    public function getForStore(User $actor, int $scopeId, int $importId): Import
+    {
+        $this->permissionService->authorizeStoreAccess($actor, $scopeId);
+
+        $import = $this->importRepository->find($importId);
+        if (! $import || (int) ($import->metadata['scope_id'] ?? 0) !== $scopeId) {
             throw new ImportException(ErrorCode::NOT_FOUND, 'Import not found.');
         }
 
@@ -333,14 +399,16 @@ class ImportService
     }
 
     /**
-     * @return array{rowNumber: int, status: string, message: string}
+     * @param  array<string,string>  $values  the row's cleaned cell values, shown in the results detail
+     * @return array{rowNumber: int, status: string, message: string, values: array<string,string>}
      */
-    private function problem(int $rowNumber, string $status, string $message): array
+    private function problem(int $rowNumber, string $status, string $message, array $values = []): array
     {
         return [
             'rowNumber' => $rowNumber,
             'status'    => $status,
             'message'   => $message,
+            'values'    => $values,
         ];
     }
 

@@ -115,7 +115,8 @@
           <ul>
             <li v-for="p in problems" :key="p.rowNumber">
               <span class="badge" :class="statusInfo(p.status).cls">Row {{ p.rowNumber }}</span>
-              {{ p.message }}
+              <span v-if="formatValues(p.values)" class="row-data">{{ formatValues(p.values) }}</span>
+              <span class="row-msg">— {{ p.message }}</span>
             </li>
           </ul>
         </div>
@@ -209,6 +210,9 @@ const failed = computed(() => progress.value.failed_count || 0)
 const percent = computed(() => (total.value ? Math.round((processed.value / total.value) * 100) : 0))
 const problems = computed(() => progress.value.results || [])
 
+const formatValues = (values) =>
+  Object.values(values || {}).filter((v) => v !== '' && v != null).join(' · ')
+
 const statusInfo = (status) => {
   switch (status) {
     case 'invalid': return { label: 'Fix', cls: 'bad' }
@@ -293,7 +297,9 @@ watch(() => im.phase.value, (phase) => {
 
 .problems { margin-top: 8px; }
 .problems ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; max-height: 30vh; overflow-y: auto; }
-.problems li { font-size: 12.5px; color: #4b5563; display: flex; align-items: center; gap: 8px; }
+.problems li { font-size: 12.5px; color: #6b7280; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.problems .row-data { font-weight: 600; color: #111; }
+.problems .row-msg { color: #6b7280; }
 
 .api-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-top: 12px; }
 

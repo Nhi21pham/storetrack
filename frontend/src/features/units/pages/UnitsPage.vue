@@ -33,6 +33,7 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <HistoryButton @click="showHistory = true" />
         <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedUnits.length === 0" @click="runExport" />
       </div>
@@ -156,6 +157,14 @@
       @imported="onImported"
     />
 
+    <ImportHistoryModal
+      v-if="showHistory"
+      title="Unit Import History"
+      type="units"
+      :store-id="currentStore.id"
+      @close="showHistory = false"
+    />
+
     <UnitDetailModal
       v-if="detailUnit"
       :unit="detailUnit"
@@ -226,6 +235,8 @@ import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
 import ImportButton from '@/components/common/ImportButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
@@ -271,6 +282,7 @@ const clearFilters = () => { statusFilter.value = '' }
 
 const showForm = ref(false)
 const showImport = ref(false)
+const showHistory = ref(false)
 const editingUnit = ref(null)
 const detailUnit = ref(null)
 const deleteTarget = ref(null)

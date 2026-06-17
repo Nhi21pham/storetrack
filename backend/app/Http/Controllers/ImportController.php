@@ -45,6 +45,35 @@ class ImportController extends Controller
         }
     }
 
+    public function storeHistory(Request $request, int $storeId): JsonResponse
+    {
+        $type = $request->query('type');
+
+        try {
+            $result = $this->importService->history(
+                $request->user(),
+                $storeId,
+                is_string($type) && $type !== '' ? $type : null,
+                (int) $request->query('per_page', 20),
+            );
+
+            return response()->json($result);
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    public function storeHistoryDetail(Request $request, int $storeId, int $importId): JsonResponse
+    {
+        try {
+            $import = $this->importService->getForStore($request->user(), $storeId, $importId);
+
+            return $this->importResponse($import);
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
     private function template(Request $request, int $scopeId, string $type): BinaryFileResponse|JsonResponse
     {
         try {
