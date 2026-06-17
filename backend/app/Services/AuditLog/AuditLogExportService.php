@@ -2,32 +2,26 @@
 
 namespace App\Services\AuditLog;
 
-use App\Exceptions\AuthorizationException;
 use App\Jobs\Exports\ExportAuditLogJob;
 use App\Models\Business;
 use App\Models\Export;
 use App\Models\Store;
 use App\Models\User;
 use App\Repositories\ExportRepository;
-use App\Repositories\PermissionRepository;
 use App\Services\ExportService;
+use App\Services\PermissionService;
 
 class AuditLogExportService
 {
     public function __construct(
-        private PermissionRepository $permissionRepository,
+        private PermissionService $permissionService,
         private ExportService $exportService,
         private ExportRepository $exportRepository,
     ) {}
 
     public function queueStoreExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
     {
-        $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
-            || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
-
-        if (!$hasAccess) {
-            throw new AuthorizationException('You do not have access to this store.');
-        }
+        $this->permissionService->authorizeStoreAccess($user, $storeId);
 
         $normalizedFilters = $this->normalizeFilters($filters);
         $filterSignature   = $this->filterSignature($normalizedFilters);
@@ -67,9 +61,7 @@ class AuditLogExportService
 
     public function queueBusinessExport(User $user, int $businessId, array $filters = [], ?string $clientId = null): Export
     {
-        if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
-            throw new AuthorizationException('You do not have access to this business.');
-        }
+        $this->permissionService->authorizeBusinessOwner($user, $businessId);
 
         $normalizedFilters = $this->normalizeFilters($filters);
         $filterSignature   = $this->filterSignature($normalizedFilters);
