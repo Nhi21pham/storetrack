@@ -1,9 +1,9 @@
 <template>
-  <div class="modal-overlay" @click.self="$emit('close')">
+  <div class="modal-overlay" @click.self="requestClose">
     <div class="modal">
       <div class="modal-header">
         <h2>{{ title }}</h2>
-        <button class="close-btn" @click="$emit('close')">
+        <button class="close-btn" @click="requestClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
@@ -133,15 +133,27 @@
           <button class="btn-submit" @click="$emit('close')">Done</button>
         </template>
         <template v-else-if="im.phase.value === 'select'">
-          <button class="btn-cancel" @click="$emit('close')">Cancel</button>
+          <button class="btn-cancel" @click="requestClose">Cancel</button>
         </template>
       </div>
     </div>
   </div>
+
+  <ConfirmDialog
+    v-if="showUnsavedWarning"
+    title="Discard import?"
+    message="You've loaded a file but haven't imported it yet. Closing now will discard the reviewed rows."
+    confirm-text="Yes, discard"
+    cancel-text="Keep reviewing"
+    type="warning"
+    @confirm="discardAndClose"
+    @cancel="showUnsavedWarning = false"
+  />
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { useImport } from '@/composables/useImport'
 
 const props = defineProps({
@@ -166,6 +178,23 @@ const im = useImport({
   start: (rows, originalFilename) => props.start(rows, originalFilename),
   status: (id) => props.status(id),
 })
+
+const showUnsavedWarning = ref(false)
+
+// Confirm before closing only when a file is loaded but not yet imported
+// (review phase) — otherwise close straight away.
+const requestClose = () => {
+  if (im.phase.value === 'review' && im.rows.value.length > 0) {
+    showUnsavedWarning.value = true
+  } else {
+    emit('close')
+  }
+}
+
+const discardAndClose = () => {
+  showUnsavedWarning.value = false
+  emit('close')
+}
 
 const page = ref(1)
 

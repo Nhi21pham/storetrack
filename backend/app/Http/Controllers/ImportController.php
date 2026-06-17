@@ -48,12 +48,16 @@ class ImportController extends Controller
     public function storeHistory(Request $request, int $storeId): JsonResponse
     {
         $type = $request->query('type');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
         try {
             $result = $this->importService->history(
                 $request->user(),
                 $storeId,
                 is_string($type) && $type !== '' ? $type : null,
+                is_string($startDate) && $startDate !== '' ? $startDate : null,
+                is_string($endDate) && $endDate !== '' ? $endDate : null,
                 (int) $request->query('per_page', 20),
             );
 

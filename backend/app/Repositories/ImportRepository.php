@@ -58,7 +58,7 @@ class ImportRepository
      * Newest-first history for a scope (store/business), optionally filtered by
      * entity type. Powers the import history board.
      */
-    public function paginateForScope(int $scopeId, ?string $type, int $perPage = 20): LengthAwarePaginator
+    public function paginateForScope(int $scopeId, ?string $type, ?string $startDate, ?string $endDate, int $perPage = 20): LengthAwarePaginator
     {
         $query = Import::query()
             ->with('user')
@@ -67,6 +67,12 @@ class ImportRepository
 
         if ($type !== null && $type !== '') {
             $query->where('type', $type);
+        }
+        if ($startDate !== null && $startDate !== '') {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate !== null && $endDate !== '') {
+            $query->whereDate('created_at', '<=', $endDate);
         }
 
         return $query->paginate($perPage);

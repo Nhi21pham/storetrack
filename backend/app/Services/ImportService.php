@@ -286,11 +286,11 @@ class ImportService
      *
      * @return array{data: list<array<string,mixed>>, total: int, current_page: int, last_page: int, per_page: int}
      */
-    public function history(User $actor, int $scopeId, ?string $type, int $perPage = 20): array
+    public function history(User $actor, int $scopeId, ?string $type, ?string $startDate, ?string $endDate, int $perPage = 20): array
     {
         $this->permissionService->authorizeStoreAccess($actor, $scopeId);
 
-        $paginator = $this->importRepository->paginateForScope($scopeId, $type, min(max($perPage, 1), 100));
+        $paginator = $this->importRepository->paginateForScope($scopeId, $type, $startDate, $endDate, min(max($perPage, 1), 100));
 
         return [
             'data'         => array_map(fn (Import $import) => $this->toListItem($import), $paginator->items()),

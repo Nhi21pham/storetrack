@@ -15,6 +15,8 @@ export const useImportHistory = ({ storeId, type }) => {
   const perPage = ref(20)
   const total = ref(0)
   const lastPage = ref(1)
+  const startDate = ref('')
+  const endDate = ref('')
 
   let timer = null
   const stopAuto = () => {
@@ -45,6 +47,8 @@ export const useImportHistory = ({ storeId, type }) => {
         type,
         page: toPage,
         perPage: perPage.value,
+        startDate: startDate.value,
+        endDate: endDate.value,
       })
       rows.value = data.data || []
       total.value = data.total || 0
@@ -62,5 +66,5 @@ export const useImportHistory = ({ storeId, type }) => {
   const goToPage = (p) => load(p)
   const refresh = () => load(page.value, { silent: true })
 
-  return { loading, refreshing, error, rows, page, perPage, total, lastPage, load, goToPage, refresh }
+  return { loading, refreshing, error, rows, page, perPage, total, lastPage, startDate, endDate, load, goToPage, refresh }
 }

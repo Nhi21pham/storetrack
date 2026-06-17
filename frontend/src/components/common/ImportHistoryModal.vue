@@ -17,6 +17,15 @@
         </div>
       </div>
 
+      <div class="modal-filters">
+        <DateRangeFilter
+          v-model:startDate="startDate"
+          v-model:endDate="endDate"
+          @change="() => goToPage(1)"
+        />
+        <button v-if="startDate || endDate" class="clear-dates" @click="clearDates">Clear dates</button>
+      </div>
+
       <div class="modal-body">
         <div v-if="loading" class="state-row"><div class="spinner"></div><span>Loading history...</span></div>
         <div v-else-if="error" class="api-error">{{ error }}</div>
@@ -90,6 +99,7 @@
 <script setup>
 import { ref, computed, toRef, onMounted } from 'vue'
 import Pagination from '@/components/common/Pagination.vue'
+import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { useImportHistory } from '@/composables/useImportHistory'
 import { fetchImportDetail } from '@/features/imports/services/importHistoryService'
 import { formatDateTime } from '@/utils/datetime'
@@ -102,8 +112,14 @@ const props = defineProps({
 
 defineEmits(['close'])
 
-const { loading, refreshing, error, rows, page, perPage, total, lastPage, load, goToPage, refresh } =
+const { loading, refreshing, error, rows, page, perPage, total, lastPage, startDate, endDate, load, goToPage, refresh } =
   useImportHistory({ storeId: toRef(props, 'storeId'), type: props.type })
+
+const clearDates = () => {
+  startDate.value = ''
+  endDate.value = ''
+  goToPage(1)
+}
 
 const expandedId = ref(null)
 const detail = ref(null)
@@ -161,6 +177,10 @@ onMounted(() => load(1))
 .refresh-btn:hover:not(:disabled), .close-btn:hover { color: #374151; background: #f3f4f6; }
 .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .refresh-btn svg.spinning { animation: spin 0.7s linear infinite; }
+
+.modal-filters { display: flex; align-items: flex-end; gap: 12px; padding: 12px 24px; border-bottom: 1px solid #f3f4f6; flex-shrink: 0; }
+.clear-dates { display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid #e5e7eb; background: #fafafa; color: #6b7280; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.clear-dates:hover { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
 
 .modal-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; padding: 8px 0 0; }
 
