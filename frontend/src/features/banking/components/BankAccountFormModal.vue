@@ -112,7 +112,7 @@ const ownerOptions = computed(() => {
   if (partyType.value === 'customer') {
     return customers.value
       .filter(c => c.party?.id)
-      .map(c => ({ value: `customer:${c.party.id}`, label: c.name }))
+      .map(c => ({ value: `customer:${c.party.id}`, label: c.name, sublabel: c.phone || '' }))
   }
   if (partyType.value === 'supplier') {
     return suppliers.value
