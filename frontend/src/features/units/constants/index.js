@@ -1,6 +1,6 @@
 export const UNIT_COLUMNS = [
   { key: 'select', label: '', sortable: false },
-  { key: 'id', label: 'ID', sortable: true },
+  { key: 'stt', label: 'No.', sortable: false },
   { key: 'name', label: 'Unit Name', sortable: true },
   { key: 'status', label: 'Status', sortable: true },
   { key: 'created_at', label: 'Created', sortable: true },
@@ -8,7 +8,7 @@ export const UNIT_COLUMNS = [
   { key: 'actions', label: '', sortable: false },
 ]
 
-export const UNIT_INITIAL_COL_WIDTHS = [44, 70, 180, 140, 280, 280, 90]
+export const UNIT_INITIAL_COL_WIDTHS = [44, 60, 220, 140, 280, 280, 90]
 
 export const STATUS_OPTIONS = [
   { value: 'active',   label: 'Active' },

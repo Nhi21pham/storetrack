@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class TagExport extends BaseExport
 {
-    public const COLUMN_KEYS = ['id', 'name', 'values', 'description', 'created_at'];
+    public const COLUMN_KEYS = ['id', 'name', 'values', 'description', 'created_at', 'updated_at'];
 
     /**
      * @param  Builder  $query  filtered, ordered query of Tag
@@ -68,6 +68,7 @@ class TagExport extends BaseExport
             'values'      => ['heading' => 'Values',      'width' => 34, 'value' => fn ($row) => $row->values->pluck('value')->implode(', ')],
             'description' => ['heading' => 'Description', 'width' => 34, 'value' => fn ($row) => (string) ($row->description ?? '')],
             'created_at'  => ['heading' => 'Created',     'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at'  => ['heading' => 'Updated',     'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

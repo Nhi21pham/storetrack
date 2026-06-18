@@ -59,7 +59,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -83,11 +83,11 @@
               No tags match the current filters.
             </td>
           </tr>
-          <tr v-for="tag in paginatedTags" :key="tag.id">
+          <tr v-for="(tag, idx) in paginatedTags" :key="tag.id">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(tag.id)" @change="toggleRow(tag.id)" />
             </td>
-            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ tag.id }}</td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailTag = tag">{{ tag.name }}</button>
             </td>
@@ -101,7 +101,8 @@
               <span v-if="tag.description" class="truncate" :title="tag.description">{{ tag.description }}</span>
               <span v-else class="empty-val">—</span>
             </td>
-            <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(tag.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(tag.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(tag.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(tag)" title="Edit tag">
                 <Icon name="edit" :size="14" />
@@ -231,7 +232,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'tags',
   columns: TAG_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(TAG_INITIAL_COL_WIDTHS))
@@ -278,11 +279,18 @@ const filteredTags = computed(() => {
   )
 })
 
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedTags = computed(() =>
+  [...filteredTags.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
+
 const sort = useSortCriteria()
 const sortedTags = computed(() =>
-  sort.sortItems(filteredTags.value, (tag, key) => {
-    if (key === 'id')   return Number(tag.id) || 0
+  sort.sortItems(orderedTags.value, (tag, key) => {
     if (key === 'name') return normalizeText(tag.name)
+    if (key === 'created_at' || key === 'updated_at') return new Date(tag[key] || 0).getTime()
     const v = tag[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -403,7 +411,8 @@ const performDeleteKey = async () => {
 
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 
-.id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: #111; cursor: pointer; text-align: left; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 
