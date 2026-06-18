@@ -110,6 +110,7 @@
         <SupplierTable
           :key="tableKey"
           :suppliers="paginatedSuppliers"
+          :row-offset="(currentPage - 1) * perPage"
           :columns="columnVisibility.visibleColumns.value"
           :initial-widths="visibleWidths"
           :is-visible="columnVisibility.isVisible"
@@ -235,7 +236,7 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 const columnVisibility = useColumnVisibility({
   storageKey: 'suppliers',
   columns: SUPPLIER_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(SUPPLIER_INITIAL_COL_WIDTHS))

@@ -3,7 +3,7 @@ import { graphql, rest } from '@/api'
 const SUPPLIERS_QUERY = `
   query Suppliers($store_id: ID, $business_id: ID!) {
     suppliers(store_id: $store_id, business_id: $business_id) {
-      id store_id name email phone address tax_code outstanding business_outstanding created_at
+      id store_id name email phone address tax_code outstanding business_outstanding created_at updated_at
       party { id }
       stores { id name }
     }
