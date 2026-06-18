@@ -77,3 +77,18 @@ export const deleteCustomers = async ({ ids, businessId, storeId }) => {
 
 export const startCustomerExport = ({ businessId, params }) =>
   rest('post', `/api/exports/customers/${businessId}`, { params })
+
+export const downloadCustomersImportTemplate = ({ storeId }) =>
+  rest('get', `/api/imports/customers/${storeId}/template`, { responseType: 'blob' })
+
+export const previewCustomersImport = ({ storeId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/customers/${storeId}/preview`, { data: formData })
+}
+
+export const revalidateCustomersImport = ({ storeId, rows }) =>
+  rest('post', `/api/imports/customers/${storeId}/revalidate`, { data: { rows } })
+
+export const startCustomersImport = ({ storeId, rows, originalFilename }) =>
+  rest('post', `/api/imports/customers/${storeId}`, { data: { rows, original_filename: originalFilename } })

@@ -53,6 +53,30 @@ class CustomerRepository
             ->all();
     }
 
+    /**
+     * Every customer in the business as {id, name, phone, email, tax_code}, for
+     * resolving a row's identity during import. The importer matches a row's
+     * phone (the unique identity) against these, and treats email / tax code as
+     * additional unique fields — a collision with a *different* customer is a
+     * fixable conflict, a match on the same customer is a skip.
+     *
+     * @return list<array{id: int, name: string, phone: string, email: string, tax_code: string}>
+     */
+    public function contactsForImport(int $businessId): array
+    {
+        return Customer::query()
+            ->where('business_id', $businessId)
+            ->get(['id', 'name', 'phone', 'email', 'tax_code'])
+            ->map(fn (Customer $customer) => [
+                'id'       => (int) $customer->id,
+                'name'     => (string) $customer->name,
+                'phone'    => (string) $customer->phone,
+                'email'    => (string) $customer->email,
+                'tax_code' => (string) $customer->tax_code,
+            ])
+            ->all();
+    }
+
     public function findByPhone(int $businessId, string $phone, ?int $excludeId = null): ?Customer
     {
         $query = Customer::query()
