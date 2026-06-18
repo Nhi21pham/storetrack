@@ -42,9 +42,12 @@ class CustomerService
         return $this->customerRepository->all($businessId, $storeId);
     }
 
-    public function getById(int $id): Customer
+    public function getById(User $user, int $id): Customer
     {
-        return $this->mustFind($id);
+        $customer = $this->mustFind($id);
+        $this->permissionService->authorizeBusinessAccess($user, (int) $customer->business_id);
+
+        return $customer;
     }
 
     public function create(User $actor, int $storeId, int $businessId, array $data): Customer

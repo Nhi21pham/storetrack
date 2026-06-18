@@ -37,6 +37,9 @@
             </div>
           </div>
           <p v-if="loadingOwners" class="hint">Loading...</p>
+          <p v-else-if="noOwnersInStore" class="hint">
+            No {{ partyType }}s belong to this store yet. They join a store once they have an invoice there.
+          </p>
         </div>
 
         <h3 v-if="!isEdit" class="section-title">Account Details</h3>
@@ -103,6 +106,17 @@ const onTypeChange = async (newType) => {
   }
 }
 
+const currentStoreId = computed(() => (currentStore?.value?.id != null ? String(currentStore.value.id) : null))
+
+// A customer/supplier is selectable here only if it belongs to the current store
+// (created there, or has an invoice there). Bank accounts are managed per store,
+// so unlike invoices you can't attach one to another store's party.
+const belongsToCurrentStore = (record) => {
+  const sid = currentStoreId.value
+  if (!sid) return false
+  return (record.stores || []).some((s) => String(s.id) === sid)
+}
+
 const ownerOptions = computed(() => {
   if (partyType.value === 'business') {
     const b = currentBusiness?.value
@@ -111,16 +125,24 @@ const ownerOptions = computed(() => {
   }
   if (partyType.value === 'customer') {
     return customers.value
-      .filter(c => c.party?.id)
+      .filter(c => c.party?.id && belongsToCurrentStore(c))
       .map(c => ({ value: `customer:${c.party.id}`, label: c.name, sublabel: c.phone || '' }))
   }
   if (partyType.value === 'supplier') {
     return suppliers.value
-      .filter(s => s.party?.id)
+      .filter(s => s.party?.id && belongsToCurrentStore(s))
       .map(s => ({ value: `supplier:${s.party.id}`, label: s.name }))
   }
   return []
 })
+
+// Distinguish "still loading" from "none in this store" so the empty dropdown
+// isn't confusing under the new store-scoping.
+const noOwnersInStore = computed(() =>
+  !loadingOwners.value
+  && (partyType.value === 'customer' || partyType.value === 'supplier')
+  && ownerOptions.value.length === 0,
+)
 
 const resolvedPartyId = computed(() => {
   if (isEdit.value) return props.account?.party_id ? String(props.account.party_id) : ''

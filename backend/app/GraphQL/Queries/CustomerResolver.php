@@ -23,7 +23,7 @@ class CustomerResolver extends BaseResolver
     public function findById($_, array $args)
     {
         return $this->safe(fn() =>
-            $this->customerService->getById((int) $args['id'])
+            $this->customerService->getById($this->user(), (int) $args['id'])
         );
     }
 }

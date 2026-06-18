@@ -42,9 +42,12 @@ class SupplierService
         return $this->supplierRepository->all($businessId, $storeId);
     }
 
-    public function getById(int $id): Supplier
+    public function getById(User $user, int $id): Supplier
     {
-        return $this->mustFind($id);
+        $supplier = $this->mustFind($id);
+        $this->permissionService->authorizeBusinessAccess($user, (int) $supplier->business_id);
+
+        return $supplier;
     }
 
     public function create(User $actor, int $storeId, int $businessId, array $data): Supplier

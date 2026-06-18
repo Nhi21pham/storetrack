@@ -329,7 +329,8 @@ watch(() => im.phase.value, (phase) => {
 .format-notes ul { margin: 0; padding: 10px 12px; list-style: none; display: flex; flex-direction: column; gap: 5px; }
 .format-notes li { font-size: 12.5px; color: #4b5563; line-height: 1.45; padding-left: 14px; position: relative; }
 .format-notes li::before { content: '•'; position: absolute; left: 2px; color: #9ca3af; }
-.format-notes .note-example { display: inline-block; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: #111; background: #fff; border: 1px solid #e5e7eb; border-radius: 5px; padding: 3px 8px; white-space: pre-wrap; }
+.format-notes .note-example { display: inline-block; margin-top: 5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; font-weight: 600; color: #3730a3; background: #eef2ff; border: 1px solid #c7d2fe; border-left: 3px solid #6366f1; border-radius: 5px; padding: 4px 9px; white-space: pre-wrap; }
+.format-notes .note-example::before { content: 'e.g.'; margin-right: 6px; font-weight: 700; font-style: normal; color: #6366f1; opacity: 0.8; }
 
 .select-actions { display: flex; gap: 12px; margin-top: 18px; }
 .file-label { position: relative; overflow: hidden; }
