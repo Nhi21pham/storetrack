@@ -113,6 +113,7 @@
         <CustomerTable
           :key="tableKey"
           :customers="paginatedCustomers"
+          :row-offset="(currentPage - 1) * perPage"
           :columns="columnVisibility.visibleColumns.value"
           :initial-widths="visibleWidths"
           :is-visible="columnVisibility.isVisible"
@@ -238,7 +239,7 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 const columnVisibility = useColumnVisibility({
   storageKey: 'customers',
   columns: CUSTOMER_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(CUSTOMER_INITIAL_COL_WIDTHS))
