@@ -55,7 +55,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -90,7 +90,7 @@
               No categories match the current filters.
             </td>
           </tr>
-          <tr v-for="category in paginatedCategories" :key="category.id" :class="{ inactive: !category.is_active, system: category.is_system }">
+          <tr v-for="(category, idx) in paginatedCategories" :key="category.id" :class="{ inactive: !category.is_active, system: category.is_system }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox
                 v-if="!category.is_system"
@@ -98,7 +98,7 @@
                 @change="toggleRow(category.id)"
               />
             </td>
-            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ category.id }}</td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ category.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailCategory = category">{{ displayCategoryName(category) }}</button>
@@ -116,7 +116,8 @@
                 @change="onToggleActive(category)"
               />
             </td>
-            <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(category.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(category.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(category.updated_at) }}</td>
             <td class="actions-col">
               <template v-if="!category.is_system">
                 <button class="action-btn" @click="openEdit(category)" title="Edit">
@@ -248,7 +249,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'product_categories',
   columns: PRODUCT_CATEGORY_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(PRODUCT_CATEGORY_INITIAL_COL_WIDTHS))
@@ -297,12 +298,19 @@ const filteredCategories = computed(() => {
   })
 })
 
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedCategories = computed(() =>
+  [...filteredCategories.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
+
 const sort = useSortCriteria()
 const sortedCategories = computed(() =>
-  sort.sortItems(filteredCategories.value, (category, key) => {
+  sort.sortItems(orderedCategories.value, (category, key) => {
     if (key === 'status') return category.is_active ? 1 : 0
-    if (key === 'id')     return Number(category.id) || 0
     if (key === 'name')   return normalizeText(displayCategoryName(category))
+    if (key === 'created_at' || key === 'updated_at') return new Date(category[key] || 0).getTime()
     const v = category[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -445,7 +453,8 @@ tbody tr.inactive td.actions-col { background: #fafafa; }
 tbody tr.system td { background: #fdf4ff; }
 tbody tr.system td.actions-col { background: #fdf4ff; }
 
-.id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
