@@ -59,7 +59,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -124,11 +124,11 @@
               No products match the current filters.
             </td>
           </tr>
-          <tr v-for="product in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
+          <tr v-for="(product, idx) in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(product.id)" @change="toggleRow(product.id)" />
             </td>
-            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ product.id }}</td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ product.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailProduct = product">{{ product.name }}</button>
@@ -157,7 +157,8 @@
                 @change="onToggleActive(product)"
               />
             </td>
-            <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(product.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(product.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(product.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(product)" title="Edit">
                 <Icon name="edit" :size="14" />
@@ -296,7 +297,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'products',
   columns: PRODUCT_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(PRODUCT_INITIAL_COL_WIDTHS))
@@ -404,13 +405,20 @@ const filteredProducts = computed(() => {
   })
 })
 
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedProducts = computed(() =>
+  [...filteredProducts.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
+
 const sort = useSortCriteria()
 const sortedProducts = computed(() =>
-  sort.sortItems(filteredProducts.value, (product, key) => {
+  sort.sortItems(orderedProducts.value, (product, key) => {
     if (key === 'status')   return product.is_active ? 1 : 0
     if (key === 'unit')     return normalizeText(product.unit?.name || '')
     if (key === 'category') return normalizeText(displayCategoryName(product.category || {}))
-    if (key === 'id')       return Number(product.id) || 0
+    if (key === 'created_at' || key === 'updated_at') return new Date(product[key] || 0).getTime()
     const v = product[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -606,7 +614,8 @@ tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
 tbody tr.inactive td.actions-col { background: #fafafa; }
 
-.id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }
 .tags-cell { display: flex; flex-wrap: wrap; gap: 4px; }
 .tags-cell .chip-wrap { display: inline-flex; align-items: center; }
