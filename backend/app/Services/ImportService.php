@@ -100,13 +100,56 @@ class ImportService
             throw new ImportException(ErrorCode::IMPORT_EMPTY_FILE, 'The file has no data rows to import.');
         }
 
+        $sourceRows = [];
+        foreach ($rows as $index => $row) {
+            $sourceRows[] = ['rowNumber' => $index + 2, 'values' => $row];
+        }
+
+        return $this->buildPreview($importer, $scopeId, $sourceRows);
+    }
+
+    /**
+     * Re-run validation over already-parsed (and possibly user-edited) rows from
+     * the review grid, returning the same shape as preview(). No file and no
+     * writes — this keeps each row's status honest after an edit instead of
+     * trusting an optimistic client guess, so a row only becomes creatable once
+     * the server actually re-validates it.
+     *
+     * @param  list<array{rowNumber?: int, values?: array<string,string>}>  $rows
+     * @return array{summary: array<string,int>, requiredHeaders: string[], rows: list<array<string,mixed>>}
+     */
+    public function revalidate(User $actor, int $scopeId, RowImporter $importer, array $rows): array
+    {
+        $importer->authorize($actor, $scopeId);
+
+        $sourceRows = [];
+        foreach ($rows as $index => $row) {
+            $sourceRows[] = [
+                'rowNumber' => (int) ($row['rowNumber'] ?? ($index + 2)),
+                'values'    => is_array($row['values'] ?? null) ? $row['values'] : [],
+            ];
+        }
+
+        return $this->buildPreview($importer, $scopeId, $sourceRows);
+    }
+
+    /**
+     * Validate a set of header-keyed rows into the review-grid shape (per-row
+     * status + errors + warnings, plus a summary). Shared by preview() (rows from
+     * a file) and revalidate() (rows from the grid).
+     *
+     * @param  list<array{rowNumber: int, values: array<string,string>}>  $sourceRows
+     * @return array{summary: array<string,int>, requiredHeaders: string[], rows: list<array<string,mixed>>}
+     */
+    private function buildPreview(RowImporter $importer, int $scopeId, array $sourceRows): array
+    {
         $importer->prepare($scopeId);
         $existing = $importer->existingKeys($scopeId);
         $seen = [];
         $previewRows = [];
 
-        foreach ($rows as $index => $row) {
-            $validated = $importer->validateRow($row);
+        foreach ($sourceRows as $row) {
+            $validated = $importer->validateRow($row['values']);
             $status = $this->classify($validated, $seen, $existing);
 
             foreach ($validated['keys'] as $key) {
@@ -114,7 +157,7 @@ class ImportService
             }
 
             $previewRows[] = [
-                'rowNumber' => $index + 2,
+                'rowNumber' => $row['rowNumber'],
                 'values'    => $validated['values'],
                 'errors'    => $validated['errors'],
                 'warnings'  => $validated['warnings'] ?? [],

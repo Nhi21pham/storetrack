@@ -82,3 +82,18 @@ export const deleteBankAccount = async ({ id }) => {
 
 export const startBankAccountExport = ({ businessId, params }) =>
   rest('post', `/api/exports/bank-accounts/${businessId}`, { params })
+
+export const downloadBankAccountsImportTemplate = ({ businessId }) =>
+  rest('get', `/api/imports/bank-accounts/${businessId}/template`, { responseType: 'blob' })
+
+export const previewBankAccountsImport = ({ businessId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/bank-accounts/${businessId}/preview`, { data: formData })
+}
+
+export const revalidateBankAccountsImport = ({ businessId, rows }) =>
+  rest('post', `/api/imports/bank-accounts/${businessId}/revalidate`, { data: { rows } })
+
+export const startBankAccountsImport = ({ businessId, rows, originalFilename }) =>
+  rest('post', `/api/imports/bank-accounts/${businessId}`, { data: { rows, original_filename: originalFilename } })

@@ -32,6 +32,27 @@ class CustomerRepository
         return Customer::find($id);
     }
 
+    /**
+     * Every customer in the business as {party_id, name, phone}, for resolving
+     * the owner of an imported bank account. Names aren't unique (customers are
+     * keyed by phone), so the importer resolves by phone when given and falls
+     * back to a unique name match.
+     *
+     * @return list<array{party_id: int, name: string, phone: string}>
+     */
+    public function listForImport(int $businessId): array
+    {
+        return Customer::query()
+            ->where('business_id', $businessId)
+            ->get(['party_id', 'name', 'phone'])
+            ->map(fn (Customer $customer) => [
+                'party_id' => (int) $customer->party_id,
+                'name'     => (string) $customer->name,
+                'phone'    => (string) $customer->phone,
+            ])
+            ->all();
+    }
+
     public function findByPhone(int $businessId, string $phone, ?int $excludeId = null): ?Customer
     {
         $query = Customer::query()

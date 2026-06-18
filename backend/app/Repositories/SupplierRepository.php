@@ -32,6 +32,24 @@ class SupplierRepository
         return Supplier::find($id);
     }
 
+    /**
+     * Every supplier in the business as {party_id, name}, for resolving the
+     * owner of an imported bank account by name.
+     *
+     * @return list<array{party_id: int, name: string}>
+     */
+    public function listForImport(int $businessId): array
+    {
+        return Supplier::query()
+            ->where('business_id', $businessId)
+            ->get(['party_id', 'name'])
+            ->map(fn (Supplier $supplier) => [
+                'party_id' => (int) $supplier->party_id,
+                'name'     => (string) $supplier->name,
+            ])
+            ->all();
+    }
+
     public function findByName(int $businessId, string $name, ?int $excludeId = null): ?Supplier
     {
         $query = Supplier::query()

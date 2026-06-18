@@ -43,10 +43,13 @@
 
       <!-- REVIEW -->
       <div v-else-if="im.phase.value === 'review'" class="modal-body review">
+        <slot name="review-banner" :rows="im.rows.value" :resolve-reference="im.resolveReference" />
+
         <div class="summary-bar">
           <span class="chip ok">{{ liveCounts.valid }} to create</span>
           <span class="chip warn">{{ liveCounts.duplicate }} will skip</span>
           <span class="chip bad">{{ liveCounts.invalid }} need fixing</span>
+          <span v-if="liveCounts.checking" class="chip checking">{{ liveCounts.checking }} checking…</span>
         </div>
 
         <div class="table-scroll">
@@ -68,6 +71,7 @@
                       class="cell-input"
                       :class="{ error: row.errors && row.errors[col] }"
                       :value="row.values[col]"
+                      :title="row.values[col]"
                       @input="im.editCell(absoluteIndex(i), col, $event.target.value)"
                     />
                     <span v-if="row.errors && row.errors[col]" class="cell-error">{{ row.errors[col] }}</span>
@@ -138,7 +142,7 @@
         <template v-if="im.phase.value === 'review'">
           <button class="btn-cancel" @click="im.reset()">Back</button>
           <button class="btn-submit" :disabled="!canCommit" @click="im.runCommit()">
-            Create {{ liveCounts.valid }} record(s)
+            {{ im.validating.value ? 'Checking…' : `Create ${liveCounts.valid} record(s)` }}
           </button>
         </template>
         <template v-else-if="im.phase.value === 'done'">
@@ -176,6 +180,7 @@ const props = defineProps({
   instructions:     { type: Array,  default: () => [] },
   downloadTemplate: { type: Function, required: true },
   preview:          { type: Function, required: true },
+  revalidate:       { type: Function, default: null },
   start:            { type: Function, required: true },
   status:           { type: Function, required: true },
 })
@@ -188,6 +193,7 @@ const im = useImport({
   templateFilename: props.templateFilename,
   downloadTemplate: () => props.downloadTemplate(),
   preview: (file) => props.preview(file),
+  revalidate: props.revalidate ? (rows) => props.revalidate(rows) : undefined,
   start: (rows, originalFilename) => props.start(rows, originalFilename),
   status: (id) => props.status(id),
 })
@@ -232,16 +238,19 @@ const absoluteIndex = (pageIndex) => (page.value - 1) * PER_PAGE + pageIndex
 watch(totalPages, (tp) => { if (page.value > tp) page.value = tp })
 
 const liveCounts = computed(() => {
-  const counts = { valid: 0, invalid: 0, duplicate: 0 }
+  const counts = { valid: 0, invalid: 0, duplicate: 0, checking: 0 }
   for (const row of im.rows.value) {
     if (row.status === 'invalid') counts.invalid++
     else if (row.status === 'duplicate_db' || row.status === 'duplicate_file') counts.duplicate++
+    else if (row.status === 'checking') counts.checking++
     else counts.valid++
   }
   return counts
 })
 
-const canCommit = computed(() => !im.busy.value && im.rows.value.length > 0 && liveCounts.value.invalid === 0)
+const canCommit = computed(() =>
+  !im.busy.value && !im.validating.value && im.rows.value.length > 0 && liveCounts.value.invalid === 0,
+)
 
 const progress = computed(() => im.progress.value || {})
 const total = computed(() => progress.value.total_rows || 0)
@@ -257,6 +266,7 @@ const formatValues = (values) =>
 
 const statusInfo = (status) => {
   switch (status) {
+    case 'checking': return { label: 'Checking…', cls: 'checking' }
     case 'invalid': return { label: 'Fix', cls: 'bad' }
     case 'duplicate_db': return { label: 'Exists', cls: 'warn' }
     case 'duplicate_file': return { label: 'Dup', cls: 'warn' }
@@ -281,7 +291,7 @@ watch(() => im.phase.value, (phase) => {
 
 <style scoped>
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 820px; box-shadow: 0 24px 80px rgba(0,0,0,0.15); display: flex; flex-direction: column; max-height: 88vh; }
+.modal { background: #fff; border-radius: 14px; width: 100%; max-width: 960px; box-shadow: 0 24px 80px rgba(0,0,0,0.15); display: flex; flex-direction: column; max-height: 88vh; }
 
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
 .modal-header h2 { font-size: 18px; font-weight: 700; color: #111; }
@@ -309,10 +319,11 @@ watch(() => im.phase.value, (phase) => {
 .chip.ok { background: #dcfce7; color: #166534; }
 .chip.warn { background: #fef9c3; color: #854d0e; }
 .chip.bad { background: #fee2e2; color: #991b1b; }
+.chip.checking { background: #e5e7eb; color: #4b5563; }
 
 .table-scroll { border: 1px solid #e5e7eb; border-radius: 10px; overflow: auto; max-height: 44vh; }
 .review-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.review-table th { position: sticky; top: 0; background: #f9fafb; text-align: left; padding: 8px 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb; }
+.review-table th { position: sticky; top: 0; background: #f9fafb; text-align: left; padding: 8px 10px; font-weight: 600; color: #374151; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
 .review-table td { padding: 6px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
 .row-num { width: 44px; color: #9ca3af; font-variant-numeric: tabular-nums; }
 .status-col { width: 86px; }
@@ -322,7 +333,7 @@ watch(() => im.phase.value, (phase) => {
 .warn-row td { padding-top: 0; border-bottom: 1px solid #f3f4f6; }
 .warn-line { margin: 0 0 2px; font-size: 11.5px; color: #854d0e; line-height: 1.4; }
 
-.cell-input { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; font-size: 13px; box-sizing: border-box; outline: none; }
+.cell-input { width: 100%; min-width: 160px; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; font-size: 13px; box-sizing: border-box; outline: none; }
 .cell-input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(17,24,39,0.08); }
 .cell-input.error { border-color: #dc2626; }
 .cell-error { display: block; font-size: 11.5px; color: #dc2626; margin-top: 3px; }
@@ -331,6 +342,7 @@ watch(() => im.phase.value, (phase) => {
 .badge.ok { background: #dcfce7; color: #166534; }
 .badge.warn { background: #fef9c3; color: #854d0e; }
 .badge.bad { background: #fee2e2; color: #991b1b; }
+.badge.checking { background: #e5e7eb; color: #4b5563; }
 
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: none; border: 1px solid #e5e7eb; border-radius: 6px; color: #6b7280; cursor: pointer; }
 .icon-btn:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }

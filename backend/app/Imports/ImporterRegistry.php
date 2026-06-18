@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Enums\ErrorCode;
 use App\Exceptions\ImportException;
 use App\Imports\Contracts\RowImporter;
+use App\Imports\Importers\BankAccountImporter;
 use App\Imports\Importers\BankImporter;
 use App\Imports\Importers\TagImporter;
 use App\Imports\Importers\UnitImporter;
@@ -20,15 +21,17 @@ class ImporterRegistry
         private UnitImporter $unitImporter,
         private TagImporter $tagImporter,
         private BankImporter $bankImporter,
+        private BankAccountImporter $bankAccountImporter,
     ) {}
 
     public function for(string $type): RowImporter
     {
         return match ($type) {
-            'units' => $this->unitImporter,
-            'tags'  => $this->tagImporter,
-            'banks' => $this->bankImporter,
-            default => throw new ImportException(ErrorCode::IMPORT_INVALID_FILE, "Unknown import type: {$type}."),
+            'units'         => $this->unitImporter,
+            'tags'          => $this->tagImporter,
+            'banks'         => $this->bankImporter,
+            'bank_accounts' => $this->bankAccountImporter,
+            default         => throw new ImportException(ErrorCode::IMPORT_INVALID_FILE, "Unknown import type: {$type}."),
         };
     }
 }

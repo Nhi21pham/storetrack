@@ -79,5 +79,8 @@ export const previewUnitsImport = ({ storeId, file }) => {
   return rest('post', `/api/imports/units/${storeId}/preview`, { data: formData })
 }
 
+export const revalidateUnitsImport = ({ storeId, rows }) =>
+  rest('post', `/api/imports/units/${storeId}/revalidate`, { data: { rows } })
+
 export const startUnitsImport = ({ storeId, rows, originalFilename }) =>
   rest('post', `/api/imports/units/${storeId}`, { data: { rows, original_filename: originalFilename } })

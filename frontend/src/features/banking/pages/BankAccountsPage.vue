@@ -32,6 +32,8 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <HistoryButton @click="showHistory = true" />
+        <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedAccounts.length === 0" @click="runExport" />
       </div>
 
@@ -131,6 +133,38 @@
       @saved="onSaved"
     />
 
+    <ImportModal
+      v-if="showImport"
+      title="Import Bank Accounts"
+      template-filename="bank-accounts-import-template.xlsx"
+      :required-headers="['Type', 'Name', 'Bank', 'Account Number']"
+      :optional-headers="['Phone', 'Province', 'Account Holder Name', 'Branch']"
+      :instructions="importInstructions"
+      :download-template="() => downloadBankAccountsImportTemplate({ businessId: currentBusiness.id })"
+      :preview="(file) => previewBankAccountsImport({ businessId: currentBusiness.id, file })"
+      :revalidate="(rows) => revalidateBankAccountsImport({ businessId: currentBusiness.id, rows })"
+      :start="(rows, originalFilename) => startBankAccountsImport({ businessId: currentBusiness.id, rows, originalFilename })"
+      :status="(id) => fetchImportStatus({ importId: id })"
+      @close="showImport = false"
+      @imported="onImported"
+    >
+      <template #review-banner="{ rows, resolveReference }">
+        <MissingBanksImportBanner
+          :rows="rows"
+          :business-id="currentBusiness.id"
+          :resolve-reference="resolveReference"
+        />
+      </template>
+    </ImportModal>
+
+    <ImportHistoryModal
+      v-if="showHistory"
+      title="Bank Account Import History"
+      type="bank_accounts"
+      :business-id="currentBusiness.id"
+      @close="showHistory = false"
+    />
+
     <BankAccountDetailModal
       v-if="detailAccount"
       :account="detailAccount"
@@ -175,11 +209,16 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
 import BankAccountDetailModal from '@/features/banking/components/BankAccountDetailModal.vue'
+import MissingBanksImportBanner from '@/features/banking/components/MissingBanksImportBanner.vue'
 import ObjectBadge from '@/components/common/ObjectBadge.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
@@ -187,7 +226,11 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
-import { fetchBankAccounts, deleteBankAccount, startBankAccountExport } from '@/features/banking/services/bankAccountService'
+import {
+  fetchBankAccounts, deleteBankAccount, startBankAccountExport,
+  downloadBankAccountsImportTemplate, previewBankAccountsImport, revalidateBankAccountsImport, startBankAccountsImport,
+} from '@/features/banking/services/bankAccountService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { BANK_ACCOUNT_COLUMNS, BANK_ACCOUNT_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 
@@ -209,9 +252,18 @@ const loading = ref(false)
 const searchQuery = ref('')
 
 const showForm = ref(false)
+const showImport = ref(false)
+const showHistory = ref(false)
 const editingAccount = ref(null)
 const detailAccount = ref(null)
 const deleteTarget = ref(null)
+
+const importInstructions = [
+  'Type must be one of: Supplier, Customer, Business (Vietnamese labels also work).',
+  'Name must already exist in this business — the owner is never created by the import.',
+  'Customers share names, so add the Phone column to point at the right one.',
+  'Bank is matched by its short, Vietnamese, or English name; create a missing bank right from the preview.',
+]
 
 const onDetailEdit = (account) => {
   detailAccount.value = null
@@ -320,6 +372,11 @@ const closeForm = () => {
 const onSaved = async () => {
   closeForm()
   await load()
+}
+
+const onImported = async () => {
+  await load()
+  showToast('Bank accounts imported.', 'success')
 }
 
 const confirmDelete = (account) => {

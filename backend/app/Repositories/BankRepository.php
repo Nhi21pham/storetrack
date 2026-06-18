@@ -53,18 +53,20 @@ class BankRepository
      * import. Covers all three unique indexes, so inactive banks count as taken
      * too.
      *
-     * @return list<array{id: int, short: string, vi: string, en: string}>
+     * @return list<array{id: int, short: string, vi: string, en: string, short_name: string, is_active: bool}>
      */
     public function allNormalizedNames(int $businessId): array
     {
         return Bank::query()
             ->where('business_id', $businessId)
-            ->get(['id', 'short_name_normalized', 'full_name_vi_normalized', 'full_name_en_normalized'])
+            ->get(['id', 'short_name', 'short_name_normalized', 'full_name_vi_normalized', 'full_name_en_normalized', 'is_active'])
             ->map(fn (Bank $bank) => [
-                'id'    => (int) $bank->id,
-                'short' => (string) $bank->short_name_normalized,
-                'vi'    => (string) $bank->full_name_vi_normalized,
-                'en'    => (string) $bank->full_name_en_normalized,
+                'id'         => (int) $bank->id,
+                'short'      => (string) $bank->short_name_normalized,
+                'vi'         => (string) $bank->full_name_vi_normalized,
+                'en'         => (string) $bank->full_name_en_normalized,
+                'short_name' => (string) $bank->short_name,
+                'is_active'  => (bool) $bank->is_active,
             ])
             ->all();
     }

@@ -129,5 +129,8 @@ export const previewTagsImport = ({ storeId, file }) => {
   return rest('post', `/api/imports/tags/${storeId}/preview`, { data: formData })
 }
 
+export const revalidateTagsImport = ({ storeId, rows }) =>
+  rest('post', `/api/imports/tags/${storeId}/revalidate`, { data: { rows } })
+
 export const startTagsImport = ({ storeId, rows, originalFilename }) =>
   rest('post', `/api/imports/tags/${storeId}`, { data: { rows, original_filename: originalFilename } })

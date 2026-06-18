@@ -63,11 +63,15 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('storeId');
     Route::post('/imports/units/{storeId}/preview', [ImportController::class, 'unitsPreview'])
         ->whereNumber('storeId');
+    Route::post('/imports/units/{storeId}/revalidate', [ImportController::class, 'unitsRevalidate'])
+        ->whereNumber('storeId');
     Route::post('/imports/units/{storeId}', [ImportController::class, 'unitsStart'])
         ->whereNumber('storeId');
     Route::get('/imports/tags/{storeId}/template', [ImportController::class, 'tagsTemplate'])
         ->whereNumber('storeId');
     Route::post('/imports/tags/{storeId}/preview', [ImportController::class, 'tagsPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/tags/{storeId}/revalidate', [ImportController::class, 'tagsRevalidate'])
         ->whereNumber('storeId');
     Route::post('/imports/tags/{storeId}', [ImportController::class, 'tagsStart'])
         ->whereNumber('storeId');
@@ -75,7 +79,17 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('businessId');
     Route::post('/imports/banks/{businessId}/preview', [ImportController::class, 'banksPreview'])
         ->whereNumber('businessId');
+    Route::post('/imports/banks/{businessId}/revalidate', [ImportController::class, 'banksRevalidate'])
+        ->whereNumber('businessId');
     Route::post('/imports/banks/{businessId}', [ImportController::class, 'banksStart'])
+        ->whereNumber('businessId');
+    Route::get('/imports/bank-accounts/{businessId}/template', [ImportController::class, 'bankAccountsTemplate'])
+        ->whereNumber('businessId');
+    Route::post('/imports/bank-accounts/{businessId}/preview', [ImportController::class, 'bankAccountsPreview'])
+        ->whereNumber('businessId');
+    Route::post('/imports/bank-accounts/{businessId}/revalidate', [ImportController::class, 'bankAccountsRevalidate'])
+        ->whereNumber('businessId');
+    Route::post('/imports/bank-accounts/{businessId}', [ImportController::class, 'bankAccountsStart'])
         ->whereNumber('businessId');
     Route::get('/imports/history/store/{storeId}', [ImportController::class, 'storeHistory'])
         ->whereNumber('storeId');

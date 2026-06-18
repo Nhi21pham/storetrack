@@ -172,6 +172,7 @@
       :instructions="tagImportInstructions"
       :download-template="() => downloadTagsImportTemplate({ storeId: currentStore.id })"
       :preview="(file) => previewTagsImport({ storeId: currentStore.id, file })"
+      :revalidate="(rows) => revalidateTagsImport({ storeId: currentStore.id, rows })"
       :start="(rows, originalFilename) => startTagsImport({ storeId: currentStore.id, rows, originalFilename })"
       :status="(id) => fetchImportStatus({ importId: id })"
       @close="showImport = false"
@@ -220,7 +221,7 @@ import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
 import {
   fetchTags, deleteTag, startTagExport,
-  downloadTagsImportTemplate, previewTagsImport, startTagsImport,
+  downloadTagsImportTemplate, previewTagsImport, revalidateTagsImport, startTagsImport,
 } from '@/features/tags/services/tagService'
 import { fetchImportStatus } from '@/features/imports/services/importService'
 import { TAG_COLUMNS, TAG_INITIAL_COL_WIDTHS } from '@/features/tags/constants'

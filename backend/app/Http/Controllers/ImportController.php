@@ -31,6 +31,11 @@ class ImportController extends Controller
         return $this->preview($request, $storeId, 'units');
     }
 
+    public function unitsRevalidate(Request $request, int $storeId): JsonResponse
+    {
+        return $this->revalidate($request, $storeId, 'units');
+    }
+
     public function unitsStart(Request $request, int $storeId): JsonResponse
     {
         return $this->start($request, $storeId, 'units', $this->storeName($storeId));
@@ -44,6 +49,11 @@ class ImportController extends Controller
     public function tagsPreview(Request $request, int $storeId): JsonResponse
     {
         return $this->preview($request, $storeId, 'tags');
+    }
+
+    public function tagsRevalidate(Request $request, int $storeId): JsonResponse
+    {
+        return $this->revalidate($request, $storeId, 'tags');
     }
 
     public function tagsStart(Request $request, int $storeId): JsonResponse
@@ -61,9 +71,34 @@ class ImportController extends Controller
         return $this->preview($request, $businessId, 'banks');
     }
 
+    public function banksRevalidate(Request $request, int $businessId): JsonResponse
+    {
+        return $this->revalidate($request, $businessId, 'banks');
+    }
+
     public function banksStart(Request $request, int $businessId): JsonResponse
     {
         return $this->start($request, $businessId, 'banks', $this->businessName($businessId));
+    }
+
+    public function bankAccountsTemplate(Request $request, int $businessId): BinaryFileResponse|JsonResponse
+    {
+        return $this->template($request, $businessId, 'bank_accounts');
+    }
+
+    public function bankAccountsPreview(Request $request, int $businessId): JsonResponse
+    {
+        return $this->preview($request, $businessId, 'bank_accounts');
+    }
+
+    public function bankAccountsRevalidate(Request $request, int $businessId): JsonResponse
+    {
+        return $this->revalidate($request, $businessId, 'bank_accounts');
+    }
+
+    public function bankAccountsStart(Request $request, int $businessId): JsonResponse
+    {
+        return $this->start($request, $businessId, 'bank_accounts', $this->businessName($businessId));
     }
 
     public function status(Request $request, int $importId): JsonResponse
@@ -168,6 +203,27 @@ class ImportController extends Controller
                 $scopeId,
                 $importer,
                 $request->file('file'),
+            );
+
+            return response()->json($data, 200);
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    private function revalidate(Request $request, int $scopeId, string $type): JsonResponse
+    {
+        $request->validate([
+            'rows' => ['required', 'array'],
+        ]);
+
+        try {
+            $importer = $this->registry->for($type);
+            $data = $this->importService->revalidate(
+                $request->user(),
+                $scopeId,
+                $importer,
+                $request->input('rows', []),
             );
 
             return response()->json($data, 200);

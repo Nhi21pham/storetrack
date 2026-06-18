@@ -162,6 +162,7 @@
       :required-headers="['Name']"
       :download-template="() => downloadUnitsImportTemplate({ storeId: currentStore.id })"
       :preview="(file) => previewUnitsImport({ storeId: currentStore.id, file })"
+      :revalidate="(rows) => revalidateUnitsImport({ storeId: currentStore.id, rows })"
       :start="(rows, originalFilename) => startUnitsImport({ storeId: currentStore.id, rows, originalFilename })"
       :status="(id) => fetchImportStatus({ importId: id })"
       @close="showImport = false"
@@ -264,7 +265,7 @@ import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
 import {
   fetchUnits, deleteUnit, updateUnit, startUnitExport,
-  downloadUnitsImportTemplate, previewUnitsImport, startUnitsImport,
+  downloadUnitsImportTemplate, previewUnitsImport, revalidateUnitsImport, startUnitsImport,
 } from '@/features/units/services/unitService'
 import { fetchImportStatus } from '@/features/imports/services/importService'
 import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'

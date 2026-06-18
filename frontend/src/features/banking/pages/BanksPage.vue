@@ -142,6 +142,7 @@
       :required-headers="['Short Name', 'Vietnamese Name', 'English Name']"
       :download-template="() => downloadBanksImportTemplate({ businessId: currentBusiness.id })"
       :preview="(file) => previewBanksImport({ businessId: currentBusiness.id, file })"
+      :revalidate="(rows) => revalidateBanksImport({ businessId: currentBusiness.id, rows })"
       :start="(rows, originalFilename) => startBanksImport({ businessId: currentBusiness.id, rows, originalFilename })"
       :status="(id) => fetchImportStatus({ importId: id })"
       @close="showImport = false"
@@ -241,7 +242,7 @@ import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
 import {
   fetchBanks, deleteBank, updateBank, startBankExport,
-  downloadBanksImportTemplate, previewBanksImport, startBanksImport,
+  downloadBanksImportTemplate, previewBanksImport, revalidateBanksImport, startBanksImport,
 } from '@/features/banking/services/bankService'
 import { fetchImportStatus } from '@/features/imports/services/importService'
 import { BANK_COLUMNS, BANK_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
