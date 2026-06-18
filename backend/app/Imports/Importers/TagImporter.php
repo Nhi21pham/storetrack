@@ -142,6 +142,8 @@ class TagImporter implements RowImporter
             }
             if (isset($resolved['warning'])) {
                 $warnings[] = $resolved['warning'];
+            }
+            if (!isset($resolved['value'])) {
                 continue;
             }
 
@@ -168,13 +170,19 @@ class TagImporter implements RowImporter
      * commas and colons inside it are literal and a doubled "" is one quote.
      * Outside a quoted entry a bare quote (e.g. 6" pipe) is just a character.
      *
-     * @return list<array{text: string, quoted: bool}>
+     * Anything after a quoted entry's closing quote (before the next comma) is
+     * captured as `trailing` rather than mixed into the value, so resolveEntry
+     * can drop it with a warning — a word after "" with no comma is denied.
+     *
+     * @return list<array{text: string, quoted: bool, trailing: string}>
      */
     private function splitEntries(string $cell): array
     {
         $entries = [];
         $text = '';
+        $trailing = '';
         $quoted = false;
+        $closed = false;
         $seenNonSpace = false;
         $inQuotes = false;
         $length = strlen($cell);
@@ -191,6 +199,7 @@ class TagImporter implements RowImporter
                         continue;
                     }
                     $inQuotes = false;
+                    $closed = true;
                     $i++;
                     continue;
                 }
@@ -200,9 +209,11 @@ class TagImporter implements RowImporter
             }
 
             if ($char === ',') {
-                $entries[] = ['text' => $text, 'quoted' => $quoted];
+                $entries[] = ['text' => $text, 'quoted' => $quoted, 'trailing' => $trailing];
                 $text = '';
+                $trailing = '';
                 $quoted = false;
+                $closed = false;
                 $seenNonSpace = false;
                 $i++;
                 continue;
@@ -216,6 +227,13 @@ class TagImporter implements RowImporter
                 continue;
             }
 
+            // Past a quoted entry's closing quote: hold the rest aside as trailing.
+            if ($closed) {
+                $trailing .= $char;
+                $i++;
+                continue;
+            }
+
             if ($char !== ' ' && $char !== "\t") {
                 $seenNonSpace = true;
             }
@@ -223,28 +241,38 @@ class TagImporter implements RowImporter
             $i++;
         }
 
-        $entries[] = ['text' => $text, 'quoted' => $quoted];
+        $entries[] = ['text' => $text, 'quoted' => $quoted, 'trailing' => $trailing];
 
         return $entries;
     }
 
     /**
-     * Resolve one split entry into a value, a warning, or nothing (blank).
-     * A quoted entry is taken literally. An unquoted entry containing a colon is
-     * read as "prefix: value"; the prefix must match this row's key.
+     * Resolve one split entry into a value, a warning, both, or nothing (blank).
+     * A quoted entry is taken literally; any text after its closing quote is
+     * dropped with a warning (it needed a comma to be its own value). An unquoted
+     * entry containing a colon is read as "prefix: value"; the prefix must match
+     * this row's key.
      *
-     * @param  array{text: string, quoted: bool}  $entry
-     * @return array{value: string}|array{warning: string}|null
+     * @param  array{text: string, quoted: bool, trailing: string}  $entry
+     * @return array{value?: string, warning?: string}|null
      */
     private function resolveEntry(array $entry, string $keyName, string $keyNormalized): ?array
     {
         $text = trim($entry['text']);
-        if ($text === '') {
-            return null;
-        }
 
         if ($entry['quoted']) {
-            return ['value' => $text];
+            $trailing = trim($entry['trailing'] ?? '');
+            if ($trailing !== '') {
+                $warning = 'Text after the closing quote was dropped: "'.$this->snippet($trailing).'". After a closing ", a word with no comma before it is not recorded — put a comma before it for a new value, or move it inside the quotes.';
+
+                return $text === '' ? ['warning' => $warning] : ['value' => $text, 'warning' => $warning];
+            }
+
+            return $text === '' ? null : ['value' => $text];
+        }
+
+        if ($text === '') {
+            return null;
         }
 
         $colon = mb_strpos($text, ':');

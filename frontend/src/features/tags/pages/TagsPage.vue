@@ -261,6 +261,7 @@ const tagImportInstructions = [
   'List several values in one cell separated by commas: Red, Blue, Green',
   'A value may be prefixed with the key, e.g. "Color: Red" — the prefix must match the row\'s Key, otherwise that value is skipped.',
   'To keep a comma or colon inside one value, wrap the value in double quotes. To include a literal " inside it, double it — "6"" hose, blue" stores: 6" hose, blue.',
+  'After a closing quote, a word with no comma before it is dropped: "Red" blue stores only Red. Put a comma ("Red", blue) or move it inside the quotes.',
   'A key that already exists gains the new values; the latest non-empty Description wins.',
 ]
 
