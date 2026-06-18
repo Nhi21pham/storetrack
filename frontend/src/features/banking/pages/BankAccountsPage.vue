@@ -259,10 +259,10 @@ const detailAccount = ref(null)
 const deleteTarget = ref(null)
 
 const importInstructions = [
-  'Type must be one of: Supplier, Customer, Business (Vietnamese labels also work).',
+  { text: 'Type must be one of Supplier, Customer or Business (Vietnamese labels also work).', example: 'Supplier · Customer · Business  /  Nhà cung cấp · Khách hàng · Doanh nghiệp' },
   'Name must already exist in this business — the owner is never created by the import.',
-  'Customers share names, so add the Phone column to point at the right one.',
-  'Bank is matched by its short, Vietnamese, or English name; create a missing bank right from the preview.',
+  { text: 'Customers can share a name, so add the Phone column to point at the right one.', example: 'Name: Nguyễn Văn A   Phone: 0901234567' },
+  { text: 'Bank is matched by its short, Vietnamese, or English name; create a missing bank right from the preview.', example: 'VCB  ·  Vietcombank  ·  Ngân hàng TMCP Ngoại thương Việt Nam' },
 ]
 
 const onDetailEdit = (account) => {

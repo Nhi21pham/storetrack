@@ -258,10 +258,10 @@ const showHistory = ref(false)
 // TagImporter's parser on the backend).
 const tagImportInstructions = [
   'Key is required. Value and Description are optional.',
-  'List several values in one cell separated by commas: Red, Blue, Green',
-  'A value may be prefixed with the key, e.g. "Color: Red" — the prefix must match the row\'s Key, otherwise that value is skipped.',
-  'To keep a comma or colon inside one value, wrap the value in double quotes. To include a literal " inside it, double it — "6"" hose, blue" stores: 6" hose, blue.',
-  'After a closing quote, a word with no comma before it is dropped: "Red" blue stores only Red. Put a comma ("Red", blue) or move it inside the quotes.',
+  { text: 'List several values in one cell, separated by commas.', example: 'Red, Blue, Green  →  Red · Blue · Green' },
+  { text: 'A value may be prefixed with the Key; the prefix must match the row\'s Key or that value is skipped.', example: 'Color: Red  →  Red' },
+  { text: 'Wrap a value in double quotes to keep a comma or colon literal; double a " to include it.', example: '"6"" hose, blue"  →  6" hose, blue' },
+  { text: 'After a closing quote, a word with no comma before it is dropped — add a comma or move it inside the quotes.', example: '"Red" blue  →  Red' },
   'A key that already exists gains the new values; the latest non-empty Description wins.',
 ]
 

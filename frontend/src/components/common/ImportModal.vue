@@ -20,9 +20,18 @@
           </ul>
           <p class="hint">Header names must match exactly. Extra columns are ignored. Not sure of the format? Download the template below.</p>
 
-          <ul v-if="instructions.length" class="format-notes">
-            <li v-for="(note, i) in instructions" :key="i">{{ note }}</li>
-          </ul>
+          <details v-if="instructions.length" class="format-notes">
+            <summary>
+              <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              Formatting notes ({{ instructions.length }})
+            </summary>
+            <ul>
+              <li v-for="(note, i) in instructions" :key="i">
+                <span>{{ noteText(note) }}</span>
+                <code v-if="noteExample(note)" class="note-example">{{ noteExample(note) }}</code>
+              </li>
+            </ul>
+          </details>
         </div>
 
         <div class="select-actions">
@@ -261,6 +270,11 @@ const failed = computed(() => progress.value.failed_count || 0)
 const percent = computed(() => (total.value ? Math.round((processed.value / total.value) * 100) : 0))
 const problems = computed(() => progress.value.results || [])
 
+// An instruction is either a plain string or { text, example } — the optional
+// example renders as a monospace snippet under the note (e.g. "input → result").
+const noteText = (note) => (typeof note === 'string' ? note : note.text)
+const noteExample = (note) => (typeof note === 'string' ? '' : note.example || '')
+
 const formatValues = (values) =>
   Object.values(values || {}).filter((v) => v !== '' && v != null).join(' · ')
 
@@ -305,9 +319,17 @@ watch(() => im.phase.value, (phase) => {
 .col-list .req { background: #eef2ff; color: #3730a3; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
 .col-list .opt { background: #f3f4f6; color: #4b5563; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; }
 .hint { font-size: 12.5px; color: #6b7280; margin: 0; }
-.format-notes { margin: 10px 0 0; padding: 10px 12px; list-style: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; display: flex; flex-direction: column; gap: 5px; }
+.format-notes { margin: 10px 0 0; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }
+.format-notes > summary { display: flex; align-items: center; gap: 6px; padding: 9px 12px; font-size: 12.5px; font-weight: 600; color: #374151; cursor: pointer; list-style: none; user-select: none; }
+.format-notes > summary::-webkit-details-marker { display: none; }
+.format-notes > summary:hover { color: #111; }
+.format-notes > summary .chev { color: #9ca3af; transition: transform 0.15s; flex-shrink: 0; }
+.format-notes[open] > summary .chev { transform: rotate(90deg); }
+.format-notes[open] > summary { border-bottom: 1px solid #e5e7eb; }
+.format-notes ul { margin: 0; padding: 10px 12px; list-style: none; display: flex; flex-direction: column; gap: 5px; }
 .format-notes li { font-size: 12.5px; color: #4b5563; line-height: 1.45; padding-left: 14px; position: relative; }
 .format-notes li::before { content: '•'; position: absolute; left: 2px; color: #9ca3af; }
+.format-notes .note-example { display: inline-block; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 11.5px; color: #111; background: #fff; border: 1px solid #e5e7eb; border-radius: 5px; padding: 3px 8px; white-space: pre-wrap; }
 
 .select-actions { display: flex; gap: 12px; margin-top: 18px; }
 .file-label { position: relative; overflow: hidden; }
