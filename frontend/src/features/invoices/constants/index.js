@@ -56,6 +56,7 @@ export const todayInputDate = () => {
 // ("Supplier" for purchases, "Customer" for sales).
 export const makeInvoiceColumns = (partyLabel) => [
   { key: 'select',         label: '',            sortable: false },
+  { key: 'stt',            label: 'No.',         sortable: false },
   { key: 'code',           label: 'Code',        sortable: true  },
   { key: 'invoice_date',   label: 'Date',        sortable: true  },
   { key: 'party_name',     label: partyLabel,    sortable: true  },
@@ -69,4 +70,4 @@ export const makeInvoiceColumns = (partyLabel) => [
 
 export const INVOICE_COLUMNS = makeInvoiceColumns('Supplier')
 
-export const INVOICE_INITIAL_COL_WIDTHS = [40, 120, 120, 190, 110, 110, 120, 110, 130, 90]
+export const INVOICE_INITIAL_COL_WIDTHS = [40, 60, 120, 120, 190, 110, 110, 120, 110, 130, 90]

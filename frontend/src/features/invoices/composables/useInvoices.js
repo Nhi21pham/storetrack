@@ -8,9 +8,11 @@ import { INVOICE_TYPE } from '@/features/invoices/constants'
 
 const NUMERIC_KEYS = new Set(['subtotal', 'tax_total', 'grand_total'])
 
+const DATE_KEYS = new Set(['invoice_date', 'created_at', 'updated_at'])
+
 const getSortValue = (invoice, key) => {
-  if (key === 'id') return Number(invoice.id)
   if (NUMERIC_KEYS.has(key)) return Number(invoice[key] || 0)
+  if (DATE_KEYS.has(key)) return new Date(invoice[key] || 0).getTime()
   const value = invoice[key]
   return value == null ? '' : String(value).toLowerCase()
 }
@@ -74,8 +76,18 @@ export const useInvoices = ({ currentStore, currentBusiness, onError, type = INV
     return baseInvoices.value.filter((i) => matchesSearch(i, searchQuery.value))
   })
 
+  // Newest invoice first by default (invoice date, then most recently updated),
+  // so the No. column reads newest-to-oldest before any user sort is applied.
+  const orderedInvoices = computed(() =>
+    [...filteredInvoices.value].sort((a, b) => {
+      const byDate = new Date(b.invoice_date || 0) - new Date(a.invoice_date || 0)
+      if (byDate !== 0) return byDate
+      return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)
+    })
+  )
+
   const sort = useSortCriteria()
-  const sortedInvoices = computed(() => sort.sortItems(filteredInvoices.value, getSortValue))
+  const sortedInvoices = computed(() => sort.sortItems(orderedInvoices.value, getSortValue))
 
   // Distinct parties present in the loaded invoices, for the column filter.
   const partyOptions = computed(() => {

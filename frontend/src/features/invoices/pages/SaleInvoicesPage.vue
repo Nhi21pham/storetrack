@@ -53,7 +53,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -108,10 +108,11 @@
               No invoices match the current filters.
             </td>
           </tr>
-          <tr v-for="inv in paginatedInvoices" :key="inv.id" :class="{ 'row-selected': isSelected(inv.id) }">
+          <tr v-for="(inv, idx) in paginatedInvoices" :key="inv.id" :class="{ 'row-selected': isSelected(inv.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(inv.id)" @change="toggleRow(inv.id)" />
             </td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('code')">
               <button class="code-link" @click="openDetail(inv)">{{ inv.code }}</button>
             </td>
@@ -224,7 +225,7 @@ const SALE_COLUMNS = makeInvoiceColumns('Customer')
 const columnVisibility = useColumnVisibility({
   storageKey: 'sale-invoices',
   columns: SALE_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 const visibleWidths = computed(() => columnVisibility.filterWidths(INVOICE_INITIAL_COL_WIDTHS))
 const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
@@ -346,6 +347,7 @@ watch(() => currentStore.value?.id, clearSelection)
 .code-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #4338ca; cursor: pointer; text-align: left; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .code-link:hover { text-decoration: underline; }
 .empty-val { color: #d1d5db; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .num.strong { font-weight: 700; color: #111; }
 
