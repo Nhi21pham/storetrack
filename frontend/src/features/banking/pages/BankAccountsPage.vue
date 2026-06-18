@@ -64,7 +64,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -83,10 +83,11 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
-          <tr v-for="a in paginatedAccounts" :key="a.id">
+          <tr v-for="(a, idx) in paginatedAccounts" :key="a.id">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(a.id)" @change="toggleRow(a.id)" />
             </td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('owner')">
               <ObjectBadge :type="a.party?.type" />
             </td>
@@ -104,6 +105,8 @@
             <td v-if="columnVisibility.isVisible('holder_name')"><span class="truncate" :title="a.account_holder_name || ''">{{ a.account_holder_name || '—' }}</span></td>
             <td v-if="columnVisibility.isVisible('branch')"><span class="truncate" :title="a.branch || ''">{{ a.branch || '—' }}</span></td>
             <td v-if="columnVisibility.isVisible('province')"><span class="truncate" :title="a.province?.name_vi || ''">{{ a.province?.name_vi || '—' }}</span></td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(a.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(a.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(a)" title="Edit">
                 <Icon name="edit" :size="14" />
@@ -233,11 +236,12 @@ import {
 import { fetchImportStatus } from '@/features/imports/services/importService'
 import { BANK_ACCOUNT_COLUMNS, BANK_ACCOUNT_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 import { normalizeText } from '@/utils/textNormalizer'
+import { formatDateTime } from '@/utils/datetime'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'bank_accounts',
   columns: BANK_ACCOUNT_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(BANK_ACCOUNT_INITIAL_COL_WIDTHS))
@@ -275,9 +279,16 @@ const canDelete = computed(() => {
   return role === 'owner' || role === 'accountant'
 })
 
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedAccounts = computed(() =>
+  [...accounts.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
+
 const sort = useSortCriteria()
 const sortedAccounts = computed(() =>
-  sort.sortItems(accounts.value, (account, key) => {
+  sort.sortItems(orderedAccounts.value, (account, key) => {
     switch (key) {
       case 'owner':           return account.party?.type || ''
       case 'owner_name':      return normalizeText(account.party?.display_name || '')
@@ -286,6 +297,8 @@ const sortedAccounts = computed(() =>
       case 'holder_name':     return normalizeText(account.account_holder_name || '')
       case 'branch':          return normalizeText(account.branch || '')
       case 'province':        return normalizeText(account.province?.name_vi || '')
+      case 'created_at':
+      case 'updated_at':      return new Date(account[key] || 0).getTime()
       default:                return ''
     }
   })
@@ -406,6 +419,8 @@ const performDelete = async () => {
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bank-cell { font-weight: 600; color: #111; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }

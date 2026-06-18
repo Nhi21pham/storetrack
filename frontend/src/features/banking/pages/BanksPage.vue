@@ -69,7 +69,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -88,10 +88,11 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
-          <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
+          <tr v-for="(bank, idx) in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(bank.id)" @change="toggleRow(bank.id)" />
             </td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('short_name')">
               <button class="name-link" @click="detailBank = bank">{{ bank.short_name }}</button>
             </td>
@@ -104,6 +105,8 @@
                 @change="onToggleActive(bank)"
               />
             </td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(bank.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(bank.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(bank)" title="Edit">
                 <Icon name="edit" :size="14" />
@@ -250,13 +253,14 @@ import { BANK_COLUMNS, BANK_INITIAL_COL_WIDTHS } from '@/features/banking/consta
 const columnVisibility = useColumnVisibility({
   storageKey: 'banks',
   columns: BANK_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(BANK_INITIAL_COL_WIDTHS))
 const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
+import { formatDateTime } from '@/utils/datetime'
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
@@ -299,10 +303,18 @@ const filteredBanks = computed(() => {
   })
 })
 
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedBanks = computed(() =>
+  [...filteredBanks.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
+
 const sort = useSortCriteria()
 const sortedBanks = computed(() =>
-  sort.sortItems(filteredBanks.value, (bank, key) => {
+  sort.sortItems(orderedBanks.value, (bank, key) => {
     if (key === 'status') return bank.is_active ? 1 : 0
+    if (key === 'created_at' || key === 'updated_at') return new Date(bank[key] || 0).getTime()
     const v = bank[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -462,6 +474,8 @@ tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
 tbody tr.inactive td.actions-col { background: #fafafa; }
 .short { font-weight: 600; color: #111; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
