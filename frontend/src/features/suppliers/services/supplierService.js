@@ -77,3 +77,18 @@ export const deleteSuppliers = async ({ ids, businessId, storeId }) => {
 
 export const startSupplierExport = ({ businessId, params }) =>
   rest('post', `/api/exports/suppliers/${businessId}`, { params })
+
+export const downloadSuppliersImportTemplate = ({ storeId }) =>
+  rest('get', `/api/imports/suppliers/${storeId}/template`, { responseType: 'blob' })
+
+export const previewSuppliersImport = ({ storeId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/suppliers/${storeId}/preview`, { data: formData })
+}
+
+export const revalidateSuppliersImport = ({ storeId, rows }) =>
+  rest('post', `/api/imports/suppliers/${storeId}/revalidate`, { data: { rows } })
+
+export const startSuppliersImport = ({ storeId, rows, originalFilename }) =>
+  rest('post', `/api/imports/suppliers/${storeId}`, { data: { rows, original_filename: originalFilename } })

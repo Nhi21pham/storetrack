@@ -81,6 +81,26 @@ class ImportController extends Controller
         return $this->start($request, $storeId, 'customers', $this->storeName($storeId));
     }
 
+    public function suppliersTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
+    {
+        return $this->template($request, $storeId, 'suppliers');
+    }
+
+    public function suppliersPreview(Request $request, int $storeId): JsonResponse
+    {
+        return $this->preview($request, $storeId, 'suppliers');
+    }
+
+    public function suppliersRevalidate(Request $request, int $storeId): JsonResponse
+    {
+        return $this->revalidate($request, $storeId, 'suppliers');
+    }
+
+    public function suppliersStart(Request $request, int $storeId): JsonResponse
+    {
+        return $this->start($request, $storeId, 'suppliers', $this->storeName($storeId));
+    }
+
     public function banksTemplate(Request $request, int $businessId): BinaryFileResponse|JsonResponse
     {
         return $this->template($request, $businessId, 'banks');

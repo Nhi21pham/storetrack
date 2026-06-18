@@ -8,6 +8,7 @@ use App\Imports\Contracts\RowImporter;
 use App\Imports\Importers\BankAccountImporter;
 use App\Imports\Importers\BankImporter;
 use App\Imports\Importers\CustomerImporter;
+use App\Imports\Importers\SupplierImporter;
 use App\Imports\Importers\TagImporter;
 use App\Imports\Importers\UnitImporter;
 
@@ -24,6 +25,7 @@ class ImporterRegistry
         private BankImporter $bankImporter,
         private BankAccountImporter $bankAccountImporter,
         private CustomerImporter $customerImporter,
+        private SupplierImporter $supplierImporter,
     ) {}
 
     public function for(string $type): RowImporter
@@ -34,6 +36,7 @@ class ImporterRegistry
             'banks'         => $this->bankImporter,
             'bank_accounts' => $this->bankAccountImporter,
             'customers'     => $this->customerImporter,
+            'suppliers'     => $this->supplierImporter,
             default         => throw new ImportException(ErrorCode::IMPORT_INVALID_FILE, "Unknown import type: {$type}."),
         };
     }

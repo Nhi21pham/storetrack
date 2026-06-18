@@ -174,7 +174,7 @@
       <CustomerDetailModal
         v-if="detailCustomer"
         :customer="detailCustomer"
-        :can-edit="!!currentStore?.is_active"
+        :can-edit="!!currentStore?.is_active && canManageRow(detailCustomer)"
         @close="detailCustomer = null"
         @edit="onDetailEdit"
       />

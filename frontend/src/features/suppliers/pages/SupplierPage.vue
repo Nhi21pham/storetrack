@@ -58,6 +58,8 @@
             :toggle-column="columnVisibility.toggleColumn"
             :reset-columns="columnVisibility.resetColumns"
           />
+          <HistoryButton @click="showHistory = true" />
+          <ImportButton v-if="currentStore.is_active" @click="showImport = true" />
         </template>
       </SupplierFilterBar>
 
@@ -142,10 +144,34 @@
         @saved="onSaved"
       />
 
+      <ImportModal
+        v-if="showImport && currentStore.is_active"
+        title="Import Suppliers"
+        template-filename="suppliers-import-template.xlsx"
+        :required-headers="['Name']"
+        :optional-headers="['Phone', 'Email', 'Address', 'Tax Code']"
+        :instructions="supplierImportInstructions"
+        :download-template="() => downloadSuppliersImportTemplate({ storeId: currentStore.id })"
+        :preview="(file) => previewSuppliersImport({ storeId: currentStore.id, file })"
+        :revalidate="(rows) => revalidateSuppliersImport({ storeId: currentStore.id, rows })"
+        :start="(rows, originalFilename) => startSuppliersImport({ storeId: currentStore.id, rows, originalFilename })"
+        :status="(id) => fetchImportStatus({ importId: id })"
+        @close="showImport = false"
+        @imported="onImported"
+      />
+
+      <ImportHistoryModal
+        v-if="showHistory"
+        title="Supplier Import History"
+        type="suppliers"
+        :store-id="currentStore.id"
+        @close="showHistory = false"
+      />
+
       <SupplierDetailModal
         v-if="detailSupplier"
         :supplier="detailSupplier"
-        :can-edit="!!currentStore?.is_active"
+        :can-edit="!!currentStore?.is_active && canManageRow(detailSupplier)"
         @close="detailSupplier = null"
         @edit="onDetailEdit"
       />
@@ -189,11 +215,19 @@ import SupplierSelectionBar from '@/features/suppliers/components/SupplierSelect
 import SupplierTable from '@/features/suppliers/components/SupplierTable.vue'
 import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
 import SupplierDetailModal from '@/features/suppliers/components/SupplierDetailModal.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
 import { useSuppliers } from '@/features/suppliers/composables/useSuppliers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
-import { startSupplierExport } from '@/features/suppliers/services/supplierService'
+import {
+  startSupplierExport,
+  downloadSuppliersImportTemplate, previewSuppliersImport, revalidateSuppliersImport, startSuppliersImport,
+} from '@/features/suppliers/services/supplierService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { SUPPLIER_COLUMNS, SUPPLIER_INITIAL_COL_WIDTHS } from '@/features/suppliers/constants'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
@@ -248,6 +282,18 @@ const deletingSupplier = ref(null)
 const bulkDeleting    = ref(false)
 const showBulkDeleteConfirm = ref(false)
 
+const showImport  = ref(false)
+const showHistory = ref(false)
+
+// Explains the supplier import rules in the import dialog (kept in sync with
+// SupplierImporter on the backend).
+const supplierImportInstructions = [
+  'Name is required. Phone, Email, Address and Tax Code are optional.',
+  'Name is unique per business — a row whose name already exists is skipped (already imported).',
+  'Phone, when given, must be exactly 10 digits; Email, when given, must be a valid email address.',
+  'Imported suppliers are added to the current store.',
+]
+
 const openCreate    = () => { editingSupplier.value = null; showForm.value = true }
 const openEdit      = (s) => { editingSupplier.value = { ...s }; showForm.value = true }
 const openDetail    = (s) => { detailSupplier.value = s }
@@ -258,6 +304,10 @@ const onSaved = () => {
   showForm.value = false
   load()
   showToast(wasEdit ? 'Supplier updated successfully!' : 'Supplier created successfully!')
+}
+
+const onImported = () => {
+  load()
 }
 
 const confirmDelete = (s) => { deletingSupplier.value = s }

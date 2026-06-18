@@ -50,6 +50,22 @@ class SupplierRepository
             ->all();
     }
 
+    /**
+     * Every supplier name in the business, for resolving a row's identity during
+     * import. A supplier is unique by name per business, so a row whose name
+     * already exists here is a skip ("already imported").
+     *
+     * @return list<string>
+     */
+    public function namesForImport(int $businessId): array
+    {
+        return Supplier::query()
+            ->where('business_id', $businessId)
+            ->pluck('name')
+            ->map(fn ($name) => (string) $name)
+            ->all();
+    }
+
     public function findByName(int $businessId, string $name, ?int $excludeId = null): ?Supplier
     {
         $query = Supplier::query()
