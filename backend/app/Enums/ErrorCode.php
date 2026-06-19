@@ -108,6 +108,12 @@ enum ErrorCode: string
     case IMPORT_EMPTY_FILE = 'IMPORT_EMPTY_FILE';
     case IMPORT_TOO_MANY_ROWS = 'IMPORT_TOO_MANY_ROWS';
 
+    // Invoice extraction (AI)
+    case EXTRACTION_INVALID_FILE = 'EXTRACTION_INVALID_FILE';
+    case EXTRACTION_EMPTY = 'EXTRACTION_EMPTY';
+    case EXTRACTION_UNCONFIGURED = 'EXTRACTION_UNCONFIGURED';
+    case EXTRACTION_FAILED = 'EXTRACTION_FAILED';
+
     // Invitation
     case INVITATION_NOT_FOUND = 'INVITATION_NOT_FOUND';
     case INVITATION_EXPIRED = 'INVITATION_EXPIRED';
@@ -186,7 +192,10 @@ enum ErrorCode: string
             self::IMPORT_MISSING_HEADERS,
             self::IMPORT_EMPTY_FILE,
             self::IMPORT_TOO_MANY_ROWS,
+            self::EXTRACTION_INVALID_FILE,
             self::VALIDATION_ERROR => 400,
+
+            self::EXTRACTION_EMPTY => 422,
 
             self::SESSION_EXPIRED => 401,
 
@@ -216,7 +225,10 @@ enum ErrorCode: string
             self::RATE_LIMITED => 429,
 
             self::SERVER_ERROR,
-            self::NETWORK_ERROR => 500,
+            self::NETWORK_ERROR,
+            self::EXTRACTION_UNCONFIGURED => 500,
+
+            self::EXTRACTION_FAILED => 502,
         };
     }
 }

@@ -25,6 +25,15 @@ class ProductRepository
         return $query->first();
     }
 
+    /** Match a product in the store by exact code/SKU, for invoice extraction. */
+    public function findByCode(int $storeId, string $code): ?Product
+    {
+        return Product::query()
+            ->where('store_id', $storeId)
+            ->where('code', $code)
+            ->first();
+    }
+
     public function create(array $data): Product
     {
         return Product::create($data);

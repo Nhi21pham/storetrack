@@ -166,6 +166,8 @@ import { normalizeText } from '@/utils/textNormalizer'
 const props = defineProps({
   product: { type: Object, default: null },
   storeId: { type: [String, Number], default: null },
+  // Seed a NEW product's name (e.g. from an extracted invoice line). Ignored when editing.
+  prefillName: { type: String, default: '' },
 })
 
 const emit = defineEmits(['close', 'saved', 'pick-existing'])
@@ -180,7 +182,7 @@ const showCategoryForm = ref(false)
 const errors = ref({ name: '', unit_id: '', product_category_id: '' })
 
 const initialForm = () => ({
-  name: props.product?.name || '',
+  name: props.product?.name || props.prefillName || '',
   unit_id: props.product?.unit_id ? String(props.product.unit_id) : '',
   product_category_id: props.product?.product_category_id ? String(props.product.product_category_id) : '',
   code_display: props.product?.code || '',

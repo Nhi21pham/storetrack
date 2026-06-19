@@ -84,7 +84,13 @@ const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 
 const props = defineProps({
-  supplier: { type: Object, default: null }
+  supplier: { type: Object, default: null },
+  // Seed a NEW supplier's fields (e.g. from an extracted invoice). Ignored when
+  // editing — these don't make the modal think it's in edit mode.
+  prefillName: { type: String, default: '' },
+  prefillTaxCode: { type: String, default: '' },
+  prefillPhone: { type: String, default: '' },
+  prefillAddress: { type: String, default: '' },
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -97,11 +103,11 @@ const showUnsavedWarning = ref(false)
 const errors = ref({ name: '', tax_code: '', email: '', phone: '', address: '' })
 
 const initialForm = () => ({
-  name: props.supplier?.name || '',
-  tax_code: props.supplier?.tax_code || '',
-  address: props.supplier?.address || '',
+  name: props.supplier?.name || props.prefillName || '',
+  tax_code: props.supplier?.tax_code || props.prefillTaxCode || '',
+  address: props.supplier?.address || props.prefillAddress || '',
   email: props.supplier?.email || '',
-  phone: props.supplier?.phone || ''
+  phone: props.supplier?.phone || props.prefillPhone || ''
 })
 
 const form = ref(initialForm())

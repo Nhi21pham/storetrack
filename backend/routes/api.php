@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\InvoiceExtractionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -129,4 +130,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('importId');
     Route::get('/imports/{importId}', [ImportController::class, 'status'])
         ->whereNumber('importId');
+
+    Route::post('/invoices/{storeId}/extract', [InvoiceExtractionController::class, 'extract'])
+        ->whereNumber('storeId');
 });
