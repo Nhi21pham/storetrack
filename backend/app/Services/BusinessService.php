@@ -98,6 +98,11 @@ class BusinessService
         return $business;
     }
 
+    public function nameById(int $businessId): ?string
+    {
+        return $this->businessRepository->findById($businessId)?->name;
+    }
+
     public function getAccessibleBusinesses(User $user): array
     {
         $ownedBusinesses = $this->getOwnedBusinesses($user);

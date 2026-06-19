@@ -32,6 +32,40 @@ class SupplierRepository
         return Supplier::find($id);
     }
 
+    /**
+     * Every supplier in the business as {party_id, name}, for resolving the
+     * owner of an imported bank account by name.
+     *
+     * @return list<array{party_id: int, name: string}>
+     */
+    public function listForImport(int $businessId): array
+    {
+        return Supplier::query()
+            ->where('business_id', $businessId)
+            ->get(['party_id', 'name'])
+            ->map(fn (Supplier $supplier) => [
+                'party_id' => (int) $supplier->party_id,
+                'name'     => (string) $supplier->name,
+            ])
+            ->all();
+    }
+
+    /**
+     * Every supplier name in the business, for resolving a row's identity during
+     * import. A supplier is unique by name per business, so a row whose name
+     * already exists here is a skip ("already imported").
+     *
+     * @return list<string>
+     */
+    public function namesForImport(int $businessId): array
+    {
+        return Supplier::query()
+            ->where('business_id', $businessId)
+            ->pluck('name')
+            ->map(fn ($name) => (string) $name)
+            ->all();
+    }
+
     public function findByName(int $businessId, string $name, ?int $excludeId = null): ?Supplier
     {
         $query = Supplier::query()

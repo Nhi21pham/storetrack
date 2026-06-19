@@ -26,14 +26,23 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by account number, holder name, or branch..." />
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <HistoryButton @click="showHistory = true" />
+        <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedAccounts.length === 0" @click="runExport" />
       </div>
+
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
 
       <BulkStatusBar
         v-if="selectedIds.size > 0"
@@ -61,8 +70,13 @@
         :description="`No bank accounts matching &quot;${searchQuery}&quot;`"
       />
 
+      <EmptyState
+        v-else-if="sortedAccounts.length === 0"
+        description="No bank accounts match the current filters."
+      />
+
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -81,10 +95,11 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
-          <tr v-for="a in paginatedAccounts" :key="a.id">
+          <tr v-for="(a, idx) in paginatedAccounts" :key="a.id">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(a.id)" @change="toggleRow(a.id)" />
             </td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('owner')">
               <ObjectBadge :type="a.party?.type" />
             </td>
@@ -102,6 +117,8 @@
             <td v-if="columnVisibility.isVisible('holder_name')"><span class="truncate" :title="a.account_holder_name || ''">{{ a.account_holder_name || '—' }}</span></td>
             <td v-if="columnVisibility.isVisible('branch')"><span class="truncate" :title="a.branch || ''">{{ a.branch || '—' }}</span></td>
             <td v-if="columnVisibility.isVisible('province')"><span class="truncate" :title="a.province?.name_vi || ''">{{ a.province?.name_vi || '—' }}</span></td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(a.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(a.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(a)" title="Edit">
                 <Icon name="edit" :size="14" />
@@ -129,6 +146,38 @@
       :account="editingAccount"
       @close="closeForm"
       @saved="onSaved"
+    />
+
+    <ImportModal
+      v-if="showImport"
+      title="Import Bank Accounts"
+      template-filename="bank-accounts-import-template.xlsx"
+      :required-headers="['Type', 'Name', 'Bank', 'Account Number']"
+      :optional-headers="['Phone', 'Province', 'Account Holder Name', 'Branch']"
+      :instructions="importInstructions"
+      :download-template="() => downloadBankAccountsImportTemplate({ businessId: currentBusiness.id })"
+      :preview="(file) => previewBankAccountsImport({ businessId: currentBusiness.id, file })"
+      :revalidate="(rows) => revalidateBankAccountsImport({ businessId: currentBusiness.id, rows })"
+      :start="(rows, originalFilename) => startBankAccountsImport({ businessId: currentBusiness.id, rows, originalFilename })"
+      :status="(id) => fetchImportStatus({ importId: id })"
+      @close="showImport = false"
+      @imported="onImported"
+    >
+      <template #review-banner="{ rows, resolveReference }">
+        <MissingReferencesImportBanner
+          :rows="rows"
+          :business-id="currentBusiness.id"
+          :resolve-reference="resolveReference"
+        />
+      </template>
+    </ImportModal>
+
+    <ImportHistoryModal
+      v-if="showHistory"
+      title="Bank Account Import History"
+      type="bank_accounts"
+      :business-id="currentBusiness.id"
+      @close="showHistory = false"
     />
 
     <BankAccountDetailModal
@@ -175,11 +224,18 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
 import BankAccountDetailModal from '@/features/banking/components/BankAccountDetailModal.vue'
+import MissingReferencesImportBanner from '@/components/common/MissingReferencesImportBanner.vue'
 import ObjectBadge from '@/components/common/ObjectBadge.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
@@ -187,14 +243,20 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
-import { fetchBankAccounts, deleteBankAccount, startBankAccountExport } from '@/features/banking/services/bankAccountService'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
+import {
+  fetchBankAccounts, deleteBankAccount, startBankAccountExport,
+  downloadBankAccountsImportTemplate, previewBankAccountsImport, revalidateBankAccountsImport, startBankAccountsImport,
+} from '@/features/banking/services/bankAccountService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { BANK_ACCOUNT_COLUMNS, BANK_ACCOUNT_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 import { normalizeText } from '@/utils/textNormalizer'
+import { formatDateTime } from '@/utils/datetime'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'bank_accounts',
   columns: BANK_ACCOUNT_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(BANK_ACCOUNT_INITIAL_COL_WIDTHS))
@@ -207,11 +269,24 @@ const showToast = inject('showToast')
 const accounts = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
+
+const hasActiveFilters = computed(() => dateRangeActive.value)
+const clearFilters = () => { clearDateRange() }
 
 const showForm = ref(false)
+const showImport = ref(false)
+const showHistory = ref(false)
 const editingAccount = ref(null)
 const detailAccount = ref(null)
 const deleteTarget = ref(null)
+
+const importInstructions = [
+  { text: 'Type must be one of Supplier, Customer or Business (Vietnamese labels also work).', example: 'Supplier · Customer · Business  /  Nhà cung cấp · Khách hàng · Doanh nghiệp' },
+  'Name must already exist in this business — the owner is never created by the import.',
+  { text: 'Customers can share a name, so add the Phone column to point at the right one.', example: 'Name: Nguyễn Văn A   Phone: 0901234567' },
+  { text: 'Bank is matched by its short, Vietnamese, or English name; create a missing bank right from the preview.', example: 'VCB  ·  Vietcombank  ·  Ngân hàng TMCP Ngoại thương Việt Nam' },
+]
 
 const onDetailEdit = (account) => {
   detailAccount.value = null
@@ -223,9 +298,18 @@ const canDelete = computed(() => {
   return role === 'owner' || role === 'accountant'
 })
 
+const filteredAccounts = computed(() => accounts.value.filter(inDateRange))
+
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedAccounts = computed(() =>
+  [...filteredAccounts.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
+
 const sort = useSortCriteria()
 const sortedAccounts = computed(() =>
-  sort.sortItems(accounts.value, (account, key) => {
+  sort.sortItems(orderedAccounts.value, (account, key) => {
     switch (key) {
       case 'owner':           return account.party?.type || ''
       case 'owner_name':      return normalizeText(account.party?.display_name || '')
@@ -234,6 +318,8 @@ const sortedAccounts = computed(() =>
       case 'holder_name':     return normalizeText(account.account_holder_name || '')
       case 'branch':          return normalizeText(account.branch || '')
       case 'province':        return normalizeText(account.province?.name_vi || '')
+      case 'created_at':
+      case 'updated_at':      return new Date(account[key] || 0).getTime()
       default:                return ''
     }
   })
@@ -276,7 +362,7 @@ const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, can
   remove: (id) => deleteBankAccount({ id }),
 })
 
-watch([searchQuery, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 let searchTimer = null
 
@@ -322,6 +408,11 @@ const onSaved = async () => {
   await load()
 }
 
+const onImported = async () => {
+  await load()
+  showToast('Bank accounts imported.', 'success')
+}
+
 const confirmDelete = (account) => {
   deleteTarget.value = account
 }
@@ -349,6 +440,8 @@ const performDelete = async () => {
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bank-cell { font-weight: 600; color: #111; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
 
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }

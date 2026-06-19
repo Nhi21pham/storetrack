@@ -10,6 +10,7 @@ use App\Services\BankService;
 use App\Services\CustomerService;
 use App\Services\ExportService;
 use App\Services\Invoice\InvoiceService;
+use App\Services\ProductCategoryService;
 use App\Services\ProductService;
 use App\Services\Report\DebtReportService;
 use App\Services\Report\ProfitReportService;
@@ -32,6 +33,7 @@ class ExportController extends Controller
         private SupplierService $supplierService,
         private UnitService $unitService,
         private TagService $tagService,
+        private ProductCategoryService $productCategoryService,
         private ProductService $productService,
         private BankService $bankService,
         private BankAccountService $bankAccountService,
@@ -81,6 +83,11 @@ class ExportController extends Controller
     public function queueTags(Request $request, int $storeId): JsonResponse
     {
         return $this->queueEntityExport($request, $storeId, $this->tagService);
+    }
+
+    public function queueProductCategories(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queueEntityExport($request, $storeId, $this->productCategoryService);
     }
 
     public function queueProducts(Request $request, int $storeId): JsonResponse

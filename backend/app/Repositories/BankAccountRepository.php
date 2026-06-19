@@ -13,6 +13,26 @@ class BankAccountRepository
         return BankAccount::with(['bank', 'province', 'party'])->find($id);
     }
 
+    /**
+     * Set of "{bankId}:{accountNumber}" for every account on a bank in this
+     * business, for batched duplicate detection during import. Matches the
+     * (bank_id, account_number) unique index.
+     *
+     * @return array<string, true>
+     */
+    public function existingNumberKeysForBusiness(int $businessId): array
+    {
+        $keys = [];
+        BankAccount::query()
+            ->whereHas('bank', fn ($q) => $q->where('business_id', $businessId))
+            ->get(['bank_id', 'account_number'])
+            ->each(function (BankAccount $account) use (&$keys) {
+                $keys[$account->bank_id.':'.$account->account_number] = true;
+            });
+
+        return $keys;
+    }
+
     public function findByBankAndNumber(int $bankId, string $accountNumber, ?int $excludeId = null): ?BankAccount
     {
         $query = BankAccount::query()

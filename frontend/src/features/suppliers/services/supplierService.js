@@ -3,7 +3,7 @@ import { graphql, rest } from '@/api'
 const SUPPLIERS_QUERY = `
   query Suppliers($store_id: ID, $business_id: ID!) {
     suppliers(store_id: $store_id, business_id: $business_id) {
-      id store_id name email phone address tax_code outstanding business_outstanding created_at
+      id store_id name email phone address tax_code outstanding business_outstanding created_at updated_at
       party { id }
       stores { id name }
     }
@@ -77,3 +77,18 @@ export const deleteSuppliers = async ({ ids, businessId, storeId }) => {
 
 export const startSupplierExport = ({ businessId, params }) =>
   rest('post', `/api/exports/suppliers/${businessId}`, { params })
+
+export const downloadSuppliersImportTemplate = ({ storeId }) =>
+  rest('get', `/api/imports/suppliers/${storeId}/template`, { responseType: 'blob' })
+
+export const previewSuppliersImport = ({ storeId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/suppliers/${storeId}/preview`, { data: formData })
+}
+
+export const revalidateSuppliersImport = ({ storeId, rows }) =>
+  rest('post', `/api/imports/suppliers/${storeId}/revalidate`, { data: { rows } })
+
+export const startSuppliersImport = ({ storeId, rows, originalFilename }) =>
+  rest('post', `/api/imports/suppliers/${storeId}`, { data: { rows, original_filename: originalFilename } })

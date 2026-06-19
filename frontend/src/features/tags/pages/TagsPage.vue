@@ -26,14 +26,23 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by key or value..." />
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <HistoryButton @click="showHistory = true" />
+        <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedTags.length === 0" @click="runExport" />
       </div>
+
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
 
       <BulkStatusBar
         v-if="selectedIds.size > 0"
@@ -57,7 +66,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -81,11 +90,11 @@
               No tags match the current filters.
             </td>
           </tr>
-          <tr v-for="tag in paginatedTags" :key="tag.id">
+          <tr v-for="(tag, idx) in paginatedTags" :key="tag.id">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(tag.id)" @change="toggleRow(tag.id)" />
             </td>
-            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ tag.id }}</td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailTag = tag">{{ tag.name }}</button>
             </td>
@@ -99,7 +108,8 @@
               <span v-if="tag.description" class="truncate" :title="tag.description">{{ tag.description }}</span>
               <span v-else class="empty-val">—</span>
             </td>
-            <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(tag.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(tag.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(tag.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(tag)" title="Edit tag">
                 <Icon name="edit" :size="14" />
@@ -160,6 +170,30 @@
       @confirm="confirmBulk"
       @cancel="cancelBulk"
     />
+
+    <ImportModal
+      v-if="showImport && currentStore"
+      title="Import Tags"
+      template-filename="tags-import-template.xlsx"
+      :required-headers="['Key']"
+      :optional-headers="['Value', 'Description']"
+      :instructions="tagImportInstructions"
+      :download-template="() => downloadTagsImportTemplate({ storeId: currentStore.id })"
+      :preview="(file) => previewTagsImport({ storeId: currentStore.id, file })"
+      :revalidate="(rows) => revalidateTagsImport({ storeId: currentStore.id, rows })"
+      :start="(rows, originalFilename) => startTagsImport({ storeId: currentStore.id, rows, originalFilename })"
+      :status="(id) => fetchImportStatus({ importId: id })"
+      @close="showImport = false"
+      @imported="onImported"
+    />
+
+    <ImportHistoryModal
+      v-if="showHistory && currentStore"
+      title="Tag Import History"
+      type="tags"
+      :store-id="currentStore.id"
+      @close="showHistory = false"
+    />
   </PageContainer>
 </template>
 
@@ -175,7 +209,13 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import TagChip from '@/components/common/TagChip.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
@@ -189,7 +229,12 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
-import { fetchTags, deleteTag, startTagExport } from '@/features/tags/services/tagService'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
+import {
+  fetchTags, deleteTag, startTagExport,
+  downloadTagsImportTemplate, previewTagsImport, revalidateTagsImport, startTagsImport,
+} from '@/features/tags/services/tagService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { TAG_COLUMNS, TAG_INITIAL_COL_WIDTHS } from '@/features/tags/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
@@ -197,7 +242,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'tags',
   columns: TAG_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(TAG_INITIAL_COL_WIDTHS))
@@ -210,6 +255,10 @@ const showToast = inject('showToast')
 const tags = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
+
+const hasActiveFilters = computed(() => dateRangeActive.value)
+const clearFilters = () => { clearDateRange() }
 
 const showForm = ref(false)
 const editingTag = ref(null)
@@ -217,24 +266,48 @@ const detailTag = ref(null)
 const deleteKeyTarget = ref(null)
 const deleting = ref(false)
 
+const showImport = ref(false)
+const showHistory = ref(false)
+
+// Explains the Value column grammar in the import dialog (kept in sync with
+// TagImporter's parser on the backend).
+const tagImportInstructions = [
+  'Key is required. Value and Description are optional.',
+  { text: 'List several values in one cell, separated by commas.', example: 'Red, Blue, Green  →  Red · Blue · Green' },
+  { text: 'A value may be prefixed with the Key; the prefix must match the row\'s Key or that value is skipped.', example: 'Color: Red  →  Red' },
+  { text: 'Wrap a value in double quotes to keep a comma or colon literal; double a " to include it.', example: '"6"" hose, blue"  →  6" hose, blue' },
+  { text: 'After a closing quote, a word with no comma before it is dropped — add a comma or move it inside the quotes.', example: '"Red" blue  →  Red' },
+  'A key that already exists gains the new values; the latest non-empty Description wins.',
+]
+
 const role = computed(() => String(currentStore?.value?.my_role || '').toLowerCase())
 const canDeleteKey = computed(() => ['owner', 'accountant'].includes(role.value))
 
 const filteredTags = computed(() => {
   const needle = normalizeText(searchQuery.value)
-  if (!needle) return tags.value
-  return tags.value.filter(t =>
-    normalizeText(t.name).includes(needle) ||
-    normalizeText(t.description || '').includes(needle) ||
-    (t.values || []).some(v => normalizeText(v.value).includes(needle))
-  )
+  return tags.value.filter(t => {
+    if (!inDateRange(t)) return false
+    if (!needle) return true
+    return (
+      normalizeText(t.name).includes(needle) ||
+      normalizeText(t.description || '').includes(needle) ||
+      (t.values || []).some(v => normalizeText(v.value).includes(needle))
+    )
+  })
 })
+
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedTags = computed(() =>
+  [...filteredTags.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
 
 const sort = useSortCriteria()
 const sortedTags = computed(() =>
-  sort.sortItems(filteredTags.value, (tag, key) => {
-    if (key === 'id')   return Number(tag.id) || 0
+  sort.sortItems(orderedTags.value, (tag, key) => {
     if (key === 'name') return normalizeText(tag.name)
+    if (key === 'created_at' || key === 'updated_at') return new Date(tag[key] || 0).getTime()
     const v = tag[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -278,7 +351,7 @@ const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, can
   deleteMessage: 'This permanently deletes the selected tags (and all their values) and detaches them from any products using them. This cannot be undone.',
 })
 
-watch([searchQuery, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {
@@ -295,6 +368,10 @@ const load = async () => {
 
 onMounted(load)
 watch(() => currentStore?.value?.id, () => { clearSelection(); load() })
+
+const onImported = async () => {
+  await load()
+}
 
 const openCreate = () => {
   editingTag.value = null
@@ -351,7 +428,8 @@ const performDeleteKey = async () => {
 
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 
-.id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: #111; cursor: pointer; text-align: left; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 

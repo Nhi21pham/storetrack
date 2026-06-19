@@ -3,7 +3,7 @@ import { graphql, rest } from '@/api'
 const CUSTOMERS_QUERY = `
   query Customers($store_id: ID, $business_id: ID!) {
     customers(store_id: $store_id, business_id: $business_id) {
-      id store_id name email phone address tax_code outstanding business_outstanding created_at
+      id store_id name email phone address tax_code outstanding business_outstanding created_at updated_at
       party { id }
       stores { id name }
     }
@@ -77,3 +77,18 @@ export const deleteCustomers = async ({ ids, businessId, storeId }) => {
 
 export const startCustomerExport = ({ businessId, params }) =>
   rest('post', `/api/exports/customers/${businessId}`, { params })
+
+export const downloadCustomersImportTemplate = ({ storeId }) =>
+  rest('get', `/api/imports/customers/${storeId}/template`, { responseType: 'blob' })
+
+export const previewCustomersImport = ({ storeId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/customers/${storeId}/preview`, { data: formData })
+}
+
+export const revalidateCustomersImport = ({ storeId, rows }) =>
+  rest('post', `/api/imports/customers/${storeId}/revalidate`, { data: { rows } })
+
+export const startCustomersImport = ({ storeId, rows, originalFilename }) =>
+  rest('post', `/api/imports/customers/${storeId}`, { data: { rows, original_filename: originalFilename } })

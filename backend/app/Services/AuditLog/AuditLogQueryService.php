@@ -2,15 +2,14 @@
 
 namespace App\Services\AuditLog;
 
-use App\Exceptions\AuthorizationException;
 use App\Models\User;
 use App\Repositories\AuditLogRepository;
-use App\Repositories\PermissionRepository;
+use App\Services\PermissionService;
 
 class AuditLogQueryService
 {
     public function __construct(
-        private PermissionRepository $permissionRepository,
+        private PermissionService $permissionService,
         private AuditLogRepository $auditLogRepository,
     ) {}
 
@@ -25,12 +24,7 @@ class AuditLogQueryService
         ?string $action = null,
         ?string $search = null
     ): array {
-        $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
-            || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
-
-        if (!$hasAccess) {
-            throw new AuthorizationException('You do not have access to this store.');
-        }
+        $this->permissionService->authorizeStoreAccess($user, $storeId);
 
         $paginator = $this->auditLogRepository
             ->storeQuery($storeId, $startDate, $endDate, $objectType, $action, $search)
@@ -57,9 +51,7 @@ class AuditLogQueryService
         ?string $storeName = null,
         ?string $search = null
     ): array {
-        if (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
-            throw new AuthorizationException('You do not have access to this business.');
-        }
+        $this->permissionService->authorizeBusinessOwner($user, $businessId);
 
         $paginator = $this->auditLogRepository
             ->businessQuery($businessId, $startDate, $endDate, $objectType, $action, $storeName, $search)

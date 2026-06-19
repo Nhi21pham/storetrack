@@ -58,8 +58,16 @@
             :toggle-column="columnVisibility.toggleColumn"
             :reset-columns="columnVisibility.resetColumns"
           />
+          <HistoryButton @click="showHistory = true" />
+          <ImportButton v-if="currentStore.is_active" @click="showImport = true" />
         </template>
       </CustomerFilterBar>
+
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
 
       <LoadingState v-if="loading">Loading customers...</LoadingState>
 
@@ -111,6 +119,7 @@
         <CustomerTable
           :key="tableKey"
           :customers="paginatedCustomers"
+          :row-offset="(currentPage - 1) * perPage"
           :columns="columnVisibility.visibleColumns.value"
           :initial-widths="visibleWidths"
           :is-visible="columnVisibility.isVisible"
@@ -145,10 +154,34 @@
         @saved="onSaved"
       />
 
+      <ImportModal
+        v-if="showImport && currentStore.is_active"
+        title="Import Customers"
+        template-filename="customers-import-template.xlsx"
+        :required-headers="['Name', 'Phone']"
+        :optional-headers="['Email', 'Address', 'Tax Code']"
+        :instructions="customerImportInstructions"
+        :download-template="() => downloadCustomersImportTemplate({ storeId: currentStore.id })"
+        :preview="(file) => previewCustomersImport({ storeId: currentStore.id, file })"
+        :revalidate="(rows) => revalidateCustomersImport({ storeId: currentStore.id, rows })"
+        :start="(rows, originalFilename) => startCustomersImport({ storeId: currentStore.id, rows, originalFilename })"
+        :status="(id) => fetchImportStatus({ importId: id })"
+        @close="showImport = false"
+        @imported="onImported"
+      />
+
+      <ImportHistoryModal
+        v-if="showHistory"
+        title="Customer Import History"
+        type="customers"
+        :store-id="currentStore.id"
+        @close="showHistory = false"
+      />
+
       <CustomerDetailModal
         v-if="detailCustomer"
         :customer="detailCustomer"
-        :can-edit="!!currentStore?.is_active"
+        :can-edit="!!currentStore?.is_active && canManageRow(detailCustomer)"
         @close="detailCustomer = null"
         @edit="onDetailEdit"
       />
@@ -192,11 +225,20 @@ import CustomerSelectionBar from '@/features/customers/components/CustomerSelect
 import CustomerTable from '@/features/customers/components/CustomerTable.vue'
 import CustomerFormModal from '@/features/customers/components/CustomerFormModal.vue'
 import CustomerDetailModal from '@/features/customers/components/CustomerDetailModal.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import { useCustomers } from '@/features/customers/composables/useCustomers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
-import { startCustomerExport } from '@/features/customers/services/customerService'
+import {
+  startCustomerExport,
+  downloadCustomersImportTemplate, previewCustomersImport, revalidateCustomersImport, startCustomersImport,
+} from '@/features/customers/services/customerService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { CUSTOMER_COLUMNS, CUSTOMER_INITIAL_COL_WIDTHS } from '@/features/customers/constants'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
@@ -204,7 +246,7 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 const columnVisibility = useColumnVisibility({
   storageKey: 'customers',
   columns: CUSTOMER_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(CUSTOMER_INITIAL_COL_WIDTHS))
@@ -216,6 +258,7 @@ const currentBusiness = inject('currentBusiness')
 
 const {
   customers, loading, searchQuery, storeFilter,
+  startDate, endDate, dateField,
   canDelete, canManageRow,
   baseCustomers, filteredCustomers, sortedCustomers,
   sort,
@@ -251,6 +294,19 @@ const deletingCustomer = ref(null)
 const bulkDeleting    = ref(false)
 const showBulkDeleteConfirm = ref(false)
 
+const showImport  = ref(false)
+const showHistory = ref(false)
+
+// Explains the customer import rules in the import dialog (kept in sync with
+// CustomerImporter on the backend).
+const customerImportInstructions = [
+  'Name and Phone are required. Email, Address and Tax Code are optional.',
+  'Phone must be exactly 10 digits and is unique per business.',
+  'Email and Tax Code, when given, must each be unique — a value already used by another customer must be fixed before importing.',
+  'A row whose phone matches an existing customer with the same name is skipped (already imported); the same phone under a different name must be fixed.',
+  'Imported customers are added to the current store.',
+]
+
 const openCreate    = () => { editingCustomer.value = null; showForm.value = true }
 const openEdit      = (c) => { editingCustomer.value = { ...c }; showForm.value = true }
 const openDetail    = (c) => { detailCustomer.value = c }
@@ -261,6 +317,10 @@ const onSaved = () => {
   showForm.value = false
   load()
   showToast(wasEdit ? 'Customer updated successfully!' : 'Customer created successfully!')
+}
+
+const onImported = () => {
+  load()
 }
 
 const confirmDelete = (c) => { deletingCustomer.value = c }
@@ -311,7 +371,7 @@ const { exporting, run } = useExport({
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-watch([storeFilter, searchQuery, () => currentStore.value?.id], () => {
+watch([storeFilter, searchQuery, startDate, endDate, dateField, () => currentStore.value?.id], () => {
   clearSelection()
   resetPage()
 })

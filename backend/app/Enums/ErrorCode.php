@@ -102,6 +102,12 @@ enum ErrorCode: string
     case EXPORT_NOT_READY = 'EXPORT_NOT_READY';
     case EXPORT_FILE_MISSING = 'EXPORT_FILE_MISSING';
 
+    // Import
+    case IMPORT_INVALID_FILE = 'IMPORT_INVALID_FILE';
+    case IMPORT_MISSING_HEADERS = 'IMPORT_MISSING_HEADERS';
+    case IMPORT_EMPTY_FILE = 'IMPORT_EMPTY_FILE';
+    case IMPORT_TOO_MANY_ROWS = 'IMPORT_TOO_MANY_ROWS';
+
     // Invitation
     case INVITATION_NOT_FOUND = 'INVITATION_NOT_FOUND';
     case INVITATION_EXPIRED = 'INVITATION_EXPIRED';
@@ -176,6 +182,10 @@ enum ErrorCode: string
             self::INVITATION_CANNOT_INVITE_OWNER,
             self::INVITATION_NOT_CANCELLABLE,
             self::EXPORT_NOT_READY,
+            self::IMPORT_INVALID_FILE,
+            self::IMPORT_MISSING_HEADERS,
+            self::IMPORT_EMPTY_FILE,
+            self::IMPORT_TOO_MANY_ROWS,
             self::VALIDATION_ERROR => 400,
 
             self::SESSION_EXPIRED => 401,

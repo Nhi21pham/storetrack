@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\ImportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/exports/units/{storeId}', [ExportController::class, 'queueUnits'])
         ->whereNumber('storeId');
     Route::post('/exports/tags/{storeId}', [ExportController::class, 'queueTags'])
+        ->whereNumber('storeId');
+    Route::post('/exports/product-categories/{storeId}', [ExportController::class, 'queueProductCategories'])
         ->whereNumber('storeId');
     Route::post('/exports/products/{storeId}', [ExportController::class, 'queueProducts'])
         ->whereNumber('storeId');
@@ -57,4 +60,73 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('exportId');
     Route::get('/exports/{exportId}/download', [ExportController::class, 'download'])
         ->whereNumber('exportId');
+
+    Route::get('/imports/units/{storeId}/template', [ImportController::class, 'unitsTemplate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/units/{storeId}/preview', [ImportController::class, 'unitsPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/units/{storeId}/revalidate', [ImportController::class, 'unitsRevalidate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/units/{storeId}', [ImportController::class, 'unitsStart'])
+        ->whereNumber('storeId');
+    Route::get('/imports/tags/{storeId}/template', [ImportController::class, 'tagsTemplate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/tags/{storeId}/preview', [ImportController::class, 'tagsPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/tags/{storeId}/revalidate', [ImportController::class, 'tagsRevalidate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/tags/{storeId}', [ImportController::class, 'tagsStart'])
+        ->whereNumber('storeId');
+    Route::get('/imports/customers/{storeId}/template', [ImportController::class, 'customersTemplate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/customers/{storeId}/preview', [ImportController::class, 'customersPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/customers/{storeId}/revalidate', [ImportController::class, 'customersRevalidate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/customers/{storeId}', [ImportController::class, 'customersStart'])
+        ->whereNumber('storeId');
+    Route::get('/imports/suppliers/{storeId}/template', [ImportController::class, 'suppliersTemplate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/suppliers/{storeId}/preview', [ImportController::class, 'suppliersPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/suppliers/{storeId}/revalidate', [ImportController::class, 'suppliersRevalidate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/suppliers/{storeId}', [ImportController::class, 'suppliersStart'])
+        ->whereNumber('storeId');
+    Route::get('/imports/products/{storeId}/template', [ImportController::class, 'productsTemplate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/products/{storeId}/preview', [ImportController::class, 'productsPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/products/{storeId}/revalidate', [ImportController::class, 'productsRevalidate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/products/{storeId}', [ImportController::class, 'productsStart'])
+        ->whereNumber('storeId');
+    Route::get('/imports/banks/{businessId}/template', [ImportController::class, 'banksTemplate'])
+        ->whereNumber('businessId');
+    Route::post('/imports/banks/{businessId}/preview', [ImportController::class, 'banksPreview'])
+        ->whereNumber('businessId');
+    Route::post('/imports/banks/{businessId}/revalidate', [ImportController::class, 'banksRevalidate'])
+        ->whereNumber('businessId');
+    Route::post('/imports/banks/{businessId}', [ImportController::class, 'banksStart'])
+        ->whereNumber('businessId');
+    Route::get('/imports/bank-accounts/{businessId}/template', [ImportController::class, 'bankAccountsTemplate'])
+        ->whereNumber('businessId');
+    Route::post('/imports/bank-accounts/{businessId}/preview', [ImportController::class, 'bankAccountsPreview'])
+        ->whereNumber('businessId');
+    Route::post('/imports/bank-accounts/{businessId}/revalidate', [ImportController::class, 'bankAccountsRevalidate'])
+        ->whereNumber('businessId');
+    Route::post('/imports/bank-accounts/{businessId}', [ImportController::class, 'bankAccountsStart'])
+        ->whereNumber('businessId');
+    Route::get('/imports/history/store/{storeId}', [ImportController::class, 'storeHistory'])
+        ->whereNumber('storeId');
+    Route::get('/imports/history/store/{storeId}/{importId}', [ImportController::class, 'storeHistoryDetail'])
+        ->whereNumber('storeId')
+        ->whereNumber('importId');
+    Route::get('/imports/history/business/{businessId}', [ImportController::class, 'businessHistory'])
+        ->whereNumber('businessId');
+    Route::get('/imports/history/business/{businessId}/{importId}', [ImportController::class, 'businessHistoryDetail'])
+        ->whereNumber('businessId')
+        ->whereNumber('importId');
+    Route::get('/imports/{importId}', [ImportController::class, 'status'])
+        ->whereNumber('importId');
 });

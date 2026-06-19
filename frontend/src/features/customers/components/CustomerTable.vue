@@ -1,5 +1,5 @@
 <template>
-  <ResizableTable :columns="columns" :initial-widths="initialWidths">
+  <ResizableTable :columns="columns" :initial-widths="initialWidths" sticky-header>
     <template #header-select>
       <SelectCheckbox
         :checked="allVisibleSelected"
@@ -20,7 +20,7 @@
       <template v-else>{{ c.label }}</template>
     </template>
 
-    <tr v-for="customer in customers" :key="customer.id" :class="{ 'row-selected': isSelected(customer.id) }">
+    <tr v-for="(customer, idx) in customers" :key="customer.id" :class="{ 'row-selected': isSelected(customer.id) }">
       <td v-if="isVisible('select')">
         <SelectCheckbox
           v-if="canManageRow(customer)"
@@ -28,7 +28,7 @@
           @change="$emit('toggleRow', customer.id)"
         />
       </td>
-      <td v-if="isVisible('id')"><span class="id-badge">#{{ customer.id }}</span></td>
+      <td v-if="isVisible('stt')" class="stt-col">{{ rowOffset + idx + 1 }}</td>
       <td v-if="isVisible('name')"><button class="name-link" @click="$emit('openDetail', customer)">{{ customer.name }}</button></td>
       <td v-if="isVisible('tax_code')">
         <span v-if="customer.tax_code" class="mono">{{ customer.tax_code }}</span>
@@ -50,6 +50,8 @@
         <span v-if="Number(customer.outstanding) > 0" class="owed">{{ formatMoney(customer.outstanding) }}</span>
         <span v-else class="empty-val">—</span>
       </td>
+      <td v-if="isVisible('created_at')" class="date-col">{{ formatDateTime(customer.created_at) }}</td>
+      <td v-if="isVisible('updated_at')" class="date-col">{{ formatDateTime(customer.updated_at) }}</td>
       <td class="actions-col">
         <div v-if="rowActionsEnabled && canManageRow(customer)" class="row-actions">
           <button class="action-btn" @click="$emit('edit', customer)" title="Edit">
@@ -71,11 +73,13 @@ import SortableHeader from '@/components/common/SortableHeader.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import Icon from '@/components/common/Icon.vue'
 import { formatMoney } from '@/features/invoices/constants'
+import { formatDateTime } from '@/utils/datetime'
 
 const props = defineProps({
   customers:           { type: Array,   required: true },
   columns:             { type: Array,   required: true },
   initialWidths:       { type: Array,   required: true },
+  rowOffset:           { type: Number,  default: 0 },
   isVisible:           { type: Function, required: true },
   sort:                { type: Object,  required: true },
   isSelected:          { type: Function, required: true },
@@ -95,7 +99,8 @@ defineEmits([
 </script>
 
 <style scoped>
-.id-badge { font-size: 12px; font-weight: 600; color: #9ca3af; font-family: monospace; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .mono { font-family: monospace; font-size: 13px; }

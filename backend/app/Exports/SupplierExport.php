@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class SupplierExport extends BaseExport
 {
-    public const COLUMN_KEYS = ['id', 'name', 'tax_code', 'email', 'phone', 'address'];
+    public const COLUMN_KEYS = ['id', 'name', 'tax_code', 'email', 'phone', 'address', 'created_at', 'updated_at'];
 
     /**
      * @param  Builder  $query  filtered, ordered query of Supplier
@@ -69,6 +69,8 @@ class SupplierExport extends BaseExport
             'email'    => ['heading' => 'Email',    'width' => 28, 'value' => fn ($row) => (string) ($row->email ?? '')],
             'phone'    => ['heading' => 'Phone',    'width' => 16, 'value' => fn ($row) => (string) ($row->phone ?? '')],
             'address'  => ['heading' => 'Address',  'width' => 30, 'value' => fn ($row) => (string) ($row->address ?? '')],
+            'created_at' => ['heading' => 'Created', 'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at' => ['heading' => 'Updated', 'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

@@ -69,3 +69,18 @@ export const deleteBank = async ({ id }) => {
 
 export const startBankExport = ({ businessId, params }) =>
   rest('post', `/api/exports/banks/${businessId}`, { params })
+
+export const downloadBanksImportTemplate = ({ businessId }) =>
+  rest('get', `/api/imports/banks/${businessId}/template`, { responseType: 'blob' })
+
+export const previewBanksImport = ({ businessId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/banks/${businessId}/preview`, { data: formData })
+}
+
+export const revalidateBanksImport = ({ businessId, rows }) =>
+  rest('post', `/api/imports/banks/${businessId}/revalidate`, { data: { rows } })
+
+export const startBanksImport = ({ businessId, rows, originalFilename }) =>
+  rest('post', `/api/imports/banks/${businessId}`, { data: { rows, original_filename: originalFilename } })

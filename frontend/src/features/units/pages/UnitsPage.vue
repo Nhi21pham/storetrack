@@ -33,8 +33,16 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <HistoryButton @click="showHistory = true" />
+        <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedUnits.length === 0" @click="runExport" />
       </div>
+
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
 
       <BulkStatusBar
         v-if="selectedIds.size > 0"
@@ -59,7 +67,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -94,11 +102,11 @@
               No units match the current filters.
             </td>
           </tr>
-          <tr v-for="unit in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
+          <tr v-for="(unit, idx) in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(unit.id)" @change="toggleRow(unit.id)" />
             </td>
-            <td v-if="columnVisibility.isVisible('id')" class="id-col">{{ unit.id }}</td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailUnit = unit">{{ unit.name }}</button>
             </td>
@@ -109,8 +117,8 @@
                 @change="onToggleActive(unit)"
               />
             </td>
-            <td v-if="columnVisibility.isVisible('created_at')">{{ formatDateTime(unit.created_at) }}</td>
-            <td v-if="columnVisibility.isVisible('updated_at')">{{ formatDateTime(unit.updated_at) }}</td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(unit.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(unit.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(unit)" title="Edit">
                 <Icon name="edit" :size="14" />
@@ -140,6 +148,28 @@
       @close="closeForm"
       @saved="onSaved"
       @pick-existing="onPickExisting"
+    />
+
+    <ImportModal
+      v-if="showImport"
+      title="Import Units"
+      template-filename="units-import-template.xlsx"
+      :required-headers="['Name']"
+      :download-template="() => downloadUnitsImportTemplate({ storeId: currentStore.id })"
+      :preview="(file) => previewUnitsImport({ storeId: currentStore.id, file })"
+      :revalidate="(rows) => revalidateUnitsImport({ storeId: currentStore.id, rows })"
+      :start="(rows, originalFilename) => startUnitsImport({ storeId: currentStore.id, rows, originalFilename })"
+      :status="(id) => fetchImportStatus({ importId: id })"
+      @close="showImport = false"
+      @imported="onImported"
+    />
+
+    <ImportHistoryModal
+      v-if="showHistory"
+      title="Unit Import History"
+      type="units"
+      :store-id="currentStore.id"
+      @close="showHistory = false"
     />
 
     <UnitDetailModal
@@ -210,7 +240,12 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
@@ -223,7 +258,12 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
-import { fetchUnits, deleteUnit, updateUnit, startUnitExport } from '@/features/units/services/unitService'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
+import {
+  fetchUnits, deleteUnit, updateUnit, startUnitExport,
+  downloadUnitsImportTemplate, previewUnitsImport, revalidateUnitsImport, startUnitsImport,
+} from '@/features/units/services/unitService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
@@ -232,7 +272,7 @@ import { formatDateTime } from '@/utils/datetime'
 const columnVisibility = useColumnVisibility({
   storageKey: 'units',
   columns: UNIT_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(UNIT_INITIAL_COL_WIDTHS))
@@ -246,11 +286,17 @@ const units = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
 
-const hasActiveFilters = computed(() => !!statusFilter.value)
-const clearFilters = () => { statusFilter.value = '' }
+const hasActiveFilters = computed(() => !!statusFilter.value || dateRangeActive.value)
+const clearFilters = () => {
+  statusFilter.value = ''
+  clearDateRange()
+}
 
 const showForm = ref(false)
+const showImport = ref(false)
+const showHistory = ref(false)
 const editingUnit = ref(null)
 const detailUnit = ref(null)
 const deleteTarget = ref(null)
@@ -272,16 +318,24 @@ const filteredUnits = computed(() => {
   return units.value.filter(u => {
     if (statusFilter.value === 'active'   && !u.is_active) return false
     if (statusFilter.value === 'inactive' &&  u.is_active) return false
-    if (!needle) return true
-    return normalizeText(u.name).includes(needle)
+    if (!inDateRange(u)) return false
+    if (needle && !normalizeText(u.name).includes(needle)) return false
+    return true
   })
 })
 
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedUnits = computed(() =>
+  [...filteredUnits.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
+
 const sort = useSortCriteria()
 const sortedUnits = computed(() =>
-  sort.sortItems(filteredUnits.value, (unit, key) => {
+  sort.sortItems(orderedUnits.value, (unit, key) => {
     if (key === 'status') return unit.is_active ? 1 : 0
-    if (key === 'id')     return Number(unit.id) || 0
+    if (key === 'created_at' || key === 'updated_at') return new Date(unit[key] || 0).getTime()
     const v = unit[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -328,7 +382,7 @@ const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, can
   remove: (id) => deleteUnit({ id }),
 })
 
-watch([searchQuery, statusFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, statusFilter, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {
@@ -365,6 +419,11 @@ const closeForm = () => {
 const onSaved = async () => {
   closeForm()
   await load()
+}
+
+const onImported = async () => {
+  await load()
+  showToast('Units imported.', 'success')
 }
 
 const onPickExisting = (unit) => {
@@ -437,7 +496,8 @@ tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
 tbody tr.inactive td.actions-col { background: #fafafa; }
 
-.id-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 

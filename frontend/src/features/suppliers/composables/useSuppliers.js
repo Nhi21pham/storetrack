@@ -5,13 +5,19 @@ import {
   deleteSuppliers as deleteSuppliersRequest,
 } from '@/features/suppliers/services/supplierService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 
 const getSortValue = (supplier, key) => {
-  if (key === 'id') return Number(supplier.id)
   if (key === 'outstanding') return Number(supplier.outstanding || 0)
+  if (key === 'created_at' || key === 'updated_at') return new Date(supplier[key] || 0).getTime()
   const value = supplier[key]
   return value == null ? '' : String(value).toLowerCase()
 }
+
+// Most recently updated first (falling back to created_at), so the No. column
+// reads newest-to-oldest before any user sort is applied.
+const byUpdatedDesc = (a, b) =>
+  new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0)
 
 const matchesSearch = (supplier, query) => {
   const q = query.toLowerCase()
@@ -29,6 +35,11 @@ export const useSuppliers = ({ currentStore, currentBusiness, onError }) => {
   const loading     = ref(false)
   const searchQuery = ref('')
   const storeFilter = ref('store')
+
+  const {
+    startDate, endDate, dateField,
+    isActive: dateRangeActive, inDateRange, clear: clearDateRange,
+  } = useDateRangeFilter()
 
   const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 
@@ -62,21 +73,28 @@ export const useSuppliers = ({ currentStore, currentBusiness, onError }) => {
 
   const baseSuppliers = computed(() => {
     if (storeFilter.value === 'store') {
-      return suppliers.value.filter(inCurrentStore).map(withScopedOutstanding)
+      return suppliers.value
+        .filter(inCurrentStore)
+        .map(withScopedOutstanding)
+        .sort(byUpdatedDesc)
     }
     return [...suppliers.value]
       .sort((a, b) => {
         const aOwn = inCurrentStore(a)
         const bOwn = inCurrentStore(b)
         if (aOwn !== bOwn) return aOwn ? -1 : 1
-        return Number(a.id) - Number(b.id)
+        return byUpdatedDesc(a, b)
       })
       .map(withScopedOutstanding)
   })
 
   const filteredSuppliers = computed(() => {
-    if (!searchQuery.value.trim()) return baseSuppliers.value
-    return baseSuppliers.value.filter((s) => matchesSearch(s, searchQuery.value))
+    const q = searchQuery.value.trim()
+    return baseSuppliers.value.filter((s) => {
+      if (!inDateRange(s)) return false
+      if (!q) return true
+      return matchesSearch(s, searchQuery.value)
+    })
   })
 
   const sort = useSortCriteria()
@@ -118,6 +136,7 @@ export const useSuppliers = ({ currentStore, currentBusiness, onError }) => {
 
   return {
     suppliers, loading, searchQuery, storeFilter,
+    startDate, endDate, dateField, dateRangeActive, clearDateRange,
     isBusinessOwner, canDelete, canManageRow,
     baseSuppliers, filteredSuppliers, sortedSuppliers,
     sort,

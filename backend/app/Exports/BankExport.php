@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BankExport extends BaseExport
 {
-    public const COLUMN_KEYS = ['short_name', 'full_name_vi', 'full_name_en', 'status'];
+    public const COLUMN_KEYS = ['short_name', 'full_name_vi', 'full_name_en', 'status', 'created_at', 'updated_at'];
 
     /**
      * @param  Builder  $query  filtered, ordered query of Bank
@@ -67,6 +67,8 @@ class BankExport extends BaseExport
             'full_name_vi' => ['heading' => 'Vietnamese Name', 'width' => 34, 'value' => fn ($row) => (string) ($row->full_name_vi ?? '')],
             'full_name_en' => ['heading' => 'English Name',    'width' => 34, 'value' => fn ($row) => (string) ($row->full_name_en ?? '')],
             'status'       => ['heading' => 'Status',          'width' => 12, 'value' => fn ($row) => $row->is_active ? 'Active' : 'Inactive'],
+            'created_at'   => ['heading' => 'Created',         'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at'   => ['heading' => 'Updated',         'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

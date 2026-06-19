@@ -73,6 +73,39 @@ class PermissionService
         }
     }
 
+    /** True when the user can see a store at all: any role on it, or owns the business it belongs to. */
+    public function canAccessStore(User $user, int $storeId): bool
+    {
+        return $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
+            || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
+    }
+
+    /** Membership gate for store-scoped read views (see canAccessStore). */
+    public function authorizeStoreAccess(User $user, int $storeId): void
+    {
+        if (!$this->canAccessStore($user, $storeId)) {
+            throw new AuthorizationException('You do not have access to this store.');
+        }
+    }
+
+    /** True when the user can see a business at all: owns it, or has any role on any of its stores. */
+    public function canAccessBusiness(User $user, int $businessId): bool
+    {
+        if ($this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
+            return true;
+        }
+
+        return count($this->permissionRepository->getUserStoreIdsInBusiness($user->id, $businessId)) > 0;
+    }
+
+    /** Membership gate for business-scoped read views (see canAccessBusiness). */
+    public function authorizeBusinessAccess(User $user, int $businessId): void
+    {
+        if (!$this->canAccessBusiness($user, $businessId)) {
+            throw new AuthorizationException('You do not have access to this business.');
+        }
+    }
+
     public function authorizeBusiness(User $user, PermissionEnum $permission, int $businessId): void
     {
         if (!$this->canOnBusiness($user, $permission, $businessId)) {

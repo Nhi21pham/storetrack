@@ -34,11 +34,7 @@ class CustomerService
     public function getAll(User $user, ?int $storeId, int $businessId)
     {
         if ($storeId !== null) {
-            $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
-                || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
-            if (!$hasAccess) {
-                throw new AuthorizationException('You do not have access to this store.');
-            }
+            $this->permissionService->authorizeStoreAccess($user, $storeId);
         } elseif (!$this->permissionRepository->isBusinessOwner($user->id, $businessId)) {
             throw new AuthorizationException('You do not have access to this business.');
         }
@@ -46,9 +42,12 @@ class CustomerService
         return $this->customerRepository->all($businessId, $storeId);
     }
 
-    public function getById(int $id): Customer
+    public function getById(User $user, int $id): Customer
     {
-        return $this->mustFind($id);
+        $customer = $this->mustFind($id);
+        $this->permissionService->authorizeBusinessAccess($user, (int) $customer->business_id);
+
+        return $customer;
     }
 
     public function create(User $actor, int $storeId, int $businessId, array $data): Customer
@@ -228,11 +227,7 @@ class CustomerService
     {
         if ($storeId !== null && $storeId !== '') {
             $storeId = (int) $storeId;
-            $hasAccess = $this->permissionRepository->isStoreInBusinessOwnedBy($user->id, $storeId)
-                || $this->permissionRepository->getUserRoleOnStore($user->id, $storeId) !== null;
-            if (!$hasAccess) {
-                throw new AuthorizationException('You do not have access to this store.');
-            }
+            $this->permissionService->authorizeStoreAccess($user, $storeId);
             return;
         }
 

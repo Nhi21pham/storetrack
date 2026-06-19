@@ -1,4 +1,4 @@
-import { graphql } from '@/api'
+import { graphql, rest } from '@/api'
 
 const CATEGORY_FIELDS = `
   id store_id code name description is_active is_system last_sequence created_at updated_at
@@ -68,3 +68,6 @@ export const updateProductCategory = async ({ id, input }) => {
 export const deleteProductCategory = async ({ id }) => {
   await graphql(DELETE_CATEGORY_MUTATION, { id })
 }
+
+export const startProductCategoryExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/product-categories/${storeId}`, { params })

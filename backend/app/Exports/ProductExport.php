@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ProductExport extends BaseExport
 {
-    public const COLUMN_KEYS = ['id', 'code', 'name', 'category', 'unit', 'tags', 'status', 'created_at'];
+    public const COLUMN_KEYS = ['id', 'code', 'name', 'category', 'unit', 'tags', 'status', 'created_at', 'updated_at'];
 
     /**
      * @param  Builder  $query  filtered, ordered query of Product
@@ -71,6 +71,7 @@ class ProductExport extends BaseExport
             'tags'       => ['heading' => 'Tags',         'width' => 36, 'value' => fn ($row) => $this->formatTags($row)],
             'status'     => ['heading' => 'Status',       'width' => 12, 'value' => fn ($row) => $row->is_active ? 'Active' : 'Inactive'],
             'created_at' => ['heading' => 'Created',      'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at' => ['heading' => 'Updated',      'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

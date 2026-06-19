@@ -97,8 +97,8 @@
               <tr><th>Date</th><th>Method</th><th>Applied to</th><th class="num">Amount</th><th></th></tr>
             </thead>
             <tbody>
-              <tr v-for="p in payments" :key="p.id">
-                <td>{{ formatDate(p.paid_at) }}</td>
+              <tr v-for="p in pagedPayments" :key="p.id">
+                <td>{{ formatDateTime(p.paid_at) }}</td>
                 <td>{{ paymentMethodLabel(p.method) }}</td>
                 <td class="applied">
                   <span v-for="a in p.allocations" :key="a.id" class="alloc">
@@ -113,6 +113,15 @@
               </tr>
             </tbody>
           </table>
+          <Pagination
+            v-if="paymentsTotal > 0"
+            :current-page="paymentsPage"
+            :total-pages="paymentsTotalPages"
+            :total="paymentsTotal"
+            :per-page="paymentsPerPage"
+            @update:current-page="paymentsPage = $event"
+            @update:per-page="setPaymentsPerPage"
+          />
           <p v-else class="empty">No payments recorded yet.</p>
         </section>
       </template>
@@ -161,6 +170,7 @@ import InactiveBanner from '@/components/common/InactiveBanner.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import SegmentedToggle from '@/components/common/SegmentedToggle.vue'
+import Pagination from '@/components/common/Pagination.vue'
 import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import RecordPaymentModal from '@/features/payments/components/RecordPaymentModal.vue'
@@ -169,6 +179,8 @@ import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
 import { fetchPartyOpenInvoices, fetchPayments, deletePayment, fetchPaymentsByBusiness, fetchPartyOpenInvoicesByBusiness } from '@/features/payments/services/paymentService'
 import { fetchInvoice } from '@/features/invoices/services/invoiceService'
 import { INVOICE_TYPE, formatMoney, formatInvoiceDate as formatDate, paymentMethodLabel } from '@/features/invoices/constants'
+import { useClientPagination } from '@/composables/useClientPagination'
+import { formatDateTime } from '@/utils/datetime'
 
 const router = useRouter()
 const showToast = inject('showToast')
@@ -183,6 +195,15 @@ const loadingParties = ref(false)
 const selectedPartyId = ref('')
 const openInvoices = ref([])
 const payments = ref([])
+const {
+  currentPage: paymentsPage,
+  perPage: paymentsPerPage,
+  total: paymentsTotal,
+  totalPages: paymentsTotalPages,
+  paginated: pagedPayments,
+  setPerPage: setPaymentsPerPage,
+  resetPage: resetPaymentsPage,
+} = useClientPagination(payments)
 const loadingDetail = ref(false)
 const showRecord = ref(false)
 const deletingPayment = ref(null)
@@ -281,6 +302,7 @@ const loadDetail = async () => {
     }
     openInvoices.value = open
     payments.value = history
+    resetPaymentsPage()
   } catch (err) {
     showToast(err.message, 'error')
   } finally {
@@ -350,8 +372,8 @@ loadParties()
 .block { margin-bottom: 24px; }
 .block h3 { font-size: 14px; font-weight: 700; color: #111; margin-bottom: 10px; }
 
-.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.data-table th { text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #eef0f2; }
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; }
+.data-table th { position: sticky; top: 64px; z-index: 1; background: #fff; text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #eef0f2; }
 .data-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; color: #374151; }
 .data-table .num { text-align: right; }
 .data-table .strong { font-weight: 600; color: #111; }

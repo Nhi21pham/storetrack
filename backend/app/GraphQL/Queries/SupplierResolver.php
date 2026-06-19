@@ -23,7 +23,7 @@ class SupplierResolver extends BaseResolver
     public function findById($_, array $args)
     {
         return $this->safe(fn() =>
-            $this->supplierService->getById((int) $args['id'])
+            $this->supplierService->getById($this->user(), (int) $args['id'])
         );
     }
 }

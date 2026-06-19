@@ -107,6 +107,9 @@ import { normalizeText } from '@/utils/textNormalizer'
 const props = defineProps({
   bank: { type: Object, default: null },
   businessId: { type: [String, Number], default: null },
+  // Seed the short name when creating a brand-new bank (e.g. from an import row
+  // whose bank wasn't found). Ignored in edit mode.
+  prefillShortName: { type: String, default: '' },
 })
 
 const emit = defineEmits(['close', 'saved', 'pick-existing'])
@@ -119,7 +122,7 @@ const showUnsavedWarning = ref(false)
 const errors = ref({ short_name: '', full_name_vi: '', full_name_en: '' })
 
 const initialForm = () => ({
-  short_name: props.bank?.short_name || '',
+  short_name: props.bank?.short_name || props.prefillShortName || '',
   full_name_vi: props.bank?.full_name_vi || '',
   full_name_en: props.bank?.full_name_en || '',
   is_active: props.bank?.is_active ?? true,

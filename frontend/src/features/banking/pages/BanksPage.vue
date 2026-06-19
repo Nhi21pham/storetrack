@@ -30,14 +30,23 @@
           <input v-model="includeInactive" type="checkbox" />
           Show inactive
         </label>
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <HistoryButton @click="showHistory = true" />
+        <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedBanks.length === 0" @click="runExport" />
       </div>
+
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
 
       <BulkStatusBar
         v-if="selectedIds.size > 0"
@@ -63,11 +72,11 @@
 
       <EmptyState
         v-else-if="filteredBanks.length === 0"
-        :description="`No banks matching &quot;${searchQuery}&quot;`"
+        description="No banks match the current filters."
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths">
+        <ResizableTable :key="tableKey" :columns="columnVisibility.visibleColumns.value" :initial-widths="visibleWidths" sticky-header>
           <template v-for="col in columnVisibility.visibleColumns.value" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -86,10 +95,11 @@
             <template v-else>{{ c.label }}</template>
           </template>
 
-          <tr v-for="bank in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
+          <tr v-for="(bank, idx) in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(bank.id)" @change="toggleRow(bank.id)" />
             </td>
+            <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('short_name')">
               <button class="name-link" @click="detailBank = bank">{{ bank.short_name }}</button>
             </td>
@@ -102,6 +112,8 @@
                 @change="onToggleActive(bank)"
               />
             </td>
+            <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(bank.created_at) }}</td>
+            <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(bank.updated_at) }}</td>
             <td class="actions-col">
               <button class="action-btn" @click="openEdit(bank)" title="Edit">
                 <Icon name="edit" :size="14" />
@@ -131,6 +143,28 @@
       @close="closeForm"
       @saved="onSaved"
       @pick-existing="onPickExisting"
+    />
+
+    <ImportModal
+      v-if="showImport"
+      title="Import Banks"
+      template-filename="banks-import-template.xlsx"
+      :required-headers="['Short Name', 'Vietnamese Name', 'English Name']"
+      :download-template="() => downloadBanksImportTemplate({ businessId: currentBusiness.id })"
+      :preview="(file) => previewBanksImport({ businessId: currentBusiness.id, file })"
+      :revalidate="(rows) => revalidateBanksImport({ businessId: currentBusiness.id, rows })"
+      :start="(rows, originalFilename) => startBanksImport({ businessId: currentBusiness.id, rows, originalFilename })"
+      :status="(id) => fetchImportStatus({ importId: id })"
+      @close="showImport = false"
+      @imported="onImported"
+    />
+
+    <ImportHistoryModal
+      v-if="showHistory"
+      title="Bank Import History"
+      type="banks"
+      :business-id="currentBusiness.id"
+      @close="showHistory = false"
     />
 
     <BankDetailModal
@@ -201,6 +235,12 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
@@ -212,19 +252,25 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
-import { fetchBanks, deleteBank, updateBank, startBankExport } from '@/features/banking/services/bankService'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
+import {
+  fetchBanks, deleteBank, updateBank, startBankExport,
+  downloadBanksImportTemplate, previewBanksImport, revalidateBanksImport, startBanksImport,
+} from '@/features/banking/services/bankService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { BANK_COLUMNS, BANK_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'banks',
   columns: BANK_COLUMNS,
-  lockedKeys: ['select', 'actions'],
+  lockedKeys: ['select', 'stt', 'actions'],
 })
 
 const visibleWidths = computed(() => columnVisibility.filterWidths(BANK_INITIAL_COL_WIDTHS))
 const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|'))
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
+import { formatDateTime } from '@/utils/datetime'
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
@@ -234,8 +280,14 @@ const banks = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const includeInactive = ref(true)
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
+
+const hasActiveFilters = computed(() => dateRangeActive.value)
+const clearFilters = () => { clearDateRange() }
 
 const showForm = ref(false)
+const showImport = ref(false)
+const showHistory = ref(false)
 const editingBank = ref(null)
 const detailBank = ref(null)
 const deleteTarget = ref(null)
@@ -256,6 +308,7 @@ const filteredBanks = computed(() => {
   const needle = normalizeText(searchQuery.value)
   return banks.value.filter(b => {
     if (!includeInactive.value && !b.is_active) return false
+    if (!inDateRange(b)) return false
     if (!needle) return true
     return (
       normalizeText(b.short_name).includes(needle) ||
@@ -265,10 +318,18 @@ const filteredBanks = computed(() => {
   })
 })
 
+// Most recently updated first by default, so the No. column reads newest-to-oldest.
+const orderedBanks = computed(() =>
+  [...filteredBanks.value].sort(
+    (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
+  )
+)
+
 const sort = useSortCriteria()
 const sortedBanks = computed(() =>
-  sort.sortItems(filteredBanks.value, (bank, key) => {
+  sort.sortItems(orderedBanks.value, (bank, key) => {
     if (key === 'status') return bank.is_active ? 1 : 0
+    if (key === 'created_at' || key === 'updated_at') return new Date(bank[key] || 0).getTime()
     const v = bank[key]
     return typeof v === 'string' ? normalizeText(v) : (v ?? '')
   })
@@ -315,7 +376,7 @@ const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, can
   remove: (id) => deleteBank({ id }),
 })
 
-watch([searchQuery, includeInactive, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, includeInactive, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentBusiness?.value?.id) {
@@ -352,6 +413,11 @@ const closeForm = () => {
 const onSaved = async () => {
   closeForm()
   await load()
+}
+
+const onImported = async () => {
+  await load()
+  showToast('Banks imported.', 'success')
 }
 
 const onPickExisting = (bank) => {
@@ -423,6 +489,8 @@ tbody tr.inactive { background: #fafafa; }
 tbody tr.inactive td { color: #6b7280; }
 tbody tr.inactive td.actions-col { background: #fafafa; }
 .short { font-weight: 600; color: #111; }
+.stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
+.date-col { color: #6b7280; white-space: nowrap; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
