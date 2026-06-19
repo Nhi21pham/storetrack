@@ -140,8 +140,12 @@ import { fetchTags, createTag, updateTag, addTagValues, updateTagValue, deleteTa
 import { normalizeText } from '@/utils/textNormalizer'
 
 const props = defineProps({
-  tag:     { type: Object, default: null },
-  storeId: { type: [String, Number], default: null },
+  tag:          { type: Object, default: null },
+  storeId:      { type: [String, Number], default: null },
+  // Seed a brand-new tag form (used by the product-import inline-create flow):
+  // prefillName fills the key; prefillValue is queued as a first value to add.
+  prefillName:  { type: String, default: '' },
+  prefillValue: { type: String, default: '' },
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -154,12 +158,12 @@ const showUnsavedWarning = ref(false)
 const errors = ref({ name: '', description: '' })
 
 const form = ref({
-  name:        props.tag?.name || '',
+  name:        props.tag?.name || props.prefillName || '',
   description: props.tag?.description || '',
 })
 const originalForm = ref(JSON.stringify({ name: form.value.name, description: form.value.description }))
 
-const pendingValues = ref([])
+const pendingValues = ref(props.prefillValue ? [props.prefillValue] : [])
 const valueInput = ref('')
 const valueError = ref('')
 

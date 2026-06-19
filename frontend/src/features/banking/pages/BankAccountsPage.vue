@@ -164,7 +164,7 @@
       @imported="onImported"
     >
       <template #review-banner="{ rows, resolveReference }">
-        <MissingBanksImportBanner
+        <MissingReferencesImportBanner
           :rows="rows"
           :business-id="currentBusiness.id"
           :resolve-reference="resolveReference"
@@ -235,7 +235,7 @@ import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BankAccountFormModal from '@/features/banking/components/BankAccountFormModal.vue'
 import BankAccountDetailModal from '@/features/banking/components/BankAccountDetailModal.vue'
-import MissingBanksImportBanner from '@/features/banking/components/MissingBanksImportBanner.vue'
+import MissingReferencesImportBanner from '@/components/common/MissingReferencesImportBanner.vue'
 import ObjectBadge from '@/components/common/ObjectBadge.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'

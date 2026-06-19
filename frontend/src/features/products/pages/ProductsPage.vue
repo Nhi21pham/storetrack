@@ -33,6 +33,8 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <HistoryButton @click="showHistory = true" />
+        <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedProducts.length === 0" @click="runExport" />
       </div>
 
@@ -204,6 +206,38 @@
       @edit="onDetailEdit"
     />
 
+    <ImportModal
+      v-if="showImport"
+      title="Import Products"
+      template-filename="products-import-template.xlsx"
+      :required-headers="['Category', 'Name', 'Unit']"
+      :optional-headers="['Tags']"
+      :instructions="importInstructions"
+      :download-template="() => downloadProductsImportTemplate({ storeId: currentStore.id })"
+      :preview="(file) => previewProductsImport({ storeId: currentStore.id, file })"
+      :revalidate="(rows) => revalidateProductsImport({ storeId: currentStore.id, rows })"
+      :start="(rows, originalFilename) => startProductsImport({ storeId: currentStore.id, rows, originalFilename })"
+      :status="(id) => fetchImportStatus({ importId: id })"
+      @close="showImport = false"
+      @imported="onImported"
+    >
+      <template #review-banner="{ rows, resolveReference }">
+        <MissingReferencesImportBanner
+          :rows="rows"
+          :store-id="currentStore.id"
+          :resolve-reference="resolveReference"
+        />
+      </template>
+    </ImportModal>
+
+    <ImportHistoryModal
+      v-if="showHistory"
+      title="Product Import History"
+      type="products"
+      :store-id="currentStore.id"
+      @close="showHistory = false"
+    />
+
     <ConfirmDialog
       v-if="deleteTarget"
       :title="`Delete ${deleteTarget.name}?`"
@@ -283,6 +317,11 @@ import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
+import ImportButton from '@/components/common/ImportButton.vue'
+import ImportModal from '@/components/common/ImportModal.vue'
+import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import MissingReferencesImportBanner from '@/components/common/MissingReferencesImportBanner.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
@@ -292,7 +331,11 @@ import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
 import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
-import { fetchProducts, deleteProduct, updateProduct, startProductExport } from '@/features/products/services/productService'
+import {
+  fetchProducts, deleteProduct, updateProduct, startProductExport,
+  downloadProductsImportTemplate, previewProductsImport, revalidateProductsImport, startProductsImport,
+} from '@/features/products/services/productService'
+import { fetchImportStatus } from '@/features/imports/services/importService'
 import { fetchTags } from '@/features/tags/services/tagService'
 import { fetchUnits } from '@/features/units/services/unitService'
 import { fetchProductCategories } from '@/features/productCategories/services/productCategoryService'
@@ -363,12 +406,22 @@ const clearFilters = () => {
 }
 
 const showForm = ref(false)
+const showImport = ref(false)
+const showHistory = ref(false)
 const editingProduct = ref(null)
 const detailProduct = ref(null)
 const deleteTarget = ref(null)
 const deactivateTarget = ref(null)
 const detachTarget = ref(null)
 const togglingProduct = ref(null)
+
+const importInstructions = [
+  { text: 'Category is matched by its code or its full name; create a missing category right from the preview.', example: 'VPP  ·  Văn phòng phẩm' },
+  'Name is the product name and must be unique within this store.',
+  { text: 'Unit is matched by name; create a missing unit from the preview.', example: 'Cái · Hộp · Thùng' },
+  { text: 'Tags are optional: list them as "Key: Value" separated by commas. A key with no value attaches the tag itself.', example: 'Color: Blue, Size: M, Brand' },
+  'Unknown tags or tag values can be created right from the preview before importing.',
+]
 
 const onDetailEdit = (product) => {
   detailProduct.value = null
@@ -533,6 +586,11 @@ const closeForm = () => {
 const onSaved = async () => {
   closeForm()
   await load()
+}
+
+const onImported = async () => {
+  await load()
+  showToast('Products imported.', 'success')
 }
 
 const onPickExisting = (product) => {

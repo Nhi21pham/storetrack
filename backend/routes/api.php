@@ -91,6 +91,14 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('storeId');
     Route::post('/imports/suppliers/{storeId}', [ImportController::class, 'suppliersStart'])
         ->whereNumber('storeId');
+    Route::get('/imports/products/{storeId}/template', [ImportController::class, 'productsTemplate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/products/{storeId}/preview', [ImportController::class, 'productsPreview'])
+        ->whereNumber('storeId');
+    Route::post('/imports/products/{storeId}/revalidate', [ImportController::class, 'productsRevalidate'])
+        ->whereNumber('storeId');
+    Route::post('/imports/products/{storeId}', [ImportController::class, 'productsStart'])
+        ->whereNumber('storeId');
     Route::get('/imports/banks/{businessId}/template', [ImportController::class, 'banksTemplate'])
         ->whereNumber('businessId');
     Route::post('/imports/banks/{businessId}/preview', [ImportController::class, 'banksPreview'])

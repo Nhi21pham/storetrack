@@ -154,6 +154,7 @@ export const useImport = ({ templateFilename, downloadTemplate, preview, revalid
         if (!r) continue
         row.errors = r.errors || {}
         row.warnings = r.warnings || []
+        row.references = r.references || []
         row.status = r.status
       }
       summary.value = data.summary || summary.value

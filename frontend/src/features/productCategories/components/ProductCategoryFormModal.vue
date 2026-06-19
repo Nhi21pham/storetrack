@@ -104,6 +104,8 @@ import { normalizeText } from '@/utils/textNormalizer'
 const props = defineProps({
   category: { type: Object, default: null },
   storeId:  { type: [String, Number], default: null },
+  // Seed the name when creating from the product-import inline-create flow.
+  prefillName: { type: String, default: '' },
 })
 
 const emit = defineEmits(['close', 'saved', 'pick-existing'])
@@ -117,7 +119,7 @@ const errors = ref({ code: '', name: '', description: '' })
 
 const initialForm = () => ({
   code:        props.category?.code || '',
-  name:        props.category?.name || '',
+  name:        props.category?.name || props.prefillName || '',
   description: props.category?.description || '',
   is_active:   props.category?.is_active ?? true,
 })

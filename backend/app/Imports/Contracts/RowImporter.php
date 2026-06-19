@@ -67,8 +67,15 @@ interface RowImporter
      * importer merges rather than skips duplicates). Keys from different
      * constraints must not collide, so prefix them per field where needed.
      *
+     * The optional `references` list names the row's unresolved references to
+     * other records (an unknown category, unit, tag or tag value), so the review
+     * grid can offer to create them inline; an importer with no such references
+     * omits it. Each entry carries a `type` the matching front-end banner groups
+     * chips by (e.g. "category", "unit", "tag", "tag_value"), plus the looked-up
+     * value(s) the create form is prefilled with.
+     *
      * @param  array<string, string>  $row
-     * @return array{values: array<string, string>, data: array<string, mixed>, errors: array<string, string>, keys: string[], warnings: string[]}
+     * @return array{values: array<string, string>, data: array<string, mixed>, errors: array<string, string>, keys: string[], warnings: string[], references?: list<array{type: string, key?: string, value?: string}>}
      */
     public function validateRow(array $row): array;
 

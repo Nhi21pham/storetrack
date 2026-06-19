@@ -92,3 +92,18 @@ export const fetchProductsByTag = async ({ storeId, tagId, tagValueId = null, in
 
 export const startProductExport = ({ storeId, params }) =>
   rest('post', `/api/exports/products/${storeId}`, { params })
+
+export const downloadProductsImportTemplate = ({ storeId }) =>
+  rest('get', `/api/imports/products/${storeId}/template`, { responseType: 'blob' })
+
+export const previewProductsImport = ({ storeId, file }) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return rest('post', `/api/imports/products/${storeId}/preview`, { data: formData })
+}
+
+export const revalidateProductsImport = ({ storeId, rows }) =>
+  rest('post', `/api/imports/products/${storeId}/revalidate`, { data: { rows } })
+
+export const startProductsImport = ({ storeId, rows, originalFilename }) =>
+  rest('post', `/api/imports/products/${storeId}`, { data: { rows, original_filename: originalFilename } })

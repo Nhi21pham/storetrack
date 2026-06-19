@@ -157,11 +157,12 @@ class ImportService
             }
 
             $previewRows[] = [
-                'rowNumber' => $row['rowNumber'],
-                'values'    => $validated['values'],
-                'errors'    => $validated['errors'],
-                'warnings'  => $validated['warnings'] ?? [],
-                'status'    => $status,
+                'rowNumber'  => $row['rowNumber'],
+                'values'     => $validated['values'],
+                'errors'     => $validated['errors'],
+                'warnings'   => $validated['warnings'] ?? [],
+                'references' => $validated['references'] ?? [],
+                'status'     => $status,
             ];
         }
 

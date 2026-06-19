@@ -30,6 +30,22 @@ class ProductRepository
         return Product::create($data);
     }
 
+    /**
+     * Normalized names of every product in the store (active or not), for
+     * batched duplicate detection during import. Matches the
+     * (store_id, name_normalized) unique index, so inactive products count as
+     * taken too.
+     *
+     * @return string[]
+     */
+    public function allNormalizedNames(int $storeId): array
+    {
+        return Product::query()
+            ->where('store_id', $storeId)
+            ->pluck('name_normalized')
+            ->all();
+    }
+
     public function update(Product $product, array $data): Product
     {
         $product->update($data);

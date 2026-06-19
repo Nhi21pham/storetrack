@@ -175,6 +175,7 @@ class BankAccountImporter implements RowImporter
 
         $errors = [];
         $warnings = [];
+        $references = [];
 
         $type = $this->resolveType($typeRaw);
         if ($typeRaw === '') {
@@ -204,6 +205,7 @@ class BankAccountImporter implements RowImporter
             $bank = $this->resolveBank($bankRaw);
             if ($bank === null) {
                 $errors['Bank'] = 'Bank "'.$bankRaw.'" was not found. Create it, then re-check this row.';
+                $references[] = ['type' => 'bank', 'value' => $bankRaw];
             } elseif (! $bank['is_active']) {
                 $errors['Bank'] = 'Bank "'.$bank['short_name'].'" is inactive and cannot be used for new accounts.';
             } else {
@@ -245,7 +247,7 @@ class BankAccountImporter implements RowImporter
             ? [$bankId.':'.$accountNumber]
             : [];
 
-        return ['values' => $values, 'data' => $data, 'errors' => $errors, 'keys' => $keys, 'warnings' => $warnings];
+        return ['values' => $values, 'data' => $data, 'errors' => $errors, 'keys' => $keys, 'warnings' => $warnings, 'references' => $references];
     }
 
     public function existingKeys(int $scopeId): array
