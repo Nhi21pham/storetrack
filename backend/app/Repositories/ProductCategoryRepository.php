@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\ProductCategory;
+use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -58,6 +59,40 @@ class ProductCategoryRepository
             $query->where('is_active', true);
         }
         return $query->orderByDesc('id')->get();
+    }
+
+    /**
+     * Filtered, ordered query used by the export job.
+     *
+     * @param  int[]|null  $ids  restrict to these category ids (selection export)
+     * @param  string|null  $status  'active' | 'inactive' | null (all)
+     */
+    public function listQuery(int $storeId, ?string $search = null, ?array $ids = null, ?string $status = null): Builder
+    {
+        $query = ProductCategory::query()->where('store_id', $storeId);
+
+        if ($ids !== null && count($ids) > 0) {
+            $query->whereIn('id', $ids);
+        }
+
+        if ($status === 'active') {
+            $query->where('is_active', true);
+        } elseif ($status === 'inactive') {
+            $query->where('is_active', false);
+        }
+
+        if ($search !== null && $search !== '') {
+            $needle = TextNormalizer::normalize($search);
+            if ($needle !== '') {
+                $like = '%' . $needle . '%';
+                $query->where(function (Builder $q) use ($like) {
+                    $q->where('name_normalized', 'like', $like)
+                        ->orWhere('code', 'like', $like);
+                });
+            }
+        }
+
+        return $query->orderBy('id');
     }
 
     public function searchQuery(int $storeId, string $needle, bool $includeInactive = false, ?int $limit = null): Builder

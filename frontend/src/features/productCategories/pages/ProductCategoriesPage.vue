@@ -33,6 +33,7 @@
           :toggle-column="columnVisibility.toggleColumn"
           :reset-columns="columnVisibility.resetColumns"
         />
+        <ExportButton :exporting="exporting" :disabled="sortedCategories.length === 0" @click="runExport" />
       </div>
 
       <DateRangeFilters
@@ -231,6 +232,7 @@ import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
+import ExportButton from '@/components/common/ExportButton.vue'
 import ProductCategoryFormModal from '@/features/productCategories/components/ProductCategoryFormModal.vue'
 import ProductCategoryDetailModal from '@/features/productCategories/components/ProductCategoryDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
@@ -239,10 +241,12 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
+import { useExport } from '@/composables/useExport'
 import {
   fetchProductCategories,
   deleteProductCategory,
   updateProductCategory,
+  startProductCategoryExport,
 } from '@/features/productCategories/services/productCategoryService'
 import {
   PRODUCT_CATEGORY_COLUMNS,
@@ -265,6 +269,7 @@ const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
+const showToast = inject('showToast')
 
 const categories = ref([])
 const loading = ref(false)
@@ -346,6 +351,25 @@ const {
   selectedIds, isSelected, toggleRow, toggleSelectAll, clearSelection,
   allVisibleSelected, someVisibleSelected,
 } = useRowSelection({ eligibleIds: visibleIds })
+
+const { exporting, run: runExport } = useExport({
+  start: () => {
+    const params = { search: searchQuery.value.trim() || undefined }
+    if (statusFilter.value) {
+      params.status = statusFilter.value
+    }
+    if (selectedIds.value.size > 0) {
+      params.ids = Array.from(selectedIds.value)
+    }
+    params.columns = columnVisibility.togglableColumns
+      .filter((col) => columnVisibility.isVisible(col.key))
+      .map((col) => col.key)
+    return startProductCategoryExport({ storeId: currentStore.value.id, params })
+  },
+  defaultFilename: (id) => `product-categories-${id}.xlsx`,
+  onSuccess: () => showToast('Product category export ready.', 'success'),
+  onError:   (msg) => showToast(msg, 'error'),
+})
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), noun: 'category',
