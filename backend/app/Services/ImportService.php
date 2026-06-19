@@ -11,6 +11,7 @@ use App\Imports\Readers\RawSheetImport;
 use App\Jobs\Imports\ProcessImportJob;
 use App\Models\Import;
 use App\Models\User;
+use App\Support\TextNormalizer;
 use DateTimeInterface;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -85,7 +86,7 @@ class ImportService
     {
         $importer->authorize($actor, $scopeId);
 
-        ['headers' => $headers, 'rows' => $rows, 'firstDataRow' => $firstDataRow] = $this->readSheet($file, $importer->requiredHeaders());
+        ['headers' => $headers, 'rows' => $rows, 'firstDataRow' => $firstDataRow] = $this->readSheet($file, $importer->requiredHeaders(), $importer->optionalHeaders());
 
         $missing = array_values(array_diff($importer->requiredHeaders(), $headers));
         if ($missing !== []) {
@@ -577,7 +578,7 @@ class ImportService
      * @param  string[]  $required
      * @return array{headers: string[], rows: list<array<string,string>>, firstDataRow: int}
      */
-    private function readSheet(UploadedFile $file, array $required): array
+    private function readSheet(UploadedFile $file, array $required, array $optional): array
     {
         try {
             $sheets = Excel::toArray(new RawSheetImport(), $file);
@@ -593,10 +594,12 @@ class ImportService
             throw new ImportException(ErrorCode::IMPORT_EMPTY_FILE, 'The file has no data rows to import.');
         }
 
-        $headerIndex = $this->locateHeaderRow($sheet, $required);
+        $lookup = $this->canonicalHeaderLookup(array_merge($required, $optional));
+
+        $headerIndex = $this->locateHeaderRow($sheet, $required, $lookup);
         $headers = [];
         foreach ((array) $sheet[$headerIndex] as $cell) {
-            $headers[] = $this->canonicalizeHeader((string) $cell);
+            $headers[] = $this->canonicalizeHeader((string) $cell, $lookup);
         }
 
         $records = [];
@@ -633,13 +636,14 @@ class ImportService
      *
      * @param  list<array<int,mixed>>  $sheet
      * @param  string[]  $required
+     * @param  array<string, string>  $lookup  normalized header => canonical header
      */
-    private function locateHeaderRow(array $sheet, array $required): int
+    private function locateHeaderRow(array $sheet, array $required, array $lookup): int
     {
         foreach ($sheet as $index => $cells) {
             $headers = [];
             foreach ((array) $cells as $cell) {
-                $headers[] = $this->canonicalizeHeader((string) $cell);
+                $headers[] = $this->canonicalizeHeader((string) $cell, $lookup);
             }
             if (array_diff($required, $headers) === []) {
                 return $index;
@@ -649,13 +653,61 @@ class ImportService
         return 0;
     }
 
-    private function canonicalizeHeader(string $cell): string
+    /**
+     * Build a lookup from a normalized header (case-, space- and accent-folded)
+     * to its canonical spelling, so an uploaded "unit", "UNIT" or "Category "
+     * still resolves to the exact header key the importer reads its rows by.
+     *
+     * @param  string[]  $canonical
+     * @return array<string, string>
+     */
+    private function canonicalHeaderLookup(array $canonical): array
     {
-        $header = trim($cell);
+        $lookup = [];
+        foreach ($canonical as $header) {
+            $lookup[$this->normalizeHeader($header)] = $header;
+        }
+
+        return $lookup;
+    }
+
+    /**
+     * Map a raw header cell to its canonical spelling when it matches a known
+     * header regardless of case or surrounding whitespace; otherwise keep the
+     * trimmed cell so unknown columns are still passed through untouched.
+     *
+     * @param  array<string, string>  $lookup  normalized header => canonical header
+     */
+    private function canonicalizeHeader(string $cell, array $lookup): string
+    {
+        return $lookup[$this->normalizeHeader($cell)] ?? trim($cell);
+    }
+
+    /**
+     * Fold a header cell to a match key: drop the template's trailing "*",
+     * then lower-case and collapse whitespace so casing and stray spaces don't
+     * change the match.
+     */
+    private function normalizeHeader(string $cell): string
+    {
+        $header = $this->foldInvisibleSpaces($cell);
+        $header = trim($header);
         if (str_ends_with($header, '*')) {
             $header = rtrim(substr($header, 0, -1));
         }
 
-        return $header;
+        return TextNormalizer::normalize($header);
+    }
+
+    /**
+     * Turn non-breaking and other unicode spaces into ASCII spaces and drop
+     * zero-width marks / BOM, so a header pasted from elsewhere (where U+00A0 is
+     * common) still matches — plain trim() and \s both ignore these.
+     */
+    private function foldInvisibleSpaces(string $value): string
+    {
+        $value = preg_replace('/[\x{00A0}\x{1680}\x{2000}-\x{200A}\x{202F}\x{205F}\x{3000}]/u', ' ', $value) ?? $value;
+
+        return preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $value) ?? $value;
     }
 }
