@@ -63,6 +63,12 @@
         </template>
       </CustomerFilterBar>
 
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
+
       <LoadingState v-if="loading">Loading customers...</LoadingState>
 
       <EmptyState
@@ -223,6 +229,7 @@ import ImportButton from '@/components/common/ImportButton.vue'
 import HistoryButton from '@/components/common/HistoryButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
 import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import { useCustomers } from '@/features/customers/composables/useCustomers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -251,6 +258,7 @@ const currentBusiness = inject('currentBusiness')
 
 const {
   customers, loading, searchQuery, storeFilter,
+  startDate, endDate, dateField,
   canDelete, canManageRow,
   baseCustomers, filteredCustomers, sortedCustomers,
   sort,
@@ -363,7 +371,7 @@ const { exporting, run } = useExport({
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-watch([storeFilter, searchQuery, () => currentStore.value?.id], () => {
+watch([storeFilter, searchQuery, startDate, endDate, dateField, () => currentStore.value?.id], () => {
   clearSelection()
   resetPage()
 })

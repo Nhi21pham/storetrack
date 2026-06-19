@@ -35,6 +35,12 @@
         />
       </div>
 
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
+
       <BulkStatusBar
         v-if="selectedIds.size > 0"
         :count="selectedIds.size"
@@ -220,6 +226,7 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
@@ -231,6 +238,7 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 import {
   fetchProductCategories,
   deleteProductCategory,
@@ -262,9 +270,13 @@ const categories = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
 
-const hasActiveFilters = computed(() => !!statusFilter.value)
-const clearFilters = () => { statusFilter.value = '' }
+const hasActiveFilters = computed(() => !!statusFilter.value || dateRangeActive.value)
+const clearFilters = () => {
+  statusFilter.value = ''
+  clearDateRange()
+}
 
 const showForm = ref(false)
 const editingCategory = ref(null)
@@ -289,6 +301,7 @@ const filteredCategories = computed(() => {
   return categories.value.filter(c => {
     if (statusFilter.value === 'active'   && !c.is_active) return false
     if (statusFilter.value === 'inactive' &&  c.is_active) return false
+    if (!inDateRange(c)) return false
     if (!needle) return true
     return (
       normalizeText(displayCategoryName(c)).includes(needle) ||
@@ -340,7 +353,7 @@ const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, can
   remove: (id) => deleteProductCategory({ id }),
 })
 
-watch([searchQuery, statusFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, statusFilter, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {

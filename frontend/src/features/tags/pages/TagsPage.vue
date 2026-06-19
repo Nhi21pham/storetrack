@@ -26,6 +26,7 @@
     <template v-else>
       <div class="toolbar">
         <SearchBar v-model="searchQuery" placeholder="Search by key or value..." />
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -36,6 +37,12 @@
         <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedTags.length === 0" @click="runExport" />
       </div>
+
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
 
       <BulkStatusBar
         v-if="selectedIds.size > 0"
@@ -207,6 +214,8 @@ import HistoryButton from '@/components/common/HistoryButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
 import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import TagChip from '@/components/common/TagChip.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
@@ -220,6 +229,7 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 import {
   fetchTags, deleteTag, startTagExport,
   downloadTagsImportTemplate, previewTagsImport, revalidateTagsImport, startTagsImport,
@@ -245,6 +255,10 @@ const showToast = inject('showToast')
 const tags = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
+
+const hasActiveFilters = computed(() => dateRangeActive.value)
+const clearFilters = () => { clearDateRange() }
 
 const showForm = ref(false)
 const editingTag = ref(null)
@@ -271,12 +285,15 @@ const canDeleteKey = computed(() => ['owner', 'accountant'].includes(role.value)
 
 const filteredTags = computed(() => {
   const needle = normalizeText(searchQuery.value)
-  if (!needle) return tags.value
-  return tags.value.filter(t =>
-    normalizeText(t.name).includes(needle) ||
-    normalizeText(t.description || '').includes(needle) ||
-    (t.values || []).some(v => normalizeText(v.value).includes(needle))
-  )
+  return tags.value.filter(t => {
+    if (!inDateRange(t)) return false
+    if (!needle) return true
+    return (
+      normalizeText(t.name).includes(needle) ||
+      normalizeText(t.description || '').includes(needle) ||
+      (t.values || []).some(v => normalizeText(v.value).includes(needle))
+    )
+  })
 })
 
 // Most recently updated first by default, so the No. column reads newest-to-oldest.
@@ -334,7 +351,7 @@ const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, can
   deleteMessage: 'This permanently deletes the selected tags (and all their values) and detaches them from any products using them. This cannot be undone.',
 })
 
-watch([searchQuery, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {

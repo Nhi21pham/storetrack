@@ -5,6 +5,7 @@ import {
   deleteCustomers as deleteCustomersRequest,
 } from '@/features/customers/services/customerService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 
 const getSortValue = (customer, key) => {
   if (key === 'outstanding') return Number(customer.outstanding || 0)
@@ -34,6 +35,11 @@ export const useCustomers = ({ currentStore, currentBusiness, onError }) => {
   const loading     = ref(false)
   const searchQuery = ref('')
   const storeFilter = ref('store')
+
+  const {
+    startDate, endDate, dateField,
+    isActive: dateRangeActive, inDateRange, clear: clearDateRange,
+  } = useDateRangeFilter()
 
   const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 
@@ -83,8 +89,12 @@ export const useCustomers = ({ currentStore, currentBusiness, onError }) => {
   })
 
   const filteredCustomers = computed(() => {
-    if (!searchQuery.value.trim()) return baseCustomers.value
-    return baseCustomers.value.filter((c) => matchesSearch(c, searchQuery.value))
+    const q = searchQuery.value.trim()
+    return baseCustomers.value.filter((c) => {
+      if (!inDateRange(c)) return false
+      if (!q) return true
+      return matchesSearch(c, searchQuery.value)
+    })
   })
 
   const sort = useSortCriteria()
@@ -126,6 +136,7 @@ export const useCustomers = ({ currentStore, currentBusiness, onError }) => {
 
   return {
     customers, loading, searchQuery, storeFilter,
+    startDate, endDate, dateField, dateRangeActive, clearDateRange,
     isBusinessOwner, canDelete, canManageRow,
     baseCustomers, filteredCustomers, sortedCustomers,
     sort,

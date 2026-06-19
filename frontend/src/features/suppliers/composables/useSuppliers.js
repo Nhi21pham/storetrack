@@ -5,6 +5,7 @@ import {
   deleteSuppliers as deleteSuppliersRequest,
 } from '@/features/suppliers/services/supplierService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 
 const getSortValue = (supplier, key) => {
   if (key === 'outstanding') return Number(supplier.outstanding || 0)
@@ -34,6 +35,11 @@ export const useSuppliers = ({ currentStore, currentBusiness, onError }) => {
   const loading     = ref(false)
   const searchQuery = ref('')
   const storeFilter = ref('store')
+
+  const {
+    startDate, endDate, dateField,
+    isActive: dateRangeActive, inDateRange, clear: clearDateRange,
+  } = useDateRangeFilter()
 
   const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 
@@ -83,8 +89,12 @@ export const useSuppliers = ({ currentStore, currentBusiness, onError }) => {
   })
 
   const filteredSuppliers = computed(() => {
-    if (!searchQuery.value.trim()) return baseSuppliers.value
-    return baseSuppliers.value.filter((s) => matchesSearch(s, searchQuery.value))
+    const q = searchQuery.value.trim()
+    return baseSuppliers.value.filter((s) => {
+      if (!inDateRange(s)) return false
+      if (!q) return true
+      return matchesSearch(s, searchQuery.value)
+    })
   })
 
   const sort = useSortCriteria()
@@ -126,6 +136,7 @@ export const useSuppliers = ({ currentStore, currentBusiness, onError }) => {
 
   return {
     suppliers, loading, searchQuery, storeFilter,
+    startDate, endDate, dateField, dateRangeActive, clearDateRange,
     isBusinessOwner, canDelete, canManageRow,
     baseSuppliers, filteredSuppliers, sortedSuppliers,
     sort,

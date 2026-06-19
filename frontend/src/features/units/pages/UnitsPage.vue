@@ -38,16 +38,11 @@
         <ExportButton :exporting="exporting" :disabled="sortedUnits.length === 0" @click="runExport" />
       </div>
 
-      <div class="filters-row">
-        <div class="filter-group">
-          <label>Date field</label>
-          <select v-model="dateField" class="date-field-select">
-            <option value="created_at">Created</option>
-            <option value="updated_at">Updated</option>
-          </select>
-        </div>
-        <DateRangeFilter v-model:startDate="startDate" v-model:endDate="endDate" />
-      </div>
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
 
       <BulkStatusBar
         v-if="selectedIds.size > 0"
@@ -250,7 +245,7 @@ import ImportModal from '@/components/common/ImportModal.vue'
 import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
 import HistoryButton from '@/components/common/HistoryButton.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
-import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
@@ -263,6 +258,7 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 import {
   fetchUnits, deleteUnit, updateUnit, startUnitExport,
   downloadUnitsImportTemplate, previewUnitsImport, revalidateUnitsImport, startUnitsImport,
@@ -290,15 +286,12 @@ const units = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('')
-const startDate = ref('')
-const endDate = ref('')
-const dateField = ref('created_at')
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
 
-const hasActiveFilters = computed(() => !!statusFilter.value || !!startDate.value || !!endDate.value)
+const hasActiveFilters = computed(() => !!statusFilter.value || dateRangeActive.value)
 const clearFilters = () => {
   statusFilter.value = ''
-  startDate.value = ''
-  endDate.value = ''
+  clearDateRange()
 }
 
 const showForm = ref(false)
@@ -319,18 +312,6 @@ const canDelete = computed(() => {
   const role = String(currentStore?.value?.my_role || '').toLowerCase()
   return role === 'owner' || role === 'accountant'
 })
-
-// Filters by the chosen date column (created/updated); compares the date part
-// only, inclusive of both ends.
-const inDateRange = (u) => {
-  if (!startDate.value && !endDate.value) return true
-  const raw = u[dateField.value]
-  if (!raw) return false
-  const day = String(raw).slice(0, 10)
-  if (startDate.value && day < startDate.value) return false
-  if (endDate.value && day > endDate.value) return false
-  return true
-}
 
 const filteredUnits = computed(() => {
   const needle = normalizeText(searchQuery.value)
@@ -502,12 +483,6 @@ const handleToggle = async () => {
 
 <style scoped>
 .toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-.filters-row { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
-.filters-row .filter-group { display: flex; flex-direction: column; gap: 4px; }
-.filters-row label { font-size: 11.5px; font-weight: 500; color: #9ca3af; letter-spacing: 0.02em; text-transform: uppercase; }
-.date-field-select { padding: 7px 11px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 13.5px; font-family: inherit; color: #374151; background: #fafafa; cursor: pointer; outline: none; min-height: 36px; }
-.date-field-select:hover { background: #fff; border-color: #d1d5db; }
-.date-field-select:focus { background: #fff; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(156,163,175,0.12); }
 .toolbar :deep(.search-bar) { flex: 1; margin-bottom: 0; }
 
 

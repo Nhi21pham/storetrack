@@ -36,6 +36,12 @@
         <ExportButton :exporting="exporting" :disabled="sortedProducts.length === 0" @click="runExport" />
       </div>
 
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
+
       <BulkStatusBar
         v-if="selectedIds.size > 0"
         :count="selectedIds.size"
@@ -274,6 +280,7 @@ import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import TagChip from '@/components/common/TagChip.vue'
 import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
@@ -284,6 +291,7 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 import { fetchProducts, deleteProduct, updateProduct, startProductExport } from '@/features/products/services/productService'
 import { fetchTags } from '@/features/tags/services/tagService'
 import { fetchUnits } from '@/features/units/services/unitService'
@@ -340,8 +348,10 @@ const tagOptions = computed(() => {
   return opts
 })
 
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
+
 const hasActiveFilters = computed(() =>
-  !!(statusFilter.value || unitFilter.value || categoryFilter.value || tagFilter.value)
+  !!(statusFilter.value || unitFilter.value || categoryFilter.value || tagFilter.value) || dateRangeActive.value
 )
 
 const clearFilters = () => {
@@ -349,6 +359,7 @@ const clearFilters = () => {
   unitFilter.value = ''
   categoryFilter.value = ''
   tagFilter.value = ''
+  clearDateRange()
 }
 
 const showForm = ref(false)
@@ -391,6 +402,7 @@ const filteredProducts = computed(() => {
     if (unitFilter.value && String(p.unit_id) !== unitFilter.value) return false
     if (categoryFilter.value && String(p.product_category_id) !== categoryFilter.value) return false
     if (!matchesTagFilter(p)) return false
+    if (!inDateRange(p)) return false
     if (!needle) return true
     return (
       normalizeText(p.code || '').includes(needle) ||
@@ -472,7 +484,7 @@ const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, can
   remove: (id) => deleteProduct({ id }),
 })
 
-watch([searchQuery, statusFilter, unitFilter, categoryFilter, tagFilter, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, statusFilter, unitFilter, categoryFilter, tagFilter, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentStore?.value?.id) {

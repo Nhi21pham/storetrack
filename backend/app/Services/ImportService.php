@@ -85,7 +85,7 @@ class ImportService
     {
         $importer->authorize($actor, $scopeId);
 
-        ['headers' => $headers, 'rows' => $rows] = $this->readSheet($file);
+        ['headers' => $headers, 'rows' => $rows, 'firstDataRow' => $firstDataRow] = $this->readSheet($file, $importer->requiredHeaders());
 
         $missing = array_values(array_diff($importer->requiredHeaders(), $headers));
         if ($missing !== []) {
@@ -102,7 +102,7 @@ class ImportService
 
         $sourceRows = [];
         foreach ($rows as $index => $row) {
-            $sourceRows[] = ['rowNumber' => $index + 2, 'values' => $row];
+            $sourceRows[] = ['rowNumber' => $firstDataRow + $index, 'values' => $row];
         }
 
         return $this->buildPreview($importer, $scopeId, $sourceRows);
@@ -566,9 +566,17 @@ class ImportService
      * so the downloaded template uploads back cleanly. Blank rows and unnamed
      * columns are dropped.
      *
-     * @return array{headers: string[], rows: list<array<string,string>>}
+     * The header row is located by scanning from the top for the first row that
+     * contains every required header, so files exported via BaseExport — which
+     * prepend a title row, meta lines and a blank gap before the real headers —
+     * round-trip back into the importer. Plain template files simply match on
+     * row 1. `firstDataRow` is the 1-based sheet row of the first data row, used
+     * to report accurate Excel row numbers in errors.
+     *
+     * @param  string[]  $required
+     * @return array{headers: string[], rows: list<array<string,string>>, firstDataRow: int}
      */
-    private function readSheet(UploadedFile $file): array
+    private function readSheet(UploadedFile $file, array $required): array
     {
         try {
             $sheets = Excel::toArray(new RawSheetImport(), $file);
@@ -584,14 +592,14 @@ class ImportService
             throw new ImportException(ErrorCode::IMPORT_EMPTY_FILE, 'The file has no data rows to import.');
         }
 
-        $headerCells = array_shift($sheet);
+        $headerIndex = $this->locateHeaderRow($sheet, $required);
         $headers = [];
-        foreach ((array) $headerCells as $cell) {
+        foreach ((array) $sheet[$headerIndex] as $cell) {
             $headers[] = $this->canonicalizeHeader((string) $cell);
         }
 
         $records = [];
-        foreach ($sheet as $cells) {
+        foreach (array_slice($sheet, $headerIndex + 1) as $cells) {
             $cells = (array) $cells;
             $record = [];
             $hasValue = false;
@@ -611,9 +619,33 @@ class ImportService
         }
 
         return [
-            'headers' => array_values(array_filter($headers, fn (string $header) => $header !== '')),
-            'rows'    => $records,
+            'headers'      => array_values(array_filter($headers, fn (string $header) => $header !== '')),
+            'rows'         => $records,
+            'firstDataRow' => $headerIndex + 2,
         ];
+    }
+
+    /**
+     * Find the 0-based index of the header row: the first row containing every
+     * required header. Falls back to row 0 when none matches, so the caller's
+     * "missing required column(s)" check still fires with a sensible message.
+     *
+     * @param  list<array<int,mixed>>  $sheet
+     * @param  string[]  $required
+     */
+    private function locateHeaderRow(array $sheet, array $required): int
+    {
+        foreach ($sheet as $index => $cells) {
+            $headers = [];
+            foreach ((array) $cells as $cell) {
+                $headers[] = $this->canonicalizeHeader((string) $cell);
+            }
+            if (array_diff($required, $headers) === []) {
+                return $index;
+            }
+        }
+
+        return 0;
     }
 
     private function canonicalizeHeader(string $cell): string

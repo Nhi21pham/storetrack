@@ -30,6 +30,7 @@
           <input v-model="includeInactive" type="checkbox" />
           Show inactive
         </label>
+        <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
           :is-visible="columnVisibility.isVisible"
@@ -40,6 +41,12 @@
         <ImportButton @click="showImport = true" />
         <ExportButton :exporting="exporting" :disabled="sortedBanks.length === 0" @click="runExport" />
       </div>
+
+      <DateRangeFilters
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:date-field="dateField"
+      />
 
       <BulkStatusBar
         v-if="selectedIds.size > 0"
@@ -65,7 +72,7 @@
 
       <EmptyState
         v-else-if="filteredBanks.length === 0"
-        :description="`No banks matching &quot;${searchQuery}&quot;`"
+        description="No banks match the current filters."
       />
 
       <div v-else class="table-wrap">
@@ -228,6 +235,8 @@ import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
+import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import ImportButton from '@/components/common/ImportButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
 import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
@@ -243,6 +252,7 @@ import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
+import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 import {
   fetchBanks, deleteBank, updateBank, startBankExport,
   downloadBanksImportTemplate, previewBanksImport, revalidateBanksImport, startBanksImport,
@@ -270,6 +280,10 @@ const banks = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const includeInactive = ref(true)
+const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
+
+const hasActiveFilters = computed(() => dateRangeActive.value)
+const clearFilters = () => { clearDateRange() }
 
 const showForm = ref(false)
 const showImport = ref(false)
@@ -294,6 +308,7 @@ const filteredBanks = computed(() => {
   const needle = normalizeText(searchQuery.value)
   return banks.value.filter(b => {
     if (!includeInactive.value && !b.is_active) return false
+    if (!inDateRange(b)) return false
     if (!needle) return true
     return (
       normalizeText(b.short_name).includes(needle) ||
@@ -361,7 +376,7 @@ const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, can
   remove: (id) => deleteBank({ id }),
 })
 
-watch([searchQuery, includeInactive, () => sort.sortCriteria.value], resetPage, { deep: true })
+watch([searchQuery, includeInactive, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
 
 const load = async () => {
   if (!currentBusiness?.value?.id) {
