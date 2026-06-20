@@ -84,7 +84,11 @@ const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 
 const props = defineProps({
-  customer: { type: Object, default: null }
+  customer: { type: Object, default: null },
+  prefillName: { type: String, default: '' },
+  prefillTaxCode: { type: String, default: '' },
+  prefillPhone: { type: String, default: '' },
+  prefillAddress: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -97,11 +101,11 @@ const showUnsavedWarning = ref(false)
 const errors = ref({ name: '', tax_code: '', email: '', phone: '', address: '' })
 
 const initialForm = () => ({
-  name: props.customer?.name || '',
-  tax_code: props.customer?.tax_code || '',
-  address: props.customer?.address || '',
+  name: props.customer?.name || props.prefillName || '',
+  tax_code: props.customer?.tax_code || props.prefillTaxCode || '',
+  address: props.customer?.address || props.prefillAddress || '',
   email: props.customer?.email || '',
-  phone: props.customer?.phone || ''
+  phone: props.customer?.phone || props.prefillPhone || ''
 })
 
 const form = ref(initialForm())

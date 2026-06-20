@@ -48,11 +48,24 @@ class InvoiceDictionary
     }
 
     /**
+     * Label synonyms for a header field of one party ('seller' | 'buyer'), e.g.
+     * the seller's name or the buyer's tax code.
+     *
      * @return list<string>
      */
-    public function fieldLabels(string $field): array
+    public function partyFieldLabels(string $party, string $field): array
     {
-        return (array) ($this->data['fields'][$field] ?? []);
+        return (array) ($this->data['party_fields'][$party][$field] ?? []);
+    }
+
+    /**
+     * Label synonyms for the document-wide invoice number (not tied to a party).
+     *
+     * @return list<string>
+     */
+    public function invoiceNoLabels(): array
+    {
+        return (array) ($this->data['invoice_no'] ?? []);
     }
 
     /**

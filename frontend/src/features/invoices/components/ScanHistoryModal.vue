@@ -40,7 +40,7 @@
                 <th>Status</th>
                 <th class="num">Items</th>
                 <th class="num">New</th>
-                <th>Supplier</th>
+                <th>{{ partyLabel }}</th>
                 <th>By</th>
                 <th>When</th>
               </tr>
@@ -62,7 +62,7 @@
                     <span v-if="row.created_count > 0" class="created-count">{{ row.created_count }}</span>
                     <span v-else class="muted">—</span>
                   </td>
-                  <td class="supplier-cell">{{ row.supplier_name || '—' }}</td>
+                  <td class="party-cell">{{ row.party_name || '—' }}</td>
                   <td class="by-cell">{{ row.user_name || row.user_email || '—' }}</td>
                   <td class="date-cell">{{ formatDateTime(row.created_at) }}</td>
                 </tr>
@@ -75,10 +75,10 @@
                     <div v-else-if="detail" class="detail">
                       <div class="detail-summary">
                         <div class="sum-item">
-                          <span class="sum-label">Supplier</span>
+                          <span class="sum-label">{{ partyLabel }}</span>
                           <span class="sum-value">
-                            {{ detail.supplier?.matched_name || detail.supplier?.extracted_name || '—' }}
-                            <MatchBadge v-if="detail.supplier?.extracted_name || detail.supplier?.matched" :matched="!!detail.supplier?.matched" />
+                            {{ detail.party?.matched_name || detail.party?.extracted_name || '—' }}
+                            <MatchBadge v-if="detail.party?.extracted_name || detail.party?.matched" :matched="!!detail.party?.matched" />
                           </span>
                         </div>
                         <div v-if="detail.invoice_no" class="sum-item">
@@ -164,7 +164,7 @@
 </template>
 
 <script setup>
-import { ref, toRef, onMounted } from 'vue'
+import { ref, computed, toRef, onMounted } from 'vue'
 import Pagination from '@/components/common/Pagination.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import ScanTypeBadge from '@/features/invoices/components/ScanTypeBadge.vue'
@@ -182,6 +182,9 @@ const props = defineProps({
 
 defineEmits(['close'])
 
+// A purchase scan reads the seller (supplier); a sale scan reads the buyer (customer).
+const partyLabel = computed(() => (props.type === 'sale' ? 'Customer' : 'Supplier'))
+
 const { loading, refreshing, error, rows, page, perPage, total, lastPage, startDate, endDate, load, goToPage, refresh } =
   useScanHistory({ storeId: toRef(props, 'storeId'), type: props.type })
 
@@ -195,7 +198,7 @@ const expandedId = ref(null)
 const detail = ref(null)
 const detailLoading = ref(false)
 
-const entityTypeLabel = (type) => ({ supplier: 'Supplier', product: 'Product', unit: 'Unit' }[type] || type)
+const entityTypeLabel = (type) => ({ supplier: 'Supplier', customer: 'Customer', product: 'Product', unit: 'Unit' }[type] || type)
 
 // Scans are synchronous, so a record is only ever completed or failed; the
 // pending/processing fallback is kept defensive in case that ever changes.
@@ -269,7 +272,7 @@ th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .chevron.open { transform: rotate(90deg); }
 .created-count { color: #047857; font-weight: 700; }
 .muted { color: #d1d5db; }
-.supplier-cell { color: #374151; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.party-cell { color: #374151; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .by-cell, .date-cell { color: #6b7280; font-size: 12px; white-space: nowrap; }
 
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }

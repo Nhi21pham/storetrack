@@ -430,7 +430,7 @@ const loadInvoice = async () => {
 // Identities are already resolved there; here we just seed the form + lines.
 const applyDraft = () => {
   const draft = takeInvoiceDraft()
-  if (!draft) return
+  if (!draft) return false
   form.value = {
     party_id: draft.party_id || '',
     invoice_date: draft.invoice_date || todayInputDate(),
@@ -447,16 +447,19 @@ const applyDraft = () => {
     expanded: false,
   }))
   items.value = lines.length ? lines : [newItem()]
+  return true
 }
 
 onMounted(async () => {
   await loadOptions()
   if (isEdit.value) {
     await loadInvoice()
-  } else {
-    applyDraft()
+    baseline.value = snapshot()
+  } else if (!applyDraft()) {
+    baseline.value = snapshot()
   }
-  baseline.value = snapshot()
+  // When prefilled from a scan draft, the pristine baseline is kept on purpose so
+  // the scanned data registers as unsaved — leaving (Cancel/back) then prompts to discard.
 })
 watch(storeId, loadOptions)
 

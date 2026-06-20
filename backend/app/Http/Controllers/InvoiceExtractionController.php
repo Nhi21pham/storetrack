@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\InvoiceTypeEnum;
 use App\Exceptions\AppException;
 use App\Invoice\Extraction\InvoiceExtractionService;
 use App\Models\InvoiceScan;
@@ -29,6 +30,7 @@ class InvoiceExtractionController extends Controller
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:15360'],
             'provider' => ['sometimes', 'in:template,gemini'],
+            'type' => ['sometimes', 'in:purchase,sale'],
         ]);
 
         try {
@@ -37,7 +39,7 @@ class InvoiceExtractionController extends Controller
                 $storeId,
                 $request->file('file'),
                 $validated['provider'] ?? 'template',
-                InvoiceScan::TYPE_PURCHASE,
+                InvoiceTypeEnum::from($validated['type'] ?? 'purchase'),
             );
 
             return response()->json($review, 200);
@@ -86,7 +88,7 @@ class InvoiceExtractionController extends Controller
     public function recordEntity(Request $request, int $storeId, int $scanId): JsonResponse
     {
         $validated = $request->validate([
-            'type' => ['required', 'in:supplier,product,unit'],
+            'type' => ['required', 'in:supplier,customer,product,unit'],
             'id'   => ['required', 'integer'],
             'name' => ['required', 'string', 'max:255'],
         ]);
@@ -118,7 +120,7 @@ class InvoiceExtractionController extends Controller
             'status'            => $scan->status,
             'original_filename' => $scan->original_filename,
             'error_message'     => $scan->error_message,
-            'supplier'          => $metadata['supplier'] ?? null,
+            'party'             => $metadata['party'] ?? null,
             'invoice_no'        => $metadata['invoice_no'] ?? null,
             'totals'            => $metadata['totals'] ?? null,
             'item_count'        => $metadata['item_count'] ?? 0,

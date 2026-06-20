@@ -23,6 +23,7 @@ import TagsPage from '@/features/tags/pages/TagsPage.vue'
 import PurchaseInvoicesPage from '@/features/invoices/pages/PurchaseInvoicesPage.vue'
 import PurchaseInvoiceCreatePage from '@/features/invoices/pages/PurchaseInvoiceCreatePage.vue'
 import ScanPurchaseInvoicePage from '@/features/invoices/pages/ScanPurchaseInvoicePage.vue'
+import ScanSaleInvoicePage from '@/features/invoices/pages/ScanSaleInvoicePage.vue'
 import SaleInvoicesPage from '@/features/invoices/pages/SaleInvoicesPage.vue'
 import SaleInvoiceCreatePage from '@/features/invoices/pages/SaleInvoiceCreatePage.vue'
 import StockReportPage from '@/features/reports/pages/StockReportPage.vue'
@@ -202,6 +203,18 @@ const router = createRouter({
             breadcrumb: [
               { label: 'Dashboard', to: '/dashboard', icon: 'home' },
               { label: 'Sale Invoices' },
+            ],
+          },
+        },
+        {
+          path: 'sale-invoices/scan',
+          name: 'sale-invoice-scan',
+          component: ScanSaleInvoicePage,
+          meta: {
+            breadcrumb: [
+              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
+              { label: 'Sale Invoices', to: '/sale-invoices' },
+              { label: 'Scan' },
             ],
           },
         },

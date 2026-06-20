@@ -1,6 +1,6 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Scan Purchase Invoice" subtitle="Upload a PDF or photo and we'll prefill the invoice for you to review.">
+    <PageHeader title="Scan Sale Invoice" subtitle="Upload a PDF or photo and we'll prefill the invoice for you to review.">
       <template #actions>
         <button class="btn-secondary" @click="goToList">Cancel</button>
       </template>
@@ -70,18 +70,18 @@
           <h3 class="card-title">Details</h3>
           <div class="details-grid">
             <div class="form-group">
-              <label>Supplier <span class="required">*</span></label>
+              <label>Customer <span class="required">*</span></label>
               <div class="picker-row">
                 <SearchableSelect
-                  v-model="supplierPartyId"
-                  :options="supplierOptions"
+                  v-model="customerPartyId"
+                  :options="customerOptions"
                   :allow-all="false"
-                  placeholder="Select a supplier"
-                  search-placeholder="Search suppliers…"
+                  placeholder="Select a customer"
+                  search-placeholder="Search customers…"
                 />
-                <MatchBadge :matched="!!supplierPartyId" />
+                <MatchBadge :matched="!!customerPartyId" />
               </div>
-              <span v-if="extractedSupplierLabel" class="hint">Read: {{ extractedSupplierLabel }}</span>
+              <span v-if="extractedCustomerLabel" class="hint">Read: {{ extractedCustomerLabel }}</span>
             </div>
 
             <div class="form-group">
@@ -148,14 +148,15 @@
       </template>
     </template>
 
-    <SupplierFormModal
-      v-if="showSupplierForm"
+    <CustomerFormModal
+      v-if="showCustomerForm"
+      :customer="null"
       :prefill-name="review.party.extracted.name || ''"
       :prefill-tax-code="review.party.extracted.tax_code || ''"
       :prefill-phone="review.party.extracted.phone || ''"
       :prefill-address="review.party.extracted.address || ''"
-      @close="showSupplierForm = false"
-      @saved="onSupplierCreated"
+      @close="showCustomerForm = false"
+      @saved="onCustomerCreated"
     />
 
     <ProductFormModal
@@ -206,12 +207,12 @@ import ReferenceChipsBanner from '@/components/common/ReferenceChipsBanner.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ExtractionSourceBar from '@/features/invoices/components/ExtractionSourceBar.vue'
 import MatchBadge from '@/features/invoices/components/MatchBadge.vue'
-import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
+import CustomerFormModal from '@/features/customers/components/CustomerFormModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
-import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
+import { fetchCustomers } from '@/features/customers/services/customerService'
 import { fetchProducts } from '@/features/products/services/productService'
-import { extractPurchaseInvoice } from '@/features/invoices/services/extractionService'
+import { extractSaleInvoice } from '@/features/invoices/services/extractionService'
 import { recordScanEntity } from '@/features/invoices/services/scanHistoryService'
 import { setInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import { formatMoney, formatQuantity, todayInputDate } from '@/features/invoices/constants'
@@ -246,34 +247,34 @@ const needsAi = ref(false)
 
 const review = ref(null)
 const scanId = ref(null)
-const supplierPartyId = ref('')
+const customerPartyId = ref('')
 const invoiceDate = ref('')
 const lines = ref([])
 
-const suppliers = ref([])
+const customers = ref([])
 const products = ref([])
 
-const showSupplierForm = ref(false)
+const showCustomerForm = ref(false)
 const showProductForm = ref(false)
 const pendingProductName = ref('')
 const pendingProductUnitId = ref('')
 const showUnitForm = ref(false)
 const pendingUnitName = ref('')
 
-const inCurrentStore = (s) => {
+const inCurrentStore = (c) => {
   const sid = String(storeId.value ?? '')
-  return String(s.store_id) === sid || (s.stores || []).some((st) => String(st.id) === sid)
+  return String(c.store_id) === sid || (c.stores || []).some((st) => String(st.id) === sid)
 }
 
-const supplierOptions = computed(() =>
-  suppliers.value
-    .filter((s) => s.party?.id)
-    .map((s) => ({ supplier: s, store: inCurrentStore(s) }))
+const customerOptions = computed(() =>
+  customers.value
+    .filter((c) => c.party?.id)
+    .map((c) => ({ customer: c, store: inCurrentStore(c) }))
     .sort((a, b) => (a.store === b.store ? 0 : a.store ? -1 : 1))
-    .map(({ supplier, store }) => ({
-      value: String(supplier.party.id),
-      label: supplier.name,
-      sublabel: [store ? 'This store' : 'Business', supplier.phone || supplier.tax_code].filter(Boolean).join(' · '),
+    .map(({ customer, store }) => ({
+      value: String(customer.party.id),
+      label: customer.name,
+      sublabel: [store ? 'This store' : 'Business', customer.phone || customer.tax_code].filter(Boolean).join(' · '),
     })),
 )
 
@@ -285,18 +286,18 @@ const productOptions = computed(() =>
   })),
 )
 
-const extractedSupplierLabel = computed(() => {
+const extractedCustomerLabel = computed(() => {
   const ex = review.value?.party?.extracted
   if (!ex?.name) return ''
   return [ex.name, ex.tax_code].filter(Boolean).join(' · ')
 })
 
-// Unmatched supplier + products drive the "create new" banner (same UX as imports).
+// Unmatched customer + products drive the "create new" banner (same UX as imports).
 const bannerGroups = computed(() => {
   const groups = []
   const ex = review.value?.party?.extracted
-  if (ex?.name && !supplierPartyId.value) {
-    groups.push({ type: 'supplier', label: 'Suppliers', chips: [{ id: 'supplier', label: ex.name }] })
+  if (ex?.name && !customerPartyId.value) {
+    groups.push({ type: 'customer', label: 'Customers', chips: [{ id: 'customer', label: ex.name }] })
   }
   const seen = new Map()
   for (const line of lines.value) {
@@ -321,11 +322,11 @@ const bannerGroups = computed(() => {
 
 const loadOptions = async () => {
   if (!storeId.value) return
-  const [supplierList, productList] = await Promise.all([
-    fetchSuppliers({ storeId: storeId.value, businessId: businessId.value }),
+  const [customerList, productList] = await Promise.all([
+    fetchCustomers({ storeId: storeId.value, businessId: businessId.value }),
     fetchProducts({ storeId: storeId.value }),
   ])
-  suppliers.value = supplierList
+  customers.value = customerList
   products.value = productList
 }
 
@@ -345,7 +346,7 @@ const applyReview = (data, provider) => {
   scanId.value = data.scan_id ?? null
   source.value = data.source || provider
   aiSuggested.value = !!data.suggest_ai
-  supplierPartyId.value = data.party?.match?.party_id ? String(data.party.match.party_id) : ''
+  customerPartyId.value = data.party?.match?.party_id ? String(data.party.match.party_id) : ''
   invoiceDate.value = data.invoice_date || todayInputDate()
   lines.value = (data.items || []).map((it) => ({
     extracted: it.extracted,
@@ -363,7 +364,7 @@ const runExtraction = async (provider) => {
   error.value = ''
   needsAi.value = false
   try {
-    const data = await extractPurchaseInvoice({ storeId: storeId.value, file: file.value, provider })
+    const data = await extractSaleInvoice({ storeId: storeId.value, file: file.value, provider })
     applyReview(data, provider)
   } catch (err) {
     // The free parser doesn't recognize this PDF — offer the AI scan instead of failing.
@@ -393,8 +394,8 @@ const unitIdForProductName = (name) => {
 }
 
 const onCreateRef = (type, chip) => {
-  if (type === 'supplier') {
-    showSupplierForm.value = true
+  if (type === 'customer') {
+    showCustomerForm.value = true
   } else if (type === 'product') {
     pendingProductName.value = chip.label
     pendingProductUnitId.value = unitIdForProductName(chip.label)
@@ -412,12 +413,12 @@ const logScanEntity = (type, id, name) => {
   recordScanEntity({ storeId: storeId.value, scanId: scanId.value, type, id, name: name || '' }).catch(() => {})
 }
 
-const onSupplierCreated = async (supplier) => {
-  showSupplierForm.value = false
+const onCustomerCreated = async (customer) => {
+  showCustomerForm.value = false
   await loadOptions()
-  const partyId = supplier?.party?.id
-  if (partyId != null) supplierPartyId.value = String(partyId)
-  logScanEntity('supplier', supplier?.id ?? partyId, supplier?.name)
+  const partyId = customer?.party?.id
+  if (partyId != null) customerPartyId.value = String(partyId)
+  logScanEntity('customer', customer?.id ?? partyId, customer?.name)
 }
 
 const closeProductForm = () => {
@@ -465,7 +466,7 @@ const onProductCreated = async (product, created = true) => {
 
 const continueToInvoice = () => {
   setInvoiceDraft({
-    party_id: supplierPartyId.value || '',
+    party_id: customerPartyId.value || '',
     invoice_date: invoiceDate.value || todayInputDate(),
     payment_method: 'CASH',
     payment_status: 'UNPAID',
@@ -478,7 +479,7 @@ const continueToInvoice = () => {
     })),
   })
   leaveConfirmed.value = true
-  router.push('/purchase-invoices/new')
+  router.push('/sale-invoices/new')
 }
 
 const startOver = () => {
@@ -487,14 +488,14 @@ const startOver = () => {
   review.value = null
   scanId.value = null
   lines.value = []
-  supplierPartyId.value = ''
+  customerPartyId.value = ''
   error.value = ''
   source.value = ''
   aiSuggested.value = false
   needsAi.value = false
 }
 
-const goToList = () => router.push('/purchase-invoices')
+const goToList = () => router.push('/sale-invoices')
 
 // Once the invoice has been scanned and parsed, warn before leaving (Cancel,
 // sidebar, browser back) so the reviewed data isn't lost. Continuing to the
@@ -513,7 +514,7 @@ onBeforeRouteLeave((to) => {
 const discardAndLeave = () => {
   leaveConfirmed.value = true
   showLeaveWarning.value = false
-  router.push(pendingTo.value || '/purchase-invoices')
+  router.push(pendingTo.value || '/sale-invoices')
 }
 
 const keepReviewing = () => {

@@ -38,11 +38,15 @@ class DictionaryInvoiceParser implements TemplateParser
         $lines = explode("\n", $normalized);
         $profile = $this->dictionary->matchProfile($normalized) ?? [];
 
-        // Supplier fields live above the buyer block; reading past it would grab
-        // our own name and tax code. The solution provider's footer is dropped
-        // too, so its tax code is never read as the seller's.
-        $supplierLines = $this->stripProviderNoise($this->beforeBuyer($lines));
-        $taxCode = $this->field($supplierLines, 'supplier_tax_code');
+        // The seller fields live above the buyer block; the buyer fields below it,
+        // before the item table. Reading each side from its own slice keeps one
+        // party's name/tax code from leaking into the other. The solution
+        // provider's footer is dropped so its tax code is never read as a party's.
+        $sellerLines = $this->stripProviderNoise($this->beforeBuyer($lines));
+        $buyerLines = $this->stripProviderNoise($this->buyerBlock($lines, $profile));
+
+        $seller = $this->readParty($sellerLines, 'seller');
+        $buyer = $this->readParty($buyerLines, 'buyer');
 
         // A single document-wide VAT rate (e.g. "Thuế suất GTGT: 10%") is carried
         // onto every line so the review prefills the per-line tax.
@@ -52,11 +56,15 @@ class DictionaryInvoiceParser implements TemplateParser
         $totals = $this->deriveTotals($this->parseTotals($lines), $items, $profile);
 
         return new ExtractedInvoice(
-            supplierName: $this->field($supplierLines, 'supplier_name'),
-            supplierTaxCode: $taxCode !== null ? $this->compactDigits($taxCode) : null,
-            supplierPhone: $this->field($supplierLines, 'supplier_phone'),
-            supplierAddress: $this->field($supplierLines, 'supplier_address'),
-            invoiceNo: $this->field($lines, 'invoice_no'),
+            sellerName: $seller['name'],
+            sellerTaxCode: $seller['tax_code'],
+            sellerPhone: $seller['phone'],
+            sellerAddress: $seller['address'],
+            buyerName: $buyer['name'],
+            buyerTaxCode: $buyer['tax_code'],
+            buyerPhone: $buyer['phone'],
+            buyerAddress: $buyer['address'],
+            invoiceNo: $this->field($lines, $this->dictionary->invoiceNoLabels()),
             invoiceDate: InvoiceTextNormalizer::parseDate($normalized),
             currency: $profile['currency'] ?? 'VND',
             items: $items,
@@ -88,8 +96,48 @@ class DictionaryInvoiceParser implements TemplateParser
     }
 
     /**
+     * The buyer block: from the buyer marker down to the start of the item table
+     * (or to the end when the layout prints no recognizable table start). Empty
+     * when the document has no buyer marker — nothing to read for the customer.
+     *
+     * @param  list<string>  $lines
+     * @param  array<string,mixed>  $profile
+     * @return list<string>
+     */
+    private function buyerBlock(array $lines, array $profile): array
+    {
+        $start = null;
+        foreach ($lines as $i => $line) {
+            foreach ($this->dictionary->buyerMarkers() as $marker) {
+                $pattern = '/'.preg_quote($marker, '/').'\s*(?:\([^)]*\))?\s*[:：]/u';
+                if (preg_match($pattern, $line) === 1) {
+                    $start = $i;
+                    break 2;
+                }
+            }
+        }
+
+        if ($start === null) {
+            return [];
+        }
+
+        $end = count($lines);
+        $tableStart = $profile['table_start'] ?? null;
+        if ($tableStart !== null) {
+            for ($i = $start + 1; $i < count($lines); $i++) {
+                if (preg_match($tableStart, $lines[$i]) === 1) {
+                    $end = $i;
+                    break;
+                }
+            }
+        }
+
+        return array_slice($lines, $start, $end - $start);
+    }
+
+    /**
      * Drop the e-invoice solution provider's footer lines so their tax code is
-     * never read as the seller's.
+     * never read as a party's.
      *
      * @param  list<string>  $lines
      * @return list<string>
@@ -168,14 +216,34 @@ class DictionaryInvoiceParser implements TemplateParser
     }
 
     /**
-     * First "‹label› [optional (English)] : value" line for the field's labels.
+     * Read one party's contact fields from its block of lines, using that party's
+     * label synonyms.
      *
      * @param  list<string>  $lines
+     * @return array{name: ?string, tax_code: ?string, phone: ?string, address: ?string}
      */
-    private function field(array $lines, string $fieldKey): ?string
+    private function readParty(array $lines, string $party): array
+    {
+        $taxCode = $this->field($lines, $this->dictionary->partyFieldLabels($party, 'tax_code'));
+
+        return [
+            'name'     => $this->field($lines, $this->dictionary->partyFieldLabels($party, 'name')),
+            'tax_code' => $taxCode !== null ? $this->compactDigits($taxCode) : null,
+            'phone'    => $this->field($lines, $this->dictionary->partyFieldLabels($party, 'phone')),
+            'address'  => $this->field($lines, $this->dictionary->partyFieldLabels($party, 'address')),
+        ];
+    }
+
+    /**
+     * First "‹label› [optional (English)] : value" line for any of the labels.
+     *
+     * @param  list<string>  $lines
+     * @param  list<string>  $labels
+     */
+    private function field(array $lines, array $labels): ?string
     {
         foreach ($lines as $line) {
-            foreach ($this->dictionary->fieldLabels($fieldKey) as $label) {
+            foreach ($labels as $label) {
                 $pattern = '/'.preg_quote($label, '/').'\s*(?:\([^)]*\))?\s*[:：]\s*(.+)/u';
                 if (preg_match($pattern, $line, $m) === 1) {
                     $value = trim($m[1]);

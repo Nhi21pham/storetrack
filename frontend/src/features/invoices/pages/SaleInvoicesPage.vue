@@ -1,11 +1,15 @@
 <template>
   <PageContainer :maxWidth="1100">
     <PageHeader title="Sale Invoices" subtitle="Sales recorded to your customers.">
-      <template v-if="currentStore?.is_active" #actions>
-        <button class="btn-create" @click="goToCreate">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New invoice
-        </button>
+      <template v-if="currentStore" #actions>
+        <HistoryButton label="Scan history" title="View scan history" @click="showScanHistory = true" />
+        <template v-if="currentStore.is_active">
+          <ScanInvoiceButton to="/sale-invoices/scan" />
+          <button class="btn-create" @click="goToCreate">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New invoice
+          </button>
+        </template>
       </template>
     </PageHeader>
 
@@ -176,6 +180,13 @@
         @confirm="handleBulkDelete"
         @cancel="showBulkDeleteConfirm = false"
       />
+
+      <ScanHistoryModal
+        v-if="showScanHistory"
+        :store-id="currentStore.id"
+        type="sale"
+        @close="showScanHistory = false"
+      />
     </template>
   </PageContainer>
 </template>
@@ -200,9 +211,12 @@ import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
 import Icon from '@/components/common/Icon.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
 import InvoiceSelectionBar from '@/features/invoices/components/InvoiceSelectionBar.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
+import ScanInvoiceButton from '@/features/invoices/components/ScanInvoiceButton.vue'
+import ScanHistoryModal from '@/features/invoices/components/ScanHistoryModal.vue'
 import { useInvoices } from '@/features/invoices/composables/useInvoices'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -257,6 +271,7 @@ const detailInvoice = ref(null)
 const deletingInvoice = ref(null)
 const bulkDeleting = ref(false)
 const showBulkDeleteConfirm = ref(false)
+const showScanHistory = ref(false)
 
 const goToCreate = () => router.push('/sale-invoices/new')
 const openEdit = (inv) => { detailInvoice.value = null; router.push(`/sale-invoices/${inv.id}/edit`) }

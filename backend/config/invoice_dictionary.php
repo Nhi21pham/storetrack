@@ -18,19 +18,33 @@
 
 return [
 
-    // Header fields → ordered label synonyms. First label found (top-down) wins.
-    'fields' => [
-        'supplier_name'     => ['Họ và tên người giao hàng', 'Đơn vị bán hàng', 'Người bán'],
-        'supplier_tax_code' => ['Mã số thuế', 'MST'],
-        'supplier_phone'    => ['Điện thoại', 'Số điện thoại'],
-        'supplier_address'  => ['Địa chỉ'],
-        'invoice_no'        => ['Số'],
+    // Header fields → ordered label synonyms, grouped by party. First label found
+    // (top-down) within that party's block wins. The seller block is read for a
+    // purchase scan (→ supplier), the buyer block for a sale scan (→ customer).
+    'party_fields' => [
+        'seller' => [
+            'name'     => ['Họ và tên người giao hàng', 'Đơn vị bán hàng', 'Người bán'],
+            'tax_code' => ['Mã số thuế', 'MST'],
+            'phone'    => ['Điện thoại', 'Số điện thoại'],
+            'address'  => ['Địa chỉ'],
+        ],
+        'buyer' => [
+            // "người nhận hàng" (recipient) covers warehouse goods-issue notes
+            // (Phiếu xuất kho), which name the customer that way rather than "người mua".
+            'name'     => ['Đơn vị mua hàng', 'Tên đơn vị', 'Họ và tên người mua hàng', 'Họ tên người mua hàng', 'Họ và tên người nhận hàng', 'Họ tên người nhận hàng', 'Tên khách hàng'],
+            'tax_code' => ['Mã số thuế', 'MST'],
+            'phone'    => ['Điện thoại', 'Số điện thoại'],
+            'address'  => ['Địa chỉ'],
+        ],
     ],
 
-    // Once any of these is seen (as a real "‹marker› :" field, not a signature
-    // caption), stop reading supplier fields — the rest of the document describes
-    // the buyer (us), whose name/tax code we must not capture.
-    'buyer_markers' => ['Họ tên người mua hàng', 'Họ và tên người mua hàng', 'Đơn vị mua hàng', 'Người mua hàng', 'Tên khách hàng'],
+    // Document-wide fields, read regardless of which party the scan matches.
+    'invoice_no' => ['Số'],
+
+    // The buyer block begins at the first of these seen as a real "‹marker› :"
+    // field (not a signature caption). A purchase scan stops reading seller fields
+    // here; a sale scan starts reading the buyer (customer) fields here.
+    'buyer_markers' => ['Họ tên người mua hàng', 'Họ và tên người mua hàng', 'Họ và tên người nhận hàng', 'Họ tên người nhận hàng', 'Đơn vị mua hàng', 'Người mua hàng', 'Tên khách hàng'],
 
     // Footer phrases identifying the e-invoice solution provider's own line. Those
     // lines carry the provider's tax code; skip them when reading supplier fields.
@@ -65,6 +79,18 @@ return [
 
         'vnpt_purchase_note' => [
             'detect'       => ['PHIẾU NHẬP KHO', 'người giao hàng'],
+            'currency'     => 'VND',
+            'has_vat'      => false,
+            'table_start'  => '/^\s*A\s+B\s+C\s+D\s+1\s+2\s+3\s+4\s*$/u',
+            'table_end'    => '/^\s*Cộng\b/u',
+            'code_pattern' => '/HH\d{3,}/u',
+        ],
+
+        // Mẫu 04-VT goods-issue note (PHIẾU XUẤT KHO): the sale-side twin of the
+        // purchase note above — same table layout, no VAT; the customer is the
+        // recipient ("người nhận hàng"), read as the buyer for a sale scan.
+        'vnpt_sale_note' => [
+            'detect'       => ['PHIẾU XUẤT KHO', 'người nhận hàng'],
             'currency'     => 'VND',
             'has_vat'      => false,
             'table_start'  => '/^\s*A\s+B\s+C\s+D\s+1\s+2\s+3\s+4\s*$/u',

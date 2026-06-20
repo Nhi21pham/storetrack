@@ -99,20 +99,24 @@ class GeminiInvoiceExtractor implements InvoiceExtractor
     private function prompt(): string
     {
         return <<<'PROMPT'
-            You are extracting data from a Vietnamese purchase invoice (hóa đơn GTGT),
+            You are extracting data from a Vietnamese VAT invoice (hóa đơn GTGT),
             provided as a PDF or a photo. Return ONLY the structured JSON described by
             the response schema.
 
             Rules:
             - The invoice shows a SELLER (Người bán / Đơn vị bán hàng) and a BUYER
-              (Người mua / Đơn vị mua hàng). Extract the SELLER as the supplier
-              (name, tax_code, phone, address). IGNORE the buyer entirely.
-            - tax_code is the seller's tax number (MST / Mã số thuế).
+              (Người mua / Đơn vị mua hàng). Extract BOTH parties separately:
+              seller (name, tax_code, phone, address) and buyer (name, tax_code,
+              phone, address). Keep their contact details apart — never mix one
+              party's tax code or address into the other.
+            - tax_code is that party's tax number (MST / Mã số thuế).
+            - For the buyer, prefer the company/customer name (Tên đơn vị / Đơn vị mua
+              hàng) when present, otherwise the person's name (Họ tên người mua hàng).
             - invoice_date must be ISO format yyyy-mm-dd (invoices often print dd/mm/yyyy).
             - All numbers must be plain: no thousand separators, no currency symbol,
               a dot for the decimal point.
-            - For each line item: name (description), code (the seller's item code/SKU
-              if printed), unit (đơn vị tính / ĐVT, e.g. "cái", "kg", "hộp"),
+            - For each line item: name (description), code (the item code/SKU if
+              printed), unit (đơn vị tính / ĐVT, e.g. "cái", "kg", "hộp"),
               quantity, unit_price, tax_rate (VAT percent, e.g. 10), tax_amount,
               line_total.
             - subtotal = total before VAT; vat_total = total VAT; grand_total = total payable.
@@ -130,7 +134,16 @@ class GeminiInvoiceExtractor implements InvoiceExtractor
         return [
             'type' => 'OBJECT',
             'properties' => [
-                'supplier' => [
+                'seller' => [
+                    'type' => 'OBJECT',
+                    'properties' => [
+                        'name' => ['type' => 'STRING'],
+                        'tax_code' => ['type' => 'STRING'],
+                        'phone' => ['type' => 'STRING'],
+                        'address' => ['type' => 'STRING'],
+                    ],
+                ],
+                'buyer' => [
                     'type' => 'OBJECT',
                     'properties' => [
                         'name' => ['type' => 'STRING'],
@@ -200,10 +213,14 @@ class GeminiInvoiceExtractor implements InvoiceExtractor
         }
 
         return new ExtractedInvoice(
-            supplierName: $this->nullableString(data_get($data, 'supplier.name')),
-            supplierTaxCode: $this->nullableString(data_get($data, 'supplier.tax_code')),
-            supplierPhone: $this->nullableString(data_get($data, 'supplier.phone')),
-            supplierAddress: $this->nullableString(data_get($data, 'supplier.address')),
+            sellerName: $this->nullableString(data_get($data, 'seller.name')),
+            sellerTaxCode: $this->nullableString(data_get($data, 'seller.tax_code')),
+            sellerPhone: $this->nullableString(data_get($data, 'seller.phone')),
+            sellerAddress: $this->nullableString(data_get($data, 'seller.address')),
+            buyerName: $this->nullableString(data_get($data, 'buyer.name')),
+            buyerTaxCode: $this->nullableString(data_get($data, 'buyer.tax_code')),
+            buyerPhone: $this->nullableString(data_get($data, 'buyer.phone')),
+            buyerAddress: $this->nullableString(data_get($data, 'buyer.address')),
             invoiceNo: $this->nullableString($data['invoice_no'] ?? null),
             invoiceDate: $invoiceDate,
             currency: $this->nullableString($data['currency'] ?? null),

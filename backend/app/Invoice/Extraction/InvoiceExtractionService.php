@@ -3,10 +3,12 @@
 namespace App\Invoice\Extraction;
 
 use App\Enums\ErrorCode;
+use App\Enums\InvoiceTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Exceptions\InvoiceExtractionException;
 use App\Models\InvoiceScan;
 use App\Models\User;
+use App\Repositories\CustomerRepository;
 use App\Repositories\InvoiceScanRepository;
 use App\Repositories\ProductRepository;
 use App\Repositories\StoreRepository;
@@ -45,6 +47,7 @@ class InvoiceExtractionService
         private ExtractorManager $manager,
         private PermissionService $permissionService,
         private SupplierRepository $supplierRepository,
+        private CustomerRepository $customerRepository,
         private ProductRepository $productRepository,
         private TaxRepository $taxRepository,
         private UnitRepository $unitRepository,
@@ -62,7 +65,7 @@ class InvoiceExtractionService
         int $storeId,
         UploadedFile $file,
         string $provider,
-        string $type
+        InvoiceTypeEnum $type
     ): array {
         $this->permissionService->authorizeStore($actor, PermissionEnum::CREATE_INVOICE, $storeId);
 
@@ -89,7 +92,7 @@ class InvoiceExtractionService
 
         $businessId = (int) ($this->storeRepository->findById($storeId)?->business_id ?? 0);
 
-        $review = $this->buildReview($extracted, $storeId, $businessId, $provider);
+        $review = $this->buildReview($extracted, $type, $storeId, $businessId, $provider);
 
         // Returned to the client so it can attribute any entity it creates during
         // review back to this scan via recordCreatedEntity().
@@ -186,13 +189,13 @@ class InvoiceExtractionService
      *
      * @param  array<string,mixed>  $review
      */
-    private function recordCompletedScan(int $userId, int $storeId, string $type, string $provider, ?string $filename, array $review): ?int
+    private function recordCompletedScan(int $userId, int $storeId, InvoiceTypeEnum $type, string $provider, ?string $filename, array $review): ?int
     {
         try {
             $scan = $this->invoiceScanRepository->create([
                 'user_id'           => $userId,
                 'store_id'          => $storeId,
-                'type'              => $type,
+                'type'              => $type->value,
                 'scan_type'         => $this->scanTypeFor($provider),
                 'status'            => InvoiceScan::STATUS_COMPLETED,
                 'original_filename' => $filename,
@@ -211,13 +214,13 @@ class InvoiceExtractionService
      * Persist a failed scan. Best-effort for the same reason as the success path —
      * the original extraction exception is what the caller re-throws.
      */
-    private function recordFailedScan(int $userId, int $storeId, string $type, string $provider, ?string $filename, string $message): void
+    private function recordFailedScan(int $userId, int $storeId, InvoiceTypeEnum $type, string $provider, ?string $filename, string $message): void
     {
         try {
             $this->invoiceScanRepository->create([
                 'user_id'           => $userId,
                 'store_id'          => $storeId,
-                'type'              => $type,
+                'type'              => $type->value,
                 'scan_type'         => $this->scanTypeFor($provider),
                 'status'            => InvoiceScan::STATUS_FAILED,
                 'original_filename' => $filename,
@@ -242,9 +245,9 @@ class InvoiceExtractionService
      */
     private function buildScanMetadata(array $review): array
     {
-        $supplier = $review['supplier'] ?? [];
-        $match = $supplier['match'] ?? null;
-        $extracted = $supplier['extracted'] ?? [];
+        $party = $review['party'] ?? [];
+        $match = $party['match'] ?? null;
+        $extracted = $party['extracted'] ?? [];
 
         $items = [];
         $matchedItems = 0;
@@ -266,7 +269,7 @@ class InvoiceExtractionService
         }
 
         return [
-            'supplier' => [
+            'party' => [
                 'extracted_name' => $extracted['name'] ?? null,
                 'matched_name'   => $match['name'] ?? null,
                 'matched'        => $match !== null,
@@ -295,7 +298,7 @@ class InvoiceExtractionService
     private function toListItem(InvoiceScan $scan): array
     {
         $metadata = $scan->metadata ?? [];
-        $supplier = $metadata['supplier'] ?? [];
+        $party = $metadata['party'] ?? [];
         $totals = $metadata['totals'] ?? [];
 
         return [
@@ -304,7 +307,7 @@ class InvoiceExtractionService
             'scan_type'          => $scan->scan_type,
             'status'             => $scan->status,
             'original_filename'  => $scan->original_filename,
-            'supplier_name'      => $supplier['matched_name'] ?? $supplier['extracted_name'] ?? null,
+            'party_name'         => $party['matched_name'] ?? $party['extracted_name'] ?? null,
             'invoice_no'         => $metadata['invoice_no'] ?? null,
             'item_count'         => $metadata['item_count'] ?? 0,
             'matched_item_count' => $metadata['matched_item_count'] ?? 0,
@@ -320,7 +323,7 @@ class InvoiceExtractionService
     /**
      * @return array<string,mixed>
      */
-    private function buildReview(ExtractedInvoice $extracted, int $storeId, int $businessId, string $provider): array
+    private function buildReview(ExtractedInvoice $extracted, InvoiceTypeEnum $type, int $storeId, int $businessId, string $provider): array
     {
         $vatTaxId = $this->resolveVatTaxId($storeId);
 
@@ -335,10 +338,10 @@ class InvoiceExtractionService
         }
         $warnings = $this->reconcile($extracted, $items, $warnings);
 
-        $supplier = $this->matchSupplier($extracted, $businessId);
+        $party = $this->matchParty($extracted, $type, $businessId);
 
         return [
-            'supplier'    => $supplier,
+            'party'       => $party,
             'invoice_no'  => $extracted->invoiceNo,
             'invoice_date' => $extracted->invoiceDate,
             'currency'    => $extracted->currency,
@@ -348,64 +351,108 @@ class InvoiceExtractionService
             'items'       => $items,
             'warnings'    => array_values($warnings),
             'source'      => $provider,
-            'suggest_ai'  => $this->shouldSuggestAi($provider, $supplier, $items),
+            'suggest_ai'  => $this->shouldSuggestAi($provider, $party, $items),
         ];
     }
 
     /**
      * The free template path can read a clean invoice but stumble on a messy one.
-     * When it comes back without a supplier or without any line items, suggest the
-     * AI scan so the user gets a better read rather than fixing everything by hand.
-     * The AI path never suggests itself.
+     * When it comes back without a counterparty or without any line items, suggest
+     * the AI scan so the user gets a better read rather than fixing everything by
+     * hand. The AI path never suggests itself.
      *
-     * @param  array<string,mixed>  $supplier
+     * @param  array<string,mixed>  $party
      * @param  list<array<string,mixed>>  $items
      */
-    private function shouldSuggestAi(string $provider, array $supplier, array $items): bool
+    private function shouldSuggestAi(string $provider, array $party, array $items): bool
     {
         if ($provider === 'gemini') {
             return false;
         }
 
-        $noSupplier = ($supplier['extracted']['name'] ?? null) === null && $supplier['match'] === null;
+        $noParty = ($party['extracted']['name'] ?? null) === null && $party['match'] === null;
 
-        return $noSupplier || $items === [];
+        return $noParty || $items === [];
     }
 
     /**
-     * Resolve the supplier (the seller) by MST then exact name. The extracted
+     * Resolve the invoice's counterparty against the store's records: the SELLER as
+     * a supplier for a purchase, the BUYER as a customer for a sale. The extracted
      * contact fields always travel back for the review header and, when unmatched,
-     * to prefill the create-supplier form; a matched supplier is never overwritten.
+     * to prefill the create form; a matched party is never overwritten.
      *
-     * @return array<string,mixed>
+     * @return array{extracted: array{name: ?string, tax_code: ?string, phone: ?string, address: ?string}, match: ?array<string,mixed>}
      */
-    private function matchSupplier(ExtractedInvoice $e, int $businessId): array
+    private function matchParty(ExtractedInvoice $e, InvoiceTypeEnum $type, int $businessId): array
     {
-        $match = null;
+        $contact = $e->counterparty($type);
 
-        if ($e->supplierTaxCode !== null) {
-            $byCode = $this->supplierRepository->findByTaxCode($businessId, $e->supplierTaxCode);
-            if ($byCode) {
-                $match = ['party_id' => (int) $byCode->party_id, 'name' => $byCode->name, 'matched_by' => 'tax_code'];
-            }
-        }
-
-        if ($match === null && $e->supplierName !== null) {
-            $byName = $this->supplierRepository->findByName($businessId, $e->supplierName);
-            if ($byName) {
-                $match = ['party_id' => (int) $byName->party_id, 'name' => $byName->name, 'matched_by' => 'name'];
-            }
-        }
+        $match = $type === InvoiceTypeEnum::SALE
+            ? $this->matchCustomer($contact, $businessId)
+            : $this->matchSupplier($contact, $businessId);
 
         return [
-            'extracted' => [
-                'name'     => $e->supplierName,
-                'tax_code' => $e->supplierTaxCode,
-                'phone'    => $e->supplierPhone,
-                'address'  => $e->supplierAddress,
-            ],
-            'match' => $match,
+            'extracted' => $contact,
+            'match'     => $match,
         ];
+    }
+
+    /**
+     * Match a supplier (the seller) by MST then exact name.
+     *
+     * @param  array{name: ?string, tax_code: ?string, phone: ?string, address: ?string}  $contact
+     * @return array<string,mixed>|null
+     */
+    private function matchSupplier(array $contact, int $businessId): ?array
+    {
+        if ($contact['tax_code'] !== null) {
+            $byCode = $this->supplierRepository->findByTaxCode($businessId, $contact['tax_code']);
+            if ($byCode) {
+                return ['party_id' => (int) $byCode->party_id, 'name' => $byCode->name, 'matched_by' => 'tax_code'];
+            }
+        }
+
+        if ($contact['name'] !== null) {
+            $byName = $this->supplierRepository->findByName($businessId, $contact['name']);
+            if ($byName) {
+                return ['party_id' => (int) $byName->party_id, 'name' => $byName->name, 'matched_by' => 'name'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Match a customer (the buyer) by MST, then phone (customers are phone-identity),
+     * then exact name.
+     *
+     * @param  array{name: ?string, tax_code: ?string, phone: ?string, address: ?string}  $contact
+     * @return array<string,mixed>|null
+     */
+    private function matchCustomer(array $contact, int $businessId): ?array
+    {
+        if ($contact['tax_code'] !== null) {
+            $byCode = $this->customerRepository->findByTaxCode($businessId, $contact['tax_code']);
+            if ($byCode) {
+                return ['party_id' => (int) $byCode->party_id, 'name' => $byCode->name, 'matched_by' => 'tax_code'];
+            }
+        }
+
+        if ($contact['phone'] !== null) {
+            $byPhone = $this->customerRepository->findByPhone($businessId, $contact['phone']);
+            if ($byPhone) {
+                return ['party_id' => (int) $byPhone->party_id, 'name' => $byPhone->name, 'matched_by' => 'phone'];
+            }
+        }
+
+        if ($contact['name'] !== null) {
+            $byName = $this->customerRepository->findByName($businessId, $contact['name']);
+            if ($byName) {
+                return ['party_id' => (int) $byName->party_id, 'name' => $byName->name, 'matched_by' => 'name'];
+            }
+        }
+
+        return null;
     }
 
     /**
