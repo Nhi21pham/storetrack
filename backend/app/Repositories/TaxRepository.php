@@ -24,6 +24,24 @@ class TaxRepository
         return $query->first();
     }
 
+    /**
+     * First active tax in the store whose normalized name is one of $names.
+     * Used to map an extracted VAT line to the store's VAT tax.
+     *
+     * @param  string[]  $names
+     */
+    public function firstActiveByNormalizedNames(int $storeId, array $names): ?Tax
+    {
+        if ($names === []) {
+            return null;
+        }
+        return Tax::query()
+            ->where('store_id', $storeId)
+            ->where('is_active', true)
+            ->whereIn('name_normalized', $names)
+            ->first();
+    }
+
     public function create(array $data): Tax
     {
         return Tax::create($data);

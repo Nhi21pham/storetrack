@@ -88,6 +88,24 @@ class CustomerRepository
         return $query->first();
     }
 
+    /** Match a customer in the business by exact tax code (MST), for invoice extraction. */
+    public function findByTaxCode(int $businessId, string $taxCode): ?Customer
+    {
+        return Customer::query()
+            ->where('business_id', $businessId)
+            ->where('tax_code', $taxCode)
+            ->first();
+    }
+
+    /** Match a customer in the business by exact name, for invoice extraction. */
+    public function findByName(int $businessId, string $name): ?Customer
+    {
+        return Customer::query()
+            ->where('business_id', $businessId)
+            ->where('name', $name)
+            ->first();
+    }
+
     public function update(Customer $customer, array $data): Customer
     {
         $customer->update($data);

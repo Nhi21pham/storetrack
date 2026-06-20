@@ -77,6 +77,15 @@ class SupplierRepository
         return $query->first();
     }
 
+    /** Match a supplier in the business by exact tax code (MST), for invoice extraction. */
+    public function findByTaxCode(int $businessId, string $taxCode): ?Supplier
+    {
+        return Supplier::query()
+            ->where('business_id', $businessId)
+            ->where('tax_code', $taxCode)
+            ->first();
+    }
+
     public function update(Supplier $supplier, array $data): Supplier
     {
         $supplier->update($data);

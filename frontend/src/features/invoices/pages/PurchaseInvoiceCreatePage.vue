@@ -215,6 +215,7 @@ import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
 import { fetchProducts } from '@/features/products/services/productService'
 import { fetchTaxes } from '@/features/taxes/services/taxService'
 import { createPurchaseInvoice, updatePurchaseInvoice, fetchInvoice } from '@/features/invoices/services/invoiceService'
+import { takeInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import {
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
@@ -425,10 +426,40 @@ const loadInvoice = async () => {
   }
 }
 
+// Prefill from a draft handed over by the Scan / review page (AI extraction).
+// Identities are already resolved there; here we just seed the form + lines.
+const applyDraft = () => {
+  const draft = takeInvoiceDraft()
+  if (!draft) return false
+  form.value = {
+    party_id: draft.party_id || '',
+    invoice_date: draft.invoice_date || todayInputDate(),
+    payment_method: draft.payment_method || 'CASH',
+    payment_status: draft.payment_status || 'UNPAID',
+    paid_amount: draft.paid_amount || '',
+    description: draft.description || '',
+  }
+  const lines = (draft.items || []).map((it) => ({
+    product_id: it.product_id || '',
+    quantity: it.quantity ?? '',
+    unit_price: it.unit_price ?? '',
+    taxes: it.taxes || {},
+    expanded: false,
+  }))
+  items.value = lines.length ? lines : [newItem()]
+  return true
+}
+
 onMounted(async () => {
   await loadOptions()
-  if (isEdit.value) await loadInvoice()
-  baseline.value = snapshot()
+  if (isEdit.value) {
+    await loadInvoice()
+    baseline.value = snapshot()
+  } else if (!applyDraft()) {
+    baseline.value = snapshot()
+  }
+  // When prefilled from a scan draft, the pristine baseline is kept on purpose so
+  // the scanned data registers as unsaved — leaving (Cancel/back) then prompts to discard.
 })
 watch(storeId, loadOptions)
 

@@ -14,8 +14,8 @@ return new class extends Migration
             $table->foreignId('product_category_id')->constrained('product_categories')->restrictOnDelete();
             $table->foreignId('unit_id')->constrained('units')->restrictOnDelete();
             $table->string('code', 20);
-            $table->string('name', 100);
-            $table->string('name_normalized', 100);
+            $table->string('name', 255);
+            $table->string('name_normalized', 255);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 

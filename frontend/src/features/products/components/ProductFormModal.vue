@@ -166,6 +166,10 @@ import { normalizeText } from '@/utils/textNormalizer'
 const props = defineProps({
   product: { type: Object, default: null },
   storeId: { type: [String, Number], default: null },
+  // Seed a NEW product's name (e.g. from an extracted invoice line). Ignored when editing.
+  prefillName: { type: String, default: '' },
+  // Seed a NEW product's unit (e.g. the unit matched on an extracted invoice line). Ignored when editing.
+  prefillUnitId: { type: [String, Number], default: '' },
 })
 
 const emit = defineEmits(['close', 'saved', 'pick-existing'])
@@ -180,8 +184,8 @@ const showCategoryForm = ref(false)
 const errors = ref({ name: '', unit_id: '', product_category_id: '' })
 
 const initialForm = () => ({
-  name: props.product?.name || '',
-  unit_id: props.product?.unit_id ? String(props.product.unit_id) : '',
+  name: props.product?.name || props.prefillName || '',
+  unit_id: props.product?.unit_id ? String(props.product.unit_id) : (props.prefillUnitId ? String(props.prefillUnitId) : ''),
   product_category_id: props.product?.product_category_id ? String(props.product.product_category_id) : '',
   code_display: props.product?.code || '',
   is_active: props.product?.is_active ?? true,
@@ -334,7 +338,7 @@ const validateForm = () => {
   errors.value = { name: '', unit_id: '', product_category_id: '' }
   const name = form.value.name.trim()
   if (!name) errors.value.name = 'Product name is required.'
-  else if (name.length > 100) errors.value.name = 'Product name must be at most 100 characters.'
+  else if (name.length > 255) errors.value.name = 'Product name must be at most 255 characters.'
 
   if (!form.value.unit_id) errors.value.unit_id = 'Unit is required.'
   if (!isEdit.value && !form.value.product_category_id) {

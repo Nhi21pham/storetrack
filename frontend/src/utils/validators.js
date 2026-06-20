@@ -55,7 +55,7 @@ export const validators = {
 
     businessPhone: (value) => {
         if (!value || !value.trim()) return null
-        if (!/^\d{10}$/.test(value.trim())) return 'Invalid phone number. Must be exactly 10 digits.'
+        if (!/^\d{10,11}$/.test(value.trim())) return 'Invalid phone number. Must be 10 or 11 digits.'
         return null
     },
 
@@ -100,7 +100,7 @@ export const validators = {
 
     customerPhone: (value) => {
         if (!value || !value.trim()) return 'Phone number is required.'
-        if (!/^\d{10}$/.test(value.trim())) return 'Invalid phone number. Must be exactly 10 digits.'
+        if (!/^\d{10,11}$/.test(value.trim())) return 'Invalid phone number. Must be 10 or 11 digits.'
         return null
     },
 }

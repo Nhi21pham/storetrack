@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();
             $table->foreignId('product_id')->constrained('products')->restrictOnDelete();
-            $table->string('product_name', 100);
+            $table->string('product_name', 255);
             $table->decimal('quantity', 15, 3);
             $table->decimal('unit_price', 15, 2);
             $table->decimal('subtotal', 15, 2);
