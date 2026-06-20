@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\Contracts;
+namespace App\Invoice\Extraction\Contracts;
 
-use App\Services\Invoice\Extraction\DTO\ExtractedInvoice;
+use App\Invoice\Extraction\DTO\ExtractedInvoice;
 
 /**
  * Swappable invoice-extraction provider. Given the raw bytes of an uploaded

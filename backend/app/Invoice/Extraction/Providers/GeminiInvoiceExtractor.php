@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\Providers;
+namespace App\Invoice\Extraction\Providers;
 
 use App\Enums\ErrorCode;
 use App\Exceptions\InvoiceExtractionException;
-use App\Services\Invoice\Extraction\Contracts\InvoiceExtractor;
-use App\Services\Invoice\Extraction\DTO\ExtractedInvoice;
-use App\Services\Invoice\Extraction\DTO\ExtractedLineItem;
+use App\Invoice\Extraction\Contracts\InvoiceExtractor;
+use App\Invoice\Extraction\DTO\ExtractedInvoice;
+use App\Invoice\Extraction\DTO\ExtractedLineItem;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;

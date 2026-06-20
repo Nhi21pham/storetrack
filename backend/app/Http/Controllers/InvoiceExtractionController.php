@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\AppException;
-use App\Services\Invoice\Extraction\InvoiceExtractionService;
+use App\Invoice\Extraction\InvoiceExtractionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

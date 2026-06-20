@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Invoice\Extraction;
+namespace App\Invoice\Extraction;
 
 use App\Enums\ErrorCode;
 use App\Enums\PermissionEnum;
@@ -11,8 +11,8 @@ use App\Repositories\StoreRepository;
 use App\Repositories\SupplierRepository;
 use App\Repositories\TaxRepository;
 use App\Repositories\UnitRepository;
-use App\Services\Invoice\Extraction\DTO\ExtractedInvoice;
-use App\Services\Invoice\Extraction\DTO\ExtractedLineItem;
+use App\Invoice\Extraction\DTO\ExtractedInvoice;
+use App\Invoice\Extraction\DTO\ExtractedLineItem;
 use App\Services\PermissionService;
 use App\Support\TextNormalizer;
 use Illuminate\Http\UploadedFile;

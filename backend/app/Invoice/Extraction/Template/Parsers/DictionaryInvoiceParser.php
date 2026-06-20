@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\Template\Parsers;
+namespace App\Invoice\Extraction\Template\Parsers;
 
-use App\Services\Invoice\Extraction\DTO\ExtractedInvoice;
-use App\Services\Invoice\Extraction\DTO\ExtractedLineItem;
-use App\Services\Invoice\Extraction\Template\Contracts\TemplateParser;
-use App\Services\Invoice\Extraction\Template\InvoiceDictionary;
-use App\Services\Invoice\Extraction\Template\InvoiceTextNormalizer;
-use App\Services\Invoice\Extraction\Template\VietnameseNumber;
+use App\Invoice\Extraction\DTO\ExtractedInvoice;
+use App\Invoice\Extraction\DTO\ExtractedLineItem;
+use App\Invoice\Extraction\Template\Contracts\TemplateParser;
+use App\Invoice\Extraction\Template\InvoiceDictionary;
+use App\Invoice\Extraction\Template\InvoiceTextNormalizer;
+use App\Invoice\Extraction\Template\VietnameseNumber;
 
 /**
  * Generic, data-driven invoice parser:

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\Template\Contracts;
+namespace App\Invoice\Extraction\Template\Contracts;
 
-use App\Services\Invoice\Extraction\DTO\ExtractedInvoice;
+use App\Invoice\Extraction\DTO\ExtractedInvoice;
 
 /**
  * Deterministic parser for one recognizable invoice layout (a given e-invoice

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Services\Invoice\Extraction;
+namespace App\Invoice\Extraction;
 
 use App\Enums\ErrorCode;
 use App\Exceptions\InvoiceExtractionException;
-use App\Services\Invoice\Extraction\Contracts\InvoiceExtractor;
+use App\Invoice\Extraction\Contracts\InvoiceExtractor;
 use Illuminate\Contracts\Container\Container;
 
 /**

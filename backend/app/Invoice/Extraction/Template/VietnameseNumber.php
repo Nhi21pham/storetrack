@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\Template;
+namespace App\Invoice\Extraction\Template;
 
 /**
  * Parses numbers as printed on Vietnamese invoices, where the thousands

@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\Providers;
+namespace App\Invoice\Extraction\Providers;
 
 use App\Enums\ErrorCode;
 use App\Exceptions\InvoiceExtractionException;
-use App\Services\Invoice\Extraction\Contracts\InvoiceExtractor;
-use App\Services\Invoice\Extraction\DTO\ExtractedInvoice;
-use App\Services\Invoice\Extraction\Template\Contracts\TemplateParser;
+use App\Invoice\Extraction\Contracts\InvoiceExtractor;
+use App\Invoice\Extraction\DTO\ExtractedInvoice;
+use App\Invoice\Extraction\Template\Contracts\TemplateParser;
 use Illuminate\Contracts\Container\Container;
 use Smalot\PdfParser\Parser as PdfParser;
 

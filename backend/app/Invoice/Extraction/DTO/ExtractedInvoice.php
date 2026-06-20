@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\DTO;
+namespace App\Invoice\Extraction\DTO;
 
 /**
  * Provider-agnostic, structured result of reading one invoice (PDF/photo). Holds

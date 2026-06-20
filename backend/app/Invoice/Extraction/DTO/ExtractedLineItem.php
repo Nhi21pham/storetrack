@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\DTO;
+namespace App\Invoice\Extraction\DTO;
 
 /**
  * One line item read off an invoice, before any matching against store records.

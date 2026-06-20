@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Invoice\Extraction\Template;
+namespace App\Invoice\Extraction\Template;
 
 /**
  * Thin typed accessor over config/invoice_dictionary.php. Keeps the parser free

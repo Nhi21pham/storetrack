@@ -1,8 +1,8 @@
 <?php
 
-use App\Services\Invoice\Extraction\Providers\GeminiInvoiceExtractor;
-use App\Services\Invoice\Extraction\Providers\TemplateInvoiceExtractor;
-use App\Services\Invoice\Extraction\Template\Parsers\DictionaryInvoiceParser;
+use App\Invoice\Extraction\Providers\GeminiInvoiceExtractor;
+use App\Invoice\Extraction\Providers\TemplateInvoiceExtractor;
+use App\Invoice\Extraction\Template\Parsers\DictionaryInvoiceParser;
 
 return [
 
