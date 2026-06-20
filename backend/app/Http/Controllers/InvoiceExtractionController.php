@@ -20,8 +20,9 @@ class InvoiceExtractionController extends Controller
 
     public function extract(Request $request, int $storeId): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:15360'],
+            'provider' => ['sometimes', 'in:template,gemini'],
         ]);
 
         try {
@@ -29,6 +30,7 @@ class InvoiceExtractionController extends Controller
                 $request->user(),
                 $storeId,
                 $request->file('file'),
+                $validated['provider'] ?? 'template',
             );
 
             return response()->json($review, 200);

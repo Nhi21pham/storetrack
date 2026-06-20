@@ -113,6 +113,7 @@ enum ErrorCode: string
     case EXTRACTION_EMPTY = 'EXTRACTION_EMPTY';
     case EXTRACTION_UNCONFIGURED = 'EXTRACTION_UNCONFIGURED';
     case EXTRACTION_FAILED = 'EXTRACTION_FAILED';
+    case EXTRACTION_NEEDS_AI = 'EXTRACTION_NEEDS_AI';
 
     // Invitation
     case INVITATION_NOT_FOUND = 'INVITATION_NOT_FOUND';
@@ -195,7 +196,8 @@ enum ErrorCode: string
             self::EXTRACTION_INVALID_FILE,
             self::VALIDATION_ERROR => 400,
 
-            self::EXTRACTION_EMPTY => 422,
+            self::EXTRACTION_EMPTY,
+            self::EXTRACTION_NEEDS_AI => 422,
 
             self::SESSION_EXPIRED => 401,
 

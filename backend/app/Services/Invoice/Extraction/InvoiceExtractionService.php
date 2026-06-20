@@ -49,7 +49,7 @@ class InvoiceExtractionService
      *
      * @return array<string,mixed>
      */
-    public function extractForReview(User $actor, int $storeId, UploadedFile $file): array
+    public function extractForReview(User $actor, int $storeId, UploadedFile $file, string $provider): array
     {
         $this->permissionService->authorizeStore($actor, PermissionEnum::CREATE_INVOICE, $storeId);
 
@@ -61,17 +61,17 @@ class InvoiceExtractionService
             );
         }
 
-        $extracted = $this->manager->driver()->extract($file->getContent(), $mime);
+        $extracted = $this->manager->driver($provider)->extract($file->getContent(), $mime);
 
         $businessId = (int) ($this->storeRepository->findById($storeId)?->business_id ?? 0);
 
-        return $this->buildReview($extracted, $storeId, $businessId);
+        return $this->buildReview($extracted, $storeId, $businessId, $provider);
     }
 
     /**
      * @return array<string,mixed>
      */
-    private function buildReview(ExtractedInvoice $extracted, int $storeId, int $businessId): array
+    private function buildReview(ExtractedInvoice $extracted, int $storeId, int $businessId, string $provider): array
     {
         $vatTaxId = $this->resolveVatTaxId($storeId);
 
@@ -86,8 +86,10 @@ class InvoiceExtractionService
         }
         $warnings = $this->reconcile($extracted, $items, $warnings);
 
+        $supplier = $this->matchSupplier($extracted, $businessId);
+
         return [
-            'supplier'    => $this->matchSupplier($extracted, $businessId),
+            'supplier'    => $supplier,
             'invoice_no'  => $extracted->invoiceNo,
             'invoice_date' => $extracted->invoiceDate,
             'currency'    => $extracted->currency,
@@ -96,7 +98,29 @@ class InvoiceExtractionService
             'grand_total' => $extracted->grandTotal,
             'items'       => $items,
             'warnings'    => array_values($warnings),
+            'source'      => $provider,
+            'suggest_ai'  => $this->shouldSuggestAi($provider, $supplier, $items),
         ];
+    }
+
+    /**
+     * The free template path can read a clean invoice but stumble on a messy one.
+     * When it comes back without a supplier or without any line items, suggest the
+     * AI scan so the user gets a better read rather than fixing everything by hand.
+     * The AI path never suggests itself.
+     *
+     * @param  array<string,mixed>  $supplier
+     * @param  list<array<string,mixed>>  $items
+     */
+    private function shouldSuggestAi(string $provider, array $supplier, array $items): bool
+    {
+        if ($provider === 'gemini') {
+            return false;
+        }
+
+        $noSupplier = ($supplier['extracted']['name'] ?? null) === null && $supplier['match'] === null;
+
+        return $noSupplier || $items === [];
     }
 
     /**

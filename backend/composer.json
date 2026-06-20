@@ -13,6 +13,7 @@
         "maatwebsite/excel": "^3.1",
         "mll-lab/laravel-graphiql": "^4.1",
         "nuwave/lighthouse": "^6.65",
+        "smalot/pdfparser": "^2.0",
         "spatie/laravel-backup": "^9.3"
     },
     "require-dev": {

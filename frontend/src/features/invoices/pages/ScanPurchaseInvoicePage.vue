@@ -35,11 +35,26 @@
             {{ extracting ? 'Reading invoice…' : 'Extract' }}
           </button>
         </div>
-        <p class="upload-note">The file is sent for one-time reading and is not stored.</p>
+
+        <ExtractionSourceBar
+          :needs-ai="needsAi"
+          :busy="extracting"
+          style="margin-top: 14px"
+          @scan-ai="scanWithAi"
+        />
+
+        <p class="upload-note">PDFs are read for free on our server; photos use AI. The file is read once and not stored.</p>
       </section>
 
       <!-- Step 2: review -->
       <template v-else>
+        <ExtractionSourceBar
+          :source="source"
+          :suggest-ai="aiSuggested"
+          :busy="extracting"
+          @scan-ai="scanWithAi"
+        />
+
         <ReferenceChipsBanner
           :groups="bannerGroups"
           message="This invoice references records that don't exist yet. Create them here and they'll be linked."
@@ -176,6 +191,7 @@ import FormMessage from '@/components/common/FormMessage.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ReferenceChipsBanner from '@/components/common/ReferenceChipsBanner.vue'
+import ExtractionSourceBar from '@/features/invoices/components/ExtractionSourceBar.vue'
 import MatchBadge from '@/features/invoices/components/MatchBadge.vue'
 import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
@@ -186,6 +202,7 @@ import { extractPurchaseInvoice } from '@/features/invoices/services/extractionS
 import { setInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import { formatMoney, formatQuantity, todayInputDate } from '@/features/invoices/constants'
 import { normalizeText } from '@/utils/textNormalizer'
+import { ErrorCode } from '@/utils/errorCodes'
 
 const ITEM_COLUMNS = [
   { key: 'idx', label: '#' },
@@ -209,6 +226,9 @@ const phase = ref('upload')
 const file = ref(null)
 const extracting = ref(false)
 const error = ref('')
+const source = ref('')
+const aiSuggested = ref(false)
+const needsAi = ref(false)
 
 const review = ref(null)
 const supplierPartyId = ref('')
@@ -300,31 +320,51 @@ watch(storeId, loadOptions)
 const onFileChange = (e) => {
   file.value = e.target.files?.[0] || null
   error.value = ''
+  needsAi.value = false
 }
 
-const extract = async () => {
+const isPdf = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name || '')
+
+const applyReview = (data, provider) => {
+  review.value = data
+  source.value = data.source || provider
+  aiSuggested.value = !!data.suggest_ai
+  supplierPartyId.value = data.supplier?.match?.party_id ? String(data.supplier.match.party_id) : ''
+  invoiceDate.value = data.invoice_date || todayInputDate()
+  lines.value = (data.items || []).map((it) => ({
+    extracted: it.extracted,
+    taxMatch: it.tax_match,
+    productId: it.match?.product_id ? String(it.match.product_id) : '',
+    unitId: it.unit_match?.unit_id ? String(it.unit_match.unit_id) : '',
+    unitName: it.unit_match?.name || '',
+  }))
+  phase.value = 'review'
+}
+
+const runExtraction = async (provider) => {
   if (!file.value || extracting.value) return
   extracting.value = true
   error.value = ''
+  needsAi.value = false
   try {
-    const data = await extractPurchaseInvoice({ storeId: storeId.value, file: file.value })
-    review.value = data
-    supplierPartyId.value = data.supplier?.match?.party_id ? String(data.supplier.match.party_id) : ''
-    invoiceDate.value = data.invoice_date || todayInputDate()
-    lines.value = (data.items || []).map((it) => ({
-      extracted: it.extracted,
-      taxMatch: it.tax_match,
-      productId: it.match?.product_id ? String(it.match.product_id) : '',
-      unitId: it.unit_match?.unit_id ? String(it.unit_match.unit_id) : '',
-      unitName: it.unit_match?.name || '',
-    }))
-    phase.value = 'review'
+    const data = await extractPurchaseInvoice({ storeId: storeId.value, file: file.value, provider })
+    applyReview(data, provider)
   } catch (err) {
-    error.value = err.message
+    // The free parser doesn't recognize this PDF — offer the AI scan instead of failing.
+    if (err.code === ErrorCode.EXTRACTION_NEEDS_AI && provider !== 'gemini') {
+      needsAi.value = true
+    } else {
+      error.value = err.message
+    }
   } finally {
     extracting.value = false
   }
 }
+
+// PDFs try the free template parser first; photos go straight to AI.
+const extract = () => runExtraction(file.value && isPdf(file.value) ? 'template' : 'gemini')
+
+const scanWithAi = () => runExtraction('gemini')
 
 // The unit already matched/created on a line for this product name, so a new
 // product can inherit it instead of making the user re-pick.
@@ -420,6 +460,9 @@ const startOver = () => {
   lines.value = []
   supplierPartyId.value = ''
   error.value = ''
+  source.value = ''
+  aiSuggested.value = false
+  needsAi.value = false
 }
 
 const goToList = () => router.push('/purchase-invoices')
