@@ -177,12 +177,23 @@
       @saved="onUnitCreated"
       @pick-existing="onUnitCreated"
     />
+
+    <ConfirmDialog
+      v-if="showLeaveWarning"
+      title="Discard scanned invoice?"
+      message="This invoice has been scanned and is ready to review. If you leave now, the scanned data will be lost."
+      confirm-text="Yes, discard"
+      cancel-text="Keep reviewing"
+      type="danger"
+      @confirm="discardAndLeave"
+      @cancel="keepReviewing"
+    />
   </PageContainer>
 </template>
 
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -191,6 +202,7 @@ import FormMessage from '@/components/common/FormMessage.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import ReferenceChipsBanner from '@/components/common/ReferenceChipsBanner.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ExtractionSourceBar from '@/features/invoices/components/ExtractionSourceBar.vue'
 import MatchBadge from '@/features/invoices/components/MatchBadge.vue'
 import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
@@ -450,6 +462,7 @@ const continueToInvoice = () => {
       taxes: line.taxMatch ? { [String(line.taxMatch.tax_id)]: String(line.taxMatch.rate) } : {},
     })),
   })
+  leaveConfirmed.value = true
   router.push('/purchase-invoices/new')
 }
 
@@ -466,6 +479,31 @@ const startOver = () => {
 }
 
 const goToList = () => router.push('/purchase-invoices')
+
+// Once the invoice has been scanned and parsed, warn before leaving (Cancel,
+// sidebar, browser back) so the reviewed data isn't lost. Continuing to the
+// create page is exempt — it sets leaveConfirmed first.
+const showLeaveWarning = ref(false)
+const leaveConfirmed = ref(false)
+const pendingTo = ref(null)
+
+onBeforeRouteLeave((to) => {
+  if (leaveConfirmed.value || phase.value !== 'review') return true
+  pendingTo.value = to.fullPath
+  showLeaveWarning.value = true
+  return false
+})
+
+const discardAndLeave = () => {
+  leaveConfirmed.value = true
+  showLeaveWarning.value = false
+  router.push(pendingTo.value || '/purchase-invoices')
+}
+
+const keepReviewing = () => {
+  showLeaveWarning.value = false
+  pendingTo.value = null
+}
 </script>
 
 <style scoped>
