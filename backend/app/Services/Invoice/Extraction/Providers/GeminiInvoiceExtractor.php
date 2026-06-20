@@ -112,8 +112,9 @@ class GeminiInvoiceExtractor implements InvoiceExtractor
             - All numbers must be plain: no thousand separators, no currency symbol,
               a dot for the decimal point.
             - For each line item: name (description), code (the seller's item code/SKU
-              if printed), quantity, unit_price, tax_rate (VAT percent, e.g. 10),
-              tax_amount, line_total.
+              if printed), unit (đơn vị tính / ĐVT, e.g. "cái", "kg", "hộp"),
+              quantity, unit_price, tax_rate (VAT percent, e.g. 10), tax_amount,
+              line_total.
             - subtotal = total before VAT; vat_total = total VAT; grand_total = total payable.
             - If a field is missing or unreadable, omit it. Do not guess.
             PROMPT;
@@ -148,6 +149,7 @@ class GeminiInvoiceExtractor implements InvoiceExtractor
                         'properties' => [
                             'name' => ['type' => 'STRING'],
                             'code' => ['type' => 'STRING'],
+                            'unit' => ['type' => 'STRING'],
                             'quantity' => ['type' => 'NUMBER'],
                             'unit_price' => ['type' => 'NUMBER'],
                             'tax_rate' => ['type' => 'NUMBER'],
@@ -182,6 +184,7 @@ class GeminiInvoiceExtractor implements InvoiceExtractor
             $items[] = new ExtractedLineItem(
                 name: $name,
                 code: $this->nullableString($row['code'] ?? null),
+                unit: $this->nullableString($row['unit'] ?? null),
                 quantity: $this->toFloat($row['quantity'] ?? null),
                 unitPrice: $this->toFloat($row['unit_price'] ?? null),
                 taxRate: $this->toFloat($row['tax_rate'] ?? null),

@@ -13,6 +13,7 @@ class ExtractedLineItem
     public function __construct(
         public readonly string $name,
         public readonly ?string $code,
+        public readonly ?string $unit,
         public readonly ?float $quantity,
         public readonly ?float $unitPrice,
         public readonly ?float $taxRate,

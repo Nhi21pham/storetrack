@@ -100,6 +100,13 @@
                 </div>
                 <span class="hint">Read: {{ line.extracted.name }}<template v-if="line.extracted.code"> · {{ line.extracted.code }}</template></span>
               </td>
+              <td class="c-unit">
+                <div class="unit-cell">
+                  <span class="unit-name">{{ line.unitName || line.extracted.unit || '—' }}</span>
+                  <MatchBadge v-if="line.extracted.unit" :matched="!!line.unitId" />
+                </div>
+                <span v-if="line.unitName && line.extracted.unit" class="hint">Read: {{ line.extracted.unit }}</span>
+              </td>
               <td class="c-num">{{ formatQuantity(line.extracted.quantity) }}</td>
               <td class="c-num">{{ formatMoney(line.extracted.unit_price) }}</td>
               <td class="c-num">{{ line.extracted.tax_rate != null ? line.extracted.tax_rate + '%' : '—' }}</td>
@@ -140,9 +147,20 @@
       :product="null"
       :store-id="storeId"
       :prefill-name="pendingProductName"
+      :prefill-unit-id="pendingProductUnitId"
       @close="closeProductForm"
       @saved="onProductCreated"
       @pick-existing="onProductCreated"
+    />
+
+    <UnitFormModal
+      v-if="showUnitForm"
+      :unit="null"
+      :store-id="storeId"
+      :prefill-name="pendingUnitName"
+      @close="closeUnitForm"
+      @saved="onUnitCreated"
+      @pick-existing="onUnitCreated"
     />
   </PageContainer>
 </template>
@@ -161,21 +179,24 @@ import ReferenceChipsBanner from '@/components/common/ReferenceChipsBanner.vue'
 import MatchBadge from '@/features/invoices/components/MatchBadge.vue'
 import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
+import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
 import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
 import { fetchProducts } from '@/features/products/services/productService'
 import { extractPurchaseInvoice } from '@/features/invoices/services/extractionService'
 import { setInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import { formatMoney, formatQuantity, todayInputDate } from '@/features/invoices/constants'
+import { normalizeText } from '@/utils/textNormalizer'
 
 const ITEM_COLUMNS = [
   { key: 'idx', label: '#' },
   { key: 'product', label: 'Product' },
+  { key: 'unit', label: 'Unit' },
   { key: 'quantity', label: 'Qty' },
   { key: 'price', label: 'Unit price' },
   { key: 'tax', label: 'VAT' },
   { key: 'total', label: 'Line total' },
 ]
-const ITEM_COL_WIDTHS = [44, 340, 90, 130, 80, 130]
+const ITEM_COL_WIDTHS = [44, 300, 130, 80, 120, 70, 120]
 
 const router = useRouter()
 const currentStore = inject('currentStore')
@@ -200,6 +221,9 @@ const products = ref([])
 const showSupplierForm = ref(false)
 const showProductForm = ref(false)
 const pendingProductName = ref('')
+const pendingProductUnitId = ref('')
+const showUnitForm = ref(false)
+const pendingUnitName = ref('')
 
 const inCurrentStore = (s) => {
   const sid = String(storeId.value ?? '')
@@ -248,6 +272,15 @@ const bannerGroups = computed(() => {
     if (!seen.has(id)) seen.set(id, { id, label: name })
   }
   if (seen.size) groups.push({ type: 'product', label: 'Products', chips: [...seen.values()] })
+  const unitSeen = new Map()
+  for (const line of lines.value) {
+    if (line.unitId) continue
+    const name = (line.extracted?.unit || '').trim()
+    if (!name) continue
+    const id = normalizeText(name)
+    if (!unitSeen.has(id)) unitSeen.set(id, { id, label: name })
+  }
+  if (unitSeen.size) groups.push({ type: 'unit', label: 'Units', chips: [...unitSeen.values()] })
   return groups
 })
 
@@ -282,6 +315,8 @@ const extract = async () => {
       extracted: it.extracted,
       taxMatch: it.tax_match,
       productId: it.match?.product_id ? String(it.match.product_id) : '',
+      unitId: it.unit_match?.unit_id ? String(it.unit_match.unit_id) : '',
+      unitName: it.unit_match?.name || '',
     }))
     phase.value = 'review'
   } catch (err) {
@@ -291,12 +326,26 @@ const extract = async () => {
   }
 }
 
+// The unit already matched/created on a line for this product name, so a new
+// product can inherit it instead of making the user re-pick.
+const unitIdForProductName = (name) => {
+  const key = name.trim().toLowerCase()
+  const line = lines.value.find(
+    (l) => (l.extracted?.name || '').trim().toLowerCase() === key && l.unitId,
+  )
+  return line ? line.unitId : ''
+}
+
 const onCreateRef = (type, chip) => {
   if (type === 'supplier') {
     showSupplierForm.value = true
   } else if (type === 'product') {
     pendingProductName.value = chip.label
+    pendingProductUnitId.value = unitIdForProductName(chip.label)
     showProductForm.value = true
+  } else if (type === 'unit') {
+    pendingUnitName.value = chip.label
+    showUnitForm.value = true
   }
 }
 
@@ -310,6 +359,28 @@ const onSupplierCreated = async (supplier) => {
 const closeProductForm = () => {
   showProductForm.value = false
   pendingProductName.value = ''
+  pendingProductUnitId.value = ''
+}
+
+const closeUnitForm = () => {
+  showUnitForm.value = false
+  pendingUnitName.value = ''
+}
+
+// Link a newly created (or picked) unit onto every still-unmatched line that read
+// the same unit text, so those lines resolve and later product creation inherits it.
+const onUnitCreated = (unit) => {
+  const readLabel = pendingUnitName.value
+  const created = normalizeText(readLabel)
+  closeUnitForm()
+  const id = unit?.id
+  if (id == null) return
+  for (const line of lines.value) {
+    if (!line.unitId && normalizeText(line.extracted?.unit || '') === created) {
+      line.unitId = String(id)
+      line.unitName = unit.name || readLabel
+    }
+  }
 }
 
 const onProductCreated = async (product) => {
@@ -387,6 +458,9 @@ const goToList = () => router.push('/purchase-invoices')
 
 .item-row :deep(td) { padding: 8px 12px; vertical-align: top; }
 .c-idx { color: #9ca3af; font-size: 13px; }
+.c-unit { font-size: 13.5px; color: #111; }
+.unit-cell { display: flex; align-items: center; gap: 6px; }
+.unit-name { font-weight: 500; }
 .c-num { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; color: #111; }
 .c-num.strong { font-weight: 700; }
 .empty-note { margin: 12px 0 0; font-size: 13px; color: #9ca3af; }

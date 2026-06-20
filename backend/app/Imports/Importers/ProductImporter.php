@@ -36,7 +36,7 @@ use App\Support\TextNormalizer;
  */
 class ProductImporter implements RowImporter
 {
-    private const MAX_NAME_LENGTH = 100;
+    private const MAX_NAME_LENGTH = 255;
 
     /** @var array<string, array{id: int, is_active: bool}> normalized category code => category */
     private array $categoryByCode = [];

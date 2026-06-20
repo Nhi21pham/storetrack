@@ -17,7 +17,7 @@ input CreateBusinessInput {
     tax_code: String! @rules(apply: ["required", "string", "regex:/^\\d+$/", "min:5", "max:50", "unique:businesses,tax_code"])
     address: String @rules(apply: ["nullable", "string", "max:500"])
     email: String @rules(apply: ["nullable", "email", "max:255"])
-    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10}$/"])
+    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10,11}$/"])
 }
 
 input UpdateBusinessInput {
@@ -25,5 +25,5 @@ input UpdateBusinessInput {
     tax_code: String @rules(apply: ["sometimes", "string", "regex:/^\\d+$/", "min:5", "max:50"])
     address: String @rules(apply: ["nullable", "string", "max:500"])
     email: String @rules(apply: ["nullable", "email", "max:255"])
-    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10}$/"])
+    phone: String @rules(apply: ["nullable", "string", "regex:/^\\d{10,11}$/"])
 }

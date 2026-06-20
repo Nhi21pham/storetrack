@@ -10,6 +10,7 @@ use App\Repositories\ProductRepository;
 use App\Repositories\StoreRepository;
 use App\Repositories\SupplierRepository;
 use App\Repositories\TaxRepository;
+use App\Repositories\UnitRepository;
 use App\Services\Invoice\Extraction\DTO\ExtractedInvoice;
 use App\Services\Invoice\Extraction\DTO\ExtractedLineItem;
 use App\Services\PermissionService;
@@ -39,6 +40,7 @@ class InvoiceExtractionService
         private SupplierRepository $supplierRepository,
         private ProductRepository $productRepository,
         private TaxRepository $taxRepository,
+        private UnitRepository $unitRepository,
         private StoreRepository $storeRepository,
     ) {}
 
@@ -163,18 +165,31 @@ class InvoiceExtractionService
             ? ['tax_id' => $vatTaxId, 'rate' => $item->taxRate]
             : null;
 
+        $unitMatch = null;
+        if ($item->unit !== null) {
+            $normalizedUnit = TextNormalizer::normalize($item->unit);
+            if ($normalizedUnit !== '') {
+                $unit = $this->unitRepository->findByNameNormalized($storeId, $normalizedUnit);
+                if ($unit) {
+                    $unitMatch = ['unit_id' => (int) $unit->id, 'name' => $unit->name];
+                }
+            }
+        }
+
         return [
             'extracted' => [
                 'name'       => $item->name,
                 'code'       => $item->code,
+                'unit'       => $item->unit,
                 'quantity'   => $item->quantity,
                 'unit_price' => $item->unitPrice,
                 'tax_rate'   => $item->taxRate,
                 'tax_amount' => $item->taxAmount,
                 'line_total' => $item->lineTotal,
             ],
-            'match'     => $match,
-            'tax_match' => $taxMatch,
+            'match'      => $match,
+            'tax_match'  => $taxMatch,
+            'unit_match' => $unitMatch,
         ];
     }
 
