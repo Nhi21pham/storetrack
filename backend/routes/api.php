@@ -133,4 +133,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/invoices/{storeId}/extract', [InvoiceExtractionController::class, 'extract'])
         ->whereNumber('storeId');
+    Route::get('/invoices/{storeId}/scans', [InvoiceExtractionController::class, 'history'])
+        ->whereNumber('storeId');
+    Route::get('/invoices/{storeId}/scans/{scanId}', [InvoiceExtractionController::class, 'historyDetail'])
+        ->whereNumber('storeId')
+        ->whereNumber('scanId');
+    Route::post('/invoices/{storeId}/scans/{scanId}/entities', [InvoiceExtractionController::class, 'recordEntity'])
+        ->whereNumber('storeId')
+        ->whereNumber('scanId');
 });

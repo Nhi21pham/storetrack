@@ -164,8 +164,8 @@
       :prefill-name="pendingProductName"
       :prefill-unit-id="pendingProductUnitId"
       @close="closeProductForm"
-      @saved="onProductCreated"
-      @pick-existing="onProductCreated"
+      @saved="onProductCreated($event, true)"
+      @pick-existing="onProductCreated($event, false)"
     />
 
     <UnitFormModal
@@ -174,8 +174,8 @@
       :store-id="storeId"
       :prefill-name="pendingUnitName"
       @close="closeUnitForm"
-      @saved="onUnitCreated"
-      @pick-existing="onUnitCreated"
+      @saved="onUnitCreated($event, true)"
+      @pick-existing="onUnitCreated($event, false)"
     />
 
     <ConfirmDialog
@@ -211,6 +211,7 @@ import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
 import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
 import { fetchProducts } from '@/features/products/services/productService'
 import { extractPurchaseInvoice } from '@/features/invoices/services/extractionService'
+import { recordScanEntity } from '@/features/invoices/services/scanHistoryService'
 import { setInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import { formatMoney, formatQuantity, todayInputDate } from '@/features/invoices/constants'
 import { normalizeText } from '@/utils/textNormalizer'
@@ -243,6 +244,7 @@ const aiSuggested = ref(false)
 const needsAi = ref(false)
 
 const review = ref(null)
+const scanId = ref(null)
 const supplierPartyId = ref('')
 const invoiceDate = ref('')
 const lines = ref([])
@@ -339,6 +341,7 @@ const isPdf = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''
 
 const applyReview = (data, provider) => {
   review.value = data
+  scanId.value = data.scan_id ?? null
   source.value = data.source || provider
   aiSuggested.value = !!data.suggest_ai
   supplierPartyId.value = data.supplier?.match?.party_id ? String(data.supplier.match.party_id) : ''
@@ -401,11 +404,19 @@ const onCreateRef = (type, chip) => {
   }
 }
 
+// Attribute an entity created during review back to this scan (best-effort — a
+// logging failure must never interrupt the review flow).
+const logScanEntity = (type, id, name) => {
+  if (!scanId.value || id == null) return
+  recordScanEntity({ storeId: storeId.value, scanId: scanId.value, type, id, name: name || '' }).catch(() => {})
+}
+
 const onSupplierCreated = async (supplier) => {
   showSupplierForm.value = false
   await loadOptions()
   const partyId = supplier?.party?.id
   if (partyId != null) supplierPartyId.value = String(partyId)
+  logScanEntity('supplier', supplier?.id ?? partyId, supplier?.name)
 }
 
 const closeProductForm = () => {
@@ -421,26 +432,29 @@ const closeUnitForm = () => {
 
 // Link a newly created (or picked) unit onto every still-unmatched line that read
 // the same unit text, so those lines resolve and later product creation inherits it.
-const onUnitCreated = (unit) => {
+// `created` is false when an existing unit was picked, which is not a new record.
+const onUnitCreated = (unit, created = true) => {
   const readLabel = pendingUnitName.value
-  const created = normalizeText(readLabel)
+  const normalized = normalizeText(readLabel)
   closeUnitForm()
   const id = unit?.id
   if (id == null) return
+  if (created) logScanEntity('unit', id, unit.name || readLabel)
   for (const line of lines.value) {
-    if (!line.unitId && normalizeText(line.extracted?.unit || '') === created) {
+    if (!line.unitId && normalizeText(line.extracted?.unit || '') === normalized) {
       line.unitId = String(id)
       line.unitName = unit.name || readLabel
     }
   }
 }
 
-const onProductCreated = async (product) => {
+const onProductCreated = async (product, created = true) => {
   const name = pendingProductName.value.trim().toLowerCase()
   closeProductForm()
   await loadOptions()
   const id = product?.id
   if (id == null || !name) return
+  if (created) logScanEntity('product', id, product.name)
   for (const line of lines.value) {
     if (!line.productId && (line.extracted?.name || '').trim().toLowerCase() === name) {
       line.productId = String(id)
@@ -470,6 +484,7 @@ const startOver = () => {
   phase.value = 'upload'
   file.value = null
   review.value = null
+  scanId.value = null
   lines.value = []
   supplierPartyId.value = ''
   error.value = ''
