@@ -150,6 +150,7 @@ class DictionaryInvoiceParser implements TemplateParser
         $codePattern = $profile['code_pattern'] ?? null;
         $started = false;
         $items = [];
+        $buffer = [];
 
         foreach ($lines as $line) {
             if (! $started) {
@@ -163,13 +164,36 @@ class DictionaryInvoiceParser implements TemplateParser
                 break;
             }
 
-            $item = $this->parseRow($line, $codePattern);
-            if ($item !== null) {
-                $items[] = $item;
+            // A long item name wraps across several lines (and the index can sit on
+            // its own line), so buffer until a line ends with the numeric cells —
+            // the end of one logical row — then parse the joined block.
+            $buffer[] = $line;
+            if ($this->isRowEnd($line)) {
+                $item = $this->parseRow(implode(' ', $buffer), $codePattern);
+                if ($item !== null) {
+                    $items[] = $item;
+                }
+                $buffer = [];
             }
         }
 
         return $items;
+    }
+
+    /** A row's final line ends with its numeric cells (≥2: e.g. unit price + total). */
+    private function isRowEnd(string $line): bool
+    {
+        $tokens = preg_split('/\s+/u', trim($line)) ?: [];
+
+        $trailing = 0;
+        for ($i = count($tokens) - 1; $i >= 0; $i--) {
+            if (! $this->isNumberToken($tokens[$i])) {
+                break;
+            }
+            $trailing++;
+        }
+
+        return $trailing >= 2;
     }
 
     /**
