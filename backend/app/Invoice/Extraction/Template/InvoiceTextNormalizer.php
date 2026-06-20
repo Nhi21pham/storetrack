@@ -36,10 +36,17 @@ class InvoiceTextNormalizer
         return implode("\n", $clean);
     }
 
-    /** Date printed as "Ngày 23 tháng 05 năm 2026" → ISO "2026-05-23". */
+    /**
+     * Date printed as "Ngày 23 tháng 05 năm 2026" → ISO "2026-05-23". Some
+     * layouts interleave bilingual hints ("Ngày (date) 30 tháng (month) 05
+     * năm (year) 2026"), so each keyword may be followed by a "(…)" token.
+     */
     public static function parseDate(string $text): ?string
     {
-        if (preg_match('/Ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})\s+năm\s+(\d{4})/u', $text, $m) !== 1) {
+        $token = '(?:\([^)]*\)\s*)?';
+        $pattern = '/Ngày\s*'.$token.'(\d{1,2})\s+tháng\s*'.$token.'(\d{1,2})\s+năm\s*'.$token.'(\d{4})/u';
+
+        if (preg_match($pattern, $text, $m) !== 1) {
             return null;
         }
 

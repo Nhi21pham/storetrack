@@ -39,15 +39,17 @@ class DictionaryInvoiceParser implements TemplateParser
         $profile = $this->dictionary->matchProfile($normalized) ?? [];
 
         // Supplier fields live above the buyer block; reading past it would grab
-        // our own name and tax code.
-        $supplierLines = $this->beforeBuyer($lines);
+        // our own name and tax code. The solution provider's footer is dropped
+        // too, so its tax code is never read as the seller's.
+        $supplierLines = $this->stripProviderNoise($this->beforeBuyer($lines));
         $taxCode = $this->field($supplierLines, 'supplier_tax_code');
 
-        $totals = $this->parseTotals($lines);
-        $subtotal = $totals['subtotal'];
-        if ($subtotal === null && ! ($profile['has_vat'] ?? true)) {
-            $subtotal = $totals['grand_total'];
-        }
+        // A single document-wide VAT rate (e.g. "Thuế suất GTGT: 10%") is carried
+        // onto every line so the review prefills the per-line tax.
+        $vatRate = $this->parseVatRate($lines);
+
+        $items = $this->parseTable($lines, $profile, $vatRate);
+        $totals = $this->deriveTotals($this->parseTotals($lines), $items, $profile);
 
         return new ExtractedInvoice(
             supplierName: $this->field($supplierLines, 'supplier_name'),
@@ -57,8 +59,8 @@ class DictionaryInvoiceParser implements TemplateParser
             invoiceNo: $this->field($lines, 'invoice_no'),
             invoiceDate: InvoiceTextNormalizer::parseDate($normalized),
             currency: $profile['currency'] ?? 'VND',
-            items: $this->parseTable($lines, $profile),
-            subtotal: $subtotal,
+            items: $items,
+            subtotal: $totals['subtotal'],
             vatTotal: $totals['vat_total'],
             grandTotal: $totals['grand_total'],
             warnings: [],
@@ -73,13 +75,96 @@ class DictionaryInvoiceParser implements TemplateParser
     {
         foreach ($lines as $i => $line) {
             foreach ($this->dictionary->buyerMarkers() as $marker) {
-                if (str_contains($line, $marker)) {
+                // Only a real "‹marker› [(English)] :" field starts the buyer block —
+                // a bare signature caption ("Người mua hàng") must not cut early.
+                $pattern = '/'.preg_quote($marker, '/').'\s*(?:\([^)]*\))?\s*[:：]/u';
+                if (preg_match($pattern, $line) === 1) {
                     return array_slice($lines, 0, $i);
                 }
             }
         }
 
         return $lines;
+    }
+
+    /**
+     * Drop the e-invoice solution provider's footer lines so their tax code is
+     * never read as the seller's.
+     *
+     * @param  list<string>  $lines
+     * @return list<string>
+     */
+    private function stripProviderNoise(array $lines): array
+    {
+        $markers = $this->dictionary->providerNoise();
+        if ($markers === []) {
+            return $lines;
+        }
+
+        return array_values(array_filter(
+            $lines,
+            function (string $line) use ($markers): bool {
+                foreach ($markers as $marker) {
+                    if (str_contains($line, $marker)) {
+                        return false;
+                    }
+                }
+                return true;
+            },
+        ));
+    }
+
+    /**
+     * The document-wide VAT rate as a percent number (e.g. 10), or null when the
+     * layout prints no VAT rate.
+     *
+     * @param  list<string>  $lines
+     */
+    private function parseVatRate(array $lines): ?float
+    {
+        foreach ($lines as $line) {
+            foreach ($this->dictionary->vatRateLabels() as $label) {
+                $pattern = '/'.preg_quote($label, '/').'\s*(?:\([^)]*\))?\s*[:：]?\s*([\d.,]+)\s*%/u';
+                if (preg_match($pattern, $line, $m) === 1) {
+                    return VietnameseNumber::parse($m[1]);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Fill in totals the layout leaves dislocated from their labels: the subtotal
+     * from the line items, and the grand total from subtotal + VAT. A no-VAT
+     * layout prints only the payable total, which is also the subtotal.
+     *
+     * @param  array{subtotal: ?float, vat_total: ?float, grand_total: ?float}  $totals
+     * @param  list<ExtractedLineItem>  $items
+     * @param  array<string,mixed>  $profile
+     * @return array{subtotal: ?float, vat_total: ?float, grand_total: ?float}
+     */
+    private function deriveTotals(array $totals, array $items, array $profile): array
+    {
+        if ($totals['subtotal'] === null) {
+            $sum = 0.0;
+            foreach ($items as $item) {
+                $sum += (float) ($item->lineTotal ?? 0);
+            }
+            if ($sum > 0) {
+                $totals['subtotal'] = $sum;
+            }
+        }
+
+        if ($totals['subtotal'] === null && ! ($profile['has_vat'] ?? true)) {
+            $totals['subtotal'] = $totals['grand_total'];
+        }
+
+        if ($totals['grand_total'] === null && $totals['subtotal'] !== null) {
+            $totals['grand_total'] = $totals['subtotal'] + (float) ($totals['vat_total'] ?? 0);
+        }
+
+        return $totals;
     }
 
     /**
@@ -116,7 +201,9 @@ class DictionaryInvoiceParser implements TemplateParser
             $best = null;
             foreach ($this->dictionary->totals() as $field => $labels) {
                 foreach ($labels as $label) {
-                    $pattern = '/'.preg_quote($label, '/').'\s*(?:\([^)]*\))?\s*[:：]?\s*([\d.,]+)/u';
+                    // Case-insensitive: some layouts print totals in uppercase
+                    // ("TỔNG CỘNG TIỀN THANH TOÁN").
+                    $pattern = '/'.preg_quote($label, '/').'\s*(?:\([^)]*\))?\s*[:：]?\s*([\d.,]+)/ui';
                     if (preg_match($pattern, $line, $m) === 1) {
                         $length = mb_strlen($label);
                         if ($best === null || $length > $best['length']) {
@@ -139,7 +226,7 @@ class DictionaryInvoiceParser implements TemplateParser
      * @param  array<string,mixed>  $profile
      * @return list<ExtractedLineItem>
      */
-    private function parseTable(array $lines, array $profile): array
+    private function parseTable(array $lines, array $profile, ?float $vatRate = null): array
     {
         $start = $profile['table_start'] ?? null;
         $end = $profile['table_end'] ?? null;
@@ -169,7 +256,7 @@ class DictionaryInvoiceParser implements TemplateParser
             // the end of one logical row — then parse the joined block.
             $buffer[] = $line;
             if ($this->isRowEnd($line)) {
-                $item = $this->parseRow(implode(' ', $buffer), $codePattern);
+                $item = $this->parseRow(implode(' ', $buffer), $codePattern, $vatRate);
                 if ($item !== null) {
                     $items[] = $item;
                 }
@@ -200,7 +287,7 @@ class DictionaryInvoiceParser implements TemplateParser
      * Reconstruct one item row from flattened text: peel the trailing number cells
      * (qty / unit price / line total) off the end, then split name / code / unit.
      */
-    private function parseRow(string $line, ?string $codePattern): ?ExtractedLineItem
+    private function parseRow(string $line, ?string $codePattern, ?float $vatRate = null): ?ExtractedLineItem
     {
         $row = trim(preg_replace('/\s+/u', ' ', $line));
         if (preg_match('/^\d+(\D.*)$/u', $row, $m) !== 1) {
@@ -237,7 +324,7 @@ class DictionaryInvoiceParser implements TemplateParser
             unit: $unit,
             quantity: $quantity,
             unitPrice: $unitPrice,
-            taxRate: null,
+            taxRate: $vatRate,
             taxAmount: null,
             lineTotal: $lineTotal,
         );

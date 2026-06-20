@@ -27,9 +27,18 @@ return [
         'invoice_no'        => ['Số'],
     ],
 
-    // Once any of these is seen, stop reading supplier fields — the rest of the
-    // document describes the buyer (us), whose name/tax code we must not capture.
-    'buyer_markers' => ['Họ tên người mua hàng', 'Họ và tên người mua hàng', 'Đơn vị mua hàng', 'Người mua hàng'],
+    // Once any of these is seen (as a real "‹marker› :" field, not a signature
+    // caption), stop reading supplier fields — the rest of the document describes
+    // the buyer (us), whose name/tax code we must not capture.
+    'buyer_markers' => ['Họ tên người mua hàng', 'Họ và tên người mua hàng', 'Đơn vị mua hàng', 'Người mua hàng', 'Tên khách hàng'],
+
+    // Footer phrases identifying the e-invoice solution provider's own line. Those
+    // lines carry the provider's tax code; skip them when reading supplier fields.
+    'provider_noise' => ['cung cấp giải pháp', 'cung cấp dịch vụ', 'cung cấp bởi'],
+
+    // Label synonyms for a document-wide VAT rate, applied to every line so the
+    // review prefills the per-line tax (e.g. "Thuế suất GTGT (VAT rate): 10%").
+    'vat_rate' => ['Thuế suất GTGT', 'Thuế suất'],
 
     // Total lines. When a line matches several of these, the longest synonym wins
     // (so "Cộng tiền hàng" is read as the subtotal, not the grand total's "Cộng").
@@ -61,6 +70,40 @@ return [
             'table_start'  => '/^\s*A\s+B\s+C\s+D\s+1\s+2\s+3\s+4\s*$/u',
             'table_end'    => '/^\s*Cộng\b/u',
             'code_pattern' => '/HH\d{3,}/u',
+        ],
+
+        // VNPT sales bill (hóa đơn bán hàng): no VAT, no product-code column; the
+        // table and totals print above the header in the extracted text.
+        'vnpt_sales' => [
+            'detect'       => ['HÓA ĐƠN BÁN HÀNG', 'vnpt-invoice'],
+            'currency'     => 'VND',
+            'has_vat'      => false,
+            'table_start'  => '/^1 2 3 4 5 6=4x5$/u',
+            'table_end'    => '/^HÓA ĐƠN BÁN HÀNG$/u',
+            'code_pattern' => null,
+        ],
+
+        // Viettel VAT e-invoice: single document-wide rate, clean numeric rows,
+        // no product-code column.
+        'viettel_vat' => [
+            'detect'       => ['HÓA ĐƠN GIÁ TRỊ GIA TĂNG', 'vinvoice.viettel.vn'],
+            'currency'     => 'VND',
+            'has_vat'      => true,
+            'table_start'  => '/^1 2 3 4 5 6 = 4 x 5$/u',
+            'table_end'    => '/^Cộng tiền hàng\b/u',
+            'code_pattern' => null,
+        ],
+
+        // HILO (T-VAN) VAT e-invoice: the seller block sits at the foot of the
+        // document and the subtotal/total are dislocated from their labels (both
+        // derived). Product code is printed in parentheses, e.g. "(81H-022.15)".
+        'hilo_vat' => [
+            'detect'       => ['HÓA ĐƠN GIÁ TRỊ GIA TĂNG', 'hilo.com.vn'],
+            'currency'     => 'VND',
+            'has_vat'      => true,
+            'table_start'  => '/^\(0\) 1 2 3 4 5=3x4$/u',
+            'table_end'    => '/^Cộng tiền hàng\b/u',
+            'code_pattern' => '/\(?\d{2,3}[A-Z][\w.\-]+\)?/u',
         ],
 
     ],

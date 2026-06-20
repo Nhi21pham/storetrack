@@ -70,4 +70,27 @@ class InvoiceDictionary
     {
         return (array) ($this->data['totals'] ?? []);
     }
+
+    /**
+     * Label synonyms for the printed VAT rate (e.g. "Thuế suất GTGT: 10%"),
+     * used to apply a single document-wide rate to every line.
+     *
+     * @return list<string>
+     */
+    public function vatRateLabels(): array
+    {
+        return (array) ($this->data['vat_rate'] ?? []);
+    }
+
+    /**
+     * Phrases that mark the e-invoice solution provider's own footer line. Those
+     * lines carry the provider's name and tax code, which must never be mistaken
+     * for the seller's when reading supplier fields.
+     *
+     * @return list<string>
+     */
+    public function providerNoise(): array
+    {
+        return (array) ($this->data['provider_noise'] ?? []);
+    }
 }
