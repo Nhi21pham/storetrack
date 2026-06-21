@@ -125,6 +125,16 @@ class ExportController extends Controller
         ));
     }
 
+    public function queueInvoiceDocuments(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->invoiceService->queueDocumentExport(
+            $request->user(),
+            $storeId,
+            $this->extractInvoiceExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
     public function queueStockReport(Request $request, int $storeId): JsonResponse
     {
         return $this->queued(fn () => $this->stockReportService->queueExport(
@@ -266,7 +276,7 @@ class ExportController extends Controller
                 $path,
                 $export->filename,
                 [
-                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'Content-Type' => $this->contentTypeFor($export->filename),
                 ]
             )->deleteFileAfterSend();
 
@@ -289,6 +299,20 @@ class ExportController extends Controller
      * sharing a login each get their own export instead of colliding on
      * the same in-flight row.
      */
+    /**
+     * MIME type for the download response, picked from the file extension so
+     * the same endpoint can serve spreadsheets, PDFs and zip archives.
+     */
+    private function contentTypeFor(string $filename): string
+    {
+        return match (strtolower(pathinfo($filename, PATHINFO_EXTENSION))) {
+            'xlsx'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'pdf'   => 'application/pdf',
+            'zip'   => 'application/zip',
+            default => 'application/octet-stream',
+        };
+    }
+
     private function extractClientId(Request $request): ?string
     {
         $clientId = $request->header('X-Client-Id');

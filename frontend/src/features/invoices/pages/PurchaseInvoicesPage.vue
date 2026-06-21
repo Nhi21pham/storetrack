@@ -35,16 +35,19 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedInvoices.length === 0" @click="run" />
+        <ExportButton label="Export PDF" title="Export invoice contents as PDF" :exporting="exportingPdf" :disabled="sortedInvoices.length === 0" @click="runPdf" />
       </div>
 
       <InvoiceSelectionBar
         v-if="selectedIds.size > 0"
         :count="selectedIds.size"
         :exporting="exporting"
+        :exportingPdf="exportingPdf"
         :bulkDeleting="bulkDeleting"
         :canDelete="!!currentStore?.is_active && canDelete"
         @clear="clearSelection"
         @export="run"
+        @export-pdf="runPdf"
         @delete="confirmBulkDelete"
       />
 
@@ -222,7 +225,7 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
-import { fetchInvoice, startInvoiceExport } from '@/features/invoices/services/invoiceService'
+import { fetchInvoice, startInvoiceExport, startInvoiceDocumentExport } from '@/features/invoices/services/invoiceService'
 import {
   INVOICE_COLUMNS, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
   PAYMENT_METHODS, PAYMENT_STATUSES,
@@ -319,20 +322,27 @@ const handleBulkDelete = async () => {
   }
 }
 
+// Shared filter set for both exports: the active filters, plus the selected
+// ids when a selection is active (otherwise the whole filtered view).
+const baseExportParams = () => {
+  const params = {
+    type: INVOICE_TYPE.PURCHASE,
+    search: searchQuery.value.trim() || undefined,
+    payment_method: methodFilter.value || undefined,
+    payment_status: statusFilter.value || undefined,
+    party_id: partyFilter.value || undefined,
+    start_date: startDate.value || undefined,
+    end_date: endDate.value || undefined,
+  }
+  if (selectedIds.value.size > 0) {
+    params.ids = Array.from(selectedIds.value)
+  }
+  return params
+}
+
 const { exporting, run } = useExport({
   start: () => {
-    const params = {
-      type: INVOICE_TYPE.PURCHASE,
-      search: searchQuery.value.trim() || undefined,
-      payment_method: methodFilter.value || undefined,
-      payment_status: statusFilter.value || undefined,
-      party_id: partyFilter.value || undefined,
-      start_date: startDate.value || undefined,
-      end_date: endDate.value || undefined,
-    }
-    if (selectedIds.value.size > 0) {
-      params.ids = Array.from(selectedIds.value)
-    }
+    const params = baseExportParams()
     params.columns = columnVisibility.togglableColumns
       .filter((col) => columnVisibility.isVisible(col.key))
       .map((col) => col.key)
@@ -340,6 +350,13 @@ const { exporting, run } = useExport({
   },
   defaultFilename: (id) => `purchase-invoices-${id}.xlsx`,
   onSuccess: () => showToast('Invoice export ready.', 'success'),
+  onError:   (msg) => showToast(msg, 'error'),
+})
+
+const { exporting: exportingPdf, run: runPdf } = useExport({
+  start: () => startInvoiceDocumentExport({ storeId: currentStore.value.id, params: baseExportParams() }),
+  defaultFilename: (id) => `purchase-invoices-${id}.zip`,
+  onSuccess: () => showToast('Invoice PDF export ready.', 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

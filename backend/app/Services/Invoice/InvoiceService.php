@@ -11,6 +11,7 @@ use App\Enums\PermissionEnum;
 use App\Exceptions\InvoiceException;
 use App\Exceptions\TaxException;
 use App\Exports\InvoiceExport;
+use App\Jobs\Exports\ExportInvoiceDocumentJob;
 use App\Jobs\Exports\ExportInvoiceJob;
 use App\Models\Export;
 use App\Models\Invoice\Invoice;
@@ -35,6 +36,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class InvoiceService
 {
+    /** Most invoices a single PDF-document (zip) export will render in one job. */
+    public const MAX_DOCUMENT_EXPORT = 200;
+
     public function __construct(
         private InvoiceRepository $invoiceRepository,
         private InvoiceSequenceRepository $sequenceRepository,
@@ -209,6 +213,41 @@ class InvoiceService
             $scopeName,
             $normalizedFilters,
             $jobClass,
+            $clientId,
+        );
+    }
+
+    /**
+     * Queue a per-invoice PDF document export: a zip with one PDF per matched
+     * invoice. Caps the batch size (PDF rendering is far heavier than a streamed
+     * sheet) and rejects an empty selection up front.
+     */
+    public function queueDocumentExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
+    {
+        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
+
+        $normalizedFilters = $this->normalizeExportFilters($filters);
+        unset($normalizedFilters['columns']);
+
+        $count = $this->invoiceRepository->documentsQuery($storeId, $normalizedFilters)->count();
+        if ($count === 0) {
+            throw new InvoiceException(ErrorCode::VALIDATION_ERROR, 'No invoices match the current selection to export.');
+        }
+        if ($count > self::MAX_DOCUMENT_EXPORT) {
+            throw new InvoiceException(
+                ErrorCode::VALIDATION_ERROR,
+                'Too many invoices to export at once (max '.self::MAX_DOCUMENT_EXPORT.'). Narrow the filters or select fewer invoices.',
+            );
+        }
+
+        return $this->exportService->queue(
+            $user,
+            ExportInvoiceDocumentJob::TYPE,
+            ExportScope::STORE,
+            $storeId,
+            Store::find($storeId)?->name,
+            $normalizedFilters,
+            ExportInvoiceDocumentJob::class,
             $clientId,
         );
     }
