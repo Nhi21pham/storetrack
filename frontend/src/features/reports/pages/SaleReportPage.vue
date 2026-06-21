@@ -46,7 +46,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="tableColumns" :initial-widths="tableWidths">
+        <ResizableTable :key="tableKey" :columns="tableColumns" :initial-widths="tableWidths" sticky-header>
           <template v-for="col in tableColumns" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
