@@ -11,6 +11,7 @@ use App\Imports\Readers\RawSheetImport;
 use App\Jobs\Imports\ProcessImportJob;
 use App\Models\Import;
 use App\Models\User;
+use App\Support\Pagination;
 use App\Support\TextNormalizer;
 use DateTimeInterface;
 use Illuminate\Http\UploadedFile;
@@ -367,13 +368,7 @@ class ImportService
     {
         $paginator = $this->importRepository->paginateForScope($scopeId, $type, $startDate, $endDate, min(max($perPage, 1), 100));
 
-        return [
-            'data'         => array_map(fn (Import $import) => $this->toListItem($import), $paginator->items()),
-            'total'        => $paginator->total(),
-            'current_page' => $paginator->currentPage(),
-            'last_page'    => $paginator->lastPage(),
-            'per_page'     => $paginator->perPage(),
-        ];
+        return Pagination::present($paginator, fn (Import $import) => $this->toListItem($import));
     }
 
     /**

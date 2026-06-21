@@ -293,12 +293,63 @@ class ExportController extends Controller
         }
     }
 
+    public function storeHistory(Request $request, int $storeId): JsonResponse
+    {
+        try {
+            return response()->json($this->exportService->history(
+                $request->user(),
+                $storeId,
+                $this->extractHistoryTypes($request),
+                $this->nullableQuery($request, 'start_date'),
+                $this->nullableQuery($request, 'end_date'),
+                (int) $request->query('per_page', 20),
+            ));
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    public function businessHistory(Request $request, int $businessId): JsonResponse
+    {
+        try {
+            return response()->json($this->exportService->businessHistory(
+                $request->user(),
+                $businessId,
+                $this->extractHistoryTypes($request),
+                $this->nullableQuery($request, 'start_date'),
+                $this->nullableQuery($request, 'end_date'),
+                (int) $request->query('per_page', 20),
+            ));
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
     /**
-     * The per-browser id the frontend mints into localStorage and sends on
-     * every request. Used as a dedup dimension so two devices/browsers
-     * sharing a login each get their own export instead of colliding on
-     * the same in-flight row.
+     * Export types to narrow the history to — accepts a single `type` or a
+     * repeated `type[]` (the invoice pages pass invoices + invoice-documents).
+     * Returns null to mean "every type for this scope".
      */
+    private function extractHistoryTypes(Request $request): ?array
+    {
+        $type = $request->query('type');
+
+        if (is_array($type)) {
+            $types = array_values(array_filter($type, fn ($value) => is_string($value) && $value !== ''));
+
+            return $types !== [] ? $types : null;
+        }
+
+        return is_string($type) && $type !== '' ? [$type] : null;
+    }
+
+    private function nullableQuery(Request $request, string $key): ?string
+    {
+        $value = $request->query($key);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
     /**
      * MIME type for the download response, picked from the file extension so
      * the same endpoint can serve spreadsheets, PDFs and zip archives.
@@ -313,6 +364,12 @@ class ExportController extends Controller
         };
     }
 
+    /**
+     * The per-browser id the frontend mints into localStorage and sends on
+     * every request. Used as a dedup dimension so two devices/browsers
+     * sharing a login each get their own export instead of colliding on
+     * the same in-flight row.
+     */
     private function extractClientId(Request $request): ?string
     {
         $clientId = $request->header('X-Client-Id');

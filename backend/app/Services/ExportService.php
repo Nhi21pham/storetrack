@@ -9,6 +9,7 @@ use App\Jobs\Exports\BaseExportJob;
 use App\Models\Export;
 use App\Models\User;
 use App\Repositories\ExportRepository;
+use App\Support\Pagination;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 
@@ -23,7 +24,74 @@ class ExportService
 {
     public const DISK = 'temp';
 
-    public function __construct(private ExportRepository $exportRepository) {}
+    public function __construct(
+        private ExportRepository $exportRepository,
+        private PermissionService $permissionService,
+    ) {}
+
+    /**
+     * Shaped, paginated export history for a store, optionally narrowed to a set
+     * of export types so each page shows only its own exports. Any store member
+     * may view. Informational only — files may already be gone.
+     *
+     * @param  list<string>|null  $types
+     * @return array{data: list<array<string,mixed>>, total: int, current_page: int, last_page: int, per_page: int}
+     */
+    public function history(User $actor, int $scopeId, ?array $types, ?string $startDate, ?string $endDate, int $perPage = 20): array
+    {
+        $this->permissionService->authorizeStoreAccess($actor, $scopeId);
+
+        return $this->paginatedHistory($scopeId, $types, $startDate, $endDate, $perPage);
+    }
+
+    /**
+     * Same as history() but for business-scoped exports (customers, suppliers,
+     * banks, …), gated by business membership.
+     *
+     * @param  list<string>|null  $types
+     * @return array{data: list<array<string,mixed>>, total: int, current_page: int, last_page: int, per_page: int}
+     */
+    public function businessHistory(User $actor, int $businessId, ?array $types, ?string $startDate, ?string $endDate, int $perPage = 20): array
+    {
+        $this->permissionService->authorizeBusinessAccess($actor, $businessId);
+
+        return $this->paginatedHistory($businessId, $types, $startDate, $endDate, $perPage);
+    }
+
+    /**
+     * @param  list<string>|null  $types
+     * @return array{data: list<array<string,mixed>>, total: int, current_page: int, last_page: int, per_page: int}
+     */
+    private function paginatedHistory(int $scopeId, ?array $types, ?string $startDate, ?string $endDate, int $perPage): array
+    {
+        $paginator = $this->exportRepository->paginateForScope($scopeId, $types, $startDate, $endDate, min(max($perPage, 1), 100));
+
+        return Pagination::present($paginator, fn (Export $export) => $this->historyListItem($export));
+    }
+
+    /**
+     * History-row projection for the export board (type + filename + status +
+     * who/when). No re-download link — files are transient.
+     *
+     * @return array<string,mixed>
+     */
+    private function historyListItem(Export $export): array
+    {
+        $metadata = $export->metadata ?? [];
+
+        return [
+            'id'            => $export->id,
+            'type'          => $export->type,
+            'status'        => $export->status,
+            'filename'      => $export->filename,
+            'scope_name'    => $metadata['scope_name'] ?? null,
+            'error_message' => $export->error_message,
+            'user_name'     => $export->user?->name,
+            'user_email'    => $export->user?->email,
+            'created_at'    => optional($export->created_at)->toIso8601String(),
+            'completed_at'  => optional($export->completed_at)->toIso8601String(),
+        ];
+    }
 
     public function createPending(User $user, string $type, array $metadata = []): Export
     {

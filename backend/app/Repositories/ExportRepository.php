@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Export;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class ExportRepository
@@ -10,6 +11,35 @@ class ExportRepository
     public function create(array $attributes): Export
     {
         return Export::create($attributes);
+    }
+
+    /**
+     * Paginated export history for a scope, newest first, optionally narrowed to
+     * a set of export types (e.g. ['invoices', 'invoice-documents'] for the
+     * invoice pages) and a created-at date range. Scoped by metadata->scope_id
+     * so every member of the store/business sees the scope's exports, not just
+     * their own.
+     *
+     * @param  list<string>|null  $types
+     */
+    public function paginateForScope(int $scopeId, ?array $types, ?string $startDate, ?string $endDate, int $perPage = 20): LengthAwarePaginator
+    {
+        $query = Export::query()
+            ->with('user')
+            ->where('metadata->scope_id', $scopeId)
+            ->orderByDesc('id');
+
+        if ($types !== null && $types !== []) {
+            $query->whereIn('type', $types);
+        }
+        if ($startDate !== null && $startDate !== '') {
+            $query->whereDate('created_at', '>=', $startDate);
+        }
+        if ($endDate !== null && $endDate !== '') {
+            $query->whereDate('created_at', '<=', $endDate);
+        }
+
+        return $query->paginate($perPage);
     }
 
     public function find(int $id): ?Export
