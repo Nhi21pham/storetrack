@@ -16,7 +16,9 @@
     $balance = (float) $invoice->balance;
     $titleText = $isSale ? 'SALES INVOICE' : 'PURCHASE INVOICE';
     $amountWords = ucfirst(NumberToWords::en($invoice->grand_total)).' dong';
-    $contact = array_values(array_filter([$store?->phone, $store?->email]));
+    $invoiceDate = optional($invoice->invoice_date)->format('F j, Y') ?? '—';
+
+    $party = $invoice->party?->customer ?? $invoice->party?->supplier;
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -31,6 +33,7 @@
         .head td { vertical-align: top; }
         .store { font-size: 16px; font-weight: bold; color: #111; text-transform: uppercase; letter-spacing: 0.3px; }
         .store-sub { font-size: 10.5px; color: #6b7280; padding-top: 2px; }
+        .store-sub .store-k { color: #9ca3af; }
         .head-right { text-align: right; width: 230px; }
         .kv { font-size: 11px; padding-top: 2px; }
         .kv .k { color: #9ca3af; }
@@ -39,7 +42,8 @@
         .rule { border-bottom: 2px solid #111; margin: 12px 0 0; }
 
         .title { text-align: center; font-size: 19px; font-weight: bold; letter-spacing: 2px; color: #111; margin: 16px 0 4px; }
-        .title-underline { width: 56px; border-bottom: 2px solid #111; margin: 0 auto 16px; }
+        .title-underline { width: 56px; border-bottom: 2px solid #111; margin: 0 auto 6px; }
+        .title-date { text-align: center; font-size: 11.5px; font-style: italic; color: #4b5563; margin: 0 0 16px; }
 
         .party { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
         .party td { padding: 2px 0; font-size: 11.5px; vertical-align: top; }
@@ -84,17 +88,12 @@
         <tr>
             <td>
                 <div class="store">{{ $store?->name ?? '—' }}</div>
-                @if ($store?->address)
-                    <div class="store-sub">{{ $store->address }}</div>
-                @endif
-                @if (count($contact) > 0)
-                    <div class="store-sub">{{ implode(' · ', $contact) }}</div>
-                @endif
+                <div class="store-sub"><span class="store-k">Address:</span> {{ $store?->address }}</div>
+                <div class="store-sub"><span class="store-k">Phone:</span> {{ $store?->phone }}</div>
+                <div class="store-sub"><span class="store-k">Email:</span> {{ $store?->email }}</div>
             </td>
             <td class="head-right">
                 <div class="kv"><span class="k">No.</span><span class="v">{{ $invoice->code }}</span></div>
-                <div class="kv"><span class="k">Date</span><span class="v">{{ optional($invoice->invoice_date)->format('F j, Y') ?? '—' }}</span></div>
-                <div class="kv"><span class="k">Status</span><span class="v">{{ ucfirst($invoice->payment_status->value) }}</span></div>
             </td>
         </tr>
     </table>
@@ -102,11 +101,24 @@
 
     <div class="title">{{ $titleText }}</div>
     <div class="title-underline"></div>
+    <div class="title-date">{{ $invoiceDate }}</div>
 
     <table class="party">
         <tr>
             <td class="p-label">{{ $partyLabel }}</td>
             <td class="p-value">{{ $invoice->party_name ?? '—' }}</td>
+        </tr>
+        <tr>
+            <td class="p-label">Phone</td>
+            <td class="p-value">{{ $party?->phone }}</td>
+        </tr>
+        <tr>
+            <td class="p-label">Address</td>
+            <td class="p-value">{{ $party?->address }}</td>
+        </tr>
+        <tr>
+            <td class="p-label">Tax code</td>
+            <td class="p-value">{{ $party?->tax_code }}</td>
         </tr>
         <tr>
             <td class="p-label">Payment method</td>

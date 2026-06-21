@@ -6,7 +6,8 @@
     :title="exporting ? 'Preparing export...' : title"
     @click="$emit('click')"
   >
-    <svg :width="iconSize" :height="iconSize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <svg v-if="exporting" class="spinner" :width="iconSize" :height="iconSize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9" stroke-linecap="round"/></svg>
+    <svg v-else :width="iconSize" :height="iconSize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
     <span>{{ exporting ? 'Exporting...' : label }}</span>
   </button>
 </template>
@@ -33,6 +34,9 @@ const iconSize = computed(() => (props.variant === 'ghost' ? 13 : 14))
 
 <style scoped>
 .export-btn { display: inline-flex; align-items: center; gap: 6px; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background 0.2s, border-color 0.15s, opacity 0.2s; }
+
+.spinner { animation: export-spin 0.7s linear infinite; }
+@keyframes export-spin { to { transform: rotate(360deg); } }
 
 .export-btn.solid { border: 1px solid #111; font-weight: 600; color: #fff; background: #111; }
 .export-btn.solid:hover:not(:disabled) { background: #000; }
