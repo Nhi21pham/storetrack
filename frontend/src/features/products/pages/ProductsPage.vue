@@ -230,11 +230,10 @@
       </template>
     </ImportModal>
 
-    <ImportHistoryModal
+    <HistoryModal
       v-if="showHistory"
-      title="Product Import History"
-      type="products"
-      :store-id="currentStore.id"
+      title="Product History"
+      :tabs="historyTabs"
       @close="showHistory = false"
     />
 
@@ -320,7 +319,9 @@ import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import HistoryButton from '@/components/common/HistoryButton.vue'
 import ImportButton from '@/components/common/ImportButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
-import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ImportHistoryPanel from '@/components/common/ImportHistoryPanel.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import MissingReferencesImportBanner from '@/components/common/MissingReferencesImportBanner.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
@@ -408,6 +409,11 @@ const clearFilters = () => {
 const showForm = ref(false)
 const showImport = ref(false)
 const showHistory = ref(false)
+
+const historyTabs = computed(() => [
+  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'products' } },
+  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['products'] } },
+])
 const editingProduct = ref(null)
 const detailProduct = ref(null)
 const deleteTarget = ref(null)

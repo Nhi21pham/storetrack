@@ -187,11 +187,10 @@
       @imported="onImported"
     />
 
-    <ImportHistoryModal
+    <HistoryModal
       v-if="showHistory && currentStore"
-      title="Tag Import History"
-      type="tags"
-      :store-id="currentStore.id"
+      title="Tag History"
+      :tabs="historyTabs"
       @close="showHistory = false"
     />
   </PageContainer>
@@ -212,7 +211,9 @@ import ExportButton from '@/components/common/ExportButton.vue'
 import ImportButton from '@/components/common/ImportButton.vue'
 import HistoryButton from '@/components/common/HistoryButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
-import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ImportHistoryPanel from '@/components/common/ImportHistoryPanel.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
@@ -268,6 +269,11 @@ const deleting = ref(false)
 
 const showImport = ref(false)
 const showHistory = ref(false)
+
+const historyTabs = computed(() => [
+  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'tags' } },
+  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['tags'] } },
+])
 
 // Explains the Value column grammar in the import dialog (kept in sync with
 // TagImporter's parser on the backend).

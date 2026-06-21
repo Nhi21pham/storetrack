@@ -2,7 +2,7 @@
   <PageContainer :maxWidth="1100">
     <PageHeader title="Sale Invoices" subtitle="Sales recorded to your customers.">
       <template v-if="currentStore" #actions>
-        <HistoryButton label="Scan history" title="View scan history" @click="showScanHistory = true" />
+        <HistoryButton label="History" title="View scan & export history" @click="showScanHistory = true" />
         <template v-if="currentStore.is_active">
           <ScanInvoiceButton to="/sale-invoices/scan" />
           <button class="btn-create" @click="goToCreate">
@@ -184,10 +184,10 @@
         @cancel="showBulkDeleteConfirm = false"
       />
 
-      <ScanHistoryModal
+      <HistoryModal
         v-if="showScanHistory"
-        :store-id="currentStore.id"
-        type="sale"
+        title="Invoice History"
+        :tabs="historyTabs"
         @close="showScanHistory = false"
       />
     </template>
@@ -219,7 +219,9 @@ import InvoiceSelectionBar from '@/features/invoices/components/InvoiceSelection
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
 import ScanInvoiceButton from '@/features/invoices/components/ScanInvoiceButton.vue'
-import ScanHistoryModal from '@/features/invoices/components/ScanHistoryModal.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ScanHistoryPanel from '@/features/invoices/components/ScanHistoryPanel.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import { useInvoices } from '@/features/invoices/composables/useInvoices'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -275,6 +277,14 @@ const deletingInvoice = ref(null)
 const bulkDeleting = ref(false)
 const showBulkDeleteConfirm = ref(false)
 const showScanHistory = ref(false)
+
+const historyTabs = computed(() => {
+  const storeId = currentStore.value?.id
+  return [
+    { key: 'scans', label: 'Scans', component: ScanHistoryPanel, props: { storeId, type: 'sale' } },
+    { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: storeId, types: ['invoices', 'invoice-documents'] } },
+  ]
+})
 
 const goToCreate = () => router.push('/sale-invoices/new')
 const openEdit = (inv) => { detailInvoice.value = null; router.push(`/sale-invoices/${inv.id}/edit`) }

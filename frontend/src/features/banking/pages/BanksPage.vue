@@ -159,11 +159,10 @@
       @imported="onImported"
     />
 
-    <ImportHistoryModal
+    <HistoryModal
       v-if="showHistory"
-      title="Bank Import History"
-      type="banks"
-      :business-id="currentBusiness.id"
+      title="Bank History"
+      :tabs="historyTabs"
       @close="showHistory = false"
     />
 
@@ -239,7 +238,9 @@ import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import ImportButton from '@/components/common/ImportButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
-import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ImportHistoryPanel from '@/components/common/ImportHistoryPanel.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import HistoryButton from '@/components/common/HistoryButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import BulkStatusBar from '@/components/common/BulkStatusBar.vue'
@@ -288,6 +289,11 @@ const clearFilters = () => { clearDateRange() }
 const showForm = ref(false)
 const showImport = ref(false)
 const showHistory = ref(false)
+
+const historyTabs = computed(() => [
+  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, type: 'banks' } },
+  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['banks'] } },
+])
 const editingBank = ref(null)
 const detailBank = ref(null)
 const deleteTarget = ref(null)
