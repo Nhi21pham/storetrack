@@ -61,7 +61,7 @@
             v-if="currentStore && currentStore.is_active"
             class="btn-record"
             :disabled="openInvoices.length === 0"
-            @click="showRecord = true"
+            @click="openRecord()"
           >
             + Record Payment
           </button>
@@ -133,7 +133,8 @@
       :party-id="selectedPartyId"
       :party-name="selectedPartyName"
       :open-invoices="openInvoices"
-      @close="showRecord = false"
+      :preselect-invoice-id="recordPreselectId"
+      @close="closeRecord"
       @saved="onRecorded"
     />
 
@@ -161,7 +162,7 @@
 
 <script setup>
 import { ref, computed, watch, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -182,6 +183,7 @@ import { INVOICE_TYPE, formatMoney, formatInvoiceDate as formatDate, paymentMeth
 import { useClientPagination } from '@/composables/useClientPagination'
 import { formatDateTime } from '@/utils/datetime'
 
+const route = useRoute()
 const router = useRouter()
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -206,6 +208,7 @@ const {
 } = useClientPagination(payments)
 const loadingDetail = ref(false)
 const showRecord = ref(false)
+const recordPreselectId = ref(null)
 const deletingPayment = ref(null)
 const detailInvoice = ref(null)
 
@@ -214,6 +217,20 @@ if (savedPartyType === 'customer' || savedPartyType === 'supplier') {
   partyType.value = savedPartyType
 }
 let pendingRestorePartyId = localStorage.getItem('paymentsPartyId') || ''
+
+// Deep-link from an invoice's edit page (?party_type, ?party_id, ?invoice_id) takes
+// precedence over the last-viewed party restored from localStorage.
+let pendingRecordInvoiceId = ''
+const linkPartyType = String(route.query.party_type || '')
+if (linkPartyType === 'customer' || linkPartyType === 'supplier') {
+  partyType.value = linkPartyType
+}
+if (route.query.party_id) {
+  pendingRestorePartyId = String(route.query.party_id)
+}
+if (route.query.invoice_id) {
+  pendingRecordInvoiceId = String(route.query.invoice_id)
+}
 
 const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 const canDeletePayment = computed(() => {
@@ -273,9 +290,11 @@ const loadParties = async () => {
       const stillSelectable = partyOptions.value.some((o) => String(o.value) === String(pendingRestorePartyId))
       if (stillSelectable) {
         selectedPartyId.value = pendingRestorePartyId
-        loadDetail()
+        await loadDetail()
+        maybeOpenRecordFromLink()
       }
       pendingRestorePartyId = ''
+      clearLinkQuery()
     }
   } catch (err) {
     showToast(err.message, 'error')
@@ -321,8 +340,35 @@ const setPartyType = (type) => {
 
 const onPartyChange = () => loadDetail()
 
+const openRecord = (invoiceId = null) => {
+  recordPreselectId.value = invoiceId
+  showRecord.value = true
+}
+
+const closeRecord = () => {
+  showRecord.value = false
+  recordPreselectId.value = null
+}
+
+// After a deep-link selects a party and loads its open invoices, auto-open the
+// record modal on the linked invoice (when it's still open and the store is active).
+const maybeOpenRecordFromLink = () => {
+  const invoiceId = pendingRecordInvoiceId
+  pendingRecordInvoiceId = ''
+  if (!invoiceId || !currentStore.value?.is_active) return
+  if (openInvoices.value.some((inv) => String(inv.id) === String(invoiceId))) {
+    openRecord(invoiceId)
+  }
+}
+
+const clearLinkQuery = () => {
+  if (Object.keys(route.query).length === 0) return
+  router.replace({ path: '/payments', query: {} })
+}
+
 const onRecorded = () => {
   showRecord.value = false
+  recordPreselectId.value = null
   loadDetail()
   loadParties()
 }

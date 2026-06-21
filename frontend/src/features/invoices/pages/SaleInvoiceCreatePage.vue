@@ -71,6 +71,12 @@
               <div class="pay-readonly">
                 <PaymentStatusBadge :status="derivedStatus" />
                 <span class="pay-hint">Paid {{ formatMoney(loadedPayment.paid) }} · Balance {{ formatMoney(editBalance) }}</span>
+                <InvoicePaymentLink
+                  party-type="customer"
+                  :party-id="form.party_id"
+                  :invoice-id="invoiceId"
+                  :status="derivedStatus"
+                />
               </div>
             </div>
 
@@ -228,6 +234,7 @@ import NumberInput from '@/components/common/NumberInput.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import FormMessage from '@/components/common/FormMessage.vue'
 import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
+import InvoicePaymentLink from '@/features/invoices/components/InvoicePaymentLink.vue'
 import InvoiceLineTaxEditor from '@/features/invoices/components/InvoiceLineTaxEditor.vue'
 import CustomerFormModal from '@/features/customers/components/CustomerFormModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
