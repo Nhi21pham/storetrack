@@ -13,13 +13,14 @@
 
 <script setup>
 import { computed } from 'vue'
+import { t } from '@/i18n'
 
 // Shared History button, styled to match Import/Export buttons. Opens an
 // import/export history modal on the page it sits in.
 const props = defineProps({
   disabled: { type: Boolean, default: false },
-  label:    { type: String,  default: 'History' },
-  title:    { type: String,  default: 'View import history' },
+  label:    { type: String,  default: () => t('shared.history') },
+  title:    { type: String,  default: () => t('shared.viewHistoryTitle') },
   variant:  { type: String,  default: 'solid', validator: (v) => ['solid', 'ghost'].includes(v) },
   size:     { type: String,  default: 'lg',    validator: (v) => ['sm', 'md', 'lg'].includes(v) },
 })

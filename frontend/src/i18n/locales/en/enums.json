@@ -11,5 +11,10 @@
   "invoiceType": {
     "PURCHASE": "Purchase",
     "SALE": "Sale"
+  },
+  "role": {
+    "OWNER": "Owner",
+    "ACCOUNTANT": "Accountant",
+    "STAFF": "Staff"
   }
 }

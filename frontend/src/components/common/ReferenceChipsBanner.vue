@@ -18,6 +18,8 @@
 </template>
 
 <script setup>
+import { t } from '@/i18n'
+
 // Presentational shell for the "create the records these rows reference" banner.
 // Shared by the import review grid and the AI invoice-extraction review page —
 // each owns its own grouping + create/resolve logic and just feeds `groups` and
@@ -27,7 +29,7 @@ defineProps({
   groups: { type: Array, default: () => [] },
   message: {
     type: String,
-    default: "Some rows reference records that don't exist yet. Create them here and those rows will resolve.",
+    default: () => t('shared.referenceBannerDefault'),
   },
 })
 

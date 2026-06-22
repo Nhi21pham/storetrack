@@ -24,11 +24,13 @@
 </template>
 
 <script setup>
+import { t } from '@/i18n'
+
 defineProps({
   startDate: { type: String, default: '' },
   endDate:   { type: String, default: '' },
-  fromLabel: { type: String, default: 'From' },
-  toLabel:   { type: String, default: 'To' },
+  fromLabel: { type: String, default: () => t('shared.from') },
+  toLabel:   { type: String, default: () => t('shared.to') },
 })
 
 // `change` fires when a date is committed — for callers that filter on apply

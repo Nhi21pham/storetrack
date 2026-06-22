@@ -22,36 +22,36 @@
     </div>
 
     <div class="card">
-      <h1>Create account</h1>
-      <p class="subtitle">Sign up to get started</p>
+      <h1>{{ $t('auth.createAccount') }}</h1>
+      <p class="subtitle">{{ $t('auth.signUpSubtitle') }}</p>
 
       <form @submit.prevent="handleRegister">
         <div class="field">
-          <label>Name</label>
-          <input v-model="form.name" type="text" placeholder="Enter your name" required />
+          <label>{{ $t('auth.name') }}</label>
+          <input v-model="form.name" type="text" :placeholder="$t('auth.enterName')" required />
         </div>
 
         <div class="field">
-          <label>Email</label>
-          <input v-model="form.email" type="email" placeholder="Enter your email" required />
+          <label>{{ $t('auth.email') }}</label>
+          <input v-model="form.email" type="email" :placeholder="$t('auth.enterEmail')" required />
         </div>
 
         <div class="field">
-          <label>Password</label>
+          <label>{{ $t('auth.password') }}</label>
           <input
             v-model="form.password"
             type="password"
-            placeholder="Enter your password"
+            :placeholder="$t('auth.enterPassword')"
             required
           />
         </div>
 
         <div class="field">
-          <label>Confirm Password</label>
+          <label>{{ $t('auth.confirmPassword') }}</label>
           <input
             v-model="form.password_confirmation"
             type="password"
-            placeholder="Confirm your password"
+            :placeholder="$t('auth.confirmYourPassword')"
             required
           />
         </div>
@@ -59,10 +59,10 @@
         <p v-if="error" class="error" style="white-space: pre-line">{{ error }}</p>
 
         <button type="submit" :disabled="loading">
-          {{ loading ? 'Creating account...' : 'Register' }}
+          {{ loading ? $t('auth.creatingAccount') : $t('auth.register') }}
         </button>
 
-        <p class="login">Already have an account? <a href="/login">Sign in</a></p>
+        <p class="login">{{ $t('auth.haveAccount') }} <a href="/login">{{ $t('auth.signIn') }}</a></p>
       </form>
     </div>
   </div>
@@ -73,6 +73,7 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { graphql } from '@/api'
 import { validators, validate } from '@/utils/validators'
+import { translateError } from '@/utils/translateError'
 
 const router = useRouter()
 const route = useRoute()
@@ -119,7 +120,7 @@ const handleRegister = async () => {
     if (typeof redirect === 'string') sessionStorage.setItem('postLoginRedirect', redirect)
     router.push({ path: '/verify-code', query: { email: form.value.email } })
   } catch (err) {
-    error.value = err.message || 'Registration failed'
+    error.value = translateError(err)
   } finally {
     loading.value = false
   }

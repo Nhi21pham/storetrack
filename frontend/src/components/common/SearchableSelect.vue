@@ -47,7 +47,7 @@
           <span class="ss-option-label">{{ opt.label }}</span>
           <span v-if="opt.sublabel" class="ss-option-sublabel">{{ opt.sublabel }}</span>
         </li>
-        <li v-if="filteredOptions.length === 0" class="ss-empty">No matches</li>
+        <li v-if="filteredOptions.length === 0" class="ss-empty">{{ $t('shared.noMatches') }}</li>
       </ul>
     </div>
     </Teleport>

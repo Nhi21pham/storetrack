@@ -10,23 +10,23 @@
     </div>
 
     <div class="card">
-      <h1>Forgot password?</h1>
-      <p class="subtitle">Enter your email and we'll send you a reset code</p>
+      <h1>{{ $t('auth.forgotPassword') }}</h1>
+      <p class="subtitle">{{ $t('auth.forgotSubtitle') }}</p>
 
       <form @submit.prevent="handleForgot">
         <div class="field">
-          <label>Email</label>
-          <input v-model="email" type="email" placeholder="Enter your email" required />
+          <label>{{ $t('auth.email') }}</label>
+          <input v-model="email" type="email" :placeholder="$t('auth.enterEmail')" required />
         </div>
 
         <p v-if="error" class="error" style="white-space: pre-line">{{ error }}</p>
 
         <button type="submit" :disabled="loading">
-          {{ loading ? 'Sending...' : 'Send reset code' }}
+          {{ loading ? $t('auth.sending') : $t('auth.sendResetCode') }}
         </button>
 
         <p class="back">
-          Remember your password? <a href="/login">Sign in</a>
+          {{ $t('auth.rememberPassword') }} <a href="/login">{{ $t('auth.signIn') }}</a>
         </p>
       </form>
     </div>
@@ -38,6 +38,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { graphql } from '@/api'
 import { validators, validate } from '@/utils/validators'
+import { translateError } from '@/utils/translateError'
 
 const router = useRouter()
 const email = ref('')
@@ -67,7 +68,7 @@ const handleForgot = async () => {
     sessionStorage.setItem('canReset', 'true')
     router.push({ path: '/reset-password', query: { email: email.value } })
   } catch (err) {
-    error.value = err.message || 'Something went wrong'
+    error.value = translateError(err)
   } finally {
     loading.value = false
   }

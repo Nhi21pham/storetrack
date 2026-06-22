@@ -1,13 +1,12 @@
-import common from './common.json'
-import nav from './nav.json'
-import errors from './errors.json'
-import validation from './validation.json'
-import enums from './enums.json'
+// Each JSON file in this directory becomes a message namespace keyed by its
+// filename (common.json -> messages.common). Add a feature file and it is
+// picked up automatically — no edit needed here.
+const modules = import.meta.glob('./*.json', { eager: true, import: 'default' })
 
-export default {
-  common,
-  nav,
-  errors,
-  validation,
-  enums,
+const messages: Record<string, unknown> = {}
+for (const path in modules) {
+  const namespace = path.replace(/^\.\//, '').replace(/\.json$/, '')
+  messages[namespace] = modules[path]
 }
+
+export default messages

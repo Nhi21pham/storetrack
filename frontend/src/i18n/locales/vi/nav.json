@@ -36,5 +36,12 @@
   "logout": "Đăng xuất",
   "language": "Ngôn ngữ",
   "languageVietnamese": "Tiếng Việt",
-  "languageEnglish": "English"
+  "languageEnglish": "English",
+  "switchStore": "Chuyển cửa hàng",
+  "selectStore": "Chọn cửa hàng",
+  "businessTag": "Doanh nghiệp",
+  "businessLevel": "Cấp doanh nghiệp",
+  "inactiveTag": "ngừng hoạt động",
+  "noStores": "Chưa có cửa hàng",
+  "createOwnBusiness": "Tạo doanh nghiệp của riêng bạn"
 }

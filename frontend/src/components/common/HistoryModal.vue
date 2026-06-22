@@ -31,13 +31,14 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { t } from '@/i18n'
 
 // Generic tabbed history modal. Each tab supplies its own panel component and
 // props, so the same shell serves Imports|Exports (entity pages), Scans|Exports
 // (invoices) and Exports-only (reports). Panels share their table/badge/state
 // visuals via the :deep styles below — they only carry their own markup.
 const props = defineProps({
-  title: { type: String, default: 'History' },
+  title: { type: String, default: () => t('shared.history') },
   // [{ key, label, component, props }]
   tabs:  { type: Array, required: true },
 })

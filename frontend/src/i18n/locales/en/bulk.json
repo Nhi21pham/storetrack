@@ -1,0 +1,26 @@
+{
+  "nouns": {
+    "unit": "unit | units",
+    "product": "product | products",
+    "tag": "tag | tags",
+    "category": "category | categories",
+    "bank": "bank | banks",
+    "bankAccount": "bank account | bank accounts"
+  },
+  "deleteTitle": "Delete {count} {noun}?",
+  "deleteMessage": "This permanently removes the selected {noun}. Items in use can't be deleted and will be skipped.",
+  "activateTitle": "Activate {count} {noun}?",
+  "activateMessage": "The selected {noun} will be marked active.",
+  "deactivateTitle": "Deactivate {count} {noun}?",
+  "deactivateMessage": "The selected {noun} will be marked inactive and won't appear in pickers for new records.",
+  "delete": "Delete",
+  "activate": "Activate",
+  "deactivate": "Deactivate",
+  "failedAction": "{count} {noun} could not be {verb}.",
+  "verb": {
+    "activated": "activated",
+    "deactivated": "deactivated",
+    "deleted": "deleted"
+  },
+  "tagsDeleteMessage": "This permanently deletes the selected tags (and all their values) and detaches them from any products using them. This cannot be undone."
+}

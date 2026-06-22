@@ -33,5 +33,12 @@
   "filters": "Bộ lọc",
   "clear": "Xóa lọc",
   "apply": "Áp dụng",
+  "saveChanges": "Lưu thay đổi",
+  "exporting": "Đang xuất...",
+  "searchPlaceholder": "Tìm kiếm...",
+  "unsavedChanges": "Thay đổi chưa lưu",
+  "unsavedChangesMessage": "Bạn có thay đổi chưa lưu. Bạn có chắc muốn hủy không?",
+  "yesDiscard": "Có, hủy bỏ",
+  "keepEditing": "Tiếp tục chỉnh sửa",
   "businessCreated": "Tạo doanh nghiệp thành công!"
 }

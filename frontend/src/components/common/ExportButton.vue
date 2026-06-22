@@ -3,17 +3,18 @@
     class="export-btn"
     :class="[variant, variant === 'solid' ? `size-${size}` : null]"
     :disabled="exporting || disabled"
-    :title="exporting ? 'Preparing export...' : title"
+    :title="exporting ? $t('shared.preparingExport') : title"
     @click="$emit('click')"
   >
     <svg v-if="exporting" class="spinner" :width="iconSize" :height="iconSize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9" stroke-linecap="round"/></svg>
     <svg v-else :width="iconSize" :height="iconSize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    <span>{{ exporting ? 'Exporting...' : label }}</span>
+    <span>{{ exporting ? $t('common.exporting') : label }}</span>
   </button>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+import { t } from '@/i18n'
 
 // Shared Export button. `solid` is the dark filled toolbar style (sized sm/md/lg
 // to match neighboring controls); `ghost` is the outlined style used inside the
@@ -21,8 +22,8 @@ import { computed } from 'vue'
 const props = defineProps({
   exporting: { type: Boolean, default: false },
   disabled:  { type: Boolean, default: false },
-  label:     { type: String,  default: 'Export' },
-  title:     { type: String,  default: 'Export current view to Excel' },
+  label:     { type: String,  default: () => t('common.export') },
+  title:     { type: String,  default: () => t('shared.exportToExcelTitle') },
   variant:   { type: String,  default: 'solid', validator: (v) => ['solid', 'ghost'].includes(v) },
   size:      { type: String,  default: 'lg',    validator: (v) => ['sm', 'md', 'lg'].includes(v) },
 })

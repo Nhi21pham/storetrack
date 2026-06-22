@@ -1,11 +1,17 @@
 import { ref, computed } from 'vue'
+import { t } from '@/i18n'
 
-export const useBulkActions = ({ selectedIds, clearSelection, reload, setActive, remove, noun = 'item', deleteMessage = null }) => {
+// `nounKey` selects a pluralizable noun in the `bulk.nouns` namespace
+// (e.g. 'unit'); `deleteMessage` optionally overrides the default delete copy
+// with an already-translated string.
+export const useBulkActions = ({ selectedIds, clearSelection, reload, setActive, remove, nounKey = 'unit', deleteMessage = null }) => {
   const bulkBusy = ref(false)
   const pendingAction = ref(null)
 
   const request = (action) => { pendingAction.value = action }
   const cancel = () => { pendingAction.value = null }
+
+  const noun = (count) => t(`bulk.nouns.${nounKey}`, count)
 
   const run = async (taskFn, verb) => {
     if (bulkBusy.value) return
@@ -16,7 +22,7 @@ export const useBulkActions = ({ selectedIds, clearSelection, reload, setActive,
       const failed = results.filter((r) => r.status === 'rejected').length
       clearSelection()
       await reload()
-      if (failed) alert(`${failed} ${noun}(s) could not be ${verb}.`)
+      if (failed) alert(t('bulk.failedAction', { count: failed, noun: noun(failed), verb: t(`bulk.verb.${verb}`) }))
     } finally {
       bulkBusy.value = false
     }
@@ -32,23 +38,22 @@ export const useBulkActions = ({ selectedIds, clearSelection, reload, setActive,
 
   const confirmConfig = computed(() => {
     const n = selectedIds.value.size
-    const s = n === 1 ? '' : 's'
     if (pendingAction.value === 'delete') return {
-      title: `Delete ${n} ${noun}${s}?`,
-      message: deleteMessage || `This permanently removes the selected ${noun}${s}. Items in use can't be deleted and will be skipped.`,
-      confirmText: 'Delete',
+      title: t('bulk.deleteTitle', { count: n, noun: noun(n) }),
+      message: deleteMessage || t('bulk.deleteMessage', { noun: noun(n) }),
+      confirmText: t('bulk.delete'),
       type: 'warning',
     }
     if (pendingAction.value === 'activate') return {
-      title: `Activate ${n} ${noun}${s}?`,
-      message: `The selected ${noun}${s} will be marked active.`,
-      confirmText: 'Activate',
+      title: t('bulk.activateTitle', { count: n, noun: noun(n) }),
+      message: t('bulk.activateMessage', { noun: noun(n) }),
+      confirmText: t('bulk.activate'),
       type: 'success',
     }
     if (pendingAction.value === 'deactivate') return {
-      title: `Deactivate ${n} ${noun}${s}?`,
-      message: `The selected ${noun}${s} will be marked inactive and won't appear in pickers for new records.`,
-      confirmText: 'Deactivate',
+      title: t('bulk.deactivateTitle', { count: n, noun: noun(n) }),
+      message: t('bulk.deactivateMessage', { noun: noun(n) }),
+      confirmText: t('bulk.deactivate'),
       type: 'warning',
     }
     return {}

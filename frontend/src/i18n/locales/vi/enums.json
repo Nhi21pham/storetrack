@@ -11,5 +11,10 @@
   "invoiceType": {
     "PURCHASE": "Mua",
     "SALE": "Bán"
+  },
+  "role": {
+    "OWNER": "Chủ sở hữu",
+    "ACCOUNTANT": "Kế toán",
+    "STAFF": "Nhân viên"
   }
 }

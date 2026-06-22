@@ -33,5 +33,12 @@
   "filters": "Filters",
   "clear": "Clear",
   "apply": "Apply",
+  "saveChanges": "Save Changes",
+  "exporting": "Exporting...",
+  "searchPlaceholder": "Search...",
+  "unsavedChanges": "Unsaved Changes",
+  "unsavedChangesMessage": "You have unsaved changes. Are you sure you want to cancel?",
+  "yesDiscard": "Yes, discard",
+  "keepEditing": "Keep editing",
   "businessCreated": "Business created successfully!"
 }

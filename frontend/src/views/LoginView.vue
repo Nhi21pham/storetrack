@@ -10,42 +10,42 @@
     </div>
 
     <div class="card">
-      <h1>Welcome back</h1>
-      <p class="subtitle">Sign in to your account</p>
+      <h1>{{ $t('auth.welcomeBack') }}</h1>
+      <p class="subtitle">{{ $t('auth.signInSubtitle') }}</p>
 
       <form @submit.prevent="handleLogin">
         <div class="field">
-          <label>Email</label>
+          <label>{{ $t('auth.email') }}</label>
           <input
             v-model="form.email"
             type="email"
-            placeholder="Enter your email"
+            :placeholder="$t('auth.enterEmail')"
             required
           />
         </div>
 
         <div class="field">
-          <label>Password</label>
+          <label>{{ $t('auth.password') }}</label>
           <input
             v-model="form.password"
             type="password"
-            placeholder="Enter your password"
+            :placeholder="$t('auth.enterPassword')"
             required
           />
         </div>
 
         <div class="forgot">
-          <a href="/forgot-password">Forgot password?</a>
+          <a href="/forgot-password">{{ $t('auth.forgotPassword') }}</a>
         </div>
 
         <p v-if="error" class="error" style="white-space: pre-line">{{ error }}</p>
 
         <button type="submit" :disabled="loading">
-          {{ loading ? 'Signing in...' : 'Sign in' }}
+          {{ loading ? $t('auth.signingIn') : $t('auth.signIn') }}
         </button>
 
         <p class="register">
-          Don't have an account? <RouterLink to="/register">Register</RouterLink>
+          {{ $t('auth.noAccount') }} <RouterLink to="/register">{{ $t('auth.register') }}</RouterLink>
         </p>
       </form>
     </div>
@@ -57,6 +57,7 @@
   import { useRouter, useRoute } from 'vue-router'
   import { graphql } from '@/api'
   import { validators, validate } from '@/utils/validators'
+  import { translateError } from '@/utils/translateError'
 
   const router = useRouter()
   const route = useRoute()
@@ -102,7 +103,7 @@
       sessionStorage.removeItem('postLoginRedirect')
       router.push(typeof redirect === 'string' ? redirect : '/dashboard')
     } catch (err) {
-      error.value = err.message || 'Login failed'
+      error.value = translateError(err)
     } finally {
       loading.value = false
     }

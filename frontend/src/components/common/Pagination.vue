@@ -1,14 +1,14 @@
 <template>
   <div class="pagination-bar">
     <div class="pagination-left">
-      <span class="page-info">{{ pageStart }}–{{ pageEnd }} of {{ total }}</span>
+      <span class="page-info">{{ $t('shared.pageInfo', { start: pageStart, end: pageEnd, total }) }}</span>
       <SelectField
         :model-value="perPage"
         size="small"
         inline
         @update:model-value="$emit('update:perPage', +$event)"
       >
-        <option v-for="n in pageSizeOptions" :key="n" :value="n">{{ n }} / page</option>
+        <option v-for="n in pageSizeOptions" :key="n" :value="n">{{ $t('shared.perPage', { n }) }}</option>
       </SelectField>
     </div>
 

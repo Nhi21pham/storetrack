@@ -36,5 +36,12 @@
   "logout": "Logout",
   "language": "Language",
   "languageVietnamese": "Tiếng Việt",
-  "languageEnglish": "English"
+  "languageEnglish": "English",
+  "switchStore": "Switch Store",
+  "selectStore": "Select a store",
+  "businessTag": "Business",
+  "businessLevel": "Business level",
+  "inactiveTag": "inactive",
+  "noStores": "No stores",
+  "createOwnBusiness": "Create your own business"
 }

@@ -1,0 +1,26 @@
+{
+  "nouns": {
+    "unit": "đơn vị tính",
+    "product": "sản phẩm",
+    "tag": "thẻ",
+    "category": "danh mục",
+    "bank": "ngân hàng",
+    "bankAccount": "tài khoản ngân hàng"
+  },
+  "deleteTitle": "Xóa {count} {noun}?",
+  "deleteMessage": "Thao tác này xóa vĩnh viễn {noun} đã chọn. Các mục đang được sử dụng không thể xóa và sẽ bị bỏ qua.",
+  "activateTitle": "Kích hoạt {count} {noun}?",
+  "activateMessage": "{noun} đã chọn sẽ được đánh dấu là đang hoạt động.",
+  "deactivateTitle": "Ngừng hoạt động {count} {noun}?",
+  "deactivateMessage": "{noun} đã chọn sẽ được đánh dấu ngừng hoạt động và sẽ không xuất hiện trong danh sách chọn cho bản ghi mới.",
+  "delete": "Xóa",
+  "activate": "Kích hoạt",
+  "deactivate": "Ngừng hoạt động",
+  "failedAction": "{count} {noun} không thể {verb}.",
+  "verb": {
+    "activated": "kích hoạt",
+    "deactivated": "ngừng hoạt động",
+    "deleted": "xóa"
+  },
+  "tagsDeleteMessage": "Thao tác này xóa vĩnh viễn các thẻ đã chọn (và tất cả giá trị của chúng) và gỡ chúng khỏi mọi sản phẩm đang dùng. Không thể hoàn tác."
+}

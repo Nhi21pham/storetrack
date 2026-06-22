@@ -1,42 +1,42 @@
 <template>
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
-      <h2>Change Password</h2>
-      <p class="modal-subtitle">Update your account password</p>
+      <h2>{{ $t('account.changePassword') }}</h2>
+      <p class="modal-subtitle">{{ $t('account.changePasswordSubtitle') }}</p>
 
       <div class="field">
-        <label>Old Password</label>
-        <input v-model="form.old_password" type="password" placeholder="Enter old password" />
+        <label>{{ $t('account.oldPassword') }}</label>
+        <input v-model="form.old_password" type="password" :placeholder="$t('account.enterOldPassword')" />
       </div>
       <div class="field">
-        <label>New Password</label>
-        <input v-model="form.new_password" type="password" placeholder="Enter new password" />
+        <label>{{ $t('account.newPassword') }}</label>
+        <input v-model="form.new_password" type="password" :placeholder="$t('account.enterNewPassword')" />
       </div>
       <div class="field">
-        <label>Confirm New Password</label>
-        <input v-model="form.new_password_confirmation" type="password" placeholder="Confirm new password" />
+        <label>{{ $t('account.confirmNewPassword') }}</label>
+        <input v-model="form.new_password_confirmation" type="password" :placeholder="$t('account.confirmNewPasswordPlaceholder')" />
       </div>
       <p class="forgot-link">
-        <a href="#" @click.prevent="handleForgotPassword">Forgot your password, want to reset it?</a>
+        <a href="#" @click.prevent="handleForgotPassword">{{ $t('account.forgotLink') }}</a>
       </p>
 
       <p v-if="error" class="error">{{ error }}</p>
       <p v-if="success" class="success">{{ success }}</p>
 
       <div class="modal-actions">
-        <button class="btn-cancel" @click="handleClickOutside">Cancel</button>
+        <button class="btn-cancel" @click="handleClickOutside">{{ $t('common.cancel') }}</button>
         <button class="btn-ok" :disabled="loading" @click="handleSubmit">
-          {{ loading ? 'Updating...' : 'Update Password' }}
+          {{ loading ? $t('account.updating') : $t('account.updatePassword') }}
         </button>
       </div>
     </div>
   </div>
   <ConfirmDialog
   v-if="showConfirm"
-  title="Discard Changes"
-  message="You have unsaved changes. Are you sure you want to cancel?"
-  confirm-text="Yes, discard"
-  cancel-text="Keep editing"
+  :title="$t('account.discardTitle')"
+  :message="$t('account.discardMessage')"
+  :confirm-text="$t('account.discard')"
+  :cancel-text="$t('account.keepEditing')"
   @confirm="emit('close')"
   @cancel="showConfirm = false"
   />
@@ -47,6 +47,8 @@ import { ref } from 'vue'
 import { graphql } from '@/api'
 import { useRouter } from 'vue-router'
 import { validators, validate } from '@/utils/validators'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const emit = defineEmits(['close'])
@@ -93,7 +95,7 @@ const handleForgotPassword = async () => {
     emit('close')
     router.push({ path: '/reset-password', query: { email } })
   } catch (err) {
-    error.value = err.message || 'Failed to send reset code'
+    error.value = translateError(err)
   }
 }
 const handleSubmit = async () => {
@@ -124,11 +126,11 @@ const handleSubmit = async () => {
       new_password_confirmation: form.value.new_password_confirmation
     })
 
-    success.value = 'Password updated successfully!'
+    success.value = t('account.passwordUpdated')
     form.value = { old_password: '', new_password: '', new_password_confirmation: '' }
     setTimeout(() => { success.value = '' }, 2000)
   } catch (err) {
-    error.value = err.message || 'Failed to update password'
+    error.value = translateError(err)
   } finally {
     loading.value = false
   }

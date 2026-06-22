@@ -2,7 +2,7 @@
   <details v-if="instructions.length" class="format-notes">
     <summary>
       <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-      Formatting notes ({{ instructions.length }})
+      {{ $t('shared.formattingNotes', { count: instructions.length }) }}
     </summary>
     <ul>
       <li v-for="(note, i) in instructions" :key="i">

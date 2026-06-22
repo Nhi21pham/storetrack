@@ -13,13 +13,14 @@
 
 <script setup>
 import { computed } from 'vue'
+import { t } from '@/i18n'
 
 // Shared Import button, styled to match ExportButton: `solid` is the toolbar
 // style, `ghost` the outlined style for dark selection bars.
 const props = defineProps({
   disabled: { type: Boolean, default: false },
-  label:    { type: String,  default: 'Import' },
-  title:    { type: String,  default: 'Import records from an Excel file' },
+  label:    { type: String,  default: () => t('common.import') },
+  title:    { type: String,  default: () => t('shared.importFromExcelTitle') },
   variant:  { type: String,  default: 'solid', validator: (v) => ['solid', 'ghost'].includes(v) },
   size:     { type: String,  default: 'lg',    validator: (v) => ['sm', 'md', 'lg'].includes(v) },
 })

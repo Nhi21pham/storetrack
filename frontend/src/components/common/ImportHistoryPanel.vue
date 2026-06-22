@@ -6,9 +6,9 @@
         v-model:endDate="endDate"
         @change="() => goToPage(1)"
       />
-      <button v-if="startDate || endDate" class="clear-dates" @click="clearDates">Clear dates</button>
+      <button v-if="startDate || endDate" class="clear-dates" @click="clearDates">{{ $t('shared.clearDates') }}</button>
       <div class="filters-spacer"></div>
-      <button class="refresh-btn" :disabled="loading || refreshing" title="Refresh" @click="refresh">
+      <button class="refresh-btn" :disabled="loading || refreshing" :title="$t('shared.refresh')" @click="refresh">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ spinning: refreshing }">
           <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
@@ -16,21 +16,21 @@
     </div>
 
     <div class="panel-body">
-      <div v-if="loading" class="state-row"><div class="spinner"></div><span>Loading history...</span></div>
+      <div v-if="loading" class="state-row"><div class="spinner"></div><span>{{ $t('shared.loadingHistory') }}</span></div>
       <div v-else-if="error" class="api-error">{{ error }}</div>
-      <div v-else-if="!rows.length" class="empty-state">No imports yet.</div>
+      <div v-else-if="!rows.length" class="empty-state">{{ $t('shared.noImportsYet') }}</div>
 
       <div v-else class="table-wrap">
         <table class="history-table">
           <thead>
             <tr>
-              <th class="file-col">File</th>
-              <th>Status</th>
-              <th class="num">Created</th>
-              <th class="num">Skipped</th>
-              <th class="num">Failed</th>
-              <th>By</th>
-              <th>When</th>
+              <th class="file-col">{{ $t('shared.file') }}</th>
+              <th>{{ $t('shared.status') }}</th>
+              <th class="num">{{ $t('shared.created') }}</th>
+              <th class="num">{{ $t('shared.skipped') }}</th>
+              <th class="num">{{ $t('shared.failed') }}</th>
+              <th>{{ $t('shared.by') }}</th>
+              <th>{{ $t('shared.when') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -49,16 +49,16 @@
               </tr>
               <tr v-if="expandedId === row.id" class="detail-row">
                 <td colspan="7">
-                  <div v-if="detailLoading" class="state-row sm"><div class="spinner"></div><span>Loading details...</span></div>
+                  <div v-if="detailLoading" class="state-row sm"><div class="spinner"></div><span>{{ $t('shared.loadingDetails') }}</span></div>
                   <div v-else-if="detail?.error_message" class="api-error">{{ detail.error_message }}</div>
                   <div v-else-if="!detailProblems.length" class="detail-clean">
-                    All {{ detail?.created_count ?? row.created_count }} row(s) created cleanly — nothing skipped or failed.
+                    {{ $t('shared.allRowsCreatedCleanly', { count: detail?.created_count ?? row.created_count }) }}
                   </div>
                   <div v-else class="detail-problems">
-                    <p class="detail-title">Skipped / failed rows:</p>
+                    <p class="detail-title">{{ $t('shared.skippedFailedRows') }}</p>
                     <ul>
                       <li v-for="p in detailProblems" :key="p.rowNumber">
-                        <span class="badge sm" :class="p.status === 'failed' ? 'bad' : 'warn'">Row {{ p.rowNumber }}</span>
+                        <span class="badge sm" :class="p.status === 'failed' ? 'bad' : 'warn'">{{ $t('shared.row', { number: p.rowNumber }) }}</span>
                         <span v-if="formatValues(p.values)" class="row-data">{{ formatValues(p.values) }}</span>
                         <span class="row-msg">— {{ p.message }}</span>
                       </li>
@@ -91,6 +91,7 @@ import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { useImportHistory } from '@/composables/useImportHistory'
 import { fetchImportDetail } from '@/features/imports/services/importHistoryService'
 import { formatDateTime } from '@/utils/datetime'
+import { t } from '@/i18n'
 
 const props = defineProps({
   scope:   { type: String, default: 'store' },
@@ -141,10 +142,10 @@ const toggle = async (row) => {
 
 const statusInfo = (status) => {
   switch (status) {
-    case 'completed':  return { label: 'Completed', cls: 'done' }
-    case 'processing': return { label: 'Processing', cls: 'busy' }
-    case 'pending':    return { label: 'Pending', cls: 'busy' }
-    case 'failed':     return { label: 'Failed', cls: 'bad' }
+    case 'completed':  return { label: t('shared.jobStatus.completed'), cls: 'done' }
+    case 'processing': return { label: t('shared.jobStatus.processing'), cls: 'busy' }
+    case 'pending':    return { label: t('shared.jobStatus.pendingImport'), cls: 'busy' }
+    case 'failed':     return { label: t('shared.jobStatus.failed'), cls: 'bad' }
     default:           return { label: status, cls: 'busy' }
   }
 }
