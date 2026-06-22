@@ -36,9 +36,6 @@ use Illuminate\Database\Eloquent\Collection;
 
 class InvoiceService
 {
-    /** Most invoices a single PDF-document (zip) export will render in one job. */
-    public const MAX_DOCUMENT_EXPORT = 200;
-
     public function __construct(
         private InvoiceRepository $invoiceRepository,
         private InvoiceSequenceRepository $sequenceRepository,
@@ -219,8 +216,8 @@ class InvoiceService
 
     /**
      * Queue a per-invoice PDF document export: a zip with one PDF per matched
-     * invoice. Caps the batch size (PDF rendering is far heavier than a streamed
-     * sheet) and rejects an empty selection up front.
+     * invoice. Rejects an empty selection up front; the render itself is chunked
+     * across parallel jobs, so the number of invoices is not capped.
      */
     public function queueDocumentExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
     {
@@ -229,15 +226,8 @@ class InvoiceService
         $normalizedFilters = $this->normalizeExportFilters($filters);
         unset($normalizedFilters['columns']);
 
-        $count = $this->invoiceRepository->documentsQuery($storeId, $normalizedFilters)->count();
-        if ($count === 0) {
+        if (! $this->invoiceRepository->documentsQuery($storeId, $normalizedFilters)->exists()) {
             throw new InvoiceException(ErrorCode::VALIDATION_ERROR, 'No invoices match the current selection to export.');
-        }
-        if ($count > self::MAX_DOCUMENT_EXPORT) {
-            throw new InvoiceException(
-                ErrorCode::VALIDATION_ERROR,
-                'Too many invoices to export at once (max '.self::MAX_DOCUMENT_EXPORT.'). Narrow the filters or select fewer invoices.',
-            );
         }
 
         return $this->exportService->queue(

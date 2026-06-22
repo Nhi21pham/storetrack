@@ -11,18 +11,26 @@ use App\Models\User;
 use App\Repositories\Invoice\InvoiceRepository;
 use App\Services\AuditLog\Loggers\InvoiceAuditLogger;
 use App\Services\ExportService;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\InvoiceDocumentRenderer;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
+use ZipArchive;
 
 /**
- * Builds a ZIP archive containing one PDF document per matched invoice — the
- * full content (line items, taxes, totals, payment) of each invoice, rendered
- * from the exports.invoice-document Blade view. Used by the selector-driven
- * "Export PDF" action on the invoice pages.
+ * Builds a ZIP with one PDF per matched invoice. Every invoice in the export is
+ * rendered through a single shared Chromium (see InvoiceDocumentRenderer), then
+ * the per-invoice PDFs are zipped under their invoice codes.
  */
 class ExportInvoiceDocumentJob extends AbstractFileExportJob
 {
     public const TYPE = 'invoice-documents';
+
+    public function __construct(int $exportId)
+    {
+        parent::__construct($exportId);
+        $this->onQueue('exports');
+    }
 
     protected function writeFile(Export $export, string $relative): void
     {
@@ -32,27 +40,37 @@ class ExportInvoiceDocumentJob extends AbstractFileExportJob
 
         $invoices = app(InvoiceRepository::class)->documentsQuery($storeId, $filters)->get();
         if ($invoices->isEmpty()) {
-            throw new \RuntimeException('No invoices matched the export selection.');
+            throw new RuntimeException('No invoices matched the export selection.');
         }
 
         $disk = Storage::disk(ExportService::DISK);
         $disk->makeDirectory(dirname($relative));
-        $absolute = $disk->path($relative);
+        $disk->makeDirectory($export->id.'/pdfs');
+        $workDir = $disk->path($export->id.'/pdfs');
 
-        $zip = new \ZipArchive();
-        if ($zip->open($absolute, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException('Could not create the export archive.');
+        app(InvoiceDocumentRenderer::class)->renderEach($invoices, $store, $workDir);
+
+        $this->zip($disk->path($relative), $invoices, $workDir);
+
+        $disk->deleteDirectory($export->id.'/pdfs');
+    }
+
+    /**
+     * @param  Collection<int, Invoice>  $invoices
+     */
+    private function zip(string $absolute, Collection $invoices, string $workDir): void
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($absolute, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new RuntimeException('Could not create the export archive.');
         }
 
         $usedNames = [];
         foreach ($invoices as $invoice) {
-            $pdf = Pdf::loadView('exports.invoice-document', [
-                'invoice'    => $invoice,
-                'store'      => $store,
-                'partyLabel' => $this->partyLabel($invoice->type),
-            ])->setPaper('a4')->output();
-
-            $zip->addFromString($this->entryName($invoice, $usedNames), $pdf);
+            $pdf = $workDir.'/'.$invoice->id.'.pdf';
+            if (is_file($pdf)) {
+                $zip->addFile($pdf, $this->entryName($invoice, $usedNames));
+            }
         }
 
         $zip->close();
@@ -76,7 +94,6 @@ class ExportInvoiceDocumentJob extends AbstractFileExportJob
         }
 
         $metadata = $export->metadata ?? [];
-
         app(InvoiceAuditLogger::class)->invoiceExported(
             $user,
             (int) ($metadata['scope_id'] ?? 0),
@@ -106,15 +123,6 @@ class ExportInvoiceDocumentJob extends AbstractFileExportJob
         $usedNames[$name] = true;
 
         return $name.'.pdf';
-    }
-
-    private function partyLabel(?InvoiceTypeEnum $type): string
-    {
-        return match ($type) {
-            InvoiceTypeEnum::PURCHASE => 'Supplier',
-            InvoiceTypeEnum::SALE     => 'Customer',
-            default                   => 'Party',
-        };
     }
 
     private function typePrefix(?string $type): string
