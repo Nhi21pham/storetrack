@@ -6,13 +6,12 @@
       <p class="dialog-msg">{{ message }}</p>
 
       <div class="impact" :class="{ warn: count > 0 }">
-        <template v-if="loadingCount">Checking how many products are affected…</template>
-        <template v-else-if="count === 0">No products are using this — safe to delete.</template>
+        <template v-if="loadingCount">{{ $t('tags.checkingAffected') }}</template>
+        <template v-else-if="count === 0">{{ $t('tags.safeToDelete') }}</template>
         <template v-else>
-          Used by <strong>{{ count }}</strong> product{{ count === 1 ? '' : 's' }}.
-          Deleting will detach it from {{ count === 1 ? 'it' : 'them' }}.
+          {{ $t('tags.usedByProducts', { count }) }}
           <button class="link-btn" @click="showList = !showList">
-            {{ showList ? 'Hide' : 'View' }} affected product{{ count === 1 ? '' : 's' }}
+            {{ showList ? $t('tags.hideAffected') : $t('tags.viewAffected') }}
           </button>
         </template>
       </div>
@@ -21,12 +20,12 @@
         <div v-for="p in affected" :key="p.id" class="affected-row">
           <span class="affected-code">{{ p.code }}</span>
           <span class="affected-name">{{ p.name }}</span>
-          <span v-if="!p.is_active" class="affected-inactive">inactive</span>
+          <span v-if="!p.is_active" class="affected-inactive">{{ $t('tags.affectedInactive') }}</span>
         </div>
       </div>
 
       <div class="dialog-actions">
-        <button class="btn-cancel" @click="$emit('cancel')" :disabled="deleting">Cancel</button>
+        <button class="btn-cancel" @click="$emit('cancel')" :disabled="deleting">{{ $t('common.cancel') }}</button>
         <button class="btn-danger" @click="$emit('confirm')" :disabled="loadingCount || deleting">
           <span v-if="deleting" class="spinner"></span>
           {{ confirmText }}

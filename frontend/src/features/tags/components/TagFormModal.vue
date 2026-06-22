@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClose">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Tag' : 'New Tag' }}</h2>
+        <h2>{{ isEdit ? $t('tags.editTag') : $t('tags.newTag') }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,12 +12,12 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label>Key <span class="required">*</span></label>
+          <label>{{ $t('tags.key') }} <span class="required">*</span></label>
           <div class="key-field">
             <input
               v-model="form.name"
               type="text"
-              placeholder="e.g. Color"
+              :placeholder="$t('tags.keyPlaceholder')"
               maxlength="100"
               autocomplete="off"
               :class="{ error: errors.name }"
@@ -27,32 +27,32 @@
             <ul v-if="showSuggestions && suggestions.length" class="suggestions">
               <li v-for="t in suggestions" :key="t.id" @mousedown.prevent="selectSuggestion(t)">
                 <span class="sugg-name">{{ t.name }}</span>
-                <span class="sugg-count">{{ t.values.length }} value{{ t.values.length === 1 ? '' : 's' }}</span>
+                <span class="sugg-count">{{ $t('tags.suggCount', t.values.length) }}</span>
               </li>
             </ul>
           </div>
           <span v-if="errors.name" class="error-text">{{ errors.name }}</span>
-          <p v-else-if="isExisting && !isEdit" class="hint existing-hint">Existing tag — values you add below will be added to it.</p>
-          <p v-else class="hint">The label of the tag (e.g. Color, Size).</p>
+          <p v-else-if="isExisting && !isEdit" class="hint existing-hint">{{ $t('tags.existingHint') }}</p>
+          <p v-else class="hint">{{ $t('tags.keyHint') }}</p>
         </div>
 
         <div class="form-group">
-          <label>Description</label>
+          <label>{{ $t('common.description') }}</label>
           <textarea
             v-model="form.description"
             rows="3"
             maxlength="500"
-            placeholder="Optional"
+            :placeholder="$t('tags.descriptionPlaceholder')"
             :class="{ error: errors.description }"
           />
           <span v-if="errors.description" class="error-text">{{ errors.description }}</span>
         </div>
 
         <div class="form-group">
-          <label>Values</label>
+          <label>{{ $t('tags.values') }}</label>
 
           <div v-if="!isEdit && isExisting && existingValues.length" class="existing-values">
-            <span class="existing-values-label">Current:</span>
+            <span class="existing-values-label">{{ $t('tags.currentLabel') }}</span>
             <TagChip
               v-for="ev in existingValues"
               :key="ev.id"
@@ -71,19 +71,19 @@
               >
                 <template v-if="row.removed">
                   <span class="chip-label removed-label">{{ row.value }}</span>
-                  <button type="button" class="chip-undo" title="Undo remove" @click="toggleRemove(i)">
+                  <button type="button" class="chip-undo" :title="$t('tags.undoRemove')" @click="toggleRemove(i)">
                     <Icon name="undo" :size="13" />
                   </button>
                 </template>
                 <template v-else>
                   <button type="button" class="chip-label" @click="startEdit(i)">{{ row.value }}</button>
-                  <ChipRemoveButton title="Delete value" @click="toggleRemove(i)" />
+                  <ChipRemoveButton :title="$t('tags.deleteValueTitle')" @click="toggleRemove(i)" />
                 </template>
               </span>
             </template>
             <span v-for="(val, i) in pendingValues" :key="'p' + i" class="value-chip pending">
               {{ val }}
-              <ChipRemoveButton title="Remove" @click="removeValue(i)" />
+              <ChipRemoveButton :title="$t('tags.removeTitle')" @click="removeValue(i)" />
             </span>
           </div>
 
@@ -92,25 +92,25 @@
               ref="valueFieldRef"
               v-model="valueInput"
               type="text"
-              :placeholder="editingRowIndex === null ? 'Type a value, press Enter' : 'Edit value'"
+              :placeholder="editingRowIndex === null ? $t('tags.valuePlaceholderNew') : $t('tags.valuePlaceholderEdit')"
               maxlength="100"
               :class="{ error: valueError }"
               @keydown="handleValueKeydown"
             />
             <button type="button" class="btn-add-value" @click="submitValue" :disabled="!valueInput.trim()">
-              {{ editingRowIndex === null ? 'Add' : 'Update' }}
+              {{ editingRowIndex === null ? $t('tags.addValue') : $t('tags.updateValue') }}
             </button>
-            <button v-if="editingRowIndex !== null" type="button" class="btn-cancel-value" @click="cancelEdit">Cancel</button>
+            <button v-if="editingRowIndex !== null" type="button" class="btn-cancel-value" @click="cancelEdit">{{ $t('common.cancel') }}</button>
           </div>
           <span v-if="valueError" class="error-text">{{ valueError }}</span>
-          <p v-else class="hint">{{ isEdit ? 'Click a value to rename it, or × to remove. Add new ones below.' : 'Optional. Add one or more values (e.g. Red, Blue).' }}</p>
+          <p v-else class="hint">{{ isEdit ? $t('tags.valueHintEdit') : $t('tags.valueHintNew') }}</p>
         </div>
 
         <div v-if="apiError" class="api-error">{{ apiError }}</div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
+        <button class="btn-cancel" @click="handleClose" :disabled="loading">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !canSubmit">
           <span v-if="loading" class="spinner"></span>
           {{ submitLabel }}
@@ -121,10 +121,10 @@
 
   <ConfirmDialog
     v-if="showUnsavedWarning"
-    title="Unsaved Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirm-text="Yes, discard"
-    cancel-text="Keep editing"
+    :title="$t('account.unsavedTitle')"
+    :message="$t('account.unsavedMessage')"
+    :confirm-text="$t('account.discard')"
+    :cancel-text="$t('account.keepEditing')"
     @confirm="$emit('close')"
     @cancel="showUnsavedWarning = false"
   />
@@ -138,6 +138,8 @@ import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
 import Icon from '@/components/common/Icon.vue'
 import { fetchTags, createTag, updateTag, addTagValues, updateTagValue, deleteTagValue } from '@/features/tags/services/tagService'
 import { normalizeText } from '@/utils/textNormalizer'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const props = defineProps({
   tag:          { type: Object, default: null },
@@ -224,9 +226,9 @@ const canSubmit = computed(() => {
 })
 
 const submitLabel = computed(() => {
-  if (isEdit.value) return 'Save Changes'
-  if (isExisting.value) return 'Add to Tag'
-  return 'Create Tag'
+  if (isEdit.value) return t('common.saveChanges')
+  if (isExisting.value) return t('tags.submitAddToTag')
+  return t('tags.submitCreate')
 })
 
 watch(() => props.tag, () => {
@@ -273,16 +275,16 @@ const addValue = () => {
   const value = valueInput.value.trim()
   if (!value) return
   if (value.length > 100) {
-    valueError.value = 'Value must be at most 100 characters.'
+    valueError.value = t('tags.valueTooLong')
     return
   }
   const norm = normalizeText(value)
   if (currentValueNorms.value.includes(norm)) {
-    valueError.value = 'That value already exists on this tag.'
+    valueError.value = t('tags.valueExistsOnTag')
     return
   }
   if (pendingValues.value.some(pv => normalizeText(pv) === norm)) {
-    valueError.value = 'That value is already in the list.'
+    valueError.value = t('tags.valueInList')
     valueInput.value = ''
     return
   }
@@ -320,18 +322,18 @@ const commitEdit = () => {
   valueError.value = ''
   const value = valueInput.value.trim()
   if (!value) {
-    valueError.value = 'Value cannot be empty.'
+    valueError.value = t('tags.valueEmpty')
     return
   }
   if (value.length > 100) {
-    valueError.value = 'Value must be at most 100 characters.'
+    valueError.value = t('tags.valueTooLong')
     return
   }
   const norm = normalizeText(value)
   const dupRow = valueRows.value.some((r, idx) => idx !== editingRowIndex.value && !r.removed && normalizeText(r.value) === norm)
   const dupPending = pendingValues.value.some(pv => normalizeText(pv) === norm)
   if (dupRow || dupPending) {
-    valueError.value = 'That value already exists on this tag.'
+    valueError.value = t('tags.valueExistsOnTag')
     return
   }
   const row = valueRows.value[editingRowIndex.value]
@@ -367,7 +369,7 @@ const validateValues = () => {
   for (const pv of pendingValues.value) {
     const norm = normalizeText(pv)
     if (seen[norm]) {
-      valueError.value = `Duplicate value: ${pv}`
+      valueError.value = t('tags.duplicateValue', { value: pv })
       ok = false
       continue
     }
@@ -394,11 +396,11 @@ const validateForm = () => {
   errors.value = { name: '', description: '' }
   const name = form.value.name.trim()
 
-  if (!name) errors.value.name = 'Key is required.'
-  else if (name.length > 100) errors.value.name = 'Key must be at most 100 characters.'
+  if (!name) errors.value.name = t('tags.keyRequired')
+  else if (name.length > 100) errors.value.name = t('tags.keyTooLong')
 
   if ((form.value.description || '').length > 500) {
-    errors.value.description = 'Description must be at most 500 characters.'
+    errors.value.description = t('tags.descTooLong')
   }
 
   return !Object.values(errors.value).some(e => e !== '')
@@ -467,7 +469,7 @@ const handleSubmit = async () => {
 
     emit('saved', result)
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     loading.value = false
   }

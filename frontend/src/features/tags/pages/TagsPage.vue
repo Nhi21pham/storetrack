@@ -1,31 +1,31 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Tags" subtitle="Label customers, suppliers and products. A tag is a key (e.g. Color) with optional values (e.g. Red).">
+    <PageHeader :title="$t('tags.title')" :subtitle="$t('tags.subtitle')">
       <template v-if="currentBusiness && currentStore" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Tag
+          {{ $t('tags.newTag') }}
         </button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentBusiness"
-      title="No business found"
-      description="You need to create or select a business before managing tags."
+      :title="$t('shared.noBusinessTitle')"
+      :description="$t('tags.noBusinessDesc')"
     />
 
     <EmptyState
       v-else-if="!currentStore"
-      title="No store selected"
-      description="Select a store to manage tags."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('tags.noStoreDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by key or value..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('tags.searchPlaceholder')" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
@@ -57,12 +57,12 @@
         @delete="requestBulk('delete')"
       />
 
-      <LoadingState v-if="loading">Loading tags...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('tags.loadingTags') }}</LoadingState>
 
       <EmptyState
         v-else-if="tags.length === 0"
-        title="No tags yet"
-        description="Create your first tag to get started."
+        :title="$t('tags.noTagsTitle')"
+        :description="$t('tags.noTagsDesc')"
       />
 
       <div v-else class="table-wrap">
@@ -72,22 +72,22 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="$t(c.labelKey)"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
           <tr v-if="filteredTags.length === 0">
             <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
-              No tags match the current filters.
+              {{ $t('shared.noResults') }}
             </td>
           </tr>
           <tr v-for="(tag, idx) in paginatedTags" :key="tag.id">
@@ -101,7 +101,7 @@
             <td v-if="columnVisibility.isVisible('values')">
               <div class="values-cell">
                 <TagChip v-for="val in tag.values" :key="val.id" :tag-name="tag.name" :value="val.value" />
-                <span v-if="tag.values.length === 0" class="keyonly-hint">Key-only</span>
+                <span v-if="tag.values.length === 0" class="keyonly-hint">{{ $t('tags.keyOnly') }}</span>
               </div>
             </td>
             <td v-if="columnVisibility.isVisible('description')">
@@ -111,10 +111,10 @@
             <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(tag.created_at) }}</td>
             <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(tag.updated_at) }}</td>
             <td class="actions-col">
-              <button class="action-btn" @click="openEdit(tag)" title="Edit tag">
+              <button class="action-btn" @click="openEdit(tag)" :title="$t('tags.editTagTitle')">
                 <Icon name="edit" :size="14" />
               </button>
-              <button v-if="canDeleteKey" class="action-btn danger" @click="confirmDeleteKey(tag)" title="Delete tag">
+              <button v-if="canDeleteKey" class="action-btn danger" @click="confirmDeleteKey(tag)" :title="$t('tags.deleteTagTitle')">
                 <Icon name="delete" :size="14" />
               </button>
             </td>
@@ -149,9 +149,9 @@
 
     <TagDeleteDialog
       v-if="deleteKeyTarget"
-      :title="`Delete tag '${deleteKeyTarget.name}'?`"
-      :message="`This permanently deletes the tag and all ${deleteKeyTarget.values.length} of its value(s). This cannot be undone.`"
-      confirm-text="Delete tag"
+      :title="$t('tags.deleteKeyTitle', { name: deleteKeyTarget.name })"
+      :message="$t('tags.deleteKeyMessage', { count: deleteKeyTarget.values.length })"
+      :confirm-text="$t('tags.deleteKeyConfirm')"
       :store-id="currentStore?.id"
       :tag-id="deleteKeyTarget.id"
       :tag-value-id="null"
@@ -165,7 +165,7 @@
       :title="confirmConfig.title"
       :message="confirmConfig.message"
       :confirm-text="confirmConfig.confirmText"
-      cancel-text="Cancel"
+      :cancel-text="$t('common.cancel')"
       :type="confirmConfig.type"
       @confirm="confirmBulk"
       @cancel="cancelBulk"
@@ -173,7 +173,7 @@
 
     <ImportModal
       v-if="showImport && currentStore"
-      title="Import Tags"
+      :title="$t('tags.importTitle')"
       template-filename="tags-import-template.xlsx"
       :required-headers="['Key']"
       :optional-headers="['Value', 'Description']"
@@ -189,7 +189,7 @@
 
     <HistoryModal
       v-if="showHistory && currentStore"
-      title="Tag History"
+      :title="$t('tags.historyTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
@@ -239,6 +239,8 @@ import { fetchImportStatus } from '@/features/imports/services/importService'
 import { TAG_COLUMNS, TAG_INITIAL_COL_WIDTHS } from '@/features/tags/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'tags',
@@ -271,20 +273,20 @@ const showImport = ref(false)
 const showHistory = ref(false)
 
 const historyTabs = computed(() => [
-  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'tags' } },
-  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['tags'] } },
+  { key: 'imports', label: t('shared.imports'), component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'tags' } },
+  { key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['tags'] } },
 ])
 
 // Explains the Value column grammar in the import dialog (kept in sync with
 // TagImporter's parser on the backend).
-const tagImportInstructions = [
-  'Key is required. Value and Description are optional.',
-  { text: 'List several values in one cell, separated by commas.', example: 'Red, Blue, Green  →  Red · Blue · Green' },
-  { text: 'A value may be prefixed with the Key; the prefix must match the row\'s Key or that value is skipped.', example: 'Color: Red  →  Red' },
-  { text: 'Wrap a value in double quotes to keep a comma or colon literal; double a " to include it.', example: '"6"" hose, blue"  →  6" hose, blue' },
-  { text: 'After a closing quote, a word with no comma before it is dropped — add a comma or move it inside the quotes.', example: '"Red" blue  →  Red' },
-  'A key that already exists gains the new values; the latest non-empty Description wins.',
-]
+const tagImportInstructions = computed(() => [
+  t('tags.import.req'),
+  { text: t('tags.import.commas'), example: 'Red, Blue, Green  →  Red · Blue · Green' },
+  { text: t('tags.import.prefix'), example: 'Color: Red  →  Red' },
+  { text: t('tags.import.quotes'), example: '"6"" hose, blue"  →  6" hose, blue' },
+  { text: t('tags.import.afterQuote'), example: '"Red" blue  →  Red' },
+  t('tags.import.existingKey'),
+])
 
 const role = computed(() => String(currentStore?.value?.my_role || '').toLowerCase())
 const canDeleteKey = computed(() => ['owner', 'accountant'].includes(role.value))
@@ -347,14 +349,14 @@ const { exporting, run: runExport } = useExport({
     return startTagExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `tags-${id}.xlsx`,
-  onSuccess: () => showToast('Tag export ready.', 'success'),
+  onSuccess: () => showToast(t('tags.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
-  selectedIds, clearSelection, reload: () => load(), noun: 'tag',
+  selectedIds, clearSelection, reload: () => load(), nounKey: 'tag',
   remove: (id) => deleteTag({ id }),
-  deleteMessage: 'This permanently deletes the selected tags (and all their values) and detaches them from any products using them. This cannot be undone.',
+  deleteMessage: t('tags.bulkDeleteMessage'),
 })
 
 watch([searchQuery, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })
@@ -414,7 +416,7 @@ const performDeleteKey = async () => {
     deleteKeyTarget.value = null
     await load()
   } catch (err) {
-    alert(err.message)
+    alert(translateError(err))
   } finally {
     deleting.value = false
   }
