@@ -27,6 +27,7 @@
 <script setup>
 import { ref, provide } from 'vue'
 import { useRouter } from 'vue-router'
+import { t } from '@/i18n'
 import SideBar from '@/components/layout/SideBar.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
@@ -67,7 +68,7 @@ const onStoreSwitched = (payload) => {
 const onBusinessCreated = () => {
   showCreateBusiness.value = false
   refreshBusinessSwitcher()
-  showToast('Business created successfully!')
+  showToast(t('common.businessCreated'))
 }
 const refreshBusinessSwitcher = () => {
   navbarRef.value?.refreshBusinesses()

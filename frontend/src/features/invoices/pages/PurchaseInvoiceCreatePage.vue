@@ -48,14 +48,14 @@
             <div class="form-group">
               <label>Payment method</label>
               <SelectField v-model="form.payment_method">
-                <option v-for="m in PAYMENT_METHODS" :key="m.value" :value="m.value">{{ m.label }}</option>
+                <option v-for="m in paymentMethodOptions()" :key="m.value" :value="m.value">{{ m.label }}</option>
               </SelectField>
             </div>
 
             <div v-if="!isEdit" class="form-group">
               <label>Payment status</label>
               <SelectField v-model="form.payment_status">
-                <option v-for="s in PAYMENT_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
+                <option v-for="s in paymentStatusOptions()" :key="s.value" :value="s.value">{{ s.label }}</option>
               </SelectField>
             </div>
 
@@ -224,8 +224,8 @@ import { fetchTaxes } from '@/features/taxes/services/taxService'
 import { createPurchaseInvoice, updatePurchaseInvoice, fetchInvoice } from '@/features/invoices/services/invoiceService'
 import { takeInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import {
-  PAYMENT_METHODS,
-  PAYMENT_STATUSES,
+  paymentMethodOptions,
+  paymentStatusOptions,
   formatMoney,
   todayInputDate,
 } from '@/features/invoices/constants'

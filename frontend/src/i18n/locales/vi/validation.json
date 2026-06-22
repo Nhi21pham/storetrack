@@ -1,0 +1,26 @@
+{
+  "field": {
+    "email": "Email",
+    "password": "Mật khẩu",
+    "name": "Tên",
+    "verificationCode": "Mã xác minh",
+    "businessName": "Tên doanh nghiệp",
+    "taxCode": "Mã số thuế",
+    "storeName": "Tên cửa hàng",
+    "supplierName": "Tên nhà cung cấp",
+    "customerName": "Tên khách hàng",
+    "phone": "Số điện thoại",
+    "address": "Địa chỉ"
+  },
+  "required": "{field} là bắt buộc.",
+  "minLength": "{field} phải có ít nhất {min} ký tự.",
+  "tooLong": "{field} quá dài.",
+  "emailInvalid": "Vui lòng nhập địa chỉ email hợp lệ.",
+  "confirmRequired": "Vui lòng xác nhận mật khẩu.",
+  "passwordsMismatch": "Mật khẩu không khớp.",
+  "codeLength": "Mã phải gồm 6 chữ số.",
+  "codeNumbersOnly": "Mã chỉ được chứa chữ số.",
+  "taxCodeNumbersOnly": "Mã số thuế chỉ được chứa chữ số.",
+  "taxCodeMinDigits": "Mã số thuế phải có ít nhất {min} chữ số.",
+  "phoneInvalid": "Số điện thoại không hợp lệ. Phải gồm 10 hoặc 11 chữ số."
+}

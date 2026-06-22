@@ -53,7 +53,7 @@
           <div class="field">
             <label>Method</label>
             <select v-model="method">
-              <option v-for="m in PAYMENT_METHODS" :key="m.value" :value="m.value">{{ m.label }}</option>
+              <option v-for="m in paymentMethodOptions()" :key="m.value" :value="m.value">{{ m.label }}</option>
             </select>
           </div>
         </div>
@@ -75,7 +75,7 @@
 
 <script setup>
 import { ref, computed, inject } from 'vue'
-import { formatMoney, formatInvoiceDate as formatDate, PAYMENT_METHODS, todayInputDate } from '@/features/invoices/constants'
+import { formatMoney, formatInvoiceDate as formatDate, paymentMethodOptions, PAYMENT_METHOD_VALUES, todayInputDate } from '@/features/invoices/constants'
 import { recordPayment } from '@/features/payments/services/paymentService'
 import NumberInput from '@/components/common/NumberInput.vue'
 
@@ -101,7 +101,7 @@ const rows = ref(props.openInvoices.map((inv) => {
   }
 }))
 const paidAt = ref(todayInputDate())
-const method = ref(PAYMENT_METHODS[0].value)
+const method = ref(PAYMENT_METHOD_VALUES[0])
 const note = ref('')
 const saving = ref(false)
 

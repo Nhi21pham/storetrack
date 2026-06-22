@@ -1,25 +1,27 @@
+import { t, activeDateLocale } from '@/i18n'
+
 // Invoice type names (GraphQL enum names, sent/received as-is)
 export const INVOICE_TYPE = {
   PURCHASE: 'PURCHASE',
   SALE: 'SALE',
 }
 
-export const PAYMENT_METHODS = [
-  { value: 'CASH', label: 'Cash' },
-  { value: 'CARD', label: 'Card' },
-]
+// Selectable payment methods/statuses; labels resolved through i18n so the
+// dropdown options follow the active language.
+export const PAYMENT_METHOD_VALUES = ['CASH', 'CARD']
+export const PAYMENT_STATUS_VALUES = ['UNPAID', 'PARTIAL', 'PAID']
 
-export const PAYMENT_STATUSES = [
-  { value: 'UNPAID', label: 'Unpaid' },
-  { value: 'PARTIAL', label: 'Partial' },
-  { value: 'PAID', label: 'Paid' },
-]
+export const paymentMethodOptions = () =>
+  PAYMENT_METHOD_VALUES.map((value) => ({ value, label: paymentMethodLabel(value) }))
+
+export const paymentStatusOptions = () =>
+  PAYMENT_STATUS_VALUES.map((value) => ({ value, label: paymentStatusLabel(value) }))
 
 export const paymentMethodLabel = (value) =>
-  PAYMENT_METHODS.find((m) => m.value === value)?.label || value || '—'
+  value ? t(`enums.paymentMethod.${value}`) : '—'
 
 export const paymentStatusLabel = (value) =>
-  PAYMENT_STATUSES.find((s) => s.value === value)?.label || value || '—'
+  value ? t(`enums.paymentStatus.${value}`) : '—'
 
 // Money as VND: dot-grouped, no decimals, with the ₫ symbol (e.g. "5.400.000 ₫").
 export const formatMoney = (value) =>
@@ -35,10 +37,10 @@ export const formatQuantity = (value) => {
   return Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(3)))
 }
 
-// invoice_date arrives as a datetime; show the date part only.
+// invoice_date arrives as a datetime; show the date part only, in the active UI locale.
 export const formatInvoiceDate = (value) => {
   if (!value) return '—'
-  return new Date(value).toLocaleDateString('en-US', {
+  return new Date(value).toLocaleDateString(activeDateLocale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

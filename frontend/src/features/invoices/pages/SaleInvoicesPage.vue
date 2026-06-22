@@ -92,7 +92,7 @@
           <template #filter-payment_method>
             <SearchableSelect
               :modelValue="methodFilter"
-              :options="PAYMENT_METHODS"
+              :options="paymentMethodOptions()"
               all-label="(All)"
               search-placeholder="Filter payment..."
               teleport
@@ -102,7 +102,7 @@
           <template #filter-payment_status>
             <SearchableSelect
               :modelValue="statusFilter"
-              :options="PAYMENT_STATUSES"
+              :options="paymentStatusOptions()"
               all-label="(All)"
               search-placeholder="Filter status..."
               teleport
@@ -230,7 +230,7 @@ import { useExport } from '@/composables/useExport'
 import { fetchInvoice, startInvoiceExport, startInvoiceDocumentExport } from '@/features/invoices/services/invoiceService'
 import {
   makeInvoiceColumns, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
-  PAYMENT_METHODS, PAYMENT_STATUSES,
+  paymentMethodOptions, paymentStatusOptions,
   formatMoney, formatInvoiceDate, paymentMethodLabel,
 } from '@/features/invoices/constants'
 

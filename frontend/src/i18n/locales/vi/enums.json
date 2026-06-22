@@ -1,0 +1,15 @@
+{
+  "paymentMethod": {
+    "CASH": "Tiền mặt",
+    "CARD": "Thẻ"
+  },
+  "paymentStatus": {
+    "UNPAID": "Chưa thanh toán",
+    "PARTIAL": "Thanh toán một phần",
+    "PAID": "Đã thanh toán"
+  },
+  "invoiceType": {
+    "PURCHASE": "Mua",
+    "SALE": "Bán"
+  }
+}

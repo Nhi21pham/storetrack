@@ -1,0 +1,26 @@
+{
+  "field": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "verificationCode": "Verification code",
+    "businessName": "Business name",
+    "taxCode": "Tax code",
+    "storeName": "Store name",
+    "supplierName": "Supplier name",
+    "customerName": "Customer name",
+    "phone": "Phone number",
+    "address": "Address"
+  },
+  "required": "{field} is required.",
+  "minLength": "{field} must be at least {min} characters.",
+  "tooLong": "{field} is too long.",
+  "emailInvalid": "Please enter a valid email address.",
+  "confirmRequired": "Please confirm your password.",
+  "passwordsMismatch": "Passwords do not match.",
+  "codeLength": "Code must be 6 digits.",
+  "codeNumbersOnly": "Code must contain numbers only.",
+  "taxCodeNumbersOnly": "Tax code must contain numbers only.",
+  "taxCodeMinDigits": "Tax code must be at least {min} digits.",
+  "phoneInvalid": "Invalid phone number. Must be 10 or 11 digits."
+}

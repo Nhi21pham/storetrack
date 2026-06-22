@@ -1,0 +1,15 @@
+{
+  "paymentMethod": {
+    "CASH": "Cash",
+    "CARD": "Card"
+  },
+  "paymentStatus": {
+    "UNPAID": "Unpaid",
+    "PARTIAL": "Partial",
+    "PAID": "Paid"
+  },
+  "invoiceType": {
+    "PURCHASE": "Purchase",
+    "SALE": "Sale"
+  }
+}
