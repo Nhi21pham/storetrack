@@ -84,18 +84,22 @@ const props = defineProps({
   partyId: { type: [String, Number], required: true },
   partyName: { type: String, default: '' },
   openInvoices: { type: Array, required: true },
+  preselectInvoiceId: { type: [String, Number], default: null },
 })
 const emit = defineEmits(['close', 'saved'])
 const showToast = inject('showToast')
 
-const rows = ref(props.openInvoices.map((inv) => ({
-  id: inv.id,
-  code: inv.code,
-  invoice_date: inv.invoice_date,
-  balance: Number(inv.balance),
-  selected: false,
-  amount: '',
-})))
+const rows = ref(props.openInvoices.map((inv) => {
+  const preselected = props.preselectInvoiceId != null && String(inv.id) === String(props.preselectInvoiceId)
+  return {
+    id: inv.id,
+    code: inv.code,
+    invoice_date: inv.invoice_date,
+    balance: Number(inv.balance),
+    selected: preselected,
+    amount: preselected ? Number(inv.balance) : '',
+  }
+}))
 const paidAt = ref(todayInputDate())
 const method = ref(PAYMENT_METHODS[0].value)
 const note = ref('')

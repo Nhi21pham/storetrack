@@ -125,6 +125,16 @@ class ExportController extends Controller
         ));
     }
 
+    public function queueInvoiceDocuments(Request $request, int $storeId): JsonResponse
+    {
+        return $this->queued(fn () => $this->invoiceService->queueDocumentExport(
+            $request->user(),
+            $storeId,
+            $this->extractInvoiceExportFilters($request),
+            $this->extractClientId($request),
+        ));
+    }
+
     public function queueStockReport(Request $request, int $storeId): JsonResponse
     {
         return $this->queued(fn () => $this->stockReportService->queueExport(
@@ -266,7 +276,7 @@ class ExportController extends Controller
                 $path,
                 $export->filename,
                 [
-                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'Content-Type' => $this->contentTypeFor($export->filename),
                 ]
             )->deleteFileAfterSend();
 
@@ -281,6 +291,77 @@ class ExportController extends Controller
         } catch (AppException $e) {
             return $this->appExceptionResponse($e);
         }
+    }
+
+    public function storeHistory(Request $request, int $storeId): JsonResponse
+    {
+        try {
+            return response()->json($this->exportService->history(
+                $request->user(),
+                $storeId,
+                $this->extractHistoryTypes($request),
+                $this->nullableQuery($request, 'start_date'),
+                $this->nullableQuery($request, 'end_date'),
+                (int) $request->query('per_page', 20),
+            ));
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    public function businessHistory(Request $request, int $businessId): JsonResponse
+    {
+        try {
+            return response()->json($this->exportService->businessHistory(
+                $request->user(),
+                $businessId,
+                $this->extractHistoryTypes($request),
+                $this->nullableQuery($request, 'start_date'),
+                $this->nullableQuery($request, 'end_date'),
+                (int) $request->query('per_page', 20),
+            ));
+        } catch (AppException $e) {
+            return $this->appExceptionResponse($e);
+        }
+    }
+
+    /**
+     * Export types to narrow the history to — accepts a single `type` or a
+     * repeated `type[]` (the invoice pages pass invoices + invoice-documents).
+     * Returns null to mean "every type for this scope".
+     */
+    private function extractHistoryTypes(Request $request): ?array
+    {
+        $type = $request->query('type');
+
+        if (is_array($type)) {
+            $types = array_values(array_filter($type, fn ($value) => is_string($value) && $value !== ''));
+
+            return $types !== [] ? $types : null;
+        }
+
+        return is_string($type) && $type !== '' ? [$type] : null;
+    }
+
+    private function nullableQuery(Request $request, string $key): ?string
+    {
+        $value = $request->query($key);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    /**
+     * MIME type for the download response, picked from the file extension so
+     * the same endpoint can serve spreadsheets, PDFs and zip archives.
+     */
+    private function contentTypeFor(string $filename): string
+    {
+        return match (strtolower(pathinfo($filename, PATHINFO_EXTENSION))) {
+            'xlsx'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'pdf'   => 'application/pdf',
+            'zip'   => 'application/zip',
+            default => 'application/octet-stream',
+        };
     }
 
     /**

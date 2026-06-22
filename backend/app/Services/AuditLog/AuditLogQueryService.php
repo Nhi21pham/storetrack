@@ -5,6 +5,7 @@ namespace App\Services\AuditLog;
 use App\Models\User;
 use App\Repositories\AuditLogRepository;
 use App\Services\PermissionService;
+use App\Support\Pagination;
 
 class AuditLogQueryService
 {
@@ -30,13 +31,7 @@ class AuditLogQueryService
             ->storeQuery($storeId, $startDate, $endDate, $objectType, $action, $search)
             ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
 
-        return [
-            'data'         => $paginator->items(),
-            'total'        => $paginator->total(),
-            'current_page' => $paginator->currentPage(),
-            'last_page'    => $paginator->lastPage(),
-            'per_page'     => $paginator->perPage(),
-        ];
+        return Pagination::present($paginator);
     }
 
     public function getBusinessLogs(
@@ -57,12 +52,6 @@ class AuditLogQueryService
             ->businessQuery($businessId, $startDate, $endDate, $objectType, $action, $storeName, $search)
             ->paginate(min($perPage, 100), ['*'], 'page', max($page, 1));
 
-        return [
-            'data'         => $paginator->items(),
-            'total'        => $paginator->total(),
-            'current_page' => $paginator->currentPage(),
-            'last_page'    => $paginator->lastPage(),
-            'per_page'     => $paginator->perPage(),
-        ];
+        return Pagination::present($paginator);
     }
 }

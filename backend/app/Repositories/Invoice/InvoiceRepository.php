@@ -28,6 +28,8 @@ class InvoiceRepository
         return $query->orderByDesc('id')->get();
     }
 
+    private const DOCUMENT_RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.taxes'];
+
     /**
      * A filtered, ordered query of invoices for a store. Used by the export job,
      * which streams it in chunks, so this returns a Builder rather than a result.
@@ -38,6 +40,29 @@ class InvoiceRepository
             ->with(self::LIST_RELATIONS)
             ->where('store_id', $storeId);
 
+        return $this->applyListFilters($query, $filters)->orderByDesc('id');
+    }
+
+    /**
+     * Same filtered, ordered selection as listQuery but eager-loading each
+     * invoice's line items and their taxes — for the per-invoice PDF document
+     * export, which renders the full content of every matched invoice.
+     */
+    public function documentsQuery(int $storeId, array $filters = []): Builder
+    {
+        $query = Invoice::query()
+            ->with(self::DOCUMENT_RELATIONS)
+            ->where('store_id', $storeId);
+
+        return $this->applyListFilters($query, $filters)->orderByDesc('id');
+    }
+
+    /**
+     * Applies the shared invoice list filters (type, ids, party, payment,
+     * date range, search) to a base query. Ordering is left to the caller.
+     */
+    private function applyListFilters(Builder $query, array $filters): Builder
+    {
         if (!empty($filters['type'])) {
             $query->where('type', (string) $filters['type']);
         }
@@ -77,7 +102,7 @@ class InvoiceRepository
             });
         }
 
-        return $query->orderByDesc('id');
+        return $query;
     }
 
     public function create(array $data): Invoice

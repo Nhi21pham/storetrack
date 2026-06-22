@@ -118,3 +118,7 @@ export const fetchInventoryBatches = async ({ storeId }) => {
 
 export const startInvoiceExport = ({ storeId, params }) =>
   rest('post', `/api/exports/invoices/${storeId}`, { params })
+
+// Queues a per-invoice PDF document export (a zip of one PDF per invoice).
+export const startInvoiceDocumentExport = ({ storeId, params }) =>
+  rest('post', `/api/exports/invoice-documents/${storeId}`, { params })

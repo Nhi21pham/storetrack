@@ -2,7 +2,7 @@
   <PageContainer :maxWidth="1100">
     <PageHeader title="Sale Invoices" subtitle="Sales recorded to your customers.">
       <template v-if="currentStore" #actions>
-        <HistoryButton label="Scan history" title="View scan history" @click="showScanHistory = true" />
+        <HistoryButton label="History" title="View scan & export history" @click="showScanHistory = true" />
         <template v-if="currentStore.is_active">
           <ScanInvoiceButton to="/sale-invoices/scan" />
           <button class="btn-create" @click="goToCreate">
@@ -35,16 +35,19 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedInvoices.length === 0" @click="run" />
+        <ExportButton label="Export PDF" title="Export invoice contents as PDF" :exporting="exportingPdf" :disabled="sortedInvoices.length === 0" @click="runPdf" />
       </div>
 
       <InvoiceSelectionBar
         v-if="selectedIds.size > 0"
         :count="selectedIds.size"
         :exporting="exporting"
+        :exportingPdf="exportingPdf"
         :bulkDeleting="bulkDeleting"
         :canDelete="!!currentStore?.is_active && canDelete"
         @clear="clearSelection"
         @export="run"
+        @export-pdf="runPdf"
         @delete="confirmBulkDelete"
       />
 
@@ -181,10 +184,10 @@
         @cancel="showBulkDeleteConfirm = false"
       />
 
-      <ScanHistoryModal
+      <HistoryModal
         v-if="showScanHistory"
-        :store-id="currentStore.id"
-        type="sale"
+        title="Invoice History"
+        :tabs="historyTabs"
         @close="showScanHistory = false"
       />
     </template>
@@ -216,13 +219,15 @@ import InvoiceSelectionBar from '@/features/invoices/components/InvoiceSelection
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import PaymentStatusBadge from '@/features/invoices/components/PaymentStatusBadge.vue'
 import ScanInvoiceButton from '@/features/invoices/components/ScanInvoiceButton.vue'
-import ScanHistoryModal from '@/features/invoices/components/ScanHistoryModal.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ScanHistoryPanel from '@/features/invoices/components/ScanHistoryPanel.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import { useInvoices } from '@/features/invoices/composables/useInvoices'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
-import { fetchInvoice, startInvoiceExport } from '@/features/invoices/services/invoiceService'
+import { fetchInvoice, startInvoiceExport, startInvoiceDocumentExport } from '@/features/invoices/services/invoiceService'
 import {
   makeInvoiceColumns, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
   PAYMENT_METHODS, PAYMENT_STATUSES,
@@ -273,6 +278,14 @@ const bulkDeleting = ref(false)
 const showBulkDeleteConfirm = ref(false)
 const showScanHistory = ref(false)
 
+const historyTabs = computed(() => {
+  const storeId = currentStore.value?.id
+  return [
+    { key: 'scans', label: 'Scans', component: ScanHistoryPanel, props: { storeId, type: 'sale' } },
+    { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: storeId, types: ['invoices', 'invoice-documents'] } },
+  ]
+})
+
 const goToCreate = () => router.push('/sale-invoices/new')
 const openEdit = (inv) => { detailInvoice.value = null; router.push(`/sale-invoices/${inv.id}/edit`) }
 
@@ -321,20 +334,27 @@ const handleBulkDelete = async () => {
   }
 }
 
+// Shared filter set for both exports: the active filters, plus the selected
+// ids when a selection is active (otherwise the whole filtered view).
+const baseExportParams = () => {
+  const params = {
+    type: INVOICE_TYPE.SALE,
+    search: searchQuery.value.trim() || undefined,
+    payment_method: methodFilter.value || undefined,
+    payment_status: statusFilter.value || undefined,
+    party_id: partyFilter.value || undefined,
+    start_date: startDate.value || undefined,
+    end_date: endDate.value || undefined,
+  }
+  if (selectedIds.value.size > 0) {
+    params.ids = Array.from(selectedIds.value)
+  }
+  return params
+}
+
 const { exporting, run } = useExport({
   start: () => {
-    const params = {
-      type: INVOICE_TYPE.SALE,
-      search: searchQuery.value.trim() || undefined,
-      payment_method: methodFilter.value || undefined,
-      payment_status: statusFilter.value || undefined,
-      party_id: partyFilter.value || undefined,
-      start_date: startDate.value || undefined,
-      end_date: endDate.value || undefined,
-    }
-    if (selectedIds.value.size > 0) {
-      params.ids = Array.from(selectedIds.value)
-    }
+    const params = baseExportParams()
     params.columns = columnVisibility.togglableColumns
       .filter((col) => columnVisibility.isVisible(col.key))
       .map((col) => col.key)
@@ -342,6 +362,13 @@ const { exporting, run } = useExport({
   },
   defaultFilename: (id) => `sale-invoices-${id}.xlsx`,
   onSuccess: () => showToast('Invoice export ready.', 'success'),
+  onError:   (msg) => showToast(msg, 'error'),
+})
+
+const { exporting: exportingPdf, run: runPdf } = useExport({
+  start: () => startInvoiceDocumentExport({ storeId: currentStore.value.id, params: baseExportParams() }),
+  defaultFilename: (id) => `sale-invoices-${id}.zip`,
+  onSuccess: () => showToast('Invoice PDF export ready.', 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

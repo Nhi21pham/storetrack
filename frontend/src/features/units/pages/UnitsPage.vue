@@ -164,11 +164,10 @@
       @imported="onImported"
     />
 
-    <ImportHistoryModal
+    <HistoryModal
       v-if="showHistory"
-      title="Unit Import History"
-      type="units"
-      :store-id="currentStore.id"
+      title="Unit History"
+      :tabs="historyTabs"
       @close="showHistory = false"
     />
 
@@ -242,7 +241,9 @@ import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
 import ImportButton from '@/components/common/ImportButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
-import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ImportHistoryPanel from '@/components/common/ImportHistoryPanel.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import HistoryButton from '@/components/common/HistoryButton.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
@@ -297,6 +298,11 @@ const clearFilters = () => {
 const showForm = ref(false)
 const showImport = ref(false)
 const showHistory = ref(false)
+
+const historyTabs = computed(() => [
+  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'units' } },
+  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['units'] } },
+])
 const editingUnit = ref(null)
 const detailUnit = ref(null)
 const deleteTarget = ref(null)

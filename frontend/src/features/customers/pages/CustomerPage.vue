@@ -170,11 +170,10 @@
         @imported="onImported"
       />
 
-      <ImportHistoryModal
+      <HistoryModal
         v-if="showHistory"
-        title="Customer Import History"
-        type="customers"
-        :store-id="currentStore.id"
+        title="Customer History"
+        :tabs="historyTabs"
         @close="showHistory = false"
       />
 
@@ -228,7 +227,9 @@ import CustomerDetailModal from '@/features/customers/components/CustomerDetailM
 import ImportButton from '@/components/common/ImportButton.vue'
 import HistoryButton from '@/components/common/HistoryButton.vue'
 import ImportModal from '@/components/common/ImportModal.vue'
-import ImportHistoryModal from '@/components/common/ImportHistoryModal.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ImportHistoryPanel from '@/components/common/ImportHistoryPanel.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import { useCustomers } from '@/features/customers/composables/useCustomers'
 import { useExport } from '@/composables/useExport'
@@ -296,6 +297,11 @@ const showBulkDeleteConfirm = ref(false)
 
 const showImport  = ref(false)
 const showHistory = ref(false)
+
+const historyTabs = computed(() => [
+  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'customers' } },
+  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['customers'] } },
+])
 
 // Explains the customer import rules in the import dialog (kept in sync with
 // CustomerImporter on the backend).

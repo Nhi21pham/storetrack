@@ -30,6 +30,7 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedRows.length === 0" @click="run" />
+        <HistoryButton label="Export history" title="View export history" @click="showHistory = true" />
       </div>
 
       <ReportSelectionBar
@@ -49,7 +50,7 @@
       />
 
       <div v-else class="table-wrap">
-        <ResizableTable :key="tableKey" :columns="tableColumns" :initial-widths="tableWidths">
+        <ResizableTable :key="tableKey" :columns="tableColumns" :initial-widths="tableWidths" sticky-header>
           <template v-for="col in tableColumns" :key="col.key" #[`header-${col.key}`]="{ col: c }">
             <SelectCheckbox
               v-if="c.key === 'select'"
@@ -191,6 +192,13 @@
         @edit="onInvoiceEdit"
       />
     </template>
+
+    <HistoryModal
+      v-if="showHistory"
+      title="Stock Report — Export History"
+      :tabs="historyTabs"
+      @close="showHistory = false"
+    />
   </PageContainer>
 </template>
 
@@ -210,6 +218,9 @@ import SortableHeader from '@/components/common/SortableHeader.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import TagChip from '@/components/common/TagChip.vue'
 import TotalsBar from '@/components/common/TotalsBar.vue'
@@ -241,6 +252,19 @@ const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 // Scope follows the store switcher: a selected store → that store's report;
 // "Business level" (owner, no store selected) → consolidated all-stores report.
 const scope = computed(() => (!currentStore.value && isBusinessOwner.value) ? 'business' : 'store')
+
+const showHistory = ref(false)
+const historyTabs = computed(() => {
+  const isBiz = scope.value === 'business'
+  return [{
+    key: 'exports', label: 'Exports', component: ExportHistoryPanel,
+    props: {
+      scope: isBiz ? 'business' : 'store',
+      scopeId: isBiz ? currentBusiness.value?.id : currentStore.value?.id,
+      types: isBiz ? ['stock-report-business'] : ['stock-report'],
+    },
+  }]
+})
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'stock-report',

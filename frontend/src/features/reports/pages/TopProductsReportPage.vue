@@ -40,6 +40,7 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedRows.length === 0" @click="run" />
+        <HistoryButton label="Export history" title="View export history" @click="showHistory = true" />
       </div>
 
       <ReportSelectionBar
@@ -141,6 +142,13 @@
         @saved="onProductSaved"
       />
     </template>
+
+    <HistoryModal
+      v-if="showHistory"
+      title="Top Products — Export History"
+      :tabs="historyTabs"
+      @close="showHistory = false"
+    />
   </PageContainer>
 </template>
 
@@ -160,6 +168,9 @@ import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import SegmentedToggle from '@/components/common/SegmentedToggle.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
+import HistoryButton from '@/components/common/HistoryButton.vue'
+import HistoryModal from '@/components/common/HistoryModal.vue'
+import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import TagChip from '@/components/common/TagChip.vue'
 import TotalsBar from '@/components/common/TotalsBar.vue'
@@ -185,6 +196,19 @@ const canManage = computed(() => !!currentStore.value?.is_active)
 
 const isBusinessOwner = computed(() => currentBusiness.value?.role === 'owner')
 const scope = computed(() => (!currentStore.value && isBusinessOwner.value) ? 'business' : 'store')
+
+const showHistory = ref(false)
+const historyTabs = computed(() => {
+  const isBiz = scope.value === 'business'
+  return [{
+    key: 'exports', label: 'Exports', component: ExportHistoryPanel,
+    props: {
+      scope: isBiz ? 'business' : 'store',
+      scopeId: isBiz ? currentBusiness.value?.id : currentStore.value?.id,
+      types: isBiz ? ['top-products-report-business'] : ['top-products-report'],
+    },
+  }]
+})
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'top-products-report',
