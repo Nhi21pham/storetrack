@@ -1,10 +1,10 @@
 <template>
   <section class="party-bank-list">
-    <h3 class="section-title">Bank Accounts</h3>
+    <h3 class="section-title">{{ $t('banking.sectionTitle') }}</h3>
 
-    <p v-if="loading" class="state-text">Loading...</p>
+    <p v-if="loading" class="state-text">{{ $t('common.loading') }}</p>
     <p v-else-if="loadError" class="state-error">{{ loadError }}</p>
-    <p v-else-if="accounts.length === 0" class="state-text">No bank accounts.</p>
+    <p v-else-if="accounts.length === 0" class="state-text">{{ $t('banking.noAccountsShort') }}</p>
 
     <ul v-else class="account-list">
       <li v-for="account in accounts" :key="account.id" class="account-row">
@@ -14,15 +14,15 @@
         </div>
         <dl class="row-details">
           <div v-if="account.account_holder_name" class="detail-item">
-            <dt>Holder</dt>
+            <dt>{{ $t('banking.holder') }}</dt>
             <dd>{{ account.account_holder_name }}</dd>
           </div>
           <div v-if="account.branch" class="detail-item">
-            <dt>Branch</dt>
+            <dt>{{ $t('banking.branch') }}</dt>
             <dd>{{ account.branch }}</dd>
           </div>
           <div v-if="account.province?.name_vi" class="detail-item">
-            <dt>Province</dt>
+            <dt>{{ $t('banking.province') }}</dt>
             <dd>{{ account.province.name_vi }}</dd>
           </div>
         </dl>
@@ -34,6 +34,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { fetchBankAccountsForParty } from '@/features/banking/services/bankAccountService'
+import { translateError } from '@/utils/translateError'
 
 const props = defineProps({
   partyId: { type: [String, Number], required: true },
@@ -53,7 +54,7 @@ const load = async () => {
   try {
     accounts.value = await fetchBankAccountsForParty({ partyId: props.partyId })
   } catch (err) {
-    loadError.value = err.message
+    loadError.value = translateError(err)
     accounts.value = []
   } finally {
     loading.value = false

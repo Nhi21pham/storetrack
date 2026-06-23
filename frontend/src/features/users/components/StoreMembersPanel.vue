@@ -1,12 +1,12 @@
 <template>
   <div class="members-panel">
     <div class="section">
-      <h4 class="section-title">Members</h4>
+      <h4 class="section-title">{{ $t('users.members') }}</h4>
       <div v-if="membersLoading" class="list-loading">
-        <div class="spinner"></div> Loading members...
+        <div class="spinner"></div> {{ $t('users.loadingMembers') }}
       </div>
-      <div v-else-if="members.length === 0" class="empty-list">No members yet.</div>
-      <div v-else-if="filteredMembers.length === 0" class="empty-list">No members match "{{ search }}".</div>
+      <div v-else-if="members.length === 0" class="empty-list">{{ $t('users.noMembers') }}</div>
+      <div v-else-if="filteredMembers.length === 0" class="empty-list">{{ $t('users.noMembersMatch', { search }) }}</div>
       <div v-else class="member-list">
         <div v-for="member in filteredMembers" :key="member.id" class="member-row">
           <div class="member-info">
@@ -21,7 +21,7 @@
               </button>
               <div v-if="editingRoleId === member.id" class="role-menu">
                 <button
-                  v-for="opt in ASSIGNABLE_ROLE_OPTIONS"
+                  v-for="opt in assignableRoleOptions()"
                   :key="opt.value"
                   class="role-menu-item"
                   :class="[opt.value, { active: member.role === opt.value }]"
@@ -39,7 +39,7 @@
               v-if="canRemove && member.role !== ROLE.OWNER"
               class="remove-btn"
               @click="confirmRemoveMember(member)"
-              title="Remove member"
+              :title="$t('users.removeMemberTitle')"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </button>
@@ -50,27 +50,27 @@
 
     <div v-if="canInvite" class="section">
       <div class="section-header">
-        <h4 class="section-title">Pending Invitations</h4>
+        <h4 class="section-title">{{ $t('users.pendingInvitations') }}</h4>
         <button class="btn-invite" @click="$emit('invite')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Invite
+          {{ $t('users.invite') }}
         </button>
       </div>
       <div v-if="invitesLoading" class="list-loading">
-        <div class="spinner"></div> Loading...
+        <div class="spinner"></div> {{ $t('common.loading') }}
       </div>
-      <div v-else-if="pendingInvitations.length === 0" class="empty-list">No pending invitations.</div>
+      <div v-else-if="pendingInvitations.length === 0" class="empty-list">{{ $t('users.noPendingInvitations') }}</div>
       <div v-else class="member-list">
         <div v-for="inv in pendingInvitations" :key="inv.id" class="member-row">
           <div class="member-info">
             <span class="member-name">{{ inv.invitee_email }}</span>
-            <span class="member-email">Invited by {{ inv.inviter.name }}</span>
+            <span class="member-email">{{ $t('users.invitedBy', { name: inv.inviter.name }) }}</span>
           </div>
           <div class="member-right">
             <RoleBadge :role="inv.role" />
-            <button class="remove-btn" @click="cancellingInvitation = inv" title="Cancel invitation">
+            <button class="remove-btn" @click="cancellingInvitation = inv" :title="$t('users.cancelInvitationTitle')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
@@ -80,10 +80,10 @@
 
     <ConfirmDialog
       v-if="removingMember"
-      title="Remove Member"
-      :message="`Remove ${removingMember.name} from this store?`"
-      confirm-text="Yes, remove"
-      cancel-text="Cancel"
+      :title="$t('users.removeMemberDialogTitle')"
+      :message="$t('users.removeMemberMessage', { name: removingMember.name })"
+      :confirm-text="$t('users.confirmRemove')"
+      :cancel-text="$t('common.cancel')"
       type="danger"
       @confirm="handleRemoveMember"
       @cancel="removingMember = null"
@@ -91,10 +91,10 @@
 
     <ConfirmDialog
       v-if="pendingRoleChange"
-      title="Change Role"
-      :message="`Change ${pendingRoleChange.member.name}'s role to ${roleLabel(pendingRoleChange.newRole)}?`"
-      confirm-text="Yes, change"
-      cancel-text="Cancel"
+      :title="$t('users.changeRoleDialogTitle')"
+      :message="$t('users.changeRoleMessage', { name: pendingRoleChange.member.name, role: roleLabel(pendingRoleChange.newRole) })"
+      :confirm-text="$t('users.confirmChange')"
+      :cancel-text="$t('common.cancel')"
       type="warning"
       @confirm="confirmRoleChange"
       @cancel="pendingRoleChange = null"
@@ -102,10 +102,10 @@
 
     <ConfirmDialog
       v-if="cancellingInvitation"
-      title="Cancel Invitation"
-      :message="`Cancel the invitation sent to ${cancellingInvitation.invitee_email}?`"
-      confirm-text="Yes, cancel"
-      cancel-text="Keep"
+      :title="$t('users.cancelInvitationDialogTitle')"
+      :message="$t('users.cancelInvitationMessage', { email: cancellingInvitation.invitee_email })"
+      :confirm-text="$t('users.confirmCancel')"
+      :cancel-text="$t('users.keepInvitation')"
       type="warning"
       @confirm="handleCancelInvitation"
       @cancel="cancellingInvitation = null"
@@ -119,7 +119,7 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import RoleBadge from '@/features/users/components/RoleBadge.vue'
 import { useStoreMembers } from '@/features/users/composables/useStoreMembers'
 import { roleLabel } from '@/features/users/utils/format'
-import { ROLE, ASSIGNABLE_ROLE_OPTIONS } from '@/features/users/constants'
+import { ROLE, assignableRoleOptions } from '@/features/users/constants'
 
 const props = defineProps({
   storeId:   { type: String, required: true },

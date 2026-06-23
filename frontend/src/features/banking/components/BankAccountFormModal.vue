@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="emit('close')">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Bank Account' : 'New Bank Account' }}</h2>
+        <h2>{{ isEdit ? $t('banking.editAccount') : $t('banking.newAccount') }}</h2>
         <button class="close-btn" @click="emit('close')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,37 +12,37 @@
 
       <div class="modal-body">
         <div v-if="!isEdit" class="owner-section">
-          <h3 class="section-title">Owner</h3>
+          <h3 class="section-title">{{ $t('banking.owner') }}</h3>
           <div class="form-row">
             <div class="form-group">
-              <label>Type <span class="required">*</span></label>
+              <label>{{ $t('banking.type') }} <span class="required">*</span></label>
               <SearchableSelect
                 v-model="partyType"
                 :options="typeOptions"
                 :allow-all="false"
                 size="large"
-                placeholder="Select type..."
+                :placeholder="$t('banking.selectType')"
                 @change="onTypeChange"
               />
             </div>
             <div class="form-group">
-              <label>Name <span class="required">*</span></label>
+              <label>{{ $t('banking.name') }} <span class="required">*</span></label>
               <SearchableSelect
                 v-model="ownerId"
                 :options="ownerOptions"
                 :allow-all="false"
                 size="large"
-                :placeholder="partyType ? 'Select...' : 'Select type first'"
+                :placeholder="partyType ? $t('banking.selectName') : $t('banking.selectTypeFirst')"
               />
             </div>
           </div>
-          <p v-if="loadingOwners" class="hint">Loading...</p>
+          <p v-if="loadingOwners" class="hint">{{ $t('common.loading') }}</p>
           <p v-else-if="noOwnersInStore" class="hint">
-            No {{ partyType }}s belong to this store yet. They join a store once they have an invoice there.
+            {{ $t('banking.noOwnersInStore', { type: $t('banking.ownerTypeOption.' + partyType.toUpperCase()) }) }}
           </p>
         </div>
 
-        <h3 v-if="!isEdit" class="section-title">Account Details</h3>
+        <h3 v-if="!isEdit" class="section-title">{{ $t('banking.accountDetails') }}</h3>
         <BankAccountForm
           :party-id="resolvedPartyId"
           :account="account"
@@ -62,6 +62,7 @@ import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import BankAccountForm from '@/features/banking/components/BankAccountForm.vue'
 import { fetchCustomers } from '@/features/customers/services/customerService'
 import { fetchSuppliers } from '@/features/suppliers/services/supplierService'
+import { t } from '@/i18n'
 
 const props = defineProps({
   account: { type: Object, default: null },
@@ -74,11 +75,11 @@ const currentBusiness = inject('currentBusiness')
 
 const isEdit = computed(() => !!props.account)
 
-const typeOptions = [
-  { value: 'business', label: 'Business' },
-  { value: 'customer', label: 'Customer' },
-  { value: 'supplier', label: 'Supplier' },
-]
+const typeOptions = computed(() => [
+  { value: 'business', label: t('banking.ownerTypeOption.BUSINESS') },
+  { value: 'customer', label: t('banking.ownerTypeOption.CUSTOMER') },
+  { value: 'supplier', label: t('banking.ownerTypeOption.SUPPLIER') },
+])
 
 const partyType = ref('')
 const ownerId = ref('')

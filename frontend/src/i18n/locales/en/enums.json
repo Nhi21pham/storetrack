@@ -16,5 +16,18 @@
     "OWNER": "Owner",
     "ACCOUNTANT": "Accountant",
     "STAFF": "Staff"
+  },
+  "objectType": {
+    "business": "Business",
+    "store": "Store",
+    "user": "User",
+    "invitation": "Invitation",
+    "supplier": "Supplier",
+    "customer": "Customer",
+    "bank": "Bank",
+    "bank_account": "Bank Account",
+    "unit": "Unit",
+    "product": "Product",
+    "product_category": "Category"
   }
 }

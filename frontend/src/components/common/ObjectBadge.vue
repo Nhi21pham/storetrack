@@ -6,22 +6,12 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-const TYPE_LABELS = {
-  business:     'Business',
-  store:        'Store',
-  user:         'User',
-  invitation:   'Invitation',
-  supplier:     'Supplier',
-  customer:     'Customer',
-  bank:         'Bank',
-  bank_account: 'Bank Account',
-  unit:         'Unit',
-  product:      'Product',
-  product_category: 'Category',
-}
-
-const KNOWN_VARIANTS = new Set(Object.keys(TYPE_LABELS))
+const KNOWN_VARIANTS = new Set([
+  'business', 'store', 'user', 'invitation', 'supplier', 'customer',
+  'bank', 'bank_account', 'unit', 'product', 'product_category',
+])
 
 const props = defineProps({
   type:  { type: String, default: '' },
@@ -29,15 +19,19 @@ const props = defineProps({
   block: { type: Boolean, default: false },
 })
 
+const { t, te } = useI18n()
+
 const normalizedType = computed(() => String(props.type || '').toLowerCase())
 
 const variant = computed(() =>
   KNOWN_VARIANTS.has(normalizedType.value) ? normalizedType.value : 'default'
 )
 
-const displayLabel = computed(() =>
-  props.label || TYPE_LABELS[normalizedType.value] || props.type || '—'
-)
+const displayLabel = computed(() => {
+  if (props.label) return props.label
+  const key = `enums.objectType.${normalizedType.value}`
+  return te(key) ? t(key) : (props.type || '—')
+})
 </script>
 
 <style scoped>

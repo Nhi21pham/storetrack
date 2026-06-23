@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal">
       <div class="modal-header">
-        <h2>Invite User</h2>
+        <h2>{{ $t('users.inviteUser') }}</h2>
         <button class="close-btn" @click="$emit('close')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -11,14 +11,16 @@
       </div>
 
       <div class="modal-body">
-        <p class="description">Send an invitation email to add someone to <strong>{{ storeName }}</strong>.</p>
+        <i18n-t keypath="users.inviteDescriptionFull" tag="p" class="description">
+          <template #store><strong>{{ storeName }}</strong></template>
+        </i18n-t>
 
         <div class="form-group">
-          <label>Email Address <span class="required">*</span></label>
+          <label>{{ $t('users.emailAddress') }} <span class="required">*</span></label>
           <input
             v-model="form.email"
             type="email"
-            placeholder="Enter their email"
+            :placeholder="$t('users.emailPlaceholder')"
             :class="{ error: errors.email }"
             @keyup.enter="handleSubmit"
           />
@@ -26,7 +28,7 @@
         </div>
 
         <div class="form-group">
-          <label>Role <span class="required">*</span></label>
+          <label>{{ $t('users.role') }} <span class="required">*</span></label>
           <div class="role-options">
             <label
               v-for="opt in roleOptions"
@@ -48,10 +50,10 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="$emit('close')" :disabled="loading">Cancel</button>
+        <button class="btn-cancel" @click="$emit('close')" :disabled="loading">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading">
           <span v-if="loading" class="spinner"></span>
-          Send Invitation
+          {{ $t('users.sendInvitation') }}
         </button>
       </div>
     </div>
@@ -59,9 +61,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { inviteUserToStore } from '@/features/users/services/userService'
-import { ASSIGNABLE_ROLE_OPTIONS, ROLE } from '@/features/users/constants'
+import { assignableRoleOptions, ROLE } from '@/features/users/constants'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const props = defineProps({
   storeId:   { type: String, required: true },
@@ -76,16 +80,16 @@ const errors   = ref({ email: '', role: '' })
 
 const form = ref({ email: '', role: ROLE.ACCOUNTANT })
 
-const roleOptions = ASSIGNABLE_ROLE_OPTIONS
+const roleOptions = computed(() => assignableRoleOptions())
 
 const validateForm = () => {
   errors.value = { email: '', role: '' }
 
   if (!form.value.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
-    errors.value.email = 'Please enter a valid email address.'
+    errors.value.email = t('users.emailInvalid')
   }
   if (!form.value.role) {
-    errors.value.role = 'Please select a role.'
+    errors.value.role = t('users.roleRequired')
   }
 
   return !Object.values(errors.value).some(Boolean)
@@ -101,7 +105,7 @@ const handleSubmit = async () => {
     await inviteUserToStore(props.storeId, form.value.email, form.value.role)
     emit('invited', form.value.email)
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     loading.value = false
   }

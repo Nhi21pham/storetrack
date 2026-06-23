@@ -16,5 +16,18 @@
     "OWNER": "Chủ sở hữu",
     "ACCOUNTANT": "Kế toán",
     "STAFF": "Nhân viên"
+  },
+  "objectType": {
+    "business": "Doanh nghiệp",
+    "store": "Cửa hàng",
+    "user": "Người dùng",
+    "invitation": "Lời mời",
+    "supplier": "Nhà cung cấp",
+    "customer": "Khách hàng",
+    "bank": "Ngân hàng",
+    "bank_account": "Tài khoản ngân hàng",
+    "unit": "Đơn vị tính",
+    "product": "Sản phẩm",
+    "product_category": "Danh mục"
   }
 }

@@ -11,12 +11,13 @@
 import { ref, computed, watch } from 'vue'
 import BankAccountsSection from '@/features/banking/components/BankAccountsSection.vue'
 import { submitDraftBankAccounts } from '@/features/banking/services/draftBankAccounts'
+import { t } from '@/i18n'
 
 const props = defineProps({
   partyId: { type: [String, Number], default: null },
   businessId: { type: [String, Number], default: null },
   defaultHolderName: { type: String, default: '' },
-  entityLabel: { type: String, default: 'Record' },
+  entityLabel: { type: String, default: () => t('banking.record') },
 })
 
 const drafts = ref([])

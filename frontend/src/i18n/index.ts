@@ -29,8 +29,9 @@ const i18n = createI18n({
 
 export default i18n
 
-// Standalone translator for non-component code (api.js, utils).
+// Standalone translator + key-existence check for non-component code (api.js, utils).
 export const t = i18n.global.t
+export const te = i18n.global.te
 
 export const activeLocale = (): LocaleCode => i18n.global.locale.value as LocaleCode
 

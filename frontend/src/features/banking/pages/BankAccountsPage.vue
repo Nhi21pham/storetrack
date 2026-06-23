@@ -1,31 +1,31 @@
 <template>
   <PageContainer :maxWidth="1200">
-    <PageHeader title="Bank Accounts" subtitle="All bank accounts attached to businesses, customers, and suppliers.">
+    <PageHeader :title="$t('banking.accountsTitle')" :subtitle="$t('banking.accountsSubtitle')">
       <template v-if="currentBusiness && currentStore" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Bank Account
+          {{ $t('banking.newAccount') }}
         </button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentBusiness"
-      title="No business found"
-      description="You need to create or select a business before managing bank accounts."
+      :title="$t('shared.noBusinessTitle')"
+      :description="$t('banking.noAccountsBusinessDesc')"
     />
 
     <EmptyState
       v-else-if="!currentStore"
-      title="No store selected"
-      description="Select a store to manage bank accounts."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('banking.noAccountsStoreDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by account number, holder name, or branch..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('banking.searchAccountsPlaceholder')" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
@@ -57,22 +57,22 @@
         @delete="requestBulk('delete')"
       />
 
-      <LoadingState v-if="loading">Loading bank accounts...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('banking.loadingAccounts') }}</LoadingState>
 
       <EmptyState
         v-else-if="accounts.length === 0 && !searchQuery"
-        title="No bank accounts yet"
-        description="Add a bank account for a business, customer, or supplier to get started."
+        :title="$t('banking.noAccountsTitle')"
+        :description="$t('banking.noAccountsDesc')"
       />
 
       <EmptyState
         v-else-if="accounts.length === 0"
-        :description="`No bank accounts matching &quot;${searchQuery}&quot;`"
+        :description="$t('banking.noAccountsMatching', { query: searchQuery })"
       />
 
       <EmptyState
         v-else-if="sortedAccounts.length === 0"
-        description="No bank accounts match the current filters."
+        :description="$t('shared.noResults')"
       />
 
       <div v-else class="table-wrap">
@@ -82,17 +82,17 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="$t(c.labelKey)"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
           <tr v-for="(a, idx) in paginatedAccounts" :key="a.id">
@@ -120,10 +120,10 @@
             <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(a.created_at) }}</td>
             <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(a.updated_at) }}</td>
             <td class="actions-col">
-              <button class="action-btn" @click="openEdit(a)" title="Edit">
+              <button class="action-btn" @click="openEdit(a)" :title="$t('common.edit')">
                 <Icon name="edit" :size="14" />
               </button>
-              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(a)" title="Delete">
+              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(a)" :title="$t('common.delete')">
                 <Icon name="delete" :size="14" />
               </button>
             </td>
@@ -150,7 +150,7 @@
 
     <ImportModal
       v-if="showImport"
-      title="Import Bank Accounts"
+      :title="$t('banking.importAccountsTitle')"
       template-filename="bank-accounts-import-template.xlsx"
       :required-headers="['Type', 'Name', 'Bank', 'Account Number']"
       :optional-headers="['Phone', 'Province', 'Account Holder Name', 'Branch']"
@@ -174,7 +174,7 @@
 
     <HistoryModal
       v-if="showHistory"
-      title="Bank Account History"
+      :title="$t('banking.accountHistoryTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
@@ -189,10 +189,10 @@
 
     <ConfirmDialog
       v-if="deleteTarget"
-      :title="`Delete bank account ${deleteTarget.account_number}?`"
-      message="This will permanently remove the bank account."
-      confirm-text="Delete"
-      cancel-text="Cancel"
+      :title="$t('banking.deleteAccountTitle', { accountNumber: deleteTarget.account_number })"
+      :message="$t('banking.deleteAccountMessage')"
+      :confirm-text="$t('common.delete')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDelete"
       @cancel="deleteTarget = null"
     />
@@ -202,7 +202,7 @@
       :title="confirmConfig.title"
       :message="confirmConfig.message"
       :confirm-text="confirmConfig.confirmText"
-      cancel-text="Cancel"
+      :cancel-text="$t('common.cancel')"
       :type="confirmConfig.type"
       @confirm="confirmBulk"
       @cancel="cancelBulk"
@@ -253,6 +253,8 @@ import { fetchImportStatus } from '@/features/imports/services/importService'
 import { BANK_ACCOUNT_COLUMNS, BANK_ACCOUNT_INITIAL_COL_WIDTHS } from '@/features/banking/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'bank_accounts',
@@ -280,19 +282,19 @@ const showImport = ref(false)
 const showHistory = ref(false)
 
 const historyTabs = computed(() => [
-  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, type: 'bank_accounts' } },
-  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['bank-accounts'] } },
+  { key: 'imports', label: t('shared.imports'), component: ImportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, type: 'bank_accounts' } },
+  { key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['bank-accounts'] } },
 ])
 const editingAccount = ref(null)
 const detailAccount = ref(null)
 const deleteTarget = ref(null)
 
-const importInstructions = [
-  { text: 'Type must be one of Supplier, Customer or Business (Vietnamese labels also work).', example: 'Supplier · Customer · Business  /  Nhà cung cấp · Khách hàng · Doanh nghiệp' },
-  'Name must already exist in this business — the owner is never created by the import.',
-  { text: 'Customers can share a name, so add the Phone column to point at the right one.', example: 'Name: Nguyễn Văn A   Phone: 0901234567' },
-  { text: 'Bank is matched by its short, Vietnamese, or English name; create a missing bank right from the preview.', example: 'VCB  ·  Vietcombank  ·  Ngân hàng TMCP Ngoại thương Việt Nam' },
-]
+const importInstructions = computed(() => [
+  { text: t('banking.import.type'), example: 'Supplier · Customer · Business  /  Nhà cung cấp · Khách hàng · Doanh nghiệp' },
+  t('banking.import.name'),
+  { text: t('banking.import.phone'), example: 'Name: Nguyễn Văn A   Phone: 0901234567' },
+  { text: t('banking.import.bankMatch'), example: 'VCB  ·  Vietcombank  ·  Ngân hàng TMCP Ngoại thương Việt Nam' },
+])
 
 const onDetailEdit = (account) => {
   detailAccount.value = null
@@ -359,12 +361,12 @@ const { exporting, run: runExport } = useExport({
     return startBankAccountExport({ businessId: currentBusiness.value.id, params })
   },
   defaultFilename: (id) => `bank-accounts-${id}.xlsx`,
-  onSuccess: () => showToast('Bank account export ready.', 'success'),
+  onSuccess: () => showToast(t('banking.accountExportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
-  selectedIds, clearSelection, reload: () => load(), noun: 'bank account',
+  selectedIds, clearSelection, reload: () => load(), nounKey: 'bankAccount',
   remove: (id) => deleteBankAccount({ id }),
 })
 
@@ -416,7 +418,7 @@ const onSaved = async () => {
 
 const onImported = async () => {
   await load()
-  showToast('Bank accounts imported.', 'success')
+  showToast(t('banking.accountsImported'), 'success')
 }
 
 const confirmDelete = (account) => {
@@ -430,7 +432,7 @@ const performDelete = async () => {
     await deleteBankAccount({ id: account.id })
     await load()
   } catch (err) {
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 </script>

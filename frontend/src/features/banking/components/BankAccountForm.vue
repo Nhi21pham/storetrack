@@ -1,19 +1,19 @@
 <template>
   <div class="bank-account-form">
     <div class="form-group">
-      <label>Bank <span class="required">*</span></label>
+      <label>{{ $t('banking.bank') }} <span class="required">*</span></label>
       <div class="bank-picker">
         <SearchableSelect
           v-model="form.bank_id"
           :options="bankOptions"
           :allow-all="false"
           size="large"
-          placeholder="Select a bank..."
-          search-placeholder="Search banks..."
+          :placeholder="$t('banking.selectBank')"
+          :search-placeholder="$t('banking.searchBanks')"
         />
         <AddItemButton
           v-if="resolvedBusinessId"
-          title="Can't find the bank? Create a new one"
+          :title="$t('banking.cantFindBank')"
           @click="showBankModal = true"
         />
       </div>
@@ -21,12 +21,12 @@
     </div>
 
     <div class="form-group">
-      <label>Account Number <span class="required">*</span></label>
+      <label>{{ $t('banking.accountNumber') }} <span class="required">*</span></label>
       <input
         v-model="form.account_number"
         type="text"
         inputmode="numeric"
-        placeholder="e.g. 0123456789"
+        :placeholder="$t('banking.accountNumberPlaceholder')"
         :class="{ error: errors.account_number }"
         @input="onAccountNumberInput"
       />
@@ -34,40 +34,40 @@
     </div>
 
     <div class="form-group">
-      <label>Account Holder Name</label>
+      <label>{{ $t('banking.accountHolderName') }}</label>
       <input
         v-model="form.account_holder_name"
         type="text"
-        :placeholder="defaultHolderName || 'Name registered with the bank'"
+        :placeholder="defaultHolderName || $t('banking.holderPlaceholder')"
         :class="{ error: errors.account_holder_name }"
       />
       <span v-if="errors.account_holder_name" class="error-text">{{ errors.account_holder_name }}</span>
       <p v-if="defaultHolderName && !form.account_holder_name" class="hint">
-        Leave empty to default to "{{ defaultHolderName }}"
+        {{ $t('banking.leaveEmptyDefault', { name: defaultHolderName }) }}
       </p>
     </div>
 
     <div class="form-row">
       <div class="form-group">
-        <label>Branch</label>
+        <label>{{ $t('banking.branch') }}</label>
         <input
           v-model="form.branch"
           type="text"
-          placeholder="e.g. Chi nhánh Hà Nội"
+          :placeholder="$t('banking.branchPlaceholder')"
           :class="{ error: errors.branch }"
         />
         <span v-if="errors.branch" class="error-text">{{ errors.branch }}</span>
       </div>
       <div class="form-group">
-        <label>Province / City</label>
+        <label>{{ $t('banking.provinceCity') }}</label>
         <SearchableSelect
           v-model="form.province_id"
           :options="provinceOptions"
           allow-all
-          all-label="— None —"
+          :all-label="$t('banking.noneOption')"
           size="large"
-          placeholder="Select province..."
-          search-placeholder="Search provinces..."
+          :placeholder="$t('banking.selectProvince')"
+          :search-placeholder="$t('banking.searchProvinces')"
         />
       </div>
     </div>
@@ -75,10 +75,10 @@
     <div v-if="apiError" class="api-error">{{ apiError }}</div>
 
     <div class="form-actions">
-      <button class="btn-cancel" type="button" @click="$emit('cancel')" :disabled="saving">Cancel</button>
+      <button class="btn-cancel" type="button" @click="$emit('cancel')" :disabled="saving">{{ $t('common.cancel') }}</button>
       <button class="btn-submit" type="button" @click="handleSubmit" :disabled="saving || !isDirty">
         <span v-if="saving" class="spinner"></span>
-        {{ isEdit ? 'Save Changes' : 'Create Bank Account' }}
+        {{ isEdit ? $t('common.saveChanges') : $t('banking.createAccount') }}
       </button>
     </div>
 
@@ -101,6 +101,8 @@ import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import { fetchBanks } from '@/features/banking/services/bankService'
 import { fetchProvinces } from '@/features/banking/services/provinceService'
 import { createBankAccount, updateBankAccount } from '@/features/banking/services/bankAccountService'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const currentBusiness = inject('currentBusiness', null)
 
@@ -200,16 +202,16 @@ const onAccountNumberInput = (e) => {
 const validate = () => {
   errors.value = { bank_id: '', account_number: '', account_holder_name: '', branch: '', owner: '' }
   if (props.ownerRequired && !props.partyId) {
-    errors.value.owner = 'Please select an owner type and name.'
+    errors.value.owner = t('banking.errSelectOwner')
   }
-  if (!form.value.bank_id) errors.value.bank_id = 'Please select a bank.'
+  if (!form.value.bank_id) errors.value.bank_id = t('banking.errSelectBank')
   const acc = form.value.account_number.trim()
-  if (!acc) errors.value.account_number = 'Account number is required.'
-  else if (acc.length < 4) errors.value.account_number = 'Account number must be at least 4 digits.'
-  else if (acc.length > 50) errors.value.account_number = 'Account number must be at most 50 digits.'
-  else if (!/^[0-9]+$/.test(acc)) errors.value.account_number = 'Only digits are allowed.'
-  if (form.value.account_holder_name && form.value.account_holder_name.length > 255) errors.value.account_holder_name = 'Too long.'
-  if (form.value.branch && form.value.branch.length > 255) errors.value.branch = 'Too long.'
+  if (!acc) errors.value.account_number = t('banking.errAccNumRequired')
+  else if (acc.length < 4) errors.value.account_number = t('banking.errAccNumMin')
+  else if (acc.length > 50) errors.value.account_number = t('banking.errAccNumMax')
+  else if (!/^[0-9]+$/.test(acc)) errors.value.account_number = t('banking.errOnlyDigits')
+  if (form.value.account_holder_name && form.value.account_holder_name.length > 255) errors.value.account_holder_name = t('banking.errTooLong')
+  if (form.value.branch && form.value.branch.length > 255) errors.value.branch = t('banking.errTooLong')
   return !Object.values(errors.value).some(e => e !== '')
 }
 
@@ -248,7 +250,7 @@ const handleSubmit = async () => {
       : await createBankAccount({ partyId: props.partyId, input })
     emit('saved', result)
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     saving.value = false
   }
