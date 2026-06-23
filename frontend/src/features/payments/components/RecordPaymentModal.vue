@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal">
       <div class="modal-header">
-        <h2>Record Payment</h2>
+        <h2>{{ $t('payments.recordPayment') }}</h2>
         <button class="close-btn" @click="$emit('close')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -11,14 +11,14 @@
       </div>
 
       <div class="modal-body">
-        <p class="party-line">For <strong>{{ partyName }}</strong></p>
+        <p class="party-line">{{ $t('payments.for') }} <strong>{{ partyName }}</strong></p>
 
         <div class="alloc">
           <div class="alloc-head">
             <span class="c-check"></span>
-            <span class="c-inv">Invoice</span>
-            <span class="c-num">Balance</span>
-            <span class="c-num">Pay</span>
+            <span class="c-inv">{{ $t('payments.invoice') }}</span>
+            <span class="c-num">{{ $t('payments.balance') }}</span>
+            <span class="c-num">{{ $t('payments.pay') }}</span>
           </div>
           <label v-for="row in rows" :key="row.id" class="alloc-row" :class="{ on: row.selected }">
             <input class="c-check" type="checkbox" v-model="row.selected" @change="onToggle(row)" />
@@ -37,36 +37,36 @@
               />
             </span>
           </label>
-          <p v-if="rows.length === 0" class="empty">No open invoices to pay.</p>
+          <p v-if="rows.length === 0" class="empty">{{ $t('payments.noOpenInvoicesToPay') }}</p>
         </div>
 
         <div class="total-line">
-          <span>Total</span>
+          <span>{{ $t('payments.total') }}</span>
           <span class="total-amount">{{ formatMoney(total) }}</span>
         </div>
 
         <div class="form-grid">
           <div class="field">
-            <label>Date</label>
+            <label>{{ $t('payments.date') }}</label>
             <input type="date" v-model="paidAt" />
           </div>
           <div class="field">
-            <label>Method</label>
+            <label>{{ $t('payments.method') }}</label>
             <select v-model="method">
               <option v-for="m in paymentMethodOptions()" :key="m.value" :value="m.value">{{ m.label }}</option>
             </select>
           </div>
         </div>
         <div class="field">
-          <label>Note</label>
-          <textarea v-model="note" rows="2" placeholder="Optional"></textarea>
+          <label>{{ $t('payments.note') }}</label>
+          <textarea v-model="note" rows="2" :placeholder="$t('payments.notePlaceholder')"></textarea>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-close" @click="$emit('close')">Cancel</button>
+        <button class="btn-close" @click="$emit('close')">{{ $t('common.cancel') }}</button>
         <button class="btn-save" :disabled="!canSubmit || saving" @click="submit">
-          {{ saving ? 'Recording…' : 'Record Payment' }}
+          {{ saving ? $t('payments.recording') : $t('payments.recordPayment') }}
         </button>
       </div>
     </div>
@@ -78,6 +78,8 @@ import { ref, computed, inject } from 'vue'
 import { formatMoney, formatInvoiceDate as formatDate, paymentMethodOptions, PAYMENT_METHOD_VALUES, todayInputDate } from '@/features/invoices/constants'
 import { recordPayment } from '@/features/payments/services/paymentService'
 import NumberInput from '@/components/common/NumberInput.vue'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const props = defineProps({
   storeId: { type: [String, Number], required: true },
@@ -142,10 +144,10 @@ const submit = async () => {
         allocations,
       },
     })
-    showToast('Payment recorded.')
+    showToast(t('payments.paymentRecorded'))
     emit('saved')
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   } finally {
     saving.value = false
   }

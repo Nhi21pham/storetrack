@@ -10,8 +10,7 @@ const props = defineProps({
   status: { type: String, default: '' },
 })
 
-const LABELS = { UNPAID: 'Unpaid', PARTIAL: 'Partial', PAID: 'Paid' }
-const label = computed(() => LABELS[props.status] || paymentStatusLabel(props.status))
+const label = computed(() => paymentStatusLabel(props.status))
 </script>
 
 <style scoped>

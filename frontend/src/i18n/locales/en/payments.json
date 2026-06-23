@@ -19,6 +19,7 @@
   "pickPartyDesc": "Select a {party} to see their open invoices and record a payment.",
   "loading": "Loading...",
   "outstanding": "Outstanding",
+  "outstandingSub": "Outstanding {amount}",
   "recordPayment": "Record Payment",
   "openInvoices": "Open invoices",
   "code": "Code",
