@@ -2,11 +2,12 @@ import {
   ACTION_COLORS,
   ACTION_VERB_REGEX,
 } from '@/features/audit/constants'
+import { t } from '@/i18n'
 
 export { formatDateTime } from '@/utils/datetime'
 
 export const actorTitle = (log) => {
-  const name = log.actor_name || 'System'
+  const name = log.actor_name || t('audit.system')
   return log.actor_email ? `${name} (${log.actor_email})` : name
 }
 

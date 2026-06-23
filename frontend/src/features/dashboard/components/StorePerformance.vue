@@ -2,10 +2,10 @@
   <div class="store-perf-card">
     <div class="perf-header">
       <div>
-        <h3>Store Performance</h3>
-        <p>Compare stores by {{ metricLabel.toLowerCase() }} this month</p>
+        <h3>{{ $t('dashboard.storePerformanceTitle') }}</h3>
+        <p>{{ $t('dashboard.compareBy', { metric: metricLabel.toLowerCase() }) }}</p>
       </div>
-      <SegmentedToggle v-model="metric" :options="METRICS" />
+      <SegmentedToggle v-model="metric" :options="metrics" />
     </div>
 
     <div v-if="ranked.length" class="bars">
@@ -18,7 +18,7 @@
         <span class="bar-value" :class="{ loss: value(s) < 0 }">{{ formatMoney(value(s)) }}</span>
       </div>
     </div>
-    <p v-else class="empty">No stores to compare.</p>
+    <p v-else class="empty">{{ $t('dashboard.noStores') }}</p>
   </div>
 </template>
 
@@ -26,17 +26,18 @@
 import { ref, computed } from 'vue'
 import SegmentedToggle from '@/components/common/SegmentedToggle.vue'
 import { formatMoney } from '@/features/invoices/constants'
+import { t } from '@/i18n'
 
 const props = defineProps({
   stores: { type: Array, required: true }, // [{ store_id, store_name, revenue, profit }]
 })
 
-const METRICS = [
-  { value: 'revenue', label: 'Revenue' },
-  { value: 'profit',  label: 'Profit' },
-]
+const metrics = computed(() => [
+  { value: 'revenue', label: t('dashboard.metricRevenue') },
+  { value: 'profit',  label: t('dashboard.metricProfit') },
+])
 const metric = ref('revenue')
-const metricLabel = computed(() => METRICS.find((m) => m.value === metric.value)?.label ?? 'Revenue')
+const metricLabel = computed(() => metrics.value.find((m) => m.value === metric.value)?.label ?? t('dashboard.metricRevenue'))
 
 const value = (s) => Number(s[metric.value]) || 0
 

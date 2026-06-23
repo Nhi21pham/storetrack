@@ -17,6 +17,7 @@
 <script setup>
 import { computed } from 'vue'
 import { formatMoney, formatQuantity } from '@/features/invoices/constants'
+import { t } from '@/i18n'
 
 const props = defineProps({
   summary: { type: Object, required: true },
@@ -37,19 +38,19 @@ const ICONS = {
 const delta = (change, amount) => {
   if (change !== null && change !== undefined) {
     const positive = change >= 0
-    return { kind: positive ? 'pos' : 'neg', badge: `${positive ? '↗' : '↘'} ${Math.abs(change).toFixed(1)}%`, note: 'vs last month' }
+    return { kind: positive ? 'pos' : 'neg', badge: `${positive ? '↗' : '↘'} ${Math.abs(change).toFixed(1)}%`, note: t('dashboard.vsLastMonth') }
   }
   if (Number(amount) > 0) {
-    return { kind: 'new', badge: '↗ New', note: 'this month' }
+    return { kind: 'new', badge: `↗ ${t('dashboard.newBadge')}`, note: t('dashboard.thisMonth') }
   }
-  return { kind: 'none', badge: null, note: 'no activity' }
+  return { kind: 'none', badge: null, note: t('dashboard.noActivity') }
 }
 
 const cards = computed(() => [
-  { label: 'Total Sales',       value: formatMoney(props.summary.total_sales),          delta: delta(props.summary.total_sales_change, props.summary.total_sales),   icon: ICONS.sales },
-  { label: 'Total Profit',      value: formatMoney(props.summary.total_profit),         delta: delta(props.summary.total_profit_change, props.summary.total_profit), icon: ICONS.profit },
-  { label: 'Products in Stock', value: formatQuantity(props.summary.products_in_stock), delta: delta(props.summary.products_in_stock_change, props.summary.products_in_stock), icon: ICONS.stock },
-  { label: 'Outstanding',       value: formatMoney(props.summary.outstanding),          delta: delta(props.summary.outstanding_change, props.summary.outstanding), owed: props.summary.outstanding > 0, icon: ICONS.outstanding },
+  { label: t('dashboard.statTotalSales'),       value: formatMoney(props.summary.total_sales),          delta: delta(props.summary.total_sales_change, props.summary.total_sales),   icon: ICONS.sales },
+  { label: t('dashboard.statTotalProfit'),      value: formatMoney(props.summary.total_profit),         delta: delta(props.summary.total_profit_change, props.summary.total_profit), icon: ICONS.profit },
+  { label: t('dashboard.statProductsInStock'),  value: formatQuantity(props.summary.products_in_stock), delta: delta(props.summary.products_in_stock_change, props.summary.products_in_stock), icon: ICONS.stock },
+  { label: t('dashboard.statOutstanding'),      value: formatMoney(props.summary.outstanding),          delta: delta(props.summary.outstanding_change, props.summary.outstanding), owed: props.summary.outstanding > 0, icon: ICONS.outstanding },
 ])
 </script>
 

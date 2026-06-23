@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Business' : 'New Business' }}</h2>
+        <h2>{{ isEdit ? $t('business.editBusiness') : $t('business.newBusiness') }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,32 +12,32 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label>Business Name <span class="required">*</span></label>
-          <input v-model="form.name" type="text" placeholder="Enter business name" :class="{ error: errors.name }" />
+          <label>{{ $t('business.businessName') }} <span class="required">*</span></label>
+          <input v-model="form.name" type="text" :placeholder="$t('business.namePlaceholder')" :class="{ error: errors.name }" />
           <span v-if="errors.name" class="error-text">{{ errors.name }}</span>
         </div>
 
         <div class="form-group">
-          <label>Tax Code <span class="required">*</span></label>
-          <input v-model="form.tax_code" type="text" placeholder="Enter tax code" :class="{ error: errors.tax_code }" />
+          <label>{{ $t('business.taxCode') }} <span class="required">*</span></label>
+          <input v-model="form.tax_code" type="text" :placeholder="$t('business.taxCodePlaceholder')" :class="{ error: errors.tax_code }" />
           <span v-if="errors.tax_code" class="error-text">{{ errors.tax_code }}</span>
         </div>
 
         <div class="form-group">
-          <label>Address</label>
-          <input v-model="form.address" type="text" placeholder="Enter address" :class="{ error: errors.address }" />
+          <label>{{ $t('business.address') }}</label>
+          <input v-model="form.address" type="text" :placeholder="$t('business.addressPlaceholder')" :class="{ error: errors.address }" />
           <span v-if="errors.address" class="error-text">{{ errors.address }}</span>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Email</label>
-            <input v-model="form.email" type="email" placeholder="Enter email" :class="{ error: errors.email }" />
+            <label>{{ $t('business.email') }}</label>
+            <input v-model="form.email" type="email" :placeholder="$t('business.emailPlaceholder')" :class="{ error: errors.email }" />
             <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
           </div>
           <div class="form-group">
-            <label>Phone</label>
-            <input v-model="form.phone" type="tel" placeholder="Enter phone number" :class="{ error: errors.phone }" />
+            <label>{{ $t('business.phone') }}</label>
+            <input v-model="form.phone" type="tel" :placeholder="$t('business.phonePlaceholder')" :class="{ error: errors.phone }" />
             <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
           </div>
         </div>
@@ -49,15 +49,15 @@
           :party-id="business?.party_id ?? business?.party?.id ?? null"
           :business-id="business?.id ?? null"
           :default-holder-name="form.name"
-          entity-label="Business"
+          :entity-label="$t('business.entityLabel')"
         />
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
+        <button class="btn-cancel" @click="handleClose" :disabled="loading">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Business' }}
+          {{ isEdit ? $t('common.saveChanges') : $t('business.createBusiness') }}
         </button>
       </div>
     </div>
@@ -65,10 +65,10 @@
 
   <ConfirmDialog
     v-if="showUnsavedWarning"
-    title="Unsaved Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirm-text="Yes, discard"
-    cancel-text="Keep editing"
+    :title="$t('account.unsavedTitle')"
+    :message="$t('account.unsavedMessage')"
+    :confirm-text="$t('account.discard')"
+    :cancel-text="$t('account.keepEditing')"
     @confirm="$emit('close')"
     @cancel="showUnsavedWarning = false"
   />
@@ -79,6 +79,7 @@ import { ref, computed } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import BankAccountsFormWidget from '@/features/banking/components/BankAccountsFormWidget.vue'
 import { validators } from '@/utils/validators'
+import { translateError } from '@/utils/translateError'
 import { createBusiness, updateBusiness } from '@/features/business/services/businessService'
 
 const props = defineProps({
@@ -151,7 +152,7 @@ const handleSubmit = async () => {
 
     emit('saved', result)
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     loading.value = false
   }

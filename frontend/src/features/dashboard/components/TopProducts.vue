@@ -1,11 +1,11 @@
 <template>
   <div class="chart-card">
     <div class="chart-header">
-      <h3>Top Products</h3>
-      <p>Ranked by {{ activeLabel.toLowerCase() }} this month</p>
+      <h3>{{ $t('dashboard.topProductsTitle') }}</h3>
+      <p>{{ $t('dashboard.rankedBy', { metric: activeLabel.toLowerCase() }) }}</p>
     </div>
 
-    <SegmentedToggle v-model="rankBy" :options="RANK_METRICS" class="rank-toggle" />
+    <SegmentedToggle v-model="rankBy" :options="rankMetrics" class="rank-toggle" />
 
     <div v-if="ranked.length" class="products-list">
       <div class="product-item" v-for="(product, i) in ranked" :key="product.product_id">
@@ -16,7 +16,7 @@
         <div class="product-metric">{{ metricValue(product) }}</div>
       </div>
     </div>
-    <p v-else class="empty">No products sold this month.</p>
+    <p v-else class="empty">{{ $t('dashboard.noProductsSold') }}</p>
   </div>
 </template>
 
@@ -24,20 +24,21 @@
 import { ref, computed } from 'vue'
 import SegmentedToggle from '@/components/common/SegmentedToggle.vue'
 import { formatMoney, formatQuantity } from '@/features/invoices/constants'
+import { t } from '@/i18n'
 
 const props = defineProps({
   products: { type: Array, required: true }, // all month's products with all 4 metrics
 })
 
-const RANK_METRICS = [
-  { value: 'revenue',  label: 'Revenue'  },
-  { value: 'qty_sold', label: 'Qty' },
-  { value: 'profit',   label: 'Profit'   },
-  { value: 'orders',   label: 'Orders' },
-]
+const rankMetrics = computed(() => [
+  { value: 'revenue',  label: t('dashboard.metricRevenue') },
+  { value: 'qty_sold', label: t('dashboard.metricQty') },
+  { value: 'profit',   label: t('dashboard.metricProfit') },
+  { value: 'orders',   label: t('dashboard.metricOrders') },
+])
 
 const rankBy = ref('revenue')
-const activeLabel = computed(() => RANK_METRICS.find((m) => m.value === rankBy.value)?.label ?? 'Revenue')
+const activeLabel = computed(() => rankMetrics.value.find((m) => m.value === rankBy.value)?.label ?? t('dashboard.metricRevenue'))
 
 // Re-rank client-side by the active metric and take the top 5.
 const ranked = computed(() =>

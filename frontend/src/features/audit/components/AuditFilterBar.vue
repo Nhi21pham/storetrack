@@ -9,26 +9,26 @@
         @change="$emit('apply')"
       />
       <div class="filter-group">
-        <label>Type</label>
+        <label>{{ $t('audit.type') }}</label>
         <SearchableSelect
           :modelValue="objectFilter"
-          :options="OBJECT_OPTIONS"
-          search-placeholder="Search type..."
+          :options="objectOptions()"
+          :search-placeholder="$t('audit.searchType')"
           @update:modelValue="$emit('update:objectFilter', $event)"
           @change="$emit('apply')"
         />
       </div>
       <div class="filter-group">
-        <label>Action</label>
+        <label>{{ $t('audit.action') }}</label>
         <SearchableSelect
           :modelValue="actionFilter"
-          :options="ACTION_OPTIONS"
-          search-placeholder="Search action..."
+          :options="actionOptions()"
+          :search-placeholder="$t('audit.searchAction')"
           @update:modelValue="$emit('update:actionFilter', $event)"
           @change="$emit('apply')"
         />
       </div>
-      <button v-if="hasActiveFilter" class="btn-clear" @click="$emit('clear')">Clear</button>
+      <button v-if="hasActiveFilter" class="btn-clear" @click="$emit('clear')">{{ $t('common.clear') }}</button>
       <ExportButton class="export-push" size="md" :exporting="exporting" :disabled="total === 0" @click="$emit('export')" />
     </div>
   </div>
@@ -38,7 +38,7 @@
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import ExportButton from '@/components/common/ExportButton.vue'
-import { OBJECT_OPTIONS, ACTION_OPTIONS } from '@/features/audit/constants'
+import { objectOptions, actionOptions } from '@/features/audit/constants'
 
 defineProps({
   startDate:       { type: String, required: true },

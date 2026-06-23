@@ -17,6 +17,21 @@
     "ACCOUNTANT": "Kế toán",
     "STAFF": "Nhân viên"
   },
+  "auditAction": {
+    "created": "Đã tạo",
+    "updated": "Đã cập nhật",
+    "deactivated": "Đã ngừng hoạt động",
+    "reactivated": "Đã kích hoạt lại",
+    "assigned": "Đã phân công",
+    "role_changed": "Đã đổi vai trò",
+    "removed": "Đã gỡ",
+    "deleted": "Đã xóa",
+    "invited": "Đã mời",
+    "cancelled": "Đã hủy",
+    "accepted": "Đã chấp nhận",
+    "declined": "Đã từ chối",
+    "exported": "Đã xuất"
+  },
   "objectType": {
     "business": "Doanh nghiệp",
     "store": "Cửa hàng",

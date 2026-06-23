@@ -1,32 +1,20 @@
-export const OBJECT_OPTIONS = [
-  { value: 'business',     label: 'Business' },
-  { value: 'store',        label: 'Store' },
-  { value: 'user',         label: 'User' },
-  { value: 'invitation',   label: 'Invitation' },
-  { value: 'supplier',     label: 'Supplier' },
-  { value: 'customer',     label: 'Customer' },
-  { value: 'bank',         label: 'Bank' },
-  { value: 'bank_account', label: 'Bank Account' },
-  { value: 'unit',         label: 'Unit' },
-  { value: 'product',          label: 'Product' },
-  { value: 'product_category', label: 'Category' },
+import { t } from '@/i18n'
+
+const OBJECT_VALUES = [
+  'business', 'store', 'user', 'invitation', 'supplier', 'customer',
+  'bank', 'bank_account', 'unit', 'product', 'product_category',
 ]
 
-export const ACTION_OPTIONS = [
-  { value: 'created',      label: 'Created' },
-  { value: 'updated',      label: 'Updated' },
-  { value: 'deactivated',  label: 'Deactivated' },
-  { value: 'reactivated',  label: 'Reactivated' },
-  { value: 'assigned',     label: 'Assigned' },
-  { value: 'role_changed', label: 'Role Changed' },
-  { value: 'removed',      label: 'Removed' },
-  { value: 'deleted',      label: 'Deleted' },
-  { value: 'invited',      label: 'Invited' },
-  { value: 'cancelled',    label: 'Cancelled' },
-  { value: 'accepted',     label: 'Accepted' },
-  { value: 'declined',     label: 'Declined' },
-  { value: 'exported',     label: 'Exported' },
+export const objectOptions = () =>
+  OBJECT_VALUES.map((value) => ({ value, label: t(`enums.objectType.${value}`) }))
+
+const ACTION_VALUES = [
+  'created', 'updated', 'deactivated', 'reactivated', 'assigned', 'role_changed',
+  'removed', 'deleted', 'invited', 'cancelled', 'accepted', 'declined', 'exported',
 ]
+
+export const actionOptions = () =>
+  ACTION_VALUES.map((value) => ({ value, label: t(`enums.auditAction.${value}`) }))
 
 export const ACTION_COLORS = {
   CREATED: '#16a34a', ACCEPTED: '#16a34a', REACTIVATED: '#16a34a',

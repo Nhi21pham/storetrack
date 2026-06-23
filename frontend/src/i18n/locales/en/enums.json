@@ -17,6 +17,21 @@
     "ACCOUNTANT": "Accountant",
     "STAFF": "Staff"
   },
+  "auditAction": {
+    "created": "Created",
+    "updated": "Updated",
+    "deactivated": "Deactivated",
+    "reactivated": "Reactivated",
+    "assigned": "Assigned",
+    "role_changed": "Role Changed",
+    "removed": "Removed",
+    "deleted": "Deleted",
+    "invited": "Invited",
+    "cancelled": "Cancelled",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "exported": "Exported"
+  },
   "objectType": {
     "business": "Business",
     "store": "Store",
