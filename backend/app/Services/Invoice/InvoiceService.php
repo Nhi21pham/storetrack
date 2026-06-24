@@ -33,6 +33,7 @@ use App\Services\Payment\PaymentService;
 use App\Services\PermissionService;
 use App\Support\TransactionRunner;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 class InvoiceService
 {
@@ -219,12 +220,17 @@ class InvoiceService
      * invoice. Rejects an empty selection up front; the render itself is chunked
      * across parallel jobs, so the number of invoices is not capped.
      */
-    public function queueDocumentExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
+    public function queueDocumentExport(User $user, int $storeId, array $filters = [], ?string $clientId = null, string $locale = 'vi'): Export
     {
         $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
 
         $normalizedFilters = $this->normalizeExportFilters($filters);
         unset($normalizedFilters['columns']);
+
+        // Threaded through to the render job so the PDF matches the UI language the
+        // export was triggered in; part of the filter signature so each locale caches
+        // its own document set.
+        $normalizedFilters['locale'] = in_array($locale, ['vi', 'en'], true) ? $locale : 'vi';
 
         if (! $this->invoiceRepository->documentsQuery($storeId, $normalizedFilters)->exists()) {
             throw new InvoiceException(ErrorCode::VALIDATION_ERROR, 'No invoices match the current selection to export.');
@@ -343,7 +349,7 @@ class InvoiceService
 
         $this->paymentService->record($actor, $storeId, [
             'party_id'    => (int) $invoice->party_id,
-            'paid_at'     => $data['invoice_date'],
+            'paid_at'     => Carbon::parse($data['invoice_date'])->setTimeFrom(now())->format('Y-m-d H:i:s'),
             'method'      => $data['payment_method'],
             'allocations' => [
                 ['invoice_id' => (int) $invoice->id, 'amount' => $amount],

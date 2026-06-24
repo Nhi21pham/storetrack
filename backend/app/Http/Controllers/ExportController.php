@@ -132,6 +132,7 @@ class ExportController extends Controller
             $storeId,
             $this->extractInvoiceExportFilters($request),
             $this->extractClientId($request),
+            $this->extractLocale($request),
         ));
     }
 
@@ -377,6 +378,17 @@ class ExportController extends Controller
             return null;
         }
         return $clientId;
+    }
+
+    /**
+     * The UI language the export was triggered in, used to render the document.
+     * Only the supported locales are honoured; anything else falls back to 'vi'.
+     */
+    private function extractLocale(Request $request): string
+    {
+        $locale = strtolower((string) $request->input('locale'));
+
+        return in_array($locale, ['vi', 'en'], true) ? $locale : 'vi';
     }
 
     private function extractFilters(Request $request): array

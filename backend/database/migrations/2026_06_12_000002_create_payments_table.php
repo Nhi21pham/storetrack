@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('store_id')->constrained('stores')->cascadeOnDelete();
             $table->foreignId('party_id')->constrained('parties')->restrictOnDelete();
             $table->decimal('amount', 15, 2);
-            $table->date('paid_at');
+            $table->dateTime('paid_at');
             $table->string('method', 20);
             $table->text('note')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();

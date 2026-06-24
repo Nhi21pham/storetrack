@@ -12,16 +12,22 @@
         return $trimmed === '' ? '0' : $trimmed;
     };
 
+    $locale = app()->getLocale();
     $isSale = $invoice->type === InvoiceTypeEnum::SALE;
     $balance = (float) $invoice->balance;
-    $titleText = $isSale ? 'SALES INVOICE' : 'PURCHASE INVOICE';
-    $amountWords = ucfirst(NumberToWords::en($invoice->grand_total)).' dong';
-    $invoiceDate = optional($invoice->invoice_date)->format('F j, Y') ?? '—';
+    $titleText = $isSale ? __('document.title_sale') : __('document.title_purchase');
+    $spelled = $locale === 'vi' ? NumberToWords::vi($invoice->grand_total) : NumberToWords::en($invoice->grand_total);
+    $amountWords = ucfirst($spelled).' '.__('document.currency_word');
+    $invoiceDate = optional($invoice->invoice_date)->translatedFormat($locale === 'vi' ? 'd/m/Y' : 'F j, Y') ?? '—';
+
+    $methodValue = $invoice->payment_method->value;
+    $methodKey = 'document.method_'.$methodValue;
+    $methodLabel = __($methodKey) === $methodKey ? ucfirst($methodValue) : __($methodKey);
 
     $party = $invoice->party?->customer ?? $invoice->party?->supplier;
 @endphp
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ $locale }}">
 <head>
     <meta charset="utf-8">
     <style>
@@ -47,7 +53,7 @@
 
         .party { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
         .party td { padding: 2px 0; font-size: 11.5px; vertical-align: top; }
-        .party .p-label { width: 110px; color: #6b7280; }
+        .party .p-label { width: 110px; color: #6b7280; white-space: nowrap; }
         .party .p-label:before { content: "- "; }
         .party .p-value { color: #111; font-weight: bold; }
 
@@ -88,12 +94,12 @@
         <tr>
             <td>
                 <div class="store">{{ $store?->name ?? '—' }}</div>
-                <div class="store-sub"><span class="store-k">Address:</span> {{ $store?->address }}</div>
-                <div class="store-sub"><span class="store-k">Phone:</span> {{ $store?->phone }}</div>
-                <div class="store-sub"><span class="store-k">Email:</span> {{ $store?->email }}</div>
+                <div class="store-sub"><span class="store-k">{{ __('document.store_address') }}</span> {{ $store?->address }}</div>
+                <div class="store-sub"><span class="store-k">{{ __('document.store_phone') }}</span> {{ $store?->phone }}</div>
+                <div class="store-sub"><span class="store-k">{{ __('document.store_email') }}</span> {{ $store?->email }}</div>
             </td>
             <td class="head-right">
-                <div class="kv"><span class="k">No.</span><span class="v">{{ $invoice->code }}</span></div>
+                <div class="kv"><span class="k">{{ __('document.no') }}</span><span class="v">{{ $invoice->code }}</span></div>
             </td>
         </tr>
     </table>
@@ -109,23 +115,23 @@
             <td class="p-value">{{ $invoice->party_name ?? '—' }}</td>
         </tr>
         <tr>
-            <td class="p-label">Phone</td>
+            <td class="p-label">{{ __('document.phone') }}</td>
             <td class="p-value">{{ $party?->phone }}</td>
         </tr>
         <tr>
-            <td class="p-label">Address</td>
+            <td class="p-label">{{ __('document.address') }}</td>
             <td class="p-value">{{ $party?->address }}</td>
         </tr>
         <tr>
-            <td class="p-label">Tax code</td>
+            <td class="p-label">{{ __('document.tax_code') }}</td>
             <td class="p-value">{{ $party?->tax_code }}</td>
         </tr>
         <tr>
-            <td class="p-label">Payment method</td>
-            <td class="p-value">{{ ucfirst($invoice->payment_method->value) }}</td>
+            <td class="p-label">{{ __('document.payment_method') }}</td>
+            <td class="p-value">{{ $methodLabel }}</td>
         </tr>
         <tr>
-            <td class="p-label">Issued by</td>
+            <td class="p-label">{{ __('document.issued_by') }}</td>
             <td class="p-value">{{ $invoice->creator?->name ?? '—' }}</td>
         </tr>
     </table>
@@ -133,13 +139,13 @@
     <table class="items">
         <thead>
             <tr>
-                <th style="width: 28px;">No.</th>
-                <th>Product</th>
-                <th class="num" style="width: 56px;">Qty</th>
-                <th class="num" style="width: 92px;">Unit price</th>
-                <th style="width: 122px;">Taxes</th>
-                <th class="num" style="width: 96px;">Subtotal</th>
-                <th class="num" style="width: 100px;">Amount</th>
+                <th style="width: 28px;">{{ __('document.col_no') }}</th>
+                <th>{{ __('document.col_product') }}</th>
+                <th class="num" style="width: 56px;">{{ __('document.col_qty') }}</th>
+                <th class="num" style="width: 92px;">{{ __('document.col_unit_price') }}</th>
+                <th style="width: 122px;">{{ __('document.col_taxes') }}</th>
+                <th class="num" style="width: 96px;">{{ __('document.col_subtotal') }}</th>
+                <th class="num" style="width: 100px;">{{ __('document.col_amount') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -166,31 +172,31 @@
     <table class="summary">
         <tr>
             <td class="sum-left">
-                <div class="in-words"><span class="lbl">Amount in words:</span> <span class="val">{{ $amountWords }}.</span></div>
+                <div class="in-words"><span class="lbl">{{ __('document.amount_in_words') }}</span> <span class="val">{{ $amountWords }}.</span></div>
                 @if ($invoice->description)
-                    <div class="desc"><span class="lbl">Description:</span> {{ $invoice->description }}</div>
+                    <div class="desc"><span class="lbl">{{ __('document.description') }}</span> {{ $invoice->description }}</div>
                 @endif
             </td>
             <td class="sum-right">
                 <table class="totals">
                     <tr>
-                        <td class="t-label">Subtotal</td>
+                        <td class="t-label">{{ __('document.subtotal') }}</td>
                         <td class="t-value">{{ Money::vnd($invoice->subtotal) }}</td>
                     </tr>
                     <tr>
-                        <td class="t-label">Tax</td>
+                        <td class="t-label">{{ __('document.tax') }}</td>
                         <td class="t-value">{{ Money::vnd($invoice->tax_total) }}</td>
                     </tr>
                     <tr class="grand">
-                        <td class="t-label">Grand total</td>
+                        <td class="t-label">{{ __('document.grand_total') }}</td>
                         <td class="t-value">{{ Money::vnd($invoice->grand_total) }}</td>
                     </tr>
                     <tr>
-                        <td class="t-label">Paid</td>
+                        <td class="t-label">{{ __('document.paid') }}</td>
                         <td class="t-value">{{ Money::vnd($invoice->paid_amount) }}</td>
                     </tr>
                     <tr class="balance">
-                        <td class="t-label">Balance</td>
+                        <td class="t-label">{{ __('document.balance') }}</td>
                         <td class="t-value">{{ Money::vnd($balance) }}</td>
                     </tr>
                 </table>
@@ -201,16 +207,16 @@
     <table class="signs">
         <tr>
             <td>
-                <div class="sign-role">{{ $isSale ? 'Buyer' : 'Supplier' }}</div>
-                <div class="sign-sub">(Sign &amp; full name)</div>
+                <div class="sign-role">{{ $isSale ? __('document.sign_buyer') : __('document.sign_supplier') }}</div>
+                <div class="sign-sub">{{ __('document.sign_hint') }}</div>
             </td>
             <td>
-                <div class="sign-role">Prepared by</div>
-                <div class="sign-sub">(Sign &amp; full name)</div>
+                <div class="sign-role">{{ __('document.prepared_by') }}</div>
+                <div class="sign-sub">{{ __('document.sign_hint') }}</div>
             </td>
             <td>
-                <div class="sign-role">Authorized by</div>
-                <div class="sign-sub">(Sign &amp; full name)</div>
+                <div class="sign-role">{{ __('document.authorized_by') }}</div>
+                <div class="sign-sub">{{ __('document.sign_hint') }}</div>
             </td>
         </tr>
     </table>
