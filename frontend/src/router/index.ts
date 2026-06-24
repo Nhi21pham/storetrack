@@ -99,8 +99,8 @@ const router = createRouter({
           component: BusinessPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Business' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.business' },
             ],
           },
         },
@@ -110,8 +110,8 @@ const router = createRouter({
           component: StorePage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Stores' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.stores' },
             ],
           },
         },
@@ -121,8 +121,8 @@ const router = createRouter({
           component: UserManagementPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Users' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.users' },
             ],
           },
         },
@@ -132,8 +132,8 @@ const router = createRouter({
           component: AuditLogPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Audit Log' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.auditLog' },
             ],
           },
         },
@@ -143,8 +143,8 @@ const router = createRouter({
           component: SupplierPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Suppliers' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.suppliers' },
             ],
           },
         },
@@ -154,8 +154,8 @@ const router = createRouter({
           component: PurchaseInvoicesPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Purchase Invoices' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.purchaseInvoices' },
             ],
           },
         },
@@ -165,9 +165,9 @@ const router = createRouter({
           component: ScanPurchaseInvoicePage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Purchase Invoices', to: '/purchase-invoices' },
-              { label: 'Scan' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.purchaseInvoices', to: '/purchase-invoices' },
+              { labelKey: 'nav.scan' },
             ],
           },
         },
@@ -177,9 +177,9 @@ const router = createRouter({
           component: PurchaseInvoiceCreatePage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Purchase Invoices', to: '/purchase-invoices' },
-              { label: 'New' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.purchaseInvoices', to: '/purchase-invoices' },
+              { labelKey: 'nav.new' },
             ],
           },
         },
@@ -189,9 +189,9 @@ const router = createRouter({
           component: PurchaseInvoiceCreatePage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Purchase Invoices', to: '/purchase-invoices' },
-              { label: 'Edit' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.purchaseInvoices', to: '/purchase-invoices' },
+              { labelKey: 'nav.edit' },
             ],
           },
         },
@@ -201,8 +201,8 @@ const router = createRouter({
           component: SaleInvoicesPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Sale Invoices' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.saleInvoices' },
             ],
           },
         },
@@ -212,9 +212,9 @@ const router = createRouter({
           component: ScanSaleInvoicePage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Sale Invoices', to: '/sale-invoices' },
-              { label: 'Scan' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.saleInvoices', to: '/sale-invoices' },
+              { labelKey: 'nav.scan' },
             ],
           },
         },
@@ -224,9 +224,9 @@ const router = createRouter({
           component: SaleInvoiceCreatePage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Sale Invoices', to: '/sale-invoices' },
-              { label: 'New' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.saleInvoices', to: '/sale-invoices' },
+              { labelKey: 'nav.new' },
             ],
           },
         },
@@ -236,9 +236,9 @@ const router = createRouter({
           component: SaleInvoiceCreatePage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Sale Invoices', to: '/sale-invoices' },
-              { label: 'Edit' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.saleInvoices', to: '/sale-invoices' },
+              { labelKey: 'nav.edit' },
             ],
           },
         },
@@ -248,9 +248,9 @@ const router = createRouter({
           component: StockReportPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Reports' },
-              { label: 'Stock Report' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.reports' },
+              { labelKey: 'nav.stockReport' },
             ],
           },
         },
@@ -260,9 +260,9 @@ const router = createRouter({
           component: SaleReportPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Reports' },
-              { label: 'Sale Report' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.reports' },
+              { labelKey: 'nav.saleReport' },
             ],
           },
         },
@@ -272,9 +272,9 @@ const router = createRouter({
           component: ProfitReportPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Reports' },
-              { label: 'Profit Report' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.reports' },
+              { labelKey: 'nav.profitReport' },
             ],
           },
         },
@@ -284,9 +284,9 @@ const router = createRouter({
           component: TopProductsReportPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Reports' },
-              { label: 'Top Products' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.reports' },
+              { labelKey: 'nav.topProducts' },
             ],
           },
         },
@@ -296,10 +296,10 @@ const router = createRouter({
           component: ReceivablesReportPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Reports' },
-              { label: 'Debt Report' },
-              { label: 'Customer Debt' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.reports' },
+              { labelKey: 'nav.debtReport' },
+              { labelKey: 'nav.customerDebt' },
             ],
           },
         },
@@ -309,10 +309,10 @@ const router = createRouter({
           component: PayablesReportPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Reports' },
-              { label: 'Debt Report' },
-              { label: 'Supplier Debt' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.reports' },
+              { labelKey: 'nav.debtReport' },
+              { labelKey: 'nav.supplierDebt' },
             ],
           },
         },
@@ -322,8 +322,8 @@ const router = createRouter({
           component: CustomerPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Customers' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.customers' },
             ],
           },
         },
@@ -333,8 +333,8 @@ const router = createRouter({
           component: PaymentsPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Payments' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.payments' },
             ],
           },
         },
@@ -344,10 +344,10 @@ const router = createRouter({
           component: BanksPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Others' },
-              { label: 'Banking', icon: 'bank' },
-              { label: 'Banks' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.others' },
+              { labelKey: 'nav.banking', icon: 'bank' },
+              { labelKey: 'nav.banks' },
             ],
           },
         },
@@ -357,10 +357,10 @@ const router = createRouter({
           component: BankAccountsPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Others' },
-              { label: 'Banking', icon: 'bank' },
-              { label: 'Bank Accounts' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.others' },
+              { labelKey: 'nav.banking', icon: 'bank' },
+              { labelKey: 'nav.bankAccounts' },
             ],
           },
         },
@@ -370,9 +370,9 @@ const router = createRouter({
           component: UnitsPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Others' },
-              { label: 'Units', icon: 'unit' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.others' },
+              { labelKey: 'nav.units', icon: 'unit' },
             ],
           },
         },
@@ -382,8 +382,8 @@ const router = createRouter({
           component: ProductsPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Products' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.products' },
             ],
           },
         },
@@ -393,9 +393,9 @@ const router = createRouter({
           component: ProductCategoriesPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Others' },
-              { label: 'Product Categories' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.others' },
+              { labelKey: 'nav.productCategories' },
             ],
           },
         },
@@ -405,9 +405,9 @@ const router = createRouter({
           component: TagsPage,
           meta: {
             breadcrumb: [
-              { label: 'Dashboard', to: '/dashboard', icon: 'home' },
-              { label: 'Others' },
-              { label: 'Tags' },
+              { labelKey: 'nav.dashboard', to: '/dashboard', icon: 'home' },
+              { labelKey: 'nav.others' },
+              { labelKey: 'nav.tags' },
             ],
           },
         },

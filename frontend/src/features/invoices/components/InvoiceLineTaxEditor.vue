@@ -1,7 +1,7 @@
 <template>
   <div class="tax-editor">
     <p v-if="storeTaxes.length === 0" class="tax-empty">
-      No taxes configured for this store.
+      {{ $t('invoices.noTaxesConfigured') }}
     </p>
     <div v-else class="tax-grid">
       <div v-for="tax in storeTaxes" :key="tax.id" class="tax-line">
@@ -21,7 +21,7 @@
         <span class="tax-amount">{{ formatMoney(amountFor(tax.id)) }}</span>
       </div>
     </div>
-    <p class="tax-hint">Leave a rate blank to skip that tax on this line.</p>
+    <p class="tax-hint">{{ $t('invoices.leaveRateBlank') }}</p>
   </div>
 </template>
 

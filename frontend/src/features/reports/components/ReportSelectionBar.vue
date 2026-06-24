@@ -1,9 +1,9 @@
 <template>
   <div class="selection-bar">
-    <span class="selection-count">{{ count }} selected</span>
+    <span class="selection-count">{{ $t('shared.selectedCount', { count }) }}</span>
     <div class="selection-actions">
-      <button class="btn-selection-action" @click="$emit('clear')">Clear</button>
-      <ExportButton variant="ghost" label="Export selected" :exporting="exporting" @click="$emit('export')" />
+      <button class="btn-selection-action" @click="$emit('clear')">{{ $t('common.clear') }}</button>
+      <ExportButton variant="ghost" :label="$t('shared.exportSelected')" :exporting="exporting" @click="$emit('export')" />
     </div>
   </div>
 </template>

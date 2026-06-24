@@ -6,9 +6,9 @@
         v-model:endDate="endDate"
         @change="() => goToPage(1)"
       />
-      <button v-if="startDate || endDate" class="clear-dates" @click="clearDates">Clear dates</button>
+      <button v-if="startDate || endDate" class="clear-dates" @click="clearDates">{{ $t('shared.clearDates') }}</button>
       <div class="filters-spacer"></div>
-      <button class="refresh-btn" :disabled="loading || refreshing" title="Refresh" @click="refresh">
+      <button class="refresh-btn" :disabled="loading || refreshing" :title="$t('shared.refresh')" @click="refresh">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ spinning: refreshing }">
           <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
@@ -16,22 +16,22 @@
     </div>
 
     <div class="panel-body">
-      <div v-if="loading" class="state-row"><div class="spinner"></div><span>Loading history...</span></div>
+      <div v-if="loading" class="state-row"><div class="spinner"></div><span>{{ $t('shared.loadingHistory') }}</span></div>
       <div v-else-if="error" class="api-error">{{ error }}</div>
-      <div v-else-if="!rows.length" class="empty-state">No scans yet.</div>
+      <div v-else-if="!rows.length" class="empty-state">{{ $t('invoices.noScans') }}</div>
 
       <div v-else class="table-wrap">
         <table class="history-table">
           <thead>
             <tr>
-              <th class="file-col">File</th>
-              <th>Scan type</th>
-              <th>Status</th>
-              <th class="num">Items</th>
-              <th class="num">New</th>
+              <th class="file-col">{{ $t('shared.file') }}</th>
+              <th>{{ $t('invoices.scanType') }}</th>
+              <th>{{ $t('shared.status') }}</th>
+              <th class="num">{{ $t('invoices.items') }}</th>
+              <th class="num">{{ $t('invoices.newCol') }}</th>
               <th>{{ partyLabel }}</th>
-              <th>By</th>
-              <th>When</th>
+              <th>{{ $t('shared.by') }}</th>
+              <th>{{ $t('shared.when') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -57,9 +57,9 @@
               </tr>
               <tr v-if="expandedId === row.id" class="detail-row">
                 <td colspan="8">
-                  <div v-if="detailLoading" class="state-row sm"><div class="spinner"></div><span>Loading details...</span></div>
+                  <div v-if="detailLoading" class="state-row sm"><div class="spinner"></div><span>{{ $t('shared.loadingDetails') }}</span></div>
                   <div v-else-if="detail?.status === 'failed'" class="api-error">
-                    {{ detail.error_message || 'This scan failed.' }}
+                    {{ detail.error_message || $t('invoices.scanFailed') }}
                   </div>
                   <div v-else-if="detail" class="detail">
                     <div class="detail-summary">
@@ -71,25 +71,25 @@
                         </span>
                       </div>
                       <div v-if="detail.invoice_no" class="sum-item">
-                        <span class="sum-label">Invoice no.</span>
+                        <span class="sum-label">{{ $t('invoices.invoiceNo') }}</span>
                         <span class="sum-value">{{ detail.invoice_no }}</span>
                       </div>
                       <div class="sum-item">
-                        <span class="sum-label">Subtotal</span>
+                        <span class="sum-label">{{ $t('invoices.subtotal') }}</span>
                         <span class="sum-value">{{ formatMoney(detail.totals?.subtotal) }}</span>
                       </div>
                       <div class="sum-item">
-                        <span class="sum-label">VAT</span>
+                        <span class="sum-label">{{ $t('invoices.vat') }}</span>
                         <span class="sum-value">{{ formatMoney(detail.totals?.vat_total) }}</span>
                       </div>
                       <div class="sum-item">
-                        <span class="sum-label">Grand total</span>
+                        <span class="sum-label">{{ $t('invoices.grandTotal') }}</span>
                         <span class="sum-value strong">{{ formatMoney(detail.totals?.grand_total) }}</span>
                       </div>
                     </div>
 
                     <div v-if="detail.created_entities?.length" class="detail-block">
-                      <p class="detail-title">New records created from this scan:</p>
+                      <p class="detail-title">{{ $t('invoices.newRecordsCreated') }}</p>
                       <ul class="chips">
                         <li v-for="(e, i) in detail.created_entities" :key="i" class="chip">
                           <span class="chip-type">{{ entityTypeLabel(e.type) }}</span> {{ e.name }}
@@ -98,23 +98,23 @@
                     </div>
 
                     <div v-if="detail.warnings?.length" class="detail-block">
-                      <p class="detail-title">Warnings:</p>
+                      <p class="detail-title">{{ $t('invoices.warnings') }}</p>
                       <ul class="warns">
                         <li v-for="(w, i) in detail.warnings" :key="i">{{ w }}</li>
                       </ul>
                     </div>
 
                     <div class="detail-block">
-                      <p class="detail-title">Items read ({{ detail.items?.length || 0 }}):</p>
-                      <div v-if="!detail.items?.length" class="detail-clean">No line items were read.</div>
+                      <p class="detail-title">{{ $t('invoices.itemsReadCount', { count: detail.items?.length || 0 }) }}</p>
+                      <div v-if="!detail.items?.length" class="detail-clean">{{ $t('invoices.noLineItems') }}</div>
                       <table v-else class="items-table">
                         <thead>
                           <tr>
-                            <th>Product</th>
-                            <th>Unit</th>
-                            <th class="num">Qty</th>
-                            <th class="num">Unit price</th>
-                            <th class="num">Line total</th>
+                            <th>{{ $t('invoices.product') }}</th>
+                            <th>{{ $t('invoices.unit') }}</th>
+                            <th class="num">{{ $t('invoices.qty') }}</th>
+                            <th class="num">{{ $t('invoices.unitPrice') }}</th>
+                            <th class="num">{{ $t('invoices.lineTotal') }}</th>
                             <th></th>
                           </tr>
                         </thead>
@@ -161,6 +161,7 @@ import { useScanHistory } from '@/composables/useScanHistory'
 import { fetchScanDetail } from '@/features/invoices/services/scanHistoryService'
 import { formatMoney, formatQuantity } from '@/features/invoices/constants'
 import { formatDateTime } from '@/utils/datetime'
+import { t } from '@/i18n'
 
 const props = defineProps({
   storeId: { type: [String, Number], required: true },
@@ -169,7 +170,7 @@ const props = defineProps({
 })
 
 // A purchase scan reads the seller (supplier); a sale scan reads the buyer (customer).
-const partyLabel = computed(() => (props.type === 'sale' ? 'Customer' : 'Supplier'))
+const partyLabel = computed(() => (props.type === 'sale' ? t('invoices.customer') : t('invoices.supplier')))
 
 const { loading, refreshing, error, rows, page, perPage, total, lastPage, startDate, endDate, load, goToPage, refresh } =
   useScanHistory({ storeId: toRef(props, 'storeId'), type: props.type })
@@ -184,15 +185,20 @@ const expandedId = ref(null)
 const detail = ref(null)
 const detailLoading = ref(false)
 
-const entityTypeLabel = (type) => ({ supplier: 'Supplier', customer: 'Customer', product: 'Product', unit: 'Unit' }[type] || type)
+const entityTypeLabel = (type) => ({
+  supplier: t('invoices.supplier'),
+  customer: t('invoices.customer'),
+  product: t('invoices.product'),
+  unit: t('invoices.unit'),
+}[type] || type)
 
 // Scans are synchronous, so a record is only ever completed or failed; the
 // pending/processing fallback is kept defensive in case that ever changes.
 const statusInfo = (status) => {
   switch (status) {
-    case 'completed': return { label: 'Successful', cls: 'done' }
-    case 'failed':    return { label: 'Failed', cls: 'bad' }
-    default:          return { label: 'Processing', cls: 'busy' }
+    case 'completed': return { label: t('invoices.scanStatus.successful'), cls: 'done' }
+    case 'failed':    return { label: t('invoices.scanStatus.failed'), cls: 'bad' }
+    default:          return { label: t('invoices.scanStatus.processing'), cls: 'busy' }
   }
 }
 

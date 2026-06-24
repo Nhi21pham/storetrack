@@ -9,10 +9,11 @@
 // Entry point to AI invoice scanning. Reused across purchase and (later) sale
 // invoices — pass the scan route via `to`, or omit it and handle `click`.
 import { useRouter } from 'vue-router'
+import { t } from '@/i18n'
 
 const props = defineProps({
   to: { type: String, default: '' },
-  label: { type: String, default: 'Scan invoice' },
+  label: { type: String, default: () => t('invoices.scanInvoice') },
 })
 
 const emit = defineEmits(['click'])

@@ -1,34 +1,34 @@
 <template>
   <PageContainer :maxWidth="1200">
-    <PageHeader title="Top Products" subtitle="Best-selling, highest-revenue and most-profitable products — ranked." />
+    <PageHeader :title="$t('reports.top.title')" :subtitle="$t('reports.top.subtitle')" />
 
     <EmptyState
       v-if="scope === 'store' && !currentStore"
-      title="No store selected"
-      description="Select a store to view its top products."
+      :title="$t('audit.noStoreTitle')"
+      :description="$t('reports.top.noStoreDesc')"
     />
 
     <EmptyState
       v-else-if="scope === 'business' && !currentBusiness"
-      title="No business selected"
-      description="Select a business to view its consolidated top products."
+      :title="$t('audit.noBusinessTitle')"
+      :description="$t('reports.top.noBusinessDesc')"
     />
 
     <template v-else>
       <div class="rank-toggle">
-        <span class="rank-label">Rank by</span>
-        <SegmentedToggle v-model="rankBy" :options="TOP_PRODUCTS_RANK_METRICS" />
+        <span class="rank-label">{{ $t('reports.rankBy') }}</span>
+        <SegmentedToggle v-model="rankBy" :options="rankMetrics()" />
       </div>
 
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search product or code..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('reports.top.search')" />
         <DateRangeFilter v-model:startDate="startDate" v-model:endDate="endDate" />
         <div class="filter-field">
           <SearchableSelect
             :modelValue="tagFilter"
             :options="tagOptions"
-            all-label="(All tags)"
-            search-placeholder="Filter tag..."
+            :all-label="$t('reports.filters.allTags')"
+            :search-placeholder="$t('reports.filters.filterTag')"
             @update:modelValue="tagFilter = $event"
           />
         </div>
@@ -40,7 +40,7 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedRows.length === 0" @click="run" />
-        <HistoryButton label="Export history" title="View export history" @click="showHistory = true" />
+        <HistoryButton :label="$t('reports.exportHistory')" :title="$t('reports.viewExportHistory')" @click="showHistory = true" />
       </div>
 
       <ReportSelectionBar
@@ -51,12 +51,12 @@
         @export="run"
       />
 
-      <LoadingState v-if="loading">Loading top products…</LoadingState>
+      <LoadingState v-if="loading">{{ $t('reports.top.loading') }}</LoadingState>
 
       <EmptyState
         v-else-if="rows.length === 0"
-        title="No sales yet"
-        description="Record a sale invoice to start ranking products."
+        :title="$t('reports.noSalesTitle')"
+        :description="$t('reports.top.emptyDesc')"
       />
 
       <div v-else class="table-wrap">
@@ -66,21 +66,21 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="c.labelKey ? $t(c.labelKey) : c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : (c.label || '') }}</template>
           </template>
 
           <tr v-if="sortedRows.length === 0">
-            <td :colspan="tableColumns.length" class="empty-row">No products match the current filters.</td>
+            <td :colspan="tableColumns.length" class="empty-row">{{ $t('reports.top.noMatch') }}</td>
           </tr>
           <tr v-for="(row, idx) in paginatedRows" :key="row.product_id" :class="{ 'row-selected': isSelected(row.product_id) }">
             <td v-if="columnVisibility.isVisible('select')">
@@ -107,11 +107,11 @@
 
         <TotalsBar
           :items="[
-            { label: 'Products', value: totals.productCount },
-            { label: 'Qty sold', value: formatQuantity(totals.qty), strong: rankBy === 'qty_sold' },
-            { label: 'Revenue', value: formatMoney(totals.revenue), strong: rankBy === 'revenue' },
-            { label: 'Profit', value: formatMoney(totals.profit), strong: rankBy === 'profit' },
-            { label: '# Orders', value: totals.orders, strong: rankBy === 'orders' },
+            { label: $t('reports.top.sumProducts'), value: totals.productCount },
+            { label: $t('reports.top.sumQtySold'), value: formatQuantity(totals.qty), strong: rankBy === 'qty_sold' },
+            { label: $t('reports.top.sumRevenue'), value: formatMoney(totals.revenue), strong: rankBy === 'revenue' },
+            { label: $t('reports.top.sumProfit'), value: formatMoney(totals.profit), strong: rankBy === 'profit' },
+            { label: $t('reports.col.numOrders'), value: totals.orders, strong: rankBy === 'orders' },
           ]"
         />
 
@@ -145,7 +145,7 @@
 
     <HistoryModal
       v-if="showHistory"
-      title="Top Products — Export History"
+      :title="$t('reports.top.exportHistoryTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
@@ -185,9 +185,10 @@ import { useExport } from '@/composables/useExport'
 import { startTopProductsReportExport, startTopProductsReportBusinessExport } from '@/features/reports/services/reportService'
 import { fetchProduct } from '@/features/products/services/productService'
 import {
-  TOP_PRODUCTS_COLUMNS, TOP_PRODUCTS_INITIAL_COL_WIDTHS, TOP_PRODUCTS_RANK_METRICS,
+  TOP_PRODUCTS_COLUMNS, TOP_PRODUCTS_INITIAL_COL_WIDTHS, topProductsRankMetrics as rankMetrics,
   formatMoney, formatQuantity,
 } from '@/features/reports/constants'
+import { t } from '@/i18n'
 
 const showToast = inject('showToast')
 const currentStore = inject('currentStore')
@@ -201,7 +202,7 @@ const showHistory = ref(false)
 const historyTabs = computed(() => {
   const isBiz = scope.value === 'business'
   return [{
-    key: 'exports', label: 'Exports', component: ExportHistoryPanel,
+    key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel,
     props: {
       scope: isBiz ? 'business' : 'store',
       scopeId: isBiz ? currentBusiness.value?.id : currentStore.value?.id,
@@ -262,7 +263,7 @@ const onProductEdit = (product) => {
 
 const onProductSaved = async () => {
   editingProduct.value = null
-  showToast('Product updated.', 'success')
+  showToast(t('reports.productUpdated'), 'success')
 }
 
 const { exporting, run } = useExport({
@@ -290,7 +291,7 @@ const { exporting, run } = useExport({
     return startTopProductsReportExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `top-products-report-${id}.xlsx`,
-  onSuccess: () => showToast('Top products export ready.', 'success'),
+  onSuccess: () => showToast(t('reports.top.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

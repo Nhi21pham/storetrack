@@ -1,7 +1,7 @@
 <template>
   <div class="searchable-select" :class="{ 'ss-large': size === 'large' }" ref="rootEl">
     <button type="button" class="ss-trigger" :class="{ open }" @click="toggleOpen">
-      <span class="ss-value" :class="{ 'ss-placeholder': !selectedLabel }">
+      <span class="ss-value" :class="{ 'ss-placeholder': !selectedLabel }" :title="selectedLabel || ''">
         {{ selectedLabel || placeholder }}
       </span>
       <svg class="ss-chevron" :class="{ open }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -43,6 +43,7 @@
           class="ss-option"
           :class="{ 'ss-option--active': modelValue === opt.value }"
           @click="select(opt.value)"
+          :title="opt.sublabel ? `${opt.label} — ${opt.sublabel}` : opt.label"
         >
           <span class="ss-option-label">{{ opt.label }}</span>
           <span v-if="opt.sublabel" class="ss-option-sublabel">{{ opt.sublabel }}</span>

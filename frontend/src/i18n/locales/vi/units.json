@@ -1,4 +1,5 @@
 {
+  "existingMatches": "Kết quả trùng khớp hiện có",
   "title": "Đơn vị tính",
   "subtitle": "Quản lý danh sách đơn vị tính dùng cho sản phẩm.",
   "newUnit": "Thêm đơn vị",

@@ -13,6 +13,8 @@
   "productName": "Product Name",
   "category": "Category",
   "unit": "Unit",
+  "existingMatches": "Existing matches",
+  "unitLabel": "Unit: {name}",
   "tags": "Tags",
   "allCategories": "(All categories)",
   "filterCategory": "Filter category...",

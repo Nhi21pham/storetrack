@@ -1,4 +1,5 @@
 {
+  "existingMatches": "Existing matches",
   "banksTitle": "Banks",
   "banksSubtitle": "Manage the master list of banks used across bank accounts.",
   "newBank": "New Bank",

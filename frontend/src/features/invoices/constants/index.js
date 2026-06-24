@@ -54,22 +54,22 @@ export const todayInputDate = () => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-// Column set for an invoice list; the party column is labelled per type
-// ("Supplier" for purchases, "Customer" for sales).
-export const makeInvoiceColumns = (partyLabel) => [
-  { key: 'select',         label: '',            sortable: false },
-  { key: 'stt',            label: 'No.',         sortable: false },
-  { key: 'code',           label: 'Code',        sortable: true  },
-  { key: 'invoice_date',   label: 'Date',        sortable: true  },
-  { key: 'party_name',     label: partyLabel,    sortable: true  },
-  { key: 'payment_method', label: 'Payment',     sortable: true  },
-  { key: 'payment_status', label: 'Status',      sortable: true  },
-  { key: 'subtotal',       label: 'Subtotal',    sortable: true  },
-  { key: 'tax_total',      label: 'Tax',         sortable: true  },
-  { key: 'grand_total',    label: 'Grand total', sortable: true  },
-  { key: 'actions',        label: '',            sortable: false },
+// Column set for an invoice list; the party column is labelled per type via an
+// i18n key ("invoices.supplier" for purchases, "invoices.customer" for sales).
+export const makeInvoiceColumns = (partyLabelKey) => [
+  { key: 'select',         labelKey: '',                     sortable: false },
+  { key: 'stt',            labelKey: 'shared.rowNo',         sortable: false },
+  { key: 'code',           labelKey: 'invoices.code',        sortable: true  },
+  { key: 'invoice_date',   labelKey: 'invoices.date',        sortable: true  },
+  { key: 'party_name',     labelKey: partyLabelKey,          sortable: true  },
+  { key: 'payment_method', labelKey: 'invoices.payment',     sortable: true  },
+  { key: 'payment_status', labelKey: 'invoices.statusCol',   sortable: true  },
+  { key: 'subtotal',       labelKey: 'invoices.subtotal',    sortable: true  },
+  { key: 'tax_total',      labelKey: 'invoices.tax',         sortable: true  },
+  { key: 'grand_total',    labelKey: 'invoices.grandTotal',  sortable: true  },
+  { key: 'actions',        labelKey: '',                     sortable: false },
 ]
 
-export const INVOICE_COLUMNS = makeInvoiceColumns('Supplier')
+export const INVOICE_COLUMNS = makeInvoiceColumns('invoices.supplier')
 
 export const INVOICE_INITIAL_COL_WIDTHS = [40, 60, 120, 120, 190, 110, 110, 120, 110, 130, 90]

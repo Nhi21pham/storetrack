@@ -4,9 +4,9 @@
     "CARD": "Thẻ"
   },
   "paymentStatus": {
-    "UNPAID": "Chưa thanh toán",
-    "PARTIAL": "Thanh toán một phần",
-    "PAID": "Đã thanh toán"
+    "UNPAID": "Chưa trả",
+    "PARTIAL": "Trả một phần",
+    "PAID": "Đã trả"
   },
   "invoiceType": {
     "PURCHASE": "Mua",

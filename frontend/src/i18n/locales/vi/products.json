@@ -13,6 +13,8 @@
   "productName": "Tên sản phẩm",
   "category": "Danh mục",
   "unit": "Đơn vị tính",
+  "existingMatches": "Kết quả trùng khớp hiện có",
+  "unitLabel": "Đơn vị tính: {name}",
   "tags": "Thẻ",
   "allCategories": "(Tất cả danh mục)",
   "filterCategory": "Lọc danh mục...",

@@ -1,30 +1,30 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Scan Sale Invoice" subtitle="Upload a PDF or photo and we'll prefill the invoice for you to review.">
+    <PageHeader :title="$t('invoices.scanSaleTitle')" :subtitle="$t('invoices.scanSubtitle')">
       <template #actions>
-        <button class="btn-secondary" @click="goToList">Cancel</button>
+        <button class="btn-secondary" @click="goToList">{{ $t('common.cancel') }}</button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentStore"
-      title="No store selected"
-      description="Select a store to scan an invoice."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('invoices.noStoreScanDesc')"
     />
 
     <template v-else>
       <InactiveBanner v-if="!currentStore.is_active">
-        This store is deactivated. You cannot create invoices until it is reactivated.
+        {{ $t('invoices.inactiveCreateBanner') }}
       </InactiveBanner>
 
       <!-- Step 1: upload -->
       <section v-if="phase === 'upload'" class="card upload-card">
-        <h3 class="card-title">Upload invoice</h3>
+        <h3 class="card-title">{{ $t('invoices.uploadInvoice') }}</h3>
         <label class="dropzone" :class="{ filled: !!file }">
           <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" class="file-input" @change="onFileChange" />
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <span v-if="file" class="dz-name">{{ file.name }}</span>
-          <span v-else class="dz-hint">Click to choose a PDF or photo (JPG, PNG, WEBP)</span>
+          <span v-else class="dz-hint">{{ $t('invoices.clickToChoose') }}</span>
         </label>
 
         <FormMessage v-if="error" block :text="error" style="margin-top: 14px" />
@@ -32,7 +32,7 @@
         <div class="upload-actions">
           <button class="btn-primary" :disabled="!file || extracting || !currentStore.is_active" @click="extract">
             <span v-if="extracting" class="spinner"></span>
-            {{ extracting ? 'Reading invoice…' : 'Extract' }}
+            {{ extracting ? $t('invoices.readingInvoice') : $t('invoices.extract') }}
           </button>
         </div>
 
@@ -43,7 +43,7 @@
           @scan-ai="scanWithAi"
         />
 
-        <p class="upload-note">PDFs are read for free on our server; photos use AI. The file is read once and not stored.</p>
+        <p class="upload-note">{{ $t('invoices.uploadNote') }}</p>
       </section>
 
       <!-- Step 2: review -->
@@ -58,7 +58,7 @@
 
         <ReferenceChipsBanner
           :groups="bannerGroups"
-          message="This invoice references records that don't exist yet. Create them here and they'll be linked."
+          :message="$t('invoices.refBannerMessage')"
           @create="onCreateRef"
         />
 
@@ -67,38 +67,38 @@
         </div>
 
         <section class="card">
-          <h3 class="card-title">Details</h3>
+          <h3 class="card-title">{{ $t('invoices.details') }}</h3>
           <div class="details-grid">
             <div class="form-group">
-              <label>Customer <span class="required">*</span></label>
+              <label>{{ $t('invoices.customer') }} <span class="required">*</span></label>
               <div class="picker-row">
                 <SearchableSelect
                   v-model="customerPartyId"
                   :options="customerOptions"
                   :allow-all="false"
-                  placeholder="Select a customer"
-                  search-placeholder="Search customers…"
+                  :placeholder="$t('invoices.selectCustomer')"
+                  :search-placeholder="$t('invoices.searchCustomers')"
                 />
                 <MatchBadge :matched="!!customerPartyId" />
               </div>
-              <span v-if="extractedCustomerLabel" class="hint">Read: {{ extractedCustomerLabel }}</span>
+              <span v-if="extractedCustomerLabel" class="hint">{{ $t('invoices.readLabel') }} {{ extractedCustomerLabel }}</span>
             </div>
 
             <div class="form-group">
-              <label>Invoice date</label>
+              <label>{{ $t('invoices.invoiceDate') }}</label>
               <input v-model="invoiceDate" type="date" class="text-input" />
             </div>
 
             <div v-if="review.invoice_no" class="form-group full">
-              <label>Invoice number</label>
+              <label>{{ $t('invoices.invoiceNumber') }}</label>
               <input :value="review.invoice_no" type="text" class="text-input" disabled />
-              <span class="hint">Saved into the invoice description.</span>
+              <span class="hint">{{ $t('invoices.savedIntoDescription') }}</span>
             </div>
           </div>
         </section>
 
         <section class="card">
-          <h3 class="card-title">Items</h3>
+          <h3 class="card-title">{{ $t('invoices.items') }}</h3>
           <ResizableTable :columns="ITEM_COLUMNS" :initial-widths="ITEM_COL_WIDTHS">
             <tr v-for="(line, i) in lines" :key="i" class="item-row">
               <td class="c-idx">{{ i + 1 }}</td>
@@ -109,19 +109,19 @@
                     :options="productOptions"
                     :allow-all="false"
                     :teleport="true"
-                    placeholder="Select a product"
-                    search-placeholder="Search products…"
+                    :placeholder="$t('invoices.selectProduct')"
+                    :search-placeholder="$t('invoices.searchProducts')"
                   />
                   <MatchBadge :matched="!!line.productId" />
                 </div>
-                <span class="hint">Read: {{ line.extracted.name }}<template v-if="line.extracted.code"> · {{ line.extracted.code }}</template></span>
+                <span class="hint">{{ $t('invoices.readLabel') }} {{ line.extracted.name }}<template v-if="line.extracted.code"> · {{ line.extracted.code }}</template></span>
               </td>
               <td class="c-unit">
                 <div class="unit-cell">
                   <span class="unit-name">{{ line.unitName || line.extracted.unit || '—' }}</span>
                   <MatchBadge v-if="line.extracted.unit" :matched="!!line.unitId" />
                 </div>
-                <span v-if="line.unitName && line.extracted.unit" class="hint">Read: {{ line.extracted.unit }}</span>
+                <span v-if="line.unitName && line.extracted.unit" class="hint">{{ $t('invoices.readLabel') }} {{ line.extracted.unit }}</span>
               </td>
               <td class="c-num">{{ formatQuantity(line.extracted.quantity) }}</td>
               <td class="c-num">{{ formatMoney(line.extracted.unit_price) }}</td>
@@ -129,19 +129,19 @@
               <td class="c-num strong">{{ formatMoney(line.extracted.line_total) }}</td>
             </tr>
           </ResizableTable>
-          <p v-if="lines.length === 0" class="empty-note">No line items were read — add them on the next step.</p>
+          <p v-if="lines.length === 0" class="empty-note">{{ $t('invoices.noLineItemsAddNext') }}</p>
         </section>
 
         <section class="footer-bar">
           <div class="totals">
-            <div class="total-row"><span>Subtotal</span><span>{{ formatMoney(review.subtotal) }}</span></div>
-            <div class="total-row"><span>VAT</span><span>{{ formatMoney(review.vat_total) }}</span></div>
-            <div class="total-row grand"><span>Grand total</span><span>{{ formatMoney(review.grand_total) }}</span></div>
+            <div class="total-row"><span>{{ $t('invoices.subtotal') }}</span><span>{{ formatMoney(review.subtotal) }}</span></div>
+            <div class="total-row"><span>{{ $t('invoices.vat') }}</span><span>{{ formatMoney(review.vat_total) }}</span></div>
+            <div class="total-row grand"><span>{{ $t('invoices.grandTotal') }}</span><span>{{ formatMoney(review.grand_total) }}</span></div>
           </div>
           <div class="actions">
-            <button class="btn-secondary" @click="startOver">Start over</button>
+            <button class="btn-secondary" @click="startOver">{{ $t('invoices.startOver') }}</button>
             <button class="btn-primary" :disabled="!currentStore.is_active" @click="continueToInvoice">
-              Continue to invoice
+              {{ $t('invoices.continueToInvoice') }}
             </button>
           </div>
         </section>
@@ -182,10 +182,10 @@
 
     <ConfirmDialog
       v-if="showLeaveWarning"
-      title="Discard scanned invoice?"
-      message="This invoice has been scanned and is ready to review. If you leave now, the scanned data will be lost."
-      confirm-text="Yes, discard"
-      cancel-text="Keep reviewing"
+      :title="$t('invoices.discardScannedTitle')"
+      :message="$t('invoices.discardScannedMessage')"
+      :confirm-text="$t('common.yesDiscard')"
+      :cancel-text="$t('invoices.keepReviewing')"
       type="danger"
       @confirm="discardAndLeave"
       @cancel="keepReviewing"
@@ -218,16 +218,17 @@ import { setInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import { formatMoney, formatQuantity, todayInputDate } from '@/features/invoices/constants'
 import { normalizeText } from '@/utils/textNormalizer'
 import { ErrorCode } from '@/utils/errorCodes'
+import { t } from '@/i18n'
 
-const ITEM_COLUMNS = [
+const ITEM_COLUMNS = computed(() => [
   { key: 'idx', label: '#' },
-  { key: 'product', label: 'Product' },
-  { key: 'unit', label: 'Unit' },
-  { key: 'quantity', label: 'Qty' },
-  { key: 'price', label: 'Unit price' },
-  { key: 'tax', label: 'VAT' },
-  { key: 'total', label: 'Line total' },
-]
+  { key: 'product', label: t('invoices.product') },
+  { key: 'unit', label: t('invoices.unit') },
+  { key: 'quantity', label: t('invoices.qty') },
+  { key: 'price', label: t('invoices.unitPrice') },
+  { key: 'tax', label: t('invoices.vat') },
+  { key: 'total', label: t('invoices.lineTotal') },
+])
 const ITEM_COL_WIDTHS = [44, 300, 130, 80, 120, 70, 120]
 
 const router = useRouter()
@@ -274,7 +275,7 @@ const customerOptions = computed(() =>
     .map(({ customer, store }) => ({
       value: String(customer.party.id),
       label: customer.name,
-      sublabel: [store ? 'This store' : 'Business', customer.phone || customer.tax_code].filter(Boolean).join(' · '),
+      sublabel: [store ? t('invoices.thisStore') : t('invoices.business'), customer.phone || customer.tax_code].filter(Boolean).join(' · '),
     })),
 )
 
@@ -297,7 +298,7 @@ const bannerGroups = computed(() => {
   const groups = []
   const ex = review.value?.party?.extracted
   if (ex?.name && !customerPartyId.value) {
-    groups.push({ type: 'customer', label: 'Customers', chips: [{ id: 'customer', label: ex.name }] })
+    groups.push({ type: 'customer', label: t('invoices.customers'), chips: [{ id: 'customer', label: ex.name }] })
   }
   const seen = new Map()
   for (const line of lines.value) {
@@ -307,7 +308,7 @@ const bannerGroups = computed(() => {
     const id = name.toLowerCase()
     if (!seen.has(id)) seen.set(id, { id, label: name })
   }
-  if (seen.size) groups.push({ type: 'product', label: 'Products', chips: [...seen.values()] })
+  if (seen.size) groups.push({ type: 'product', label: t('invoices.products'), chips: [...seen.values()] })
   const unitSeen = new Map()
   for (const line of lines.value) {
     if (line.unitId) continue
@@ -316,7 +317,7 @@ const bannerGroups = computed(() => {
     const id = normalizeText(name)
     if (!unitSeen.has(id)) unitSeen.set(id, { id, label: name })
   }
-  if (unitSeen.size) groups.push({ type: 'unit', label: 'Units', chips: [...unitSeen.values()] })
+  if (unitSeen.size) groups.push({ type: 'unit', label: t('invoices.units'), chips: [...unitSeen.values()] })
   return groups
 })
 
@@ -470,7 +471,7 @@ const continueToInvoice = () => {
     invoice_date: invoiceDate.value || todayInputDate(),
     payment_method: 'CASH',
     payment_status: 'UNPAID',
-    description: review.value?.invoice_no ? `Invoice ${review.value.invoice_no}` : '',
+    description: review.value?.invoice_no ? t('invoices.invoiceNoDesc', { no: review.value.invoice_no }) : '',
     items: lines.value.map((line) => ({
       product_id: line.productId || '',
       quantity: line.extracted.quantity != null ? String(line.extracted.quantity) : '',

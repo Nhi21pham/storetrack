@@ -1,4 +1,5 @@
 {
+  "existingMatches": "Existing matches",
   "title": "Units",
   "subtitle": "Manage the master list of measurement units used on products.",
   "newUnit": "New Unit",

@@ -1,6 +1,6 @@
 <template>
   <div class="suggestions" @mousedown.prevent>
-    <div class="suggestions-header">Existing matches</div>
+    <div class="suggestions-header">{{ $t('productCategories.existingMatches') }}</div>
     <button
       v-for="item in items"
       :key="item.id"
@@ -11,8 +11,8 @@
       <div class="row-main">
         <span class="code">{{ item.code }}</span>
         <span class="name">{{ displayCategoryName(item) }}</span>
-        <span v-if="item.is_system" class="system-badge">System</span>
-        <span v-if="!item.is_active" class="inactive-badge">Inactive</span>
+        <span v-if="item.is_system" class="system-badge">{{ $t('productCategories.systemBadge') }}</span>
+        <span v-if="!item.is_active" class="inactive-badge">{{ $t('common.inactive') }}</span>
       </div>
     </button>
   </div>

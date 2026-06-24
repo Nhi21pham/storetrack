@@ -1,6 +1,6 @@
 <template>
   <button type="button" class="pay-link" @click="goToPayments">
-    {{ isPaid ? 'View payments' : 'Record payment' }}
+    {{ isPaid ? $t('invoices.viewPayments') : $t('invoices.recordPayment') }}
   </button>
 </template>
 

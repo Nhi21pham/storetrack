@@ -1,4 +1,5 @@
 {
+  "existingMatches": "Existing matches",
   "title": "Product Categories",
   "subtitle": "Group products and services. System categories cannot be edited or deleted.",
   "newCategory": "New Category",

@@ -8,14 +8,14 @@
           class="crumb-pill crumb-link"
         >
           <Icon v-if="crumb.icon" :name="crumb.icon" :size="13" color="currentColor" />
-          <span>{{ crumb.label }}</span>
+          <span>{{ crumb.labelKey ? $t(crumb.labelKey) : crumb.label }}</span>
         </router-link>
         <span
           v-else
           :class="['crumb-pill', 'crumb-text', { current: isLast(i) }]"
         >
           <Icon v-if="crumb.icon" :name="crumb.icon" :size="13" color="currentColor" />
-          <span>{{ crumb.label }}</span>
+          <span>{{ crumb.labelKey ? $t(crumb.labelKey) : crumb.label }}</span>
         </span>
         <Icon
           v-if="!isLast(i)"

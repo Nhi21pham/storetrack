@@ -127,6 +127,17 @@ const canSubmit = computed(() =>
   rows.value.some((r) => r.selected && Number(r.amount) > 0),
 )
 
+// Stamp the chosen payment date with the current wall-clock time so the history
+// records when the payment was actually entered (today → now; back-dated → that
+// date at the current time) rather than a meaningless midnight.
+const paidAtWithTime = () => {
+  const now = new Date()
+  const hh = String(now.getHours()).padStart(2, '0')
+  const mm = String(now.getMinutes()).padStart(2, '0')
+  const ss = String(now.getSeconds()).padStart(2, '0')
+  return `${paidAt.value} ${hh}:${mm}:${ss}`
+}
+
 const submit = async () => {
   if (!canSubmit.value || saving.value) return
   const allocations = rows.value
@@ -138,7 +149,7 @@ const submit = async () => {
       storeId: props.storeId,
       input: {
         party_id: props.partyId,
-        paid_at: paidAt.value,
+        paid_at: paidAtWithTime(),
         method: method.value,
         note: note.value || null,
         allocations,

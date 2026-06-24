@@ -1,12 +1,12 @@
 <template>
   <DebtReportPage
     ledger="receivable"
-    title="Customer Debt Report"
-    subtitle="What each customer was billed, paid, and still owes — within the selected date range."
-    party-label="Customer"
-    spent-label="Total Spent"
-    invoice-section-label="Invoices in range"
-    empty-description="Record a sale invoice to start tracking what customers owe."
+    :title="$t('reports.debt.receivableTitle')"
+    :subtitle="$t('reports.debt.receivableSubtitle')"
+    :party-label="$t('reports.debt.customer')"
+    :spent-label="$t('reports.debt.totalSpent')"
+    :invoice-section-label="$t('reports.debt.invoicesInRange')"
+    :empty-description="$t('reports.debt.receivableEmptyDesc')"
     export-filename-prefix="customer-debt-report"
     :fetchers="fetchers"
     :exporters="exporters"

@@ -1,76 +1,76 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader :title="isEdit ? 'Edit Sale Invoice' : 'New Sale Invoice'" subtitle="Record a sale to a customer and draw it from stock.">
+    <PageHeader :title="isEdit ? $t('invoices.editSaleTitle') : $t('invoices.newSaleTitle')" :subtitle="$t('invoices.saleCreateSubtitle')">
       <template #actions>
-        <button class="btn-secondary" @click="goBack">Cancel</button>
+        <button class="btn-secondary" @click="goBack">{{ $t('common.cancel') }}</button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentStore"
-      title="No store selected"
-      description="Select a store to create a sale invoice."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('invoices.noStoreCreateSaleDesc')"
     />
 
     <template v-else>
       <InactiveBanner v-if="!currentStore.is_active">
-        This store is deactivated. You cannot create invoices until it is reactivated.
+        {{ $t('invoices.inactiveCreateBanner') }}
       </InactiveBanner>
 
-      <LoadingState v-if="optionsLoading">Loading customers, products and taxes…</LoadingState>
+      <LoadingState v-if="optionsLoading">{{ $t('invoices.loadingFormDataSale') }}</LoadingState>
 
       <template v-else>
         <!-- Details -->
         <section class="card">
-          <h3 class="card-title">Details</h3>
+          <h3 class="card-title">{{ $t('invoices.details') }}</h3>
           <div class="details-grid">
             <div ref="partyFieldRef" class="form-group">
-              <label>Customer <span class="required">*</span></label>
+              <label>{{ $t('invoices.customer') }} <span class="required">*</span></label>
               <div class="picker-row">
                 <SearchableSelect
                   v-model="form.party_id"
                   :options="customerOptions"
                   :allow-all="false"
-                  placeholder="Select a customer"
-                  search-placeholder="Search customers…"
+                  :placeholder="$t('invoices.selectCustomer')"
+                  :search-placeholder="$t('invoices.searchCustomers')"
                 />
-                <AddItemButton title="Create a new customer" @click="showCustomerForm = true" />
+                <AddItemButton :title="$t('invoices.createCustomerTitle')" @click="showCustomerForm = true" />
               </div>
               <FormMessage v-if="errors.party_id" :text="errors.party_id" />
             </div>
 
             <div class="form-group">
-              <label>Invoice date <span class="required">*</span></label>
+              <label>{{ $t('invoices.invoiceDate') }} <span class="required">*</span></label>
               <input ref="dateInputRef" v-model="form.invoice_date" type="date" class="text-input" :class="{ error: errors.invoice_date }" />
               <FormMessage v-if="errors.invoice_date" :text="errors.invoice_date" />
             </div>
 
             <div class="form-group">
-              <label>Payment method</label>
+              <label>{{ $t('invoices.paymentMethod') }}</label>
               <SelectField v-model="form.payment_method">
                 <option v-for="m in paymentMethodOptions()" :key="m.value" :value="m.value">{{ m.label }}</option>
               </SelectField>
             </div>
 
             <div v-if="!isEdit" class="form-group">
-              <label>Payment status</label>
+              <label>{{ $t('invoices.paymentStatus') }}</label>
               <SelectField v-model="form.payment_status">
                 <option v-for="s in paymentStatusOptions()" :key="s.value" :value="s.value">{{ s.label }}</option>
               </SelectField>
             </div>
 
             <div v-if="!isEdit && form.payment_status === 'PARTIAL'" class="form-group">
-              <label>Amount paid <span class="required">*</span></label>
+              <label>{{ $t('invoices.amountPaid') }} <span class="required">*</span></label>
               <NumberInput v-model="form.paid_amount" :decimals="2" placeholder="0" class="text-input" />
               <FormMessage v-if="errors.paid_amount" :text="errors.paid_amount" />
               <span v-else class="pay-hint">{{ remainingLabel }}</span>
             </div>
 
             <div v-if="isEdit" class="form-group">
-              <label>Payment status</label>
+              <label>{{ $t('invoices.paymentStatus') }}</label>
               <div class="pay-readonly">
                 <PaymentStatusBadge :status="derivedStatus" />
-                <span class="pay-hint">Paid {{ formatMoney(loadedPayment.paid) }} · Balance {{ formatMoney(editBalance) }}</span>
+                <span class="pay-hint">{{ $t('invoices.paidBalanceHint', { paid: formatMoney(loadedPayment.paid), balance: formatMoney(editBalance) }) }}</span>
                 <InvoicePaymentLink
                   party-type="customer"
                   :party-id="form.party_id"
@@ -81,15 +81,15 @@
             </div>
 
             <div class="form-group full">
-              <label>Description</label>
-              <input v-model="form.description" type="text" class="text-input" placeholder="Optional note for this invoice" />
+              <label>{{ $t('invoices.description') }}</label>
+              <input v-model="form.description" type="text" class="text-input" :placeholder="$t('invoices.descriptionPlaceholder')" />
             </div>
           </div>
         </section>
 
         <!-- Items -->
         <section ref="itemsSectionRef" class="card">
-          <h3 class="card-title">Items</h3>
+          <h3 class="card-title">{{ $t('invoices.items') }}</h3>
 
           <FormMessage v-if="apiError" block :text="apiError" style="margin-bottom: 14px" />
 
@@ -104,10 +104,10 @@
                       :options="productOptions"
                       :allow-all="false"
                       :teleport="true"
-                      placeholder="Select a product"
-                      search-placeholder="Search products…"
+                      :placeholder="$t('invoices.selectProduct')"
+                      :search-placeholder="$t('invoices.searchProducts')"
                     />
-                    <AddItemButton size="small" title="Create a new product" @click="openProductForm(i)" />
+                    <AddItemButton size="small" :title="$t('invoices.createProductTitle')" @click="openProductForm(i)" />
                   </div>
                   <span v-if="item.product_id" class="stock-hint" :class="{ warn: exceedsStock(item) }">
                     {{ stockHint(item) }}
@@ -131,14 +131,14 @@
                       <span class="cl-amount">{{ formatQuantity(b.remaining) }} × {{ formatMoney(b.unit_cost) }}</span>
                       <span class="cl-date">{{ formatInvoiceDate(b.received_at) }}</span>
                     </div>
-                    <span v-if="costLinesFor(item.product_id).length === 0" class="muted">No stock</span>
+                    <span v-if="costLinesFor(item.product_id).length === 0" class="muted">{{ $t('invoices.noStock') }}</span>
                   </template>
                   <span v-else class="muted">—</span>
                 </td>
                 <td class="c-num">{{ formatMoney(lineSubtotal(item)) }}</td>
                 <td class="c-num strong">{{ formatMoney(lineTotal(item)) }}</td>
                 <td class="c-rm">
-                  <button type="button" class="remove-btn" title="Remove item" @click="removeItem(i)">
+                  <button type="button" class="remove-btn" :title="$t('invoices.removeItem')" @click="removeItem(i)">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                   </button>
                 </td>
@@ -158,7 +158,7 @@
           <div class="items-footer">
             <button type="button" class="add-item" @click="addItem">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Add item
+              {{ $t('invoices.addItem') }}
             </button>
             <FormMessage v-if="errors.items" :text="errors.items" />
           </div>
@@ -167,22 +167,22 @@
             block
             type="warning"
             style="margin-top: 10px"
-            text="Some lines exceed available stock. You can still try to save, but the sale will be rejected if stock is insufficient."
+            :text="$t('invoices.stockWarning')"
           />
         </section>
 
         <!-- Totals + submit -->
         <section class="footer-bar">
           <div class="totals">
-            <div class="total-row"><span>Subtotal</span><span>{{ formatMoney(totals.subtotal) }}</span></div>
-            <div class="total-row"><span>Tax</span><span>{{ formatMoney(totals.tax) }}</span></div>
-            <div class="total-row grand"><span>Grand total</span><span>{{ formatMoney(totals.grand) }}</span></div>
+            <div class="total-row"><span>{{ $t('invoices.subtotal') }}</span><span>{{ formatMoney(totals.subtotal) }}</span></div>
+            <div class="total-row"><span>{{ $t('invoices.tax') }}</span><span>{{ formatMoney(totals.tax) }}</span></div>
+            <div class="total-row grand"><span>{{ $t('invoices.grandTotal') }}</span><span>{{ formatMoney(totals.grand) }}</span></div>
           </div>
           <div class="actions">
-            <button class="btn-secondary" :disabled="submitting" @click="goBack">Cancel</button>
+            <button class="btn-secondary" :disabled="submitting" @click="goBack">{{ $t('common.cancel') }}</button>
             <button class="btn-primary" :disabled="submitting || !currentStore.is_active" @click="submit">
               <span v-if="submitting" class="spinner"></span>
-              {{ isEdit ? 'Save changes' : 'Create invoice' }}
+              {{ isEdit ? $t('invoices.saveChanges') : $t('invoices.createInvoice') }}
             </button>
           </div>
         </section>
@@ -207,10 +207,10 @@
 
     <ConfirmDialog
       v-if="showUnsavedWarning"
-      title="Discard changes?"
-      message="You have unsaved changes. If you leave now, they'll be lost."
-      confirm-text="Yes, discard"
-      cancel-text="Keep editing"
+      :title="$t('invoices.discardChangesTitle')"
+      :message="$t('invoices.discardChangesMessage')"
+      :confirm-text="$t('common.yesDiscard')"
+      :cancel-text="$t('common.keepEditing')"
       type="danger"
       @confirm="discardAndLeave"
       @cancel="keepEditing"
@@ -243,6 +243,7 @@ import { fetchProducts } from '@/features/products/services/productService'
 import { fetchTaxes } from '@/features/taxes/services/taxService'
 import { createSaleInvoice, updateSaleInvoice, fetchInvoice, fetchProductStocks, fetchInventoryBatches } from '@/features/invoices/services/invoiceService'
 import { takeInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
+import { t } from '@/i18n'
 import {
   paymentMethodOptions,
   paymentStatusOptions,
@@ -252,17 +253,17 @@ import {
   todayInputDate,
 } from '@/features/invoices/constants'
 
-const ITEM_COLUMNS = [
+const ITEM_COLUMNS = computed(() => [
   { key: 'idx',      label: '#' },
-  { key: 'product',  label: 'Product' },
-  { key: 'quantity', label: 'Qty' },
-  { key: 'price',    label: 'Sale price' },
-  { key: 'taxes',    label: 'Taxes' },
-  { key: 'cost',     label: 'Cost' },
-  { key: 'subtotal', label: 'Subtotal' },
-  { key: 'total',    label: 'Total' },
+  { key: 'product',  label: t('invoices.product') },
+  { key: 'quantity', label: t('invoices.qty') },
+  { key: 'price',    label: t('invoices.salePrice') },
+  { key: 'taxes',    label: t('invoices.taxes') },
+  { key: 'cost',     label: t('invoices.cost') },
+  { key: 'subtotal', label: t('invoices.subtotal') },
+  { key: 'total',    label: t('invoices.total') },
   { key: 'remove',   label: '' },
-]
+])
 const ITEM_COL_WIDTHS = [44, 270, 90, 120, 150, 168, 110, 110, 48]
 
 const router = useRouter()
@@ -351,7 +352,7 @@ const customerOptions = computed(() =>
     .map(({ customer, store }) => ({
       value: String(customer.party.id),
       label: customer.name,
-      sublabel: [store ? 'This store' : 'Business', customer.phone || customer.tax_code].filter(Boolean).join(' · '),
+      sublabel: [store ? t('invoices.thisStore') : t('invoices.business'), customer.phone || customer.tax_code].filter(Boolean).join(' · '),
     })),
 )
 
@@ -416,8 +417,8 @@ const costLinesFor = (productId) => {
 }
 
 const stockHint = (item) => {
-  if (exceedsStock(item)) return `Only ${formatQuantity(availableForProduct(item.product_id))} in stock`
-  return `In stock: ${formatQuantity(remainingAfterSale(item.product_id))}`
+  if (exceedsStock(item)) return t('invoices.onlyInStock', { qty: formatQuantity(availableForProduct(item.product_id)) })
+  return t('invoices.inStock', { qty: formatQuantity(remainingAfterSale(item.product_id)) })
 }
 
 const hasStockWarning = computed(() => items.value.some((it) => exceedsStock(it)))
@@ -426,18 +427,18 @@ const productOptions = computed(() =>
   products.value.map((p) => ({
     value: String(p.id),
     label: `${p.code} — ${p.name}`,
-    sublabel: [p.unit?.name, `In stock: ${formatQuantity(Math.max(0, remainingAfterSale(p.id)))}`].filter(Boolean).join(' · '),
+    sublabel: [p.unit?.name, t('invoices.inStock', { qty: formatQuantity(Math.max(0, remainingAfterSale(p.id))) })].filter(Boolean).join(' · '),
   })),
 )
 
-const taxName = (id) => activeTaxes.value.find((t) => String(t.id) === String(id))?.name || 'Tax'
+const taxName = (id) => activeTaxes.value.find((tx) => String(tx.id) === String(id))?.name || t('invoices.tax')
 
 const appliedTaxes = (item) =>
   Object.entries(item.taxes).filter(([, rate]) => rate !== '' && !Number.isNaN(Number(rate)))
 
 const taxSummary = (item) => {
   const applied = appliedTaxes(item)
-  if (applied.length === 0) return 'Add taxes'
+  if (applied.length === 0) return t('invoices.addTaxes')
   const [firstId, firstRate] = applied[0]
   const head = `${taxName(firstId)} ${firstRate}%`
   return applied.length > 1 ? `${head} +${applied.length - 1}` : head
@@ -463,8 +464,8 @@ const totals = computed(() => {
 const remaining = computed(() => round2(totals.value.grand - (Number(form.value.paid_amount) || 0)))
 const remainingLabel = computed(() =>
   remaining.value >= 0
-    ? `Remaining: ${formatMoney(remaining.value)}`
-    : `Overpaid by ${formatMoney(-remaining.value)}`,
+    ? t('invoices.remainingLabel', { amount: formatMoney(remaining.value) })
+    : t('invoices.overpaidBy', { amount: formatMoney(-remaining.value) }),
 )
 
 // On edit the paid amount is fixed (managed on the Payments page); the status/balance
@@ -632,22 +633,22 @@ const scrollToError = async () => {
 
 const validate = () => {
   errors.value = { party_id: '', invoice_date: '', items: '', paid_amount: '' }
-  if (!form.value.party_id) errors.value.party_id = 'Customer is required.'
-  if (!form.value.invoice_date) errors.value.invoice_date = 'Invoice date is required.'
+  if (!form.value.party_id) errors.value.party_id = t('invoices.customerRequired')
+  if (!form.value.invoice_date) errors.value.invoice_date = t('invoices.invoiceDateRequired')
 
   const valid = items.value.filter(
     (it) => it.product_id && Number(it.quantity) > 0 && Number(it.unit_price) >= 0,
   )
   if (valid.length === 0) {
-    errors.value.items = 'Add at least one item with a product, quantity and price.'
+    errors.value.items = t('invoices.noItemsDetailed')
   }
 
   if (!isEdit.value && form.value.payment_status === 'PARTIAL') {
     const amt = Number(form.value.paid_amount)
     if (!(amt > 0)) {
-      errors.value.paid_amount = 'Enter how much was paid.'
+      errors.value.paid_amount = t('invoices.enterAmountPaid')
     } else if (amt >= totals.value.grand) {
-      errors.value.paid_amount = 'Partial amount must be less than the grand total.'
+      errors.value.paid_amount = t('invoices.partialLessThanTotal')
     }
   }
 
@@ -684,10 +685,10 @@ const submit = async () => {
     let invoice
     if (isEdit.value) {
       invoice = await updateSaleInvoice({ id: invoiceId.value, input })
-      showToast(`Sale invoice ${invoice.code} updated.`, 'success')
+      showToast(t('invoices.saleUpdated', { code: invoice.code }), 'success')
     } else {
       invoice = await createSaleInvoice({ storeId: storeId.value, input })
-      showToast(`Sale invoice ${invoice.code} created.`, 'success')
+      showToast(t('invoices.saleCreated', { code: invoice.code }), 'success')
     }
     leaveConfirmed.value = true
     router.push('/sale-invoices')
