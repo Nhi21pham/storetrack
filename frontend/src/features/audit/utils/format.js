@@ -69,6 +69,9 @@ const buildParams = (log) => {
     m.invoiceType = localizedOr(`enums.invoiceType.${String(m.type).toUpperCase()}`, m.type).toLowerCase()
   }
   m.invoiceLabel = t(`auditMessages.invoiceLabel.${m.type || 'all'}`)
+  // Invoice exports are either the Excel list (.xlsx) or the PDF documents (.zip).
+  const isPdf = String(m.filename || '').toLowerCase().endsWith('.zip')
+  m.exportKind = t(`auditMessages.exportKind.${isPdf ? 'pdf' : 'list'}`)
   if (m.role) m.role = roleLabel(m.role)
   if (m.old_role) m.old_role = roleLabel(m.old_role)
   if (m.new_role) m.new_role = roleLabel(m.new_role)

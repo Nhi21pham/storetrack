@@ -84,7 +84,7 @@
     "created": "**đã tạo** hóa đơn {invoiceType} {code}",
     "updated": "**đã cập nhật** hóa đơn {invoiceType} {code}",
     "deleted": "**đã xóa** hóa đơn {invoiceType} {code}",
-    "exported_store": "**đã xuất** {invoiceLabel} của cửa hàng {store_name}"
+    "exported_store": "**đã xuất** {invoiceLabel} ({exportKind}) của cửa hàng {store_name}"
   },
   "payment": {
     "created": "**đã ghi nhận** một khoản thanh toán {amount}",
@@ -111,6 +111,10 @@
     "purchase": "hóa đơn mua",
     "sale": "hóa đơn bán",
     "all": "hóa đơn"
+  },
+  "exportKind": {
+    "list": "danh sách",
+    "pdf": "PDF"
   },
   "partyType": {
     "business": "doanh nghiệp",

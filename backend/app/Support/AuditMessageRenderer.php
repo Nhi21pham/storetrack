@@ -69,6 +69,8 @@ class AuditMessageRenderer
             $metadata['invoiceType'] = $this->lookup('audit.invoice_type.'.$type, (string) $type);
         }
         $metadata['invoiceLabel'] = __('audit.invoice_label.'.($type ?: 'all'));
+        $isPdf = str_ends_with(strtolower((string) ($metadata['filename'] ?? '')), '.zip');
+        $metadata['exportKind'] = __('audit.export_kind.'.($isPdf ? 'pdf' : 'list'));
 
         foreach (['role', 'old_role', 'new_role'] as $roleKey) {
             if (isset($metadata[$roleKey])) {

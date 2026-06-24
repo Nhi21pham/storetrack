@@ -122,7 +122,7 @@ return [
             'created' => 'Created :invoiceType invoice :code',
             'updated' => 'Updated :invoiceType invoice :code',
             'deleted' => 'Deleted :invoiceType invoice :code',
-            'exported_store' => 'Exported :invoiceLabel of store :store_name',
+            'exported_store' => 'Exported :invoiceLabel (:exportKind) of store :store_name',
         ],
         'payment' => [
             'created' => 'Recorded a payment of :amount',
@@ -151,6 +151,10 @@ return [
         'purchase' => 'purchase invoices',
         'sale' => 'sale invoices',
         'all' => 'invoices',
+    ],
+    'export_kind' => [
+        'list' => 'list',
+        'pdf' => 'PDF',
     ],
     'invoice_type' => [
         'purchase' => 'purchase',

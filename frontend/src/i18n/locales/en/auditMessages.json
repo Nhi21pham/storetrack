@@ -84,7 +84,7 @@
     "created": "**CREATED** {invoiceType} invoice {code}",
     "updated": "**UPDATED** {invoiceType} invoice {code}",
     "deleted": "**DELETED** {invoiceType} invoice {code}",
-    "exported_store": "**EXPORTED** {invoiceLabel} of store {store_name}"
+    "exported_store": "**EXPORTED** {invoiceLabel} ({exportKind}) of store {store_name}"
   },
   "payment": {
     "created": "**RECORDED** a payment of {amount}",
@@ -111,6 +111,10 @@
     "purchase": "purchase invoices",
     "sale": "sale invoices",
     "all": "invoices"
+  },
+  "exportKind": {
+    "list": "list",
+    "pdf": "PDF"
   },
   "partyType": {
     "business": "the business",

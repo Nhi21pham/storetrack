@@ -122,7 +122,7 @@ return [
             'created' => 'Đã tạo hóa đơn :invoiceType :code',
             'updated' => 'Đã cập nhật hóa đơn :invoiceType :code',
             'deleted' => 'Đã xóa hóa đơn :invoiceType :code',
-            'exported_store' => 'Đã xuất :invoiceLabel của cửa hàng :store_name',
+            'exported_store' => 'Đã xuất :invoiceLabel (:exportKind) của cửa hàng :store_name',
         ],
         'payment' => [
             'created' => 'Đã ghi nhận một khoản thanh toán :amount',
@@ -151,6 +151,10 @@ return [
         'purchase' => 'hóa đơn mua',
         'sale' => 'hóa đơn bán',
         'all' => 'hóa đơn',
+    ],
+    'export_kind' => [
+        'list' => 'danh sách',
+        'pdf' => 'PDF',
     ],
     'invoice_type' => [
         'purchase' => 'mua',
