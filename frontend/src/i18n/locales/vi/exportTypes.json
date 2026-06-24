@@ -1,0 +1,19 @@
+{
+  "invoiceList": "Danh sách hóa đơn",
+  "invoicePdf": "Hóa đơn PDF",
+  "customers": "Khách hàng",
+  "suppliers": "Nhà cung cấp",
+  "units": "Đơn vị tính",
+  "tags": "Thẻ",
+  "products": "Sản phẩm",
+  "categories": "Danh mục",
+  "banks": "Ngân hàng",
+  "bankAccounts": "Tài khoản ngân hàng",
+  "stockReport": "Báo cáo tồn kho",
+  "saleReport": "Báo cáo bán hàng",
+  "profitReport": "Báo cáo lợi nhuận",
+  "receivablesReport": "Báo cáo công nợ phải thu",
+  "payablesReport": "Báo cáo công nợ phải trả",
+  "topProductsReport": "Báo cáo sản phẩm bán chạy",
+  "auditLog": "Nhật ký hoạt động"
+}
