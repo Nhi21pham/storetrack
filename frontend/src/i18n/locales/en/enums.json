@@ -1,0 +1,53 @@
+{
+  "paymentMethod": {
+    "CASH": "Cash",
+    "CARD": "Card"
+  },
+  "paymentStatus": {
+    "UNPAID": "Unpaid",
+    "PARTIAL": "Partial",
+    "PAID": "Paid"
+  },
+  "invoiceType": {
+    "PURCHASE": "Purchase",
+    "SALE": "Sale"
+  },
+  "role": {
+    "OWNER": "Owner",
+    "ACCOUNTANT": "Accountant",
+    "STAFF": "Staff"
+  },
+  "auditAction": {
+    "created": "Created",
+    "updated": "Updated",
+    "deactivated": "Deactivated",
+    "reactivated": "Reactivated",
+    "assigned": "Assigned",
+    "role_changed": "Role Changed",
+    "removed": "Removed",
+    "deleted": "Deleted",
+    "invited": "Invited",
+    "cancelled": "Cancelled",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "exported": "Exported"
+  },
+  "objectType": {
+    "business": "Business",
+    "store": "Store",
+    "user": "User",
+    "invitation": "Invitation",
+    "supplier": "Supplier",
+    "customer": "Customer",
+    "bank": "Bank",
+    "bank_account": "Bank Account",
+    "unit": "Unit",
+    "product": "Product",
+    "product_category": "Category",
+    "tag": "Tag",
+    "tax": "Tax",
+    "invoice": "Invoice",
+    "payment": "Payment",
+    "report": "Report"
+  }
+}

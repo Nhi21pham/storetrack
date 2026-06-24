@@ -1,0 +1,21 @@
+{
+  "title": "Audit Log",
+  "subtitleBefore": "Activity history for",
+  "noStoreTitle": "No store selected",
+  "noStoreDesc": "Select a store from the top bar to view its activity.",
+  "noBusinessTitle": "No business selected",
+  "noBusinessDesc": "Select a business to view its activity.",
+  "inactiveStoreBanner": "This store is deactivated. Showing historical activity only.",
+  "searchPlaceholder": "Search activity...",
+  "loadingActivity": "Loading activity...",
+  "noActivityTitle": "No activity yet",
+  "noActivityDesc": "Actions performed will appear here.",
+  "noResultsTitle": "No results matching \"{query}\"",
+  "noResultsDesc": "Try a different keyword.",
+  "type": "Type",
+  "searchType": "Search type...",
+  "action": "Action",
+  "searchAction": "Search action...",
+  "system": "System",
+  "exportReady": "Audit log export ready."
+}

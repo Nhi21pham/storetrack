@@ -1,6 +1,6 @@
 <template>
   <div class="suggestions" @mousedown.prevent>
-    <div class="suggestions-header">Existing matches</div>
+    <div class="suggestions-header">{{ $t('banking.existingMatches') }}</div>
     <button
       v-for="item in items"
       :key="item.id"
@@ -10,7 +10,7 @@
     >
       <div class="row-main">
         <span class="short-name">{{ item.short_name }}</span>
-        <span v-if="!item.is_active" class="inactive-badge">Inactive</span>
+        <span v-if="!item.is_active" class="inactive-badge">{{ $t('common.inactive') }}</span>
       </div>
       <div class="row-sub">{{ item.full_name_vi }}</div>
       <div class="row-sub muted">{{ item.full_name_en }}</div>

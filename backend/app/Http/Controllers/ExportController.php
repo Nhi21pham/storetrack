@@ -379,6 +379,7 @@ class ExportController extends Controller
         return $clientId;
     }
 
+
     private function extractFilters(Request $request): array
     {
         return [

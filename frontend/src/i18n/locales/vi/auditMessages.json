@@ -1,0 +1,132 @@
+{
+  "unit": {
+    "created": "**đã tạo** đơn vị tính {name}",
+    "updated": "**đã cập nhật** đơn vị tính {name}",
+    "deactivated": "**đã ngừng hoạt động** đơn vị tính {name}",
+    "reactivated": "**đã kích hoạt lại** đơn vị tính {name}",
+    "deleted": "**đã xóa** đơn vị tính {name}",
+    "exported_store": "**đã xuất** đơn vị tính của cửa hàng {store_name}"
+  },
+  "tax": {
+    "created": "**đã tạo** thuế {name}",
+    "updated": "**đã cập nhật** thuế {name}",
+    "deactivated": "**đã ngừng hoạt động** thuế {name}",
+    "reactivated": "**đã kích hoạt lại** thuế {name}",
+    "deleted": "**đã xóa** thuế {name}"
+  },
+  "tag": {
+    "created": "**đã tạo** thẻ {name}",
+    "updated": "**đã cập nhật** thẻ {name}",
+    "deleted": "**đã xóa** thẻ {name}",
+    "value_added": "**đã thêm** giá trị {value} vào thẻ {name}",
+    "value_updated": "**đã cập nhật** giá trị {value} của thẻ {name}",
+    "value_deleted": "**đã xóa** giá trị {value} khỏi thẻ {tag_name}",
+    "exported_store": "**đã xuất** thẻ của cửa hàng {store_name}"
+  },
+  "store": {
+    "created": "**đã tạo** cửa hàng {store_name}",
+    "updated": "**đã cập nhật** cửa hàng {store_name}",
+    "deactivated": "**đã ngừng hoạt động** cửa hàng {store_name}",
+    "reactivated": "**đã kích hoạt lại** cửa hàng {store_name}",
+    "deleted": "**đã xóa** cửa hàng {store_name}",
+    "exported_store": "**đã xuất** nhật ký hoạt động của cửa hàng {store_name}"
+  },
+  "business": {
+    "created": "**đã tạo** doanh nghiệp {business_name}",
+    "updated": "**đã cập nhật** doanh nghiệp {business_name}",
+    "exported_business": "**đã xuất** nhật ký hoạt động của doanh nghiệp {business_name}"
+  },
+  "bank": {
+    "created": "**đã tạo** ngân hàng {short_name}",
+    "updated": "**đã cập nhật** ngân hàng {short_name}",
+    "deactivated": "**đã ngừng hoạt động** ngân hàng {short_name}",
+    "reactivated": "**đã kích hoạt lại** ngân hàng {short_name}",
+    "deleted": "**đã xóa** ngân hàng {short_name}",
+    "exported_business": "**đã xuất** ngân hàng của doanh nghiệp {business_name}"
+  },
+  "bank_account": {
+    "created": "**đã tạo** tài khoản ngân hàng {account_number} ({bank_short_name}) cho {partyType}",
+    "updated": "**đã cập nhật** tài khoản ngân hàng {account_number} ({bank_short_name})",
+    "deleted": "**đã xóa** tài khoản ngân hàng {account_number} ({bank_short_name})",
+    "exported_business": "**đã xuất** tài khoản ngân hàng của doanh nghiệp {business_name}"
+  },
+  "supplier": {
+    "created": "**đã tạo** nhà cung cấp {supplier_name}",
+    "updated": "**đã cập nhật** nhà cung cấp {supplier_name}",
+    "deleted": "**đã xóa** nhà cung cấp {supplier_name}",
+    "exported_store": "**đã xuất** nhà cung cấp của cửa hàng {store_name}",
+    "exported_business": "**đã xuất** nhà cung cấp của doanh nghiệp {business_name}"
+  },
+  "customer": {
+    "created": "**đã tạo** khách hàng {customer_name}",
+    "updated": "**đã cập nhật** khách hàng {customer_name}",
+    "deleted": "**đã xóa** khách hàng {customer_name}",
+    "exported_store": "**đã xuất** khách hàng của cửa hàng {store_name}",
+    "exported_business": "**đã xuất** khách hàng của doanh nghiệp {business_name}"
+  },
+  "product": {
+    "created": "**đã tạo** sản phẩm {code} - {name}",
+    "updated": "**đã cập nhật** sản phẩm {code} - {name}",
+    "deactivated": "**đã ngừng hoạt động** sản phẩm {code} - {name}",
+    "reactivated": "**đã kích hoạt lại** sản phẩm {code} - {name}",
+    "deleted": "**đã xóa** sản phẩm {code} - {name}",
+    "exported_store": "**đã xuất** sản phẩm của cửa hàng {store_name}"
+  },
+  "product_category": {
+    "created": "**đã tạo** danh mục sản phẩm {code} - {name}",
+    "updated": "**đã cập nhật** danh mục sản phẩm {code} - {name}",
+    "deactivated": "**đã ngừng hoạt động** danh mục sản phẩm {code} - {name}",
+    "reactivated": "**đã kích hoạt lại** danh mục sản phẩm {code} - {name}",
+    "deleted": "**đã xóa** danh mục sản phẩm {code} - {name}",
+    "exported_store": "**đã xuất** danh mục sản phẩm của cửa hàng {store_name}"
+  },
+  "invoice": {
+    "created": "**đã tạo** hóa đơn {invoiceType} {code}",
+    "updated": "**đã cập nhật** hóa đơn {invoiceType} {code}",
+    "deleted": "**đã xóa** hóa đơn {invoiceType} {code}",
+    "exported_store": "**đã xuất** {invoiceLabel} ({exportKind}) của cửa hàng {store_name}"
+  },
+  "payment": {
+    "created": "**đã ghi nhận** một khoản thanh toán {amount}",
+    "deleted": "**đã xóa** một khoản thanh toán {amount}",
+    "created_for": "**đã ghi nhận** khoản thanh toán {amount} cho hóa đơn {invoices}",
+    "deleted_for": "**đã xóa** khoản thanh toán {amount} khỏi hóa đơn {invoices}"
+  },
+  "report": {
+    "exported_store": "**đã xuất** báo cáo {report} của cửa hàng {store_name}",
+    "exported_business": "**đã xuất** báo cáo {report} của doanh nghiệp {business_name}"
+  },
+  "user": {
+    "assigned": "**đã phân công** {user_name} ({user_email}) làm {role}",
+    "role_changed": "**đã đổi** vai trò của {user_name} ({user_email}) từ {old_role} sang {new_role}",
+    "removed": "**đã gỡ** {user_name} ({user_email}) khỏi cửa hàng"
+  },
+  "invitation": {
+    "invited": "**đã mời** {invitee_email} làm {role}",
+    "cancelled": "**đã hủy** lời mời cho {invitee_email}",
+    "accepted": "**đã chấp nhận** lời mời với vai trò {role}",
+    "declined": "**đã từ chối** lời mời"
+  },
+  "invoiceLabel": {
+    "purchase": "hóa đơn mua",
+    "sale": "hóa đơn bán",
+    "all": "hóa đơn"
+  },
+  "exportKind": {
+    "list": "danh sách",
+    "pdf": "PDF"
+  },
+  "partyType": {
+    "business": "doanh nghiệp",
+    "customer": "một khách hàng",
+    "supplier": "một nhà cung cấp"
+  },
+  "report_label": {
+    "sale": "bán hàng",
+    "stock": "tồn kho",
+    "profit": "lợi nhuận",
+    "top products": "sản phẩm bán chạy",
+    "receivable": "công nợ phải thu",
+    "payable": "công nợ phải trả"
+  }
+}

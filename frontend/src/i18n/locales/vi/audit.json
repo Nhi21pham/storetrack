@@ -1,0 +1,21 @@
+{
+  "title": "Nhật ký hoạt động",
+  "subtitleBefore": "Lịch sử hoạt động của",
+  "noStoreTitle": "Chưa chọn cửa hàng",
+  "noStoreDesc": "Chọn một cửa hàng từ thanh trên cùng để xem hoạt động.",
+  "noBusinessTitle": "Chưa chọn doanh nghiệp",
+  "noBusinessDesc": "Chọn một doanh nghiệp để xem hoạt động.",
+  "inactiveStoreBanner": "Cửa hàng này đã ngừng hoạt động. Chỉ hiển thị hoạt động trong quá khứ.",
+  "searchPlaceholder": "Tìm hoạt động...",
+  "loadingActivity": "Đang tải hoạt động...",
+  "noActivityTitle": "Chưa có hoạt động",
+  "noActivityDesc": "Các thao tác đã thực hiện sẽ xuất hiện ở đây.",
+  "noResultsTitle": "Không có kết quả khớp \"{query}\"",
+  "noResultsDesc": "Thử từ khóa khác.",
+  "type": "Loại",
+  "searchType": "Tìm loại...",
+  "action": "Hành động",
+  "searchAction": "Tìm hành động...",
+  "system": "Hệ thống",
+  "exportReady": "Đã sẵn sàng xuất nhật ký hoạt động."
+}

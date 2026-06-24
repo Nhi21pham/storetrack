@@ -1,7 +1,7 @@
 <template>
   <div class="filters-row">
     <div class="filter-group">
-      <label>Date field</label>
+      <label>{{ $t('shared.dateField') }}</label>
       <select
         class="date-field-select"
         :value="dateField"
@@ -21,6 +21,7 @@
 
 <script setup>
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
+import { t } from '@/i18n'
 
 defineProps({
   startDate: { type: String, default: '' },
@@ -29,8 +30,8 @@ defineProps({
   fields: {
     type: Array,
     default: () => [
-      { value: 'created_at', label: 'Created' },
-      { value: 'updated_at', label: 'Updated' },
+      { value: 'created_at', label: t('common.createdAt') },
+      { value: 'updated_at', label: t('common.updatedAt') },
     ],
   },
 })

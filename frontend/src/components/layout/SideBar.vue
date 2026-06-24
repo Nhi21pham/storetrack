@@ -14,46 +14,46 @@
     <div class="sidebar-menu">
       <router-link to="/dashboard" class="menu-item" :class="{ active: isActive('/dashboard') }" @click="$emit('close')">
         <Icon name="dashboard" :size="18" />
-        Dashboard
+        {{ $t('nav.dashboard') }}
       </router-link>
 
       <router-link to="/business" class="menu-item" :class="{ active: isActive('/business') }" @click="$emit('close')">
         <Icon name="business" :size="18" />
-        Business
+        {{ $t('nav.business') }}
       </router-link>
 
       <router-link to="/stores" class="menu-item" :class="{ active: isActive('/stores') }" @click="$emit('close')">
         <Icon name="store" :size="18" />
-        Stores
+        {{ $t('nav.stores') }}
       </router-link>
 
       <router-link to="/users" class="menu-item" :class="{ active: isActive('/users') }" @click="$emit('close')">
         <Icon name="users" :size="18" />
-        Users
+        {{ $t('nav.users') }}
       </router-link>
 
       <router-link to="/audit-log" class="menu-item" :class="{ active: isActive('/audit-log') }" @click="$emit('close')">
         <Icon name="audit" :size="18" />
-        Audit Log
+        {{ $t('nav.auditLog') }}
       </router-link>
 
       <div class="menu-item has-sub" @mouseenter="reportsOpen = true" @mouseleave="reportsOpen = false">
         <div class="menu-item-inner">
           <Icon name="reports" :size="18" />
-          Reports
+          {{ $t('nav.reports') }}
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
         </div>
         <div class="submenu" :class="{ open: reportsOpen }">
-          <router-link to="/reports/sales" class="submenu-item" :class="{ active: isActive('/reports/sales') }" @click="$emit('close')">Sales Report</router-link>
-          <router-link to="/reports/stock" class="submenu-item" :class="{ active: isActive('/reports/stock') }" @click="$emit('close')">Stock Report</router-link>
-          <router-link to="/reports/profit" class="submenu-item" :class="{ active: isActive('/reports/profit') }" @click="$emit('close')">Profit Report</router-link>
-          <router-link to="/reports/top-products" class="submenu-item" :class="{ active: isActive('/reports/top-products') }" @click="$emit('close')">Top Products</router-link>
+          <router-link to="/reports/sales" class="submenu-item" :class="{ active: isActive('/reports/sales') }" @click="$emit('close')">{{ $t('nav.salesReport') }}</router-link>
+          <router-link to="/reports/stock" class="submenu-item" :class="{ active: isActive('/reports/stock') }" @click="$emit('close')">{{ $t('nav.stockReport') }}</router-link>
+          <router-link to="/reports/profit" class="submenu-item" :class="{ active: isActive('/reports/profit') }" @click="$emit('close')">{{ $t('nav.profitReport') }}</router-link>
+          <router-link to="/reports/top-products" class="submenu-item" :class="{ active: isActive('/reports/top-products') }" @click="$emit('close')">{{ $t('nav.topProducts') }}</router-link>
           <div class="submenu-item has-nested" :class="{ active: isActive('/reports/receivables') || isActive('/reports/payables') }" @mouseenter="openDebt" @mouseleave="closeDebtSoon">
-            <span class="submenu-item-label">Debt Report</span>
+            <span class="submenu-item-label">{{ $t('nav.debtReport') }}</span>
             <svg class="chevron-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
             <div class="submenu submenu-nested" :class="{ open: debtOpen }">
-              <router-link to="/reports/receivables" class="submenu-item" :class="{ active: isActive('/reports/receivables') }" @click="$emit('close')">Customer Debt</router-link>
-              <router-link to="/reports/payables" class="submenu-item" :class="{ active: isActive('/reports/payables') }" @click="$emit('close')">Supplier Debt</router-link>
+              <router-link to="/reports/receivables" class="submenu-item" :class="{ active: isActive('/reports/receivables') }" @click="$emit('close')">{{ $t('nav.customerDebt') }}</router-link>
+              <router-link to="/reports/payables" class="submenu-item" :class="{ active: isActive('/reports/payables') }" @click="$emit('close')">{{ $t('nav.supplierDebt') }}</router-link>
             </div>
           </div>
         </div>
@@ -61,36 +61,36 @@
 
       <router-link to="/products" class="menu-item" :class="{ active: isActive('/products') }" @click="$emit('close')">
         <Icon name="product" :size="18" />
-        Products
+        {{ $t('nav.products') }}
       </router-link>
 
       <router-link to="/customers" class="menu-item" :class="{ active: isActive('/customers') }" @click="$emit('close')">
         <Icon name="users" :size="18" />
-        Customers
+        {{ $t('nav.customers') }}
       </router-link>
 
       <router-link to="/suppliers" class="menu-item" :class="{ active: isActive('/suppliers') }" @click="$emit('close')">
         <Icon name="supplier" :size="18" />
-        Suppliers
+        {{ $t('nav.suppliers') }}
       </router-link>
 
       <div class="menu-item has-sub" :class="{ active: isActive('/purchase-invoices') || isActive('/sale-invoices') }" @mouseenter="invoicesOpen = true" @mouseleave="invoicesOpen = false">
         <div class="menu-item-inner">
           <Icon name="invoice" :size="18" />
-          Invoices
+          {{ $t('nav.invoices') }}
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
         </div>
         <div class="submenu" :class="{ open: invoicesOpen }">
           <router-link to="/purchase-invoices" class="submenu-item" :class="{ active: isActive('/purchase-invoices') }" @click="$emit('close')">
             <span class="submenu-item-label">
               <Icon name="purchase-invoice" :size="15" color="currentColor" />
-              Purchase Invoices
+              {{ $t('nav.purchaseInvoices') }}
             </span>
           </router-link>
           <router-link to="/sale-invoices" class="submenu-item" :class="{ active: isActive('/sale-invoices') }" @click="$emit('close')">
             <span class="submenu-item-label">
               <Icon name="sale-invoice" :size="15" color="currentColor" />
-              Sale Invoices
+              {{ $t('nav.saleInvoices') }}
             </span>
           </router-link>
         </div>
@@ -98,43 +98,43 @@
 
       <router-link to="/payments" class="menu-item" :class="{ active: isActive('/payments') }" @click="$emit('close')">
         <Icon name="payment" :size="18" />
-        Payments
+        {{ $t('nav.payments') }}
       </router-link>
 
       <div class="menu-item has-sub" @mouseenter="openOthers" @mouseleave="closeOthersSoon">
         <div class="menu-item-inner">
           <Icon name="more" :size="18" />
-          Others
+          {{ $t('nav.others') }}
           <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
         </div>
         <div class="submenu submenu-up" :class="{ open: othersOpen }">
           <div class="submenu-item has-nested" @mouseenter="openBanking" @mouseleave="closeBankingSoon">
             <span class="submenu-item-label">
               <Icon name="bank" :size="15" color="currentColor" />
-              Banking
+              {{ $t('nav.banking') }}
             </span>
             <svg class="chevron-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6"/></svg>
             <div class="submenu submenu-nested" :class="{ open: bankingOpen }">
-              <router-link to="/banking/banks" class="submenu-item" :class="{ active: isActive('/banking/banks') }" @click="$emit('close')">Banks</router-link>
-              <router-link to="/banking/bank-accounts" class="submenu-item" :class="{ active: isActive('/banking/bank-accounts') }" @click="$emit('close')">Bank Accounts</router-link>
+              <router-link to="/banking/banks" class="submenu-item" :class="{ active: isActive('/banking/banks') }" @click="$emit('close')">{{ $t('nav.banks') }}</router-link>
+              <router-link to="/banking/bank-accounts" class="submenu-item" :class="{ active: isActive('/banking/bank-accounts') }" @click="$emit('close')">{{ $t('nav.bankAccounts') }}</router-link>
             </div>
           </div>
           <router-link to="/units" class="submenu-item" :class="{ active: isActive('/units') }" @click="$emit('close')">
             <span class="submenu-item-label">
               <Icon name="unit" :size="15" color="currentColor" />
-              Units
+              {{ $t('nav.units') }}
             </span>
           </router-link>
           <router-link to="/product-categories" class="submenu-item" :class="{ active: isActive('/product-categories') }" @click="$emit('close')">
             <span class="submenu-item-label">
               <Icon name="category" :size="15" color="currentColor" />
-              Product Categories
+              {{ $t('nav.productCategories') }}
             </span>
           </router-link>
           <router-link to="/tags" class="submenu-item" :class="{ active: isActive('/tags') }" @click="$emit('close')">
             <span class="submenu-item-label">
               <Icon name="tag" :size="15" color="currentColor" />
-              Tags
+              {{ $t('nav.tags') }}
             </span>
           </router-link>
         </div>

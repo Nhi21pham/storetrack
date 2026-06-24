@@ -6,9 +6,9 @@
         v-model:endDate="endDate"
         @change="() => goToPage(1)"
       />
-      <button v-if="startDate || endDate" class="clear-dates" @click="clearDates">Clear dates</button>
+      <button v-if="startDate || endDate" class="clear-dates" @click="clearDates">{{ $t('shared.clearDates') }}</button>
       <div class="filters-spacer"></div>
-      <button class="refresh-btn" :disabled="loading || refreshing" title="Refresh" @click="refresh">
+      <button class="refresh-btn" :disabled="loading || refreshing" :title="$t('shared.refresh')" @click="refresh">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ spinning: refreshing }">
           <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
         </svg>
@@ -16,19 +16,19 @@
     </div>
 
     <div class="panel-body">
-      <div v-if="loading" class="state-row"><div class="spinner"></div><span>Loading history...</span></div>
+      <div v-if="loading" class="state-row"><div class="spinner"></div><span>{{ $t('shared.loadingHistory') }}</span></div>
       <div v-else-if="error" class="api-error">{{ error }}</div>
-      <div v-else-if="!rows.length" class="empty-state">No exports yet.</div>
+      <div v-else-if="!rows.length" class="empty-state">{{ $t('shared.noExportsYet') }}</div>
 
       <div v-else class="table-wrap">
         <table class="history-table">
           <thead>
             <tr>
-              <th class="file-col">File</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>By</th>
-              <th>When</th>
+              <th class="file-col">{{ $t('shared.file') }}</th>
+              <th>{{ $t('shared.type') }}</th>
+              <th>{{ $t('shared.status') }}</th>
+              <th>{{ $t('shared.by') }}</th>
+              <th>{{ $t('shared.when') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -67,6 +67,7 @@ import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { useExportHistory } from '@/composables/useExportHistory'
 import { exportTypeLabel, exportFormatLabel } from '@/utils/exportTypes'
 import { formatDateTime } from '@/utils/datetime'
+import { t } from '@/i18n'
 
 const props = defineProps({
   // 'store' | 'business' — which scope the exports were recorded against.
@@ -92,10 +93,10 @@ const onPerPage = (value) => {
 
 const statusInfo = (status) => {
   switch (status) {
-    case 'completed':  return { label: 'Completed', cls: 'done' }
-    case 'processing': return { label: 'Processing', cls: 'busy' }
-    case 'pending':    return { label: 'Preparing', cls: 'busy' }
-    case 'failed':     return { label: 'Failed', cls: 'bad' }
+    case 'completed':  return { label: t('shared.jobStatus.completed'), cls: 'done' }
+    case 'processing': return { label: t('shared.jobStatus.processing'), cls: 'busy' }
+    case 'pending':    return { label: t('shared.jobStatus.pending'), cls: 'busy' }
+    case 'failed':     return { label: t('shared.jobStatus.failed'), cls: 'bad' }
     default:           return { label: status, cls: 'busy' }
   }
 }

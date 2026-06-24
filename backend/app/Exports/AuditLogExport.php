@@ -3,7 +3,9 @@
 namespace App\Exports;
 
 use App\Models\AuditLog;
+use App\Support\AuditMessageRenderer;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 
 class AuditLogExport extends BaseExport
@@ -36,14 +38,14 @@ class AuditLogExport extends BaseExport
     {
         $columns = [];
         if ($this->includeStoreColumn) {
-            $columns[] = 'Store Name';
+            $columns[] = __('exports.col_store_name');
         }
-        $columns[] = 'Object';
-        $columns[] = 'Actor Name';
-        $columns[] = 'Actor Email';
-        $columns[] = 'Action';
-        $columns[] = 'Message';
-        $columns[] = 'Datetime';
+        $columns[] = __('exports.col_object');
+        $columns[] = __('exports.col_actor_name');
+        $columns[] = __('exports.col_actor_email');
+        $columns[] = __('exports.col_action');
+        $columns[] = __('exports.col_message');
+        $columns[] = __('exports.col_datetime');
 
         return $columns;
     }
@@ -62,14 +64,24 @@ class AuditLogExport extends BaseExport
         if ($this->includeStoreColumn) {
             $cells[] = $row->store_name ?? '';
         }
-        $cells[] = Str::headline((string) $row->object_type);
+        $cells[] = $this->objectLabel((string) $row->object_type);
         $cells[] = $row->actor_name ?? '';
         $cells[] = $row->actor_email ?? '';
-        $cells[] = Str::headline((string) $row->action);
-        $cells[] = (string) $row->message;
+        $cells[] = $this->actionLabel((string) $row->action);
+        $cells[] = app(AuditMessageRenderer::class)->render($row);
         $cells[] = optional($row->created_at)->format('Y-m-d H:i:s') ?? '';
 
         return $cells;
+    }
+
+    private function objectLabel(string $type): string
+    {
+        return Lang::has("audit.object.{$type}") ? __("audit.object.{$type}") : Str::headline($type);
+    }
+
+    private function actionLabel(string $action): string
+    {
+        return Lang::has("audit.action.{$action}") ? __("audit.action.{$action}") : Str::headline($action);
     }
 
     public function columnWidths(): array

@@ -56,9 +56,9 @@ class InvoiceDocumentRenderer
     private function partyLabel(?InvoiceTypeEnum $type): string
     {
         return match ($type) {
-            InvoiceTypeEnum::PURCHASE => 'Supplier',
-            InvoiceTypeEnum::SALE     => 'Customer',
-            default                   => 'Party',
+            InvoiceTypeEnum::PURCHASE => __('document.party_supplier'),
+            InvoiceTypeEnum::SALE     => __('document.party_customer'),
+            default                   => __('document.party'),
         };
     }
 }

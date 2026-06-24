@@ -13,9 +13,11 @@
 </template>
 
 <script setup>
+import { t } from '@/i18n'
+
 defineProps({
   modelValue: { type: String, default: '' },
-  placeholder: { type: String, default: 'Search...' }
+  placeholder: { type: String, default: () => t('common.searchPlaceholder') }
 })
 
 defineEmits(['update:modelValue'])

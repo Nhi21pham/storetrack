@@ -14,7 +14,7 @@
             <ToggleSwitch
               v-if="store.my_role === 'OWNER'"
               :model-value="store.is_active"
-              title="Click to toggle active status"
+              :title="$t('stores.toggleStatusTitle')"
               @change="$emit('toggle', store)"
             />
             <span v-else class="status-dot" :class="store.is_active ? 'active' : 'inactive'"></span>
@@ -41,22 +41,22 @@
     </div>
 
     <div v-if="store.my_role === 'OWNER'" class="card-actions">
-      <button class="action-btn" @click="$emit('edit', store)" title="Edit">
+      <button class="action-btn" @click="$emit('edit', store)" :title="$t('common.edit')">
         <Icon name="edit" :size="15" />
       </button>
-      <button class="action-btn danger" @click="$emit('delete', store)" title="Delete">
+      <button class="action-btn danger" @click="$emit('delete', store)" :title="$t('common.delete')">
         <Icon name="delete" :size="15" />
       </button>
     </div>
 
     <div v-else-if="store.my_role === 'ACCOUNTANT'" class="card-actions">
-      <button class="action-btn" @click="$emit('edit', store)" title="Edit">
+      <button class="action-btn" @click="$emit('edit', store)" :title="$t('common.edit')">
         <Icon name="edit" :size="15" />
       </button>
     </div>
 
     <div v-else class="card-role-badge">
-      <span class="member-tag">{{ store.my_role }}</span>
+      <span class="member-tag">{{ roleLabel(store.my_role) }}</span>
     </div>
   </div>
 </template>
@@ -64,6 +64,7 @@
 <script setup>
 import Icon from '@/components/common/Icon.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
+import { useI18n } from 'vue-i18n'
 
 defineProps({
   store: { type: Object, required: true },
@@ -71,8 +72,11 @@ defineProps({
 
 defineEmits(['edit', 'delete', 'toggle'])
 
-const ROLE_LABELS = { OWNER: 'Owner', ACCOUNTANT: 'Accountant', STAFF: 'Staff' }
-const roleLabel = (role) => ROLE_LABELS[role] ?? role
+const { t, te } = useI18n()
+const roleLabel = (role) => {
+  const key = `enums.role.${role}`
+  return te(key) ? t(key) : role
+}
 </script>
 
 <style scoped>

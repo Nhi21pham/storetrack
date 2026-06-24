@@ -1,19 +1,19 @@
 <template>
   <div class="column-selector" ref="rootEl">
-    <button type="button" class="cs-trigger" :class="{ open }" @click="open = !open" title="Choose columns">
+    <button type="button" class="cs-trigger" :class="{ open }" @click="open = !open" :title="$t('shared.chooseColumns')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"/>
         <line x1="3" y1="12" x2="21" y2="12"/>
         <line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
-      <span class="cs-label">Columns</span>
+      <span class="cs-label">{{ $t('shared.columns') }}</span>
       <span class="cs-count">{{ visibleCount }}/{{ togglableColumns.length }}</span>
     </button>
 
     <div v-if="open" class="cs-panel">
       <div class="cs-header">
-        <span>Show columns</span>
-        <button type="button" class="cs-reset" title="Reset to default" @click="resetColumns">
+        <span>{{ $t('shared.showColumns') }}</span>
+        <button type="button" class="cs-reset" :title="$t('shared.resetToDefault')" @click="resetColumns">
           <Icon name="undo" :size="13" :stroke-width="2.2" />
         </button>
       </div>
@@ -25,7 +25,7 @@
             :checked="allVisible"
             @click.stop="toggleAll"
           />
-          <span>Select all</span>
+          <span>{{ $t('shared.selectAll') }}</span>
         </li>
         <li class="cs-divider" role="separator"></li>
         <li
@@ -39,7 +39,7 @@
             :checked="isVisible(col.key)"
             @click.stop="toggleColumn(col.key)"
           />
-          <span>{{ col.label || col.key }}</span>
+          <span>{{ col.labelKey ? $t(col.labelKey) : (col.label || col.key) }}</span>
         </li>
       </ul>
     </div>

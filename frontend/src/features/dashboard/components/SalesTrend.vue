@@ -1,8 +1,8 @@
 <template>
   <div class="chart-card">
     <div class="chart-header">
-      <h3>Sales Trend</h3>
-      <p>Monthly revenue — last 12 months</p>
+      <h3>{{ $t('dashboard.salesTrendTitle') }}</h3>
+      <p>{{ $t('dashboard.salesTrendSubtitle') }}</p>
     </div>
     <svg viewBox="0 0 500 230" class="line-chart">
       <defs>
@@ -25,6 +25,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { activeDateLocale } from '@/i18n'
 
 const props = defineProps({
   points: { type: Array, required: true }, // [{ label, revenue }]
@@ -35,10 +36,19 @@ const W = 440, H = 180, X0 = 50, Y0 = 195
 const maxVal = computed(() => Math.max(...props.points.map((p) => Number(p.revenue) || 0), 1))
 const n = computed(() => props.points.length)
 
+// The backend sends English 3-letter month abbreviations (Jan…Dec); re-render
+// them as short month names in the active UI locale (e.g. vi-VN → "thg 5").
+const EN_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+const localizeMonth = (label) => {
+  const idx = EN_MONTHS.indexOf(String(label).trim().slice(0, 3).toLowerCase())
+  if (idx === -1) return label
+  return new Date(2000, idx, 1).toLocaleDateString(activeDateLocale(), { month: 'short' })
+}
+
 const coords = computed(() => props.points.map((p, i) => ({
   x: X0 + (n.value > 1 ? (i * W) / (n.value - 1) : W / 2),
   y: Y0 - ((Number(p.revenue) || 0) / maxVal.value) * H,
-  label: p.label,
+  label: localizeMonth(p.label),
 })))
 
 const linePath = computed(() => coords.value.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '))

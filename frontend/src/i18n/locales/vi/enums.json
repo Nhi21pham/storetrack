@@ -1,0 +1,53 @@
+{
+  "paymentMethod": {
+    "CASH": "Tiền mặt",
+    "CARD": "Thẻ"
+  },
+  "paymentStatus": {
+    "UNPAID": "Chưa trả",
+    "PARTIAL": "Trả một phần",
+    "PAID": "Đã trả"
+  },
+  "invoiceType": {
+    "PURCHASE": "Mua",
+    "SALE": "Bán"
+  },
+  "role": {
+    "OWNER": "Chủ sở hữu",
+    "ACCOUNTANT": "Kế toán",
+    "STAFF": "Nhân viên"
+  },
+  "auditAction": {
+    "created": "Đã tạo",
+    "updated": "Đã cập nhật",
+    "deactivated": "Đã ngừng hoạt động",
+    "reactivated": "Đã kích hoạt lại",
+    "assigned": "Đã phân công",
+    "role_changed": "Đã đổi vai trò",
+    "removed": "Đã gỡ",
+    "deleted": "Đã xóa",
+    "invited": "Đã mời",
+    "cancelled": "Đã hủy",
+    "accepted": "Đã chấp nhận",
+    "declined": "Đã từ chối",
+    "exported": "Đã xuất"
+  },
+  "objectType": {
+    "business": "Doanh nghiệp",
+    "store": "Cửa hàng",
+    "user": "Người dùng",
+    "invitation": "Lời mời",
+    "supplier": "Nhà cung cấp",
+    "customer": "Khách hàng",
+    "bank": "Ngân hàng",
+    "bank_account": "Tài khoản ngân hàng",
+    "unit": "Đơn vị tính",
+    "product": "Sản phẩm",
+    "product_category": "Danh mục",
+    "tag": "Thẻ",
+    "tax": "Thuế",
+    "invoice": "Hóa đơn",
+    "payment": "Thanh toán",
+    "report": "Báo cáo"
+  }
+}

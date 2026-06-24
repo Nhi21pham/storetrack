@@ -2,23 +2,23 @@
   <div class="filter-bar">
     <SearchBar
       :modelValue="searchQuery"
-      placeholder="Search by name, email, tax code, phone or address..."
+      :placeholder="$t('customers.searchPlaceholder')"
       @update:modelValue="$emit('update:searchQuery', $event)"
     />
     <div class="store-filter">
       <button
         :class="{ active: storeFilter === 'store' }"
         @click="$emit('update:storeFilter', 'store')"
-      >This store</button>
+      >{{ $t('customers.thisStore') }}</button>
       <button
         :class="{ active: storeFilter === 'all' }"
         @click="$emit('update:storeFilter', 'all')"
-      >All stores</button>
+      >{{ $t('customers.allStores') }}</button>
     </div>
     <slot name="extra" />
     <button v-if="hasSort" class="btn-clear-sort" @click="$emit('clearSort')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      Clear sort
+      {{ $t('shared.clearSort') }}
     </button>
     <ExportButton class="export-push" :exporting="exporting" :disabled="!canExport" @click="$emit('export')" />
   </div>

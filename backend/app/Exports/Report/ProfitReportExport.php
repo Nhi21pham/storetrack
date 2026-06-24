@@ -99,31 +99,31 @@ class ProfitReportExport extends BaseExport
     /** The STT column is always first, independent of the selectable columns. */
     private function orderNumberColumn(): array
     {
-        return ['heading' => 'No.', 'width' => 8, 'value' => fn (InvoiceProductCost $row) => ++$this->counter];
+        return ['heading' => __('exports.col_no'), 'width' => 8, 'value' => fn (InvoiceProductCost $row) => ++$this->counter];
     }
 
     /** The Store column is added for consolidated business exports, after the STT column. */
     private function storeColumn(): array
     {
-        return ['heading' => 'Store', 'width' => 24, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->invoice?->store?->name ?? '')];
+        return ['heading' => __('exports.col_store'), 'width' => 24, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->invoice?->store?->name ?? '')];
     }
 
     private function columnDefinitions(): array
     {
         return [
-            'product_name'          => ['heading' => 'Product',           'width' => 28, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->product?->name ?? $row->invoiceProduct?->product_name ?? '')],
-            'product_code'          => ['heading' => 'Code',              'width' => 16, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->product?->code ?? '')],
-            'tags'                  => ['heading' => 'Tags',              'width' => 30, 'value' => fn (InvoiceProductCost $row) => $this->formatTags($row)],
-            'purchase_invoice_code' => ['heading' => 'Purchase Invoice',  'width' => 18, 'value' => fn (InvoiceProductCost $row) => (string) ($row->batch?->sourceInvoice?->code ?? '')],
-            'purchase_date'         => ['heading' => 'Purchase Date',     'width' => 16, 'value' => fn (InvoiceProductCost $row) => optional($row->batch?->received_at)->format('Y-m-d') ?? ''],
-            'invoice_code'          => ['heading' => 'Sale Invoice',      'width' => 18, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->invoice?->code ?? '')],
-            'invoice_date'          => ['heading' => 'Sale Date',         'width' => 16, 'value' => fn (InvoiceProductCost $row) => optional($row->invoiceProduct?->invoice?->invoice_date)->format('Y-m-d') ?? ''],
-            'quantity'              => ['heading' => 'Qty Sold',          'width' => 14, 'value' => fn (InvoiceProductCost $row) => (float) $row->quantity,        'total' => fn () => $this->totalQty],
-            'unit_cost'             => ['heading' => 'Cost / Unit',       'width' => 16, 'value' => fn (InvoiceProductCost $row) => (float) $row->unit_cost],
-            'unit_price'            => ['heading' => 'Sale Price / Unit', 'width' => 18, 'value' => fn (InvoiceProductCost $row) => (float) ($row->invoiceProduct?->unit_price ?? 0)],
-            'cost'                  => ['heading' => 'Cost',              'width' => 18, 'value' => fn (InvoiceProductCost $row) => $this->cost($row),    'total' => fn () => round($this->totalCost, 2)],
-            'revenue'               => ['heading' => 'Revenue',           'width' => 18, 'value' => fn (InvoiceProductCost $row) => $this->revenue($row), 'total' => fn () => round($this->totalRevenue, 2)],
-            'profit'                => ['heading' => 'Profit',            'width' => 18, 'value' => fn (InvoiceProductCost $row) => round($this->revenue($row) - $this->cost($row), 2), 'total' => fn () => round($this->totalProfit, 2)],
+            'product_name'          => ['heading' => __('exports.col_product'),           'width' => 28, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->product?->name ?? $row->invoiceProduct?->product_name ?? '')],
+            'product_code'          => ['heading' => __('exports.col_code'),              'width' => 16, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->product?->code ?? '')],
+            'tags'                  => ['heading' => __('exports.col_tags'),              'width' => 30, 'value' => fn (InvoiceProductCost $row) => $this->formatTags($row)],
+            'purchase_invoice_code' => ['heading' => __('exports.col_purchase_invoice'),  'width' => 18, 'value' => fn (InvoiceProductCost $row) => (string) ($row->batch?->sourceInvoice?->code ?? '')],
+            'purchase_date'         => ['heading' => __('exports.col_purchase_date'),     'width' => 16, 'value' => fn (InvoiceProductCost $row) => optional($row->batch?->received_at)->format('Y-m-d') ?? ''],
+            'invoice_code'          => ['heading' => __('exports.col_sale_invoice'),      'width' => 18, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->invoice?->code ?? '')],
+            'invoice_date'          => ['heading' => __('exports.col_sale_date'),         'width' => 16, 'value' => fn (InvoiceProductCost $row) => optional($row->invoiceProduct?->invoice?->invoice_date)->format('Y-m-d') ?? ''],
+            'quantity'              => ['heading' => __('exports.col_qty_sold'),          'width' => 14, 'value' => fn (InvoiceProductCost $row) => (float) $row->quantity,        'total' => fn () => $this->totalQty],
+            'unit_cost'             => ['heading' => __('exports.col_cost_per_unit'),       'width' => 16, 'value' => fn (InvoiceProductCost $row) => (float) $row->unit_cost],
+            'unit_price'            => ['heading' => __('exports.col_sale_price_per_unit'), 'width' => 18, 'value' => fn (InvoiceProductCost $row) => (float) ($row->invoiceProduct?->unit_price ?? 0)],
+            'cost'                  => ['heading' => __('exports.col_cost'),              'width' => 18, 'value' => fn (InvoiceProductCost $row) => $this->cost($row),    'total' => fn () => round($this->totalCost, 2)],
+            'revenue'               => ['heading' => __('exports.col_revenue'),           'width' => 18, 'value' => fn (InvoiceProductCost $row) => $this->revenue($row), 'total' => fn () => round($this->totalRevenue, 2)],
+            'profit'                => ['heading' => __('exports.col_profit'),            'width' => 18, 'value' => fn (InvoiceProductCost $row) => round($this->revenue($row) - $this->cost($row), 2), 'total' => fn () => round($this->totalProfit, 2)],
         ];
     }
 
@@ -145,7 +145,7 @@ class ProfitReportExport extends BaseExport
         );
 
         if ($row !== [] && ($row[0] === '' || $row[0] === null)) {
-            $row[0] = 'TOTAL';
+            $row[0] = __('exports.total');
         }
 
         return $row;

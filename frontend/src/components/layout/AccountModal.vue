@@ -2,9 +2,9 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>Account Information</h2>
+        <h2>{{ $t('account.title') }}</h2>
         <button class="edit-btn" @click="handleCancel">
-          {{ editing ? 'Cancel' : 'Edit' }}
+          {{ editing ? $t('common.cancel') : $t('common.edit') }}
         </button>
       </div>
 
@@ -18,13 +18,13 @@
       </div>
 
       <div class="field">
-        <label>Username</label>
-        <input v-if="editing" v-model="form.name" type="text" placeholder="Enter username" />
+        <label>{{ $t('account.username') }}</label>
+        <input v-if="editing" v-model="form.name" type="text" :placeholder="$t('account.enterUsername')" />
         <p v-else class="field-value">{{ form.name }}</p>
       </div>
 
       <div class="field">
-        <label>Email</label>
+        <label>{{ $t('account.email') }}</label>
         <p class="field-value muted">{{ form.email }}</p>
       </div>
 
@@ -32,19 +32,19 @@
       <p v-if="success" class="success">{{ success }}</p>
 
       <div class="modal-actions">
-        <button class="btn-cancel" @click="handleClickOutside">Close</button>
+        <button class="btn-cancel" @click="handleClickOutside">{{ $t('common.close') }}</button>
         <button v-if="editing" class="btn-ok" :disabled="loading" @click="handleSave">
-          {{ loading ? 'Saving...' : 'Save Changes' }}
+          {{ loading ? $t('account.saving') : $t('account.saveChanges') }}
         </button>
       </div>
     </div>
   </div>
   <ConfirmDialog
     v-if="showConfirm"
-    title="Unsaved Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirm-text="Yes, discard"
-    cancel-text="Keep editing"
+    :title="$t('account.unsavedTitle')"
+    :message="$t('account.unsavedMessage')"
+    :confirm-text="$t('account.discard')"
+    :cancel-text="$t('account.keepEditing')"
     @confirm="onConfirmDiscard"
     @cancel="showConfirm = false"
   />
@@ -54,6 +54,8 @@
 import { ref, onMounted } from 'vue'
 import { graphql } from '@/api'
 import { validators, validate } from '@/utils/validators'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 
 const emit = defineEmits(['close', 'updated'])
@@ -83,8 +85,8 @@ onMounted(async () => {
     form.value.name = data.me.name
     form.value.email = data.me.email
     originalUser.value = data.me  
-  } catch (err) {
-    error.value = 'Failed to load user info'
+  } catch {
+    error.value = t('account.loadFailed')
   }
 })
 
@@ -128,12 +130,12 @@ const handleSave = async () => {
     localStorage.setItem('user', JSON.stringify(updatedUser))
     originalUser.value = updatedUser
 
-    success.value = 'Profile updated successfully!'
+    success.value = t('account.updateSuccess')
     editing.value = false
     emit('updated', updatedUser)
     setTimeout(() => { success.value = '' }, 2000)
   } catch (err) {
-    error.value = err.message || 'Failed to update profile'
+    error.value = translateError(err)
   } finally {
     loading.value = false
   }

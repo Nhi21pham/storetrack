@@ -78,22 +78,22 @@ class StockReportExport extends BaseExport
     /** The Store column is prepended for consolidated business exports, ahead of the selectable columns. */
     private function storeColumn(): array
     {
-        return ['heading' => 'Store', 'width' => 24, 'value' => fn (InventoryBatch $row) => (string) ($row->store?->name ?? '')];
+        return ['heading' => __('exports.col_store'), 'width' => 24, 'value' => fn (InventoryBatch $row) => (string) ($row->store?->name ?? '')];
     }
 
     private function columnDefinitions(): array
     {
         return [
-            'product_name'       => ['heading' => 'Product',          'width' => 28, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->name ?? '')],
-            'product_code'       => ['heading' => 'Code',             'width' => 16, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->code ?? '')],
-            'tags'               => ['heading' => 'Tags',             'width' => 30, 'value' => fn (InventoryBatch $row) => $this->formatTags($row)],
-            'supplier_name'      => ['heading' => 'Supplier',         'width' => 26, 'value' => fn (InventoryBatch $row) => (string) ($row->sourceInvoice?->party_name ?? '')],
-            'invoice_code'       => ['heading' => 'Purchase Invoice', 'width' => 18, 'value' => fn (InventoryBatch $row) => (string) ($row->sourceInvoice?->code ?? '')],
-            'purchase_date'      => ['heading' => 'Purchase Date',    'width' => 16, 'value' => fn (InventoryBatch $row) => optional($row->received_at)->format('Y-m-d') ?? ''],
-            'quantity_received'  => ['heading' => 'Purchased',        'width' => 14, 'value' => fn (InventoryBatch $row) => (float) $row->quantity_received,                                  'total' => fn () => $this->totalPurchased],
-            'quantity_remaining' => ['heading' => 'In Stock',        'width' => 14, 'value' => fn (InventoryBatch $row) => (float) $row->quantity_remaining,                                 'total' => fn () => $this->totalRemaining],
-            'unit_cost'          => ['heading' => 'Cost / Unit',      'width' => 16, 'value' => fn (InventoryBatch $row) => (float) $row->unit_cost],
-            'total_cost'         => ['heading' => 'Total Cost',       'width' => 18, 'value' => fn (InventoryBatch $row) => round((float) $row->quantity_received * (float) $row->unit_cost, 2), 'total' => fn () => round($this->totalCost, 2)],
+            'product_name'       => ['heading' => __('exports.col_product'),          'width' => 28, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->name ?? '')],
+            'product_code'       => ['heading' => __('exports.col_code'),             'width' => 16, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->code ?? '')],
+            'tags'               => ['heading' => __('exports.col_tags'),             'width' => 30, 'value' => fn (InventoryBatch $row) => $this->formatTags($row)],
+            'supplier_name'      => ['heading' => __('exports.col_supplier'),         'width' => 26, 'value' => fn (InventoryBatch $row) => (string) ($row->sourceInvoice?->party_name ?? '')],
+            'invoice_code'       => ['heading' => __('exports.col_purchase_invoice'), 'width' => 18, 'value' => fn (InventoryBatch $row) => (string) ($row->sourceInvoice?->code ?? '')],
+            'purchase_date'      => ['heading' => __('exports.col_purchase_date'),    'width' => 16, 'value' => fn (InventoryBatch $row) => optional($row->received_at)->format('Y-m-d') ?? ''],
+            'quantity_received'  => ['heading' => __('exports.col_purchased'),        'width' => 14, 'value' => fn (InventoryBatch $row) => (float) $row->quantity_received,                                  'total' => fn () => $this->totalPurchased],
+            'quantity_remaining' => ['heading' => __('exports.col_in_stock'),        'width' => 14, 'value' => fn (InventoryBatch $row) => (float) $row->quantity_remaining,                                 'total' => fn () => $this->totalRemaining],
+            'unit_cost'          => ['heading' => __('exports.col_cost_per_unit'),      'width' => 16, 'value' => fn (InventoryBatch $row) => (float) $row->unit_cost],
+            'total_cost'         => ['heading' => __('exports.col_total_cost'),       'width' => 18, 'value' => fn (InventoryBatch $row) => round((float) $row->quantity_received * (float) $row->unit_cost, 2), 'total' => fn () => round($this->totalCost, 2)],
         ];
     }
 
@@ -115,7 +115,7 @@ class StockReportExport extends BaseExport
         );
 
         if ($row !== [] && ($row[0] === '' || $row[0] === null)) {
-            $row[0] = 'TOTAL';
+            $row[0] = __('exports.total');
         }
 
         return $row;

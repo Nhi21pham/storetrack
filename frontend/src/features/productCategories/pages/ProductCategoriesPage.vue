@@ -1,31 +1,31 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Product Categories" subtitle="Group products and services. System categories cannot be edited or deleted.">
+    <PageHeader :title="$t('productCategories.title')" :subtitle="$t('productCategories.subtitle')">
       <template v-if="currentBusiness && currentStore" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Category
+          {{ $t('productCategories.newCategory') }}
         </button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentBusiness"
-      title="No business found"
-      description="You need to create or select a business before managing categories."
+      :title="$t('shared.noBusinessTitle')"
+      :description="$t('productCategories.noBusinessDesc')"
     />
 
     <EmptyState
       v-else-if="!currentStore"
-      title="No store selected"
-      description="Select a store to manage categories."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('productCategories.noStoreDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by code or name..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('productCategories.searchPlaceholder')" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
@@ -53,12 +53,12 @@
         @delete="requestBulk('delete')"
       />
 
-      <LoadingState v-if="loading">Loading categories...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('productCategories.loadingCategories') }}</LoadingState>
 
       <EmptyState
         v-else-if="categories.length === 0"
-        title="No categories yet"
-        description="Add your first category to get started."
+        :title="$t('productCategories.noCategoriesTitle')"
+        :description="$t('productCategories.noCategoriesDesc')"
       />
 
       <div v-else class="table-wrap">
@@ -68,25 +68,25 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all on this page"
+              :title="$t('productCategories.selectAllPage')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="$t(c.labelKey)"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
           <template #filter-status>
             <SearchableSelect
               :modelValue="statusFilter"
-              :options="STATUS_OPTIONS"
-              all-label="(All)"
-              search-placeholder="Filter status..."
+              :options="statusOptions()"
+              :all-label="$t('shared.allParen')"
+              :search-placeholder="$t('shared.filterStatus')"
               teleport
               @update:modelValue="statusFilter = $event"
             />
@@ -94,7 +94,7 @@
 
           <tr v-if="filteredCategories.length === 0">
             <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
-              No categories match the current filters.
+              {{ $t('shared.noResults') }}
             </td>
           </tr>
           <tr v-for="(category, idx) in paginatedCategories" :key="category.id" :class="{ inactive: !category.is_active, system: category.is_system }">
@@ -109,7 +109,7 @@
             <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ category.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailCategory = category">{{ displayCategoryName(category) }}</button>
-              <span v-if="category.is_system" class="system-badge">System</span>
+              <span v-if="category.is_system" class="system-badge">{{ $t('productCategories.systemBadge') }}</span>
             </td>
             <td v-if="columnVisibility.isVisible('description')">
               <span v-if="category.description" class="truncate" :title="category.description">{{ category.description }}</span>
@@ -119,7 +119,7 @@
               <ToggleSwitch
                 :model-value="category.is_active"
                 :disabled="category.is_system"
-                :title="category.is_system ? 'System categories are always active' : (category.is_active ? 'Click to deactivate' : 'Click to activate')"
+                :title="category.is_system ? $t('productCategories.systemAlwaysActive') : (category.is_active ? $t('shared.clickToDeactivate') : $t('shared.clickToActivate'))"
                 @change="onToggleActive(category)"
               />
             </td>
@@ -127,14 +127,14 @@
             <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(category.updated_at) }}</td>
             <td class="actions-col">
               <template v-if="!category.is_system">
-                <button class="action-btn" @click="openEdit(category)" title="Edit">
+                <button class="action-btn" @click="openEdit(category)" :title="$t('common.edit')">
                   <Icon name="edit" :size="14" />
                 </button>
-                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(category)" title="Delete">
+                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(category)" :title="$t('common.delete')">
                   <Icon name="delete" :size="14" />
                 </button>
               </template>
-              <span v-else class="locked-label" title="System categories cannot be edited or deleted">Locked</span>
+              <span v-else class="locked-label" :title="$t('productCategories.lockedTitle')">{{ $t('productCategories.locked') }}</span>
             </td>
           </tr>
         </ResizableTable>
@@ -169,10 +169,10 @@
 
     <ConfirmDialog
       v-if="deleteTarget"
-      :title="`Delete ${deleteTarget.code} - ${displayCategoryName(deleteTarget)}?`"
-      message="This will permanently remove the category."
-      confirm-text="Delete"
-      cancel-text="Cancel"
+      :title="$t('productCategories.deleteTitle', { code: deleteTarget.code, name: displayCategoryName(deleteTarget) })"
+      :message="$t('productCategories.deleteMessage')"
+      :confirm-text="$t('common.delete')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDelete"
       @cancel="deleteTarget = null"
     />
@@ -182,7 +182,7 @@
       :title="confirmConfig.title"
       :message="confirmConfig.message"
       :confirm-text="confirmConfig.confirmText"
-      cancel-text="Cancel"
+      :cancel-text="$t('common.cancel')"
       :type="confirmConfig.type"
       @confirm="confirmBulk"
       @cancel="cancelBulk"
@@ -190,22 +190,22 @@
 
     <ConfirmDialog
       v-if="deactivateTarget"
-      :title="`Category is in use`"
-      :message="`${deactivateTarget.code} - ${displayCategoryName(deactivateTarget)} is referenced by existing products and cannot be deleted. Deactivate it instead?`"
-      confirm-text="Deactivate"
-      cancel-text="Cancel"
+      :title="$t('productCategories.inUseTitle')"
+      :message="$t('productCategories.inUseMessage', { code: deactivateTarget.code, name: displayCategoryName(deactivateTarget) })"
+      :confirm-text="$t('common.deactivate')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDeactivate"
       @cancel="deactivateTarget = null"
     />
 
     <ConfirmDialog
       v-if="togglingCategory"
-      :title="togglingCategory.is_active ? 'Deactivate Category' : 'Reactivate Category'"
+      :title="togglingCategory.is_active ? $t('productCategories.toggleDeactivateTitle') : $t('productCategories.toggleReactivateTitle')"
       :message="togglingCategory.is_active
-        ? `Are you sure you want to deactivate '${displayCategoryName(togglingCategory)}'? Existing products keep their category, but it won't appear in the picker for new products.`
-        : `Are you sure you want to reactivate '${displayCategoryName(togglingCategory)}'?`"
-      :confirm-text="togglingCategory.is_active ? 'Yes, deactivate' : 'Yes, reactivate'"
-      cancel-text="Cancel"
+        ? $t('productCategories.toggleDeactivateMessage', { name: displayCategoryName(togglingCategory) })
+        : $t('productCategories.toggleReactivateMessage', { name: displayCategoryName(togglingCategory) })"
+      :confirm-text="togglingCategory.is_active ? $t('productCategories.toggleDeactivateConfirm') : $t('productCategories.toggleReactivateConfirm')"
+      :cancel-text="$t('common.cancel')"
       :type="togglingCategory.is_active ? 'warning' : 'success'"
       @confirm="handleToggle"
       @cancel="togglingCategory = null"
@@ -251,12 +251,14 @@ import {
 import {
   PRODUCT_CATEGORY_COLUMNS,
   PRODUCT_CATEGORY_INITIAL_COL_WIDTHS,
-  STATUS_OPTIONS,
+  statusOptions,
   displayCategoryName,
 } from '@/features/productCategories/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'product_categories',
@@ -367,12 +369,12 @@ const { exporting, run: runExport } = useExport({
     return startProductCategoryExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `product-categories-${id}.xlsx`,
-  onSuccess: () => showToast('Product category export ready.', 'success'),
+  onSuccess: () => showToast(t('productCategories.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
-  selectedIds, clearSelection, reload: () => load(), noun: 'category',
+  selectedIds, clearSelection, reload: () => load(), nounKey: 'category',
   setActive: (id, isActive) => updateProductCategory({ id, input: { is_active: isActive } }),
   remove: (id) => deleteProductCategory({ id }),
 })
@@ -437,7 +439,7 @@ const performDelete = async () => {
     if (err.code === ErrorCode.PRODUCT_CATEGORY_IN_USE) {
       deactivateTarget.value = category
     } else {
-      alert(err.message)
+      alert(translateError(err))
     }
   }
 }
@@ -449,7 +451,7 @@ const performDeactivate = async () => {
     await updateProductCategory({ id: category.id, input: { is_active: false } })
     await load()
   } catch (err) {
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 
@@ -469,7 +471,7 @@ const handleToggle = async () => {
     await updateProductCategory({ id: category.id, input: { is_active: nextValue } })
   } catch (err) {
     category.is_active = previous
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 </script>

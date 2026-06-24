@@ -19,8 +19,8 @@ class ExportBankAccountJob extends BaseExportJob
         [$user, $title, $query] = $this->resolveScope($export);
 
         $metaLines = [
-            'Exported by '.$user->name.' ('.$user->email.')',
-            'Date exported: '.now()->format('Y-m-d H:i:s'),
+            __('exports.exported_by', ['name' => $user->name, 'email' => $user->email]),
+            __('exports.date_exported', ['date' => now()->format('Y-m-d H:i:s')]),
         ];
 
         $filters = $export->metadata['filters'] ?? [];
@@ -79,7 +79,7 @@ class ExportBankAccountJob extends BaseExportJob
         $ids = isset($filters['ids']) && is_array($filters['ids']) ? $filters['ids'] : null;
 
         $businessName = $metadata['scope_name'] ?? (Business::find($businessId)?->name ?? '');
-        $title = 'Bank accounts of business '.$businessName;
+        $title = __('exports.of_business', ['label' => __('exports.label_bank_accounts'), 'name' => $businessName]);
 
         $query = app(BankAccountRepository::class)->listQuery($businessId, $search, $ids);
 

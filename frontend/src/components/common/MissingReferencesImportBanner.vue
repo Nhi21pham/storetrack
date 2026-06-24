@@ -13,6 +13,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { t } from '@/i18n'
 import ReferenceChipsBanner from '@/components/common/ReferenceChipsBanner.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import ProductCategoryFormModal from '@/features/productCategories/components/ProductCategoryFormModal.vue'
@@ -33,11 +34,11 @@ const props = defineProps({
 // column whose error this clears; `multiValue` cells (e.g. Tags) pack several
 // references, so we can't optimistically clear by cell value and just revalidate.
 const REF_TYPES = {
-  bank:      { label: 'Banks',      component: BankFormModal,            column: 'Bank' },
-  category:  { label: 'Categories', component: ProductCategoryFormModal, column: 'Category' },
-  unit:      { label: 'Units',      component: UnitFormModal,            column: 'Unit' },
-  tag:       { label: 'Tags',       component: TagFormModal,             column: 'Tags', multiValue: true },
-  tag_value: { label: 'Tag values', component: TagFormModal,             column: 'Tags', multiValue: true },
+  bank:      { labelKey: 'shared.refTypes.bank',     component: BankFormModal,            column: 'Bank' },
+  category:  { labelKey: 'shared.refTypes.category', component: ProductCategoryFormModal, column: 'Category' },
+  unit:      { labelKey: 'shared.refTypes.unit',     component: UnitFormModal,            column: 'Unit' },
+  tag:       { labelKey: 'shared.refTypes.tag',      component: TagFormModal,             column: 'Tags', multiValue: true },
+  tag_value: { labelKey: 'shared.refTypes.tagValue', component: TagFormModal,             column: 'Tags', multiValue: true },
 }
 const TYPE_ORDER = ['bank', 'category', 'unit', 'tag', 'tag_value']
 
@@ -60,7 +61,7 @@ const refsByType = computed(() => {
 // the create form is prefilled with; tag/tag_value chips key off both.
 const groups = computed(() =>
   TYPE_ORDER
-    .map((type) => ({ type, label: REF_TYPES[type].label, chips: buildChips(type, refsByType.value[type]) }))
+    .map((type) => ({ type, label: t(REF_TYPES[type].labelKey), chips: buildChips(type, refsByType.value[type]) }))
     .filter((group) => group.chips.length > 0),
 )
 

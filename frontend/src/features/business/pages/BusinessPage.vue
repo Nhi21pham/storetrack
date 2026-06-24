@@ -1,29 +1,29 @@
 <template>
   <PageContainer :maxWidth="900">
-    <PageHeader title="My Businesses" subtitle="Manage your businesses and their information.">
+    <PageHeader :title="$t('business.title')" :subtitle="$t('business.subtitle')">
       <template #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Business
+          {{ $t('business.newBusiness') }}
         </button>
       </template>
     </PageHeader>
 
-    <SearchBar v-model="searchQuery" placeholder="Search businesses..." />
+    <SearchBar v-model="searchQuery" :placeholder="$t('business.searchPlaceholder')" />
 
-    <LoadingState v-if="loading">Loading businesses...</LoadingState>
+    <LoadingState v-if="loading">{{ $t('business.loadingBusinesses') }}</LoadingState>
 
     <EmptyState
       v-else-if="filteredBusinesses.length === 0 && searchQuery.trim()"
-      :description="`No businesses matching &quot;${searchQuery}&quot;`"
+      :description="$t('business.noBusinessesMatching', { query: searchQuery })"
     />
 
     <EmptyState
       v-else-if="businesses.length === 0"
-      title="No businesses yet"
-      description="You don't have any businesses yet. Create one or ask to be invited to a store."
+      :title="$t('business.noBusinessesTitle')"
+      :description="$t('business.noBusinessesDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -52,10 +52,10 @@
 
     <ConfirmDialog
       v-if="deletingBusiness"
-      title="Delete Business"
-      :message="`Are you sure you want to delete '${deletingBusiness.name}'? This will also delete all stores under this business. This action cannot be undone.`"
-      confirm-text="Yes, delete"
-      cancel-text="Cancel"
+      :title="$t('business.deleteTitle')"
+      :message="$t('business.deleteMessage', { name: deletingBusiness.name })"
+      :confirm-text="$t('business.confirmDelete')"
+      :cancel-text="$t('common.cancel')"
       type="danger"
       @confirm="handleDelete"
       @cancel="deletingBusiness = null"
@@ -74,6 +74,8 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import BusinessCard from '@/features/business/components/BusinessCard.vue'
 import BusinessFormModal from '@/features/business/components/BusinessFormModal.vue'
 import { useBusinesses } from '@/features/business/composables/useBusinesses'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const showToast = inject('showToast')
 const refreshStoreSwitcher = inject('refreshStoreSwitcher')
@@ -102,7 +104,7 @@ const onSaved = () => {
   showForm.value = false
   fetchBusinesses()
   refreshStoreSwitcher?.()
-  showToast(wasEdit ? 'Business updated successfully!' : 'Business created successfully!')
+  showToast(wasEdit ? t('business.updateSuccess') : t('business.createSuccess'))
 }
 
 const confirmDelete = (biz) => { deletingBusiness.value = biz }
@@ -112,9 +114,9 @@ const handleDelete = async () => {
     await removeBusiness(deletingBusiness.value.id)
     deletingBusiness.value = null
     refreshStoreSwitcher?.()
-    showToast('Business deleted successfully!')
+    showToast(t('business.deleteSuccess'))
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   }
 }
 

@@ -10,8 +10,8 @@
     </div>
 
     <div class="card">
-      <h1>Verify your email</h1>
-      <p class="subtitle">Enter the 6-digit code sent to<br><strong>{{ email }}</strong></p>
+      <h1>{{ $t('auth.verifyEmail') }}</h1>
+      <p class="subtitle">{{ $t('auth.verifySubtitle') }}<br><strong>{{ email }}</strong></p>
 
       <form @submit.prevent="handleVerify">
         <div class="code-inputs">
@@ -32,21 +32,21 @@
         <p v-if="success" class="success">{{ success }}</p>
 
         <button type="submit" :disabled="loading || code.length < 6">
-          {{ loading ? 'Verifying...' : 'Verify Email' }}
+          {{ loading ? $t('auth.verifying') : $t('auth.verifyEmailBtn') }}
         </button>
         <p class="resend">
-          Didn't receive the code? 
-          <a 
-            href="#" 
+          {{ $t('auth.didntReceive') }}
+          <a
+            href="#"
             @click.prevent="handleResend"
             :class="{ disabled: resendLoading || resendCooldown > 0 }"
           >
-            {{ resendCooldown > 0 ? `Resend in ${resendCooldown}s` : resendLoading ? 'Sending...' : 'Resend code' }}
+            {{ resendCooldown > 0 ? $t('auth.resendIn', { seconds: resendCooldown }) : resendLoading ? $t('auth.sending') : $t('auth.resendCode') }}
           </a>
         </p>
 
         <p class="back">
-          Wrong email? <a href="/register">Go back</a>
+          {{ $t('auth.wrongEmail') }} <a href="/register">{{ $t('auth.goBack') }}</a>
         </p>
       </form>
     </div>
@@ -57,6 +57,8 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { graphql } from '@/api'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const route = useRoute()
@@ -116,10 +118,10 @@ const handleResend = async () => {
       }
     `, { email: email.value })
 
-    success.value = 'Code resent! Check your email.'
+    success.value = t('auth.codeResent')
     startCooldown()
   } catch (err) {
-    error.value = err.message || 'Failed to resend code'
+    error.value = translateError(err)
   } finally {
     resendLoading.value = false
   }
@@ -141,12 +143,12 @@ const handleVerify = async () => {
       code: code.value
     })
 
-    success.value = 'Email verified! Redirecting to login...'
+    success.value = t('auth.emailVerified')
     const redirect = sessionStorage.getItem('postLoginRedirect')
     const loginQuery = redirect ? { redirect } : {}
     setTimeout(() => router.push({ path: '/login', query: loginQuery }), 2000)
   } catch (err) {
-    error.value = err.message || 'Verification failed'
+    error.value = translateError(err)
   } finally {
     loading.value = false
   }

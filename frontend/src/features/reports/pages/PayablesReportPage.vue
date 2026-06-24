@@ -1,12 +1,12 @@
 <template>
   <DebtReportPage
     ledger="payable"
-    title="Supplier Debt Report"
-    subtitle="What we were billed by each supplier, paid, and still owe — within the selected date range."
-    party-label="Supplier"
-    spent-label="Total Purchased"
-    invoice-section-label="Invoices in range"
-    empty-description="Record a purchase invoice to start tracking what we owe suppliers."
+    :title="$t('reports.debt.payableTitle')"
+    :subtitle="$t('reports.debt.payableSubtitle')"
+    :party-label="$t('reports.debt.supplier')"
+    :spent-label="$t('reports.debt.totalPurchased')"
+    :invoice-section-label="$t('reports.debt.invoicesInRange')"
+    :empty-description="$t('reports.debt.payableEmptyDesc')"
     export-filename-prefix="supplier-debt-report"
     :fetchers="fetchers"
     :exporters="exporters"

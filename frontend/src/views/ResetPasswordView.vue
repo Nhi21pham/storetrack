@@ -10,8 +10,8 @@
     </div>
 
     <div class="card">
-      <h1>Reset password</h1>
-      <p class="subtitle">Enter the code sent to<br><strong>{{ email }}</strong></p>
+      <h1>{{ $t('auth.resetPassword') }}</h1>
+      <p class="subtitle">{{ $t('auth.resetSubtitle') }}<br><strong>{{ email }}</strong></p>
 
       <form @submit.prevent="handleReset">
         <div class="code-inputs">
@@ -29,31 +29,31 @@
         </div>
 
         <div class="field">
-          <label>New Password</label>
-          <input v-model="password" type="password" placeholder="Enter new password" required />
+          <label>{{ $t('auth.newPassword') }}</label>
+          <input v-model="password" type="password" :placeholder="$t('auth.enterNewPassword')" required />
         </div>
 
         <div class="field">
-          <label>Confirm Password</label>
-          <input v-model="password_confirmation" type="password" placeholder="Confirm new password" required />
+          <label>{{ $t('auth.confirmPassword') }}</label>
+          <input v-model="password_confirmation" type="password" :placeholder="$t('auth.confirmNewPassword')" required />
         </div>
 
         <p v-if="error" class="error" style="white-space: pre-line">{{ error }}</p>
         <p v-if="success" class="success">{{ success }}</p>
 
         <button type="submit" :disabled="loading || code.length < 6">
-          {{ loading ? 'Resetting...' : 'Reset Password' }}
+          {{ loading ? $t('auth.resetting') : $t('auth.resetPasswordBtn') }}
         </button>
         <p v-if="resendSuccess" class="success">{{ resendSuccess }}</p>
         <p class="resend">
-          Didn't receive the code?
+          {{ $t('auth.didntReceive') }}
           <a href="#" @click.prevent="handleResend" :class="{ disabled: resendLoading || resendCooldown > 0 }">
-            {{ resendCooldown > 0 ? `Resend in ${resendCooldown}s` : resendLoading ? 'Sending...' : 'Resend code' }}
+            {{ resendCooldown > 0 ? $t('auth.resendIn', { seconds: resendCooldown }) : resendLoading ? $t('auth.sending') : $t('auth.resendCode') }}
           </a>
-        </p>    
+        </p>
 
         <p class="back">
-          Remember your password? <a href="/login">Sign in</a>
+          {{ $t('auth.rememberPassword') }} <a href="/login">{{ $t('auth.signIn') }}</a>
         </p>
       </form>
     </div>
@@ -64,6 +64,8 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { graphql } from '@/api'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const route = useRoute()
@@ -105,7 +107,7 @@ const onPaste = (e) => {
 
 const handleReset = async () => {
   if (password.value !== password_confirmation.value) {
-    error.value = 'Passwords do not match'
+    error.value = t('auth.passwordsMismatch')
     return
   }
   loading.value = true
@@ -127,12 +129,12 @@ const handleReset = async () => {
 
     // Clear auth and force login
     sessionStorage.removeItem('canReset')
-    success.value = 'Password reset successfully! Please login again.'
+    success.value = t('auth.passwordResetSuccess')
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setTimeout(() => router.push('/login'), 2000)
   } catch (err) {
-    error.value = err.message || 'Reset failed'
+    error.value = translateError(err)
   } finally {
     loading.value = false
   }
@@ -150,10 +152,10 @@ const handleResend = async () => {
         }
       }
     `, { email: email.value })
-    resendSuccess.value = 'Code resent! Check your email.'
+    resendSuccess.value = t('auth.codeResent')
     startCooldown()
   } catch (err) {
-    error.value = err.message || 'Failed to resend code'
+    error.value = translateError(err)
   } finally {
     resendLoading.value = false
   }

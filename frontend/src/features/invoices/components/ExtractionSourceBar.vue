@@ -1,19 +1,19 @@
 <template>
   <!-- Couldn't read the file at all (upload step): offer the AI scan. -->
   <div v-if="needsAi" class="src-bar needs">
-    <p class="src-msg">We couldn't read this file automatically. Scan it with AI for a better read?</p>
+    <p class="src-msg">{{ $t('invoices.cannotReadFile') }}</p>
     <button class="btn-ai" :disabled="busy" @click="$emit('scan-ai')">
       <span v-if="busy" class="spinner"></span>
-      {{ busy ? 'Scanning with AI…' : 'Scan with AI' }}
+      {{ busy ? $t('invoices.scanningAI') : $t('invoices.scanWithAI') }}
     </button>
   </div>
 
   <!-- Read for free, but some fields came back thin: suggest AI for a better result. -->
   <div v-else-if="suggestAi" class="src-bar warn">
-    <span class="src-msg">Some fields couldn't be read automatically — scan with AI for a better result?</span>
+    <span class="src-msg">{{ $t('invoices.someFieldsThin') }}</span>
     <button class="btn-ai" :disabled="busy" @click="$emit('scan-ai')">
       <span v-if="busy" class="spinner"></span>
-      {{ busy ? 'Scanning…' : 'Scan with AI' }}
+      {{ busy ? $t('invoices.scanning') : $t('invoices.scanWithAI') }}
     </button>
   </div>
 
@@ -21,16 +21,16 @@
        free parser got the layout wrong and the user wants a second opinion. -->
   <div v-else-if="source === 'template'" class="src-bar ok">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
-    <span class="src-msg">Read for free — no AI used.</span>
+    <span class="src-msg">{{ $t('invoices.readFree') }}</span>
     <button v-if="allowAi" class="btn-ai-glow" :disabled="busy" @click="$emit('scan-ai')">
       <span v-if="busy" class="spinner"></span>
       <svg v-else class="sparkle" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/></svg>
-      {{ busy ? 'Scanning…' : 'Re-scan with AI' }}
+      {{ busy ? $t('invoices.scanning') : $t('invoices.rescanAI') }}
     </button>
   </div>
   <div v-else-if="source === 'gemini'" class="src-bar ai">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/></svg>
-    <span>Read with AI.</span>
+    <span>{{ $t('invoices.readWithAI') }}</span>
   </div>
 </template>
 

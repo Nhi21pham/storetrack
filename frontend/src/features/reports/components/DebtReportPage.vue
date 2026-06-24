@@ -4,19 +4,19 @@
 
     <EmptyState
       v-if="scope === 'store' && !currentStore"
-      title="No store selected"
-      :description="`Select a store to view its ${partyLabel.toLowerCase()} debt report.`"
+      :title="$t('audit.noStoreTitle')"
+      :description="$t('reports.debt.noStoreDesc')"
     />
 
     <EmptyState
       v-else-if="scope === 'business' && !currentBusiness"
-      title="No business selected"
-      :description="`Select a business to view its consolidated ${partyLabel.toLowerCase()} debt report.`"
+      :title="$t('audit.noBusinessTitle')"
+      :description="$t('reports.debt.noBusinessDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" :placeholder="`Search ${partyLabel.toLowerCase()} name, phone, or email...`" />
+        <SearchBar v-model="searchQuery" :placeholder="$t('reports.debt.search', { party: partyLabel.toLowerCase() })" />
         <DateRangeFilter v-model:startDate="startDate" v-model:endDate="endDate" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
@@ -26,7 +26,7 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedRows.length === 0" @click="run" />
-        <HistoryButton label="Export history" title="View export history" @click="showHistory = true" />
+        <HistoryButton :label="$t('reports.exportHistory')" :title="$t('reports.viewExportHistory')" @click="showHistory = true" />
       </div>
 
       <ReportSelectionBar
@@ -37,11 +37,11 @@
         @export="run"
       />
 
-      <LoadingState v-if="loading">Loading {{ partyLabel.toLowerCase() }} debt report…</LoadingState>
+      <LoadingState v-if="loading">{{ $t('reports.debt.loading') }}</LoadingState>
 
       <EmptyState
         v-else-if="rows.length === 0"
-        :title="`No ${partyLabel.toLowerCase()}s yet`"
+        :title="$t('reports.debt.emptyTitle', { party: partyLabel.toLowerCase() })"
         :description="emptyDescription"
       />
 
@@ -52,17 +52,17 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="c.labelKey ? $t(c.labelKey) : c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : (c.label || '') }}</template>
           </template>
 
           <template v-for="(row, idx) in paginatedRows" :key="row.id">
@@ -72,7 +72,7 @@
               </td>
               <td v-if="columnVisibility.isVisible('order_number')" class="num">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
               <td v-if="columnVisibility.isVisible('name')">
-                <button class="expand-btn" :class="{ open: isExpanded(row.id) }" @click="toggleExpand(row.id)" :title="isExpanded(row.id) ? 'Collapse' : 'Expand'">▸</button>
+                <button class="expand-btn" :class="{ open: isExpanded(row.id) }" @click="toggleExpand(row.id)" :title="isExpanded(row.id) ? $t('reports.debt.collapse') : $t('reports.debt.expand')">▸</button>
                 <span class="name">{{ row.name }}</span>
               </td>
               <td v-if="columnVisibility.isVisible('phone')">
@@ -95,7 +95,7 @@
                     <h4>{{ invoiceSectionLabel }} <span class="muted">({{ row.rangeInvoices.length }})</span></h4>
                     <table v-if="row.rangeInvoices.length" class="detail-table">
                       <thead>
-                        <tr><th>Code</th><th>Date</th><th v-if="scope === 'business'">Store</th><th class="num">Amount</th></tr>
+                        <tr><th>{{ $t('reports.debt.code') }}</th><th>{{ $t('reports.debt.date') }}</th><th v-if="scope === 'business'">{{ $t('reports.col.store') }}</th><th class="num">{{ $t('reports.debt.amount') }}</th></tr>
                       </thead>
                       <tbody>
                         <tr v-for="inv in row.rangeInvoices" :key="inv.id">
@@ -106,14 +106,14 @@
                         </tr>
                       </tbody>
                     </table>
-                    <p v-else class="detail-empty">No invoices in this date range.</p>
+                    <p v-else class="detail-empty">{{ $t('reports.debt.noInvoicesInRange') }}</p>
                   </div>
 
                   <div class="detail-col payments">
-                    <h4>Payments in range <span class="muted">({{ row.rangePayments.length }})</span></h4>
+                    <h4>{{ $t('reports.debt.paymentsInRange') }} <span class="muted">({{ row.rangePayments.length }})</span></h4>
                     <table v-if="row.rangePayments.length" class="detail-table">
                       <thead>
-                        <tr><th>Date</th><th>Method</th><th v-if="scope === 'business'">Store</th><th>Applied to</th><th class="num">Amount</th></tr>
+                        <tr><th>{{ $t('reports.debt.date') }}</th><th>{{ $t('reports.debt.method') }}</th><th v-if="scope === 'business'">{{ $t('reports.col.store') }}</th><th>{{ $t('reports.debt.appliedTo') }}</th><th class="num">{{ $t('reports.debt.amount') }}</th></tr>
                       </thead>
                       <tbody>
                         <tr v-for="p in row.rangePayments" :key="p.id">
@@ -129,7 +129,7 @@
                         </tr>
                       </tbody>
                     </table>
-                    <p v-else class="detail-empty">No payments in this date range.</p>
+                    <p v-else class="detail-empty">{{ $t('reports.debt.noPaymentsInRange') }}</p>
                   </div>
                 </div>
               </td>
@@ -138,17 +138,17 @@
 
           <tr v-if="sortedRows.length === 0">
             <td :colspan="tableColumns.length" class="empty-row">
-              No {{ partyLabel.toLowerCase() }}s match the current filters.
+              {{ $t('reports.debt.noMatch') }}
             </td>
           </tr>
         </ResizableTable>
 
         <TotalsBar
           :items="[
-            { label: partyLabel + 's', value: totals.partyCount },
+            { label: partyLabel, value: totals.partyCount },
             { label: spentLabel, value: formatMoney(totals.spent) },
-            { label: 'Total paid', value: formatMoney(totals.paid) },
-            { label: 'Total owe', value: formatMoney(totals.owe), strong: true },
+            { label: $t('reports.debt.sumTotalPaid'), value: formatMoney(totals.paid) },
+            { label: $t('reports.debt.sumTotalOwe'), value: formatMoney(totals.owe), strong: true },
           ]"
         />
 
@@ -175,7 +175,7 @@
 
     <HistoryModal
       v-if="showHistory"
-      :title="`${title} — Export History`"
+      :title="$t('reports.debt.exportHistoryTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
@@ -215,6 +215,7 @@ import {
   makeDebtReportColumns, DEBT_REPORT_INITIAL_COL_WIDTHS, DEBT_REPORT_DEFAULT_HIDDEN,
   formatMoney, formatDate,
 } from '@/features/reports/constants'
+import { t } from '@/i18n'
 
 const props = defineProps({
   ledger:        { type: String, required: true },   // 'receivable' | 'payable'
@@ -244,7 +245,7 @@ const historyTabs = computed(() => {
   const base = props.ledger === 'payable' ? 'payables-report' : 'receivables-report'
   const isBiz = scope.value === 'business'
   return [{
-    key: 'exports', label: 'Exports', component: ExportHistoryPanel,
+    key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel,
     props: {
       scope: isBiz ? 'business' : 'store',
       scopeId: isBiz ? currentBusiness.value?.id : currentStore.value?.id,
@@ -333,7 +334,7 @@ const { exporting, run } = useExport({
     return props.exporters.store({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `${props.exportFilenamePrefix}-${id}.xlsx`,
-  onSuccess: () => showToast(`${props.partyLabel} debt report export ready.`, 'success'),
+  onSuccess: () => showToast(t('reports.debt.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

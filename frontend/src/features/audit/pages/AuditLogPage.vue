@@ -1,16 +1,16 @@
 <template>
   <PageContainer :maxWidth="860">
-    <PageHeader title="Audit Log">
+    <PageHeader :title="$t('audit.title')">
       <template #subtitle>
-        Activity history for
+        {{ $t('audit.subtitleBefore') }}
         <strong>{{ viewMode === 'store' ? (currentStore?.name ?? '—') : (currentBusiness?.name ?? '—') }}</strong>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="viewMode === 'store' && !currentStore"
-      title="No store selected"
-      description="Select a store from the top bar to view its activity."
+      :title="$t('audit.noStoreTitle')"
+      :description="$t('audit.noStoreDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -21,8 +21,8 @@
 
     <EmptyState
       v-else-if="viewMode === 'business' && !currentBusiness"
-      title="No business selected"
-      description="Select a business to view its activity."
+      :title="$t('audit.noBusinessTitle')"
+      :description="$t('audit.noBusinessDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -33,10 +33,10 @@
 
     <template v-else>
       <InactiveBanner v-if="viewMode === 'store' && currentStore && !currentStore.is_active">
-        This store is deactivated. Showing historical activity only.
+        {{ $t('audit.inactiveStoreBanner') }}
       </InactiveBanner>
 
-      <SearchBar v-model="searchQuery" placeholder="Search activity..." />
+      <SearchBar v-model="searchQuery" :placeholder="$t('audit.searchPlaceholder')" />
 
       <AuditFilterBar
         v-model:startDate="startDate"
@@ -51,12 +51,12 @@
         @export="run"
       />
 
-      <LoadingState v-if="loading">Loading activity...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('audit.loadingActivity') }}</LoadingState>
 
       <EmptyState
         v-else-if="entries.length === 0 && !searchQuery.trim()"
-        title="No activity yet"
-        description="Actions performed will appear here."
+        :title="$t('audit.noActivityTitle')"
+        :description="$t('audit.noActivityDesc')"
       >
         <template #icon>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -70,8 +70,8 @@
 
       <EmptyState
         v-else-if="entries.length === 0"
-        :title="`No results matching &quot;${searchQuery}&quot;`"
-        description="Try a different keyword."
+        :title="$t('audit.noResultsTitle', { query: searchQuery })"
+        :description="$t('audit.noResultsDesc')"
       />
 
       <AuditLogList
@@ -106,6 +106,7 @@ import {
   startStoreAuditExport,
   startBusinessAuditExport,
 } from '@/features/audit/services/auditService'
+import { t } from '@/i18n'
 
 const currentStore    = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
@@ -138,7 +139,7 @@ const { exporting, run } = useExport({
       : startBusinessAuditExport(currentBusiness.value.id, params)
   },
   defaultFilename: (id) => `audit-log-${id}.xlsx`,
-  onSuccess: () => showToast('Audit log export ready.', 'success'),
+  onSuccess: () => showToast(t('audit.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

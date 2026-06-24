@@ -1,35 +1,41 @@
-// Human labels for the export `type` strings stored on each Export record.
+import { t } from '@/i18n'
+
+// Maps the export `type` strings stored on each Export record to an i18n key.
 // Used by the export-history board so a row reads "Invoice PDF" rather than
 // "invoice-documents". The store/business report variants share one label.
-const EXPORT_TYPE_LABELS = {
-  'invoices':                  'Invoice list',
-  'invoice-documents':         'Invoice PDF',
-  'customers':                 'Customers',
-  'suppliers':                 'Suppliers',
-  'units':                     'Units',
-  'tags':                      'Tags',
-  'products':                  'Products',
-  'product-categories':        'Categories',
-  'banks':                     'Banks',
-  'bank-accounts':             'Bank accounts',
-  'stock-report':              'Stock report',
-  'stock-report-business':     'Stock report',
-  'sale-report':               'Sale report',
-  'sale-report-business':      'Sale report',
-  'profit-report':             'Profit report',
-  'profit-report-business':    'Profit report',
-  'receivables-report':        'Receivables report',
-  'receivables-report-business': 'Receivables report',
-  'payables-report':           'Payables report',
-  'payables-report-business':  'Payables report',
-  'top-products-report':       'Top products report',
-  'top-products-report-business': 'Top products report',
-  'audit_log_store':           'Audit log',
-  'audit_log_business':        'Audit log',
+const EXPORT_TYPE_KEYS = {
+  'invoices':                     'invoiceList',
+  'invoice-documents':            'invoicePdf',
+  'customers':                    'customers',
+  'suppliers':                    'suppliers',
+  'units':                        'units',
+  'tags':                         'tags',
+  'products':                     'products',
+  'product-categories':           'categories',
+  'banks':                        'banks',
+  'bank-accounts':                'bankAccounts',
+  'stock-report':                 'stockReport',
+  'stock-report-business':        'stockReport',
+  'sale-report':                  'saleReport',
+  'sale-report-business':         'saleReport',
+  'profit-report':                'profitReport',
+  'profit-report-business':       'profitReport',
+  'receivables-report':           'receivablesReport',
+  'receivables-report-business':  'receivablesReport',
+  'payables-report':              'payablesReport',
+  'payables-report-business':     'payablesReport',
+  'top-products-report':          'topProductsReport',
+  'top-products-report-business': 'topProductsReport',
+  'audit_log_store':              'auditLog',
+  'audit_log_business':           'auditLog',
 }
 
-export const exportTypeLabel = (type) =>
-  EXPORT_TYPE_LABELS[type] || String(type || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+// Called inside templates, so calling t() here re-translates live on locale switch.
+export const exportTypeLabel = (type) => {
+  const key = EXPORT_TYPE_KEYS[type]
+  if (key) return t('exportTypes.' + key)
+  return String(type || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
 
 // File format taken from the filename extension, for a small chip on each row.
 export const exportFormatLabel = (filename) => {

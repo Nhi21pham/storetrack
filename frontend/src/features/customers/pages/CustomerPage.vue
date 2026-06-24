@@ -1,20 +1,20 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Customers" subtitle="Manage your customer contacts and information.">
+    <PageHeader :title="$t('customers.title')" :subtitle="$t('customers.subtitle')">
       <template v-if="currentBusiness && currentStore?.is_active" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Customer
+          {{ $t('customers.newCustomer') }}
         </button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentBusiness"
-      title="No business found"
-      description="You need to create a business before managing customers."
+      :title="$t('shared.noBusinessTitle')"
+      :description="$t('customers.noBusinessDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -26,8 +26,8 @@
 
     <EmptyState
       v-else-if="!currentStore"
-      title="No store selected"
-      description="Select a store to manage customers."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('customers.noStoreDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -39,7 +39,7 @@
 
     <template v-else-if="currentStore">
       <InactiveBanner v-if="!currentStore.is_active">
-        This store is deactivated. Data is read-only until the store is reactivated.
+        {{ $t('customers.inactiveStoreBanner') }}
       </InactiveBanner>
 
       <CustomerFilterBar
@@ -69,12 +69,12 @@
         v-model:date-field="dateField"
       />
 
-      <LoadingState v-if="loading">Loading customers...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('customers.loadingCustomers') }}</LoadingState>
 
       <EmptyState
         v-else-if="baseCustomers.length === 0 && customers.length === 0"
-        title="No customers yet"
-        description="Add your first customer to get started."
+        :title="$t('customers.noCustomersTitle')"
+        :description="$t('customers.noCustomersDesc')"
       >
         <template #icon>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -88,8 +88,8 @@
 
       <EmptyState
         v-else-if="baseCustomers.length === 0 && storeFilter === 'store'"
-        title="No customers at this store"
-        :description="`No customers were created at ${currentStore.name}. Switch to &quot;All stores&quot; to see business-wide customers.`"
+        :title="$t('customers.noCustomersAtStoreTitle')"
+        :description="$t('customers.noCustomersAtStoreDesc', { store: currentStore.name })"
       >
         <template #icon>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -101,7 +101,7 @@
 
       <EmptyState
         v-else-if="filteredCustomers.length === 0"
-        :description="`No customers matching &quot;${searchQuery}&quot;`"
+        :description="$t('customers.noCustomersMatching', { query: searchQuery })"
       />
 
       <template v-else>
@@ -156,7 +156,7 @@
 
       <ImportModal
         v-if="showImport && currentStore.is_active"
-        title="Import Customers"
+        :title="$t('customers.importTitle')"
         template-filename="customers-import-template.xlsx"
         :required-headers="['Name', 'Phone']"
         :optional-headers="['Email', 'Address', 'Tax Code']"
@@ -172,7 +172,7 @@
 
       <HistoryModal
         v-if="showHistory"
-        title="Customer History"
+        :title="$t('customers.historyTitle')"
         :tabs="historyTabs"
         @close="showHistory = false"
       />
@@ -187,10 +187,10 @@
 
       <ConfirmDialog
         v-if="deletingCustomer"
-        title="Delete Customer"
-        :message="`Are you sure you want to delete '${deletingCustomer.name}'? This action cannot be undone.`"
-        confirm-text="Yes, delete"
-        cancel-text="Cancel"
+        :title="$t('customers.deleteTitle')"
+        :message="$t('customers.deleteMessage', { name: deletingCustomer.name })"
+        :confirm-text="$t('customers.confirmDelete')"
+        :cancel-text="$t('common.cancel')"
         type="danger"
         @confirm="handleDelete"
         @cancel="deletingCustomer = null"
@@ -198,10 +198,10 @@
 
       <ConfirmDialog
         v-if="showBulkDeleteConfirm"
-        title="Delete Customers"
-        :message="`Are you sure you want to delete ${selectedIds.size} customer${selectedIds.size === 1 ? '' : 's'}? This action cannot be undone.`"
-        confirm-text="Yes, delete"
-        cancel-text="Cancel"
+        :title="$t('customers.bulkDeleteTitle')"
+        :message="$t('customers.bulkDeleteMessage', selectedIds.size)"
+        :confirm-text="$t('customers.confirmDelete')"
+        :cancel-text="$t('common.cancel')"
         type="danger"
         @confirm="handleBulkDelete"
         @cancel="showBulkDeleteConfirm = false"
@@ -243,6 +243,8 @@ import { fetchImportStatus } from '@/features/imports/services/importService'
 import { CUSTOMER_COLUMNS, CUSTOMER_INITIAL_COL_WIDTHS } from '@/features/customers/constants'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'customers',
@@ -299,19 +301,19 @@ const showImport  = ref(false)
 const showHistory = ref(false)
 
 const historyTabs = computed(() => [
-  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'customers' } },
-  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['customers'] } },
+  { key: 'imports', label: t('shared.imports'), component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'customers' } },
+  { key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['customers'] } },
 ])
 
 // Explains the customer import rules in the import dialog (kept in sync with
 // CustomerImporter on the backend).
-const customerImportInstructions = [
-  'Name and Phone are required. Email, Address and Tax Code are optional.',
-  'Phone must be exactly 10 digits and is unique per business.',
-  'Email and Tax Code, when given, must each be unique — a value already used by another customer must be fixed before importing.',
-  'A row whose phone matches an existing customer with the same name is skipped (already imported); the same phone under a different name must be fixed.',
-  'Imported customers are added to the current store.',
-]
+const customerImportInstructions = computed(() => [
+  t('customers.import.required'),
+  t('customers.import.phone'),
+  t('customers.import.unique'),
+  t('customers.import.skip'),
+  t('customers.import.store'),
+])
 
 const openCreate    = () => { editingCustomer.value = null; showForm.value = true }
 const openEdit      = (c) => { editingCustomer.value = { ...c }; showForm.value = true }
@@ -322,7 +324,7 @@ const onSaved = () => {
   const wasEdit = !!editingCustomer.value
   showForm.value = false
   load()
-  showToast(wasEdit ? 'Customer updated successfully!' : 'Customer created successfully!')
+  showToast(wasEdit ? t('customers.updateSuccess') : t('customers.createSuccess'))
 }
 
 const onImported = () => {
@@ -335,9 +337,9 @@ const handleDelete = async () => {
   try {
     await removeOne(deletingCustomer.value)
     deletingCustomer.value = null
-    showToast('Customer deleted successfully!')
+    showToast(t('customers.deleteSuccess'))
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   }
 }
 
@@ -350,9 +352,9 @@ const handleBulkDelete = async () => {
     const count = await removeMany(Array.from(selectedIds.value))
     showBulkDeleteConfirm.value = false
     clearSelection()
-    showToast(`Deleted ${count} customer${count === 1 ? '' : 's'}.`)
+    showToast(t('customers.deletedCount', count))
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   } finally {
     bulkDeleting.value = false
   }
@@ -373,7 +375,7 @@ const { exporting, run } = useExport({
     return startCustomerExport({ businessId: currentBusiness.value.id, params })
   },
   defaultFilename: (id) => `customers-${id}.xlsx`,
-  onSuccess: () => showToast('Customer export ready.', 'success'),
+  onSuccess: () => showToast(t('customers.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Unit' : 'New Unit' }}</h2>
+        <h2>{{ isEdit ? $t('units.editUnit') : $t('units.newUnit') }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,11 +12,11 @@
 
       <div class="modal-body">
         <div class="form-group" :class="{ 'has-suggestions': showSuggestions }">
-          <label>Unit Name <span class="required">*</span></label>
+          <label>{{ $t('units.unitName') }} <span class="required">*</span></label>
           <input
             v-model="form.name"
             type="text"
-            placeholder="e.g. Cái, Chiếc, Hộp..."
+            :placeholder="$t('units.namePlaceholder')"
             :class="{ error: errors.name }"
             @focus="active = true"
             @blur="onBlurField"
@@ -32,19 +32,19 @@
         <div v-if="isEdit" class="form-group toggle-group">
           <div class="toggle-row">
             <ToggleSwitch v-model="form.is_active" />
-            <span class="toggle-text">Active</span>
+            <span class="toggle-text">{{ $t('units.activeToggle') }}</span>
           </div>
-          <p class="hint">Inactive units won't appear in the unit picker on new products.</p>
+          <p class="hint">{{ $t('units.inactiveHint') }}</p>
         </div>
 
         <div v-if="apiError" class="api-error">{{ apiError }}</div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
+        <button class="btn-cancel" @click="handleClose" :disabled="loading">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Unit' }}
+          {{ isEdit ? $t('common.saveChanges') : $t('units.createUnit') }}
         </button>
       </div>
     </div>
@@ -52,10 +52,10 @@
 
   <ConfirmDialog
     v-if="showUnsavedWarning"
-    title="Unsaved Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirm-text="Yes, discard"
-    cancel-text="Keep editing"
+    :title="$t('account.unsavedTitle')"
+    :message="$t('account.unsavedMessage')"
+    :confirm-text="$t('account.discard')"
+    :cancel-text="$t('account.keepEditing')"
     @confirm="$emit('close')"
     @cancel="showUnsavedWarning = false"
   />
@@ -68,6 +68,8 @@ import ToggleSwitch from '@/components/common/ToggleSwitch.vue'
 import SuggestionList from '@/features/units/components/UnitSuggestionList.vue'
 import { createUnit, updateUnit, searchUnits } from '@/features/units/services/unitService'
 import { normalizeText } from '@/utils/textNormalizer'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const props = defineProps({
   unit: { type: Object, default: null },
@@ -150,14 +152,14 @@ const onPickSuggestion = (unit) => {
 const validateForm = () => {
   errors.value = { name: '' }
   const name = form.value.name.trim()
-  if (!name) errors.value.name = 'Unit name is required.'
-  else if (name.length > 50) errors.value.name = 'Unit name must be at most 50 characters.'
+  if (!name) errors.value.name = t('units.nameRequired')
+  else if (name.length > 50) errors.value.name = t('units.nameTooLong')
 
   if (!isEdit.value) {
     const norm = normalizeText(name)
     const dup = suggestions.value.find(s => normalizeText(s.name) === norm)
     if (dup) {
-      apiError.value = `A unit with this name already exists: ${dup.name}. Open it from the suggestion list above to edit.`
+      apiError.value = t('units.duplicateName', { name: dup.name })
       return false
     }
   }
@@ -184,7 +186,7 @@ const handleSubmit = async () => {
       emit('saved', result)
     }
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     loading.value = false
   }

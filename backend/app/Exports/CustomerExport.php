@@ -63,14 +63,14 @@ class CustomerExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'id'       => ['heading' => 'ID',       'width' => 8,  'value' => fn ($row) => (int) $row->id],
-            'name'     => ['heading' => 'Name',     'width' => 26, 'value' => fn ($row) => (string) $row->name],
-            'tax_code' => ['heading' => 'Tax Code', 'width' => 18, 'value' => fn ($row) => (string) ($row->tax_code ?? '')],
-            'email'    => ['heading' => 'Email',    'width' => 28, 'value' => fn ($row) => (string) ($row->email ?? '')],
-            'phone'    => ['heading' => 'Phone',    'width' => 16, 'value' => fn ($row) => (string) ($row->phone ?? '')],
-            'address'  => ['heading' => 'Address',  'width' => 30, 'value' => fn ($row) => (string) ($row->address ?? '')],
-            'created_at' => ['heading' => 'Created', 'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
-            'updated_at' => ['heading' => 'Updated', 'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
+            'id'       => ['heading' => __('exports.col_id'),       'width' => 8,  'value' => fn ($row) => (int) $row->id],
+            'name'     => ['heading' => __('exports.col_name'),     'width' => 26, 'value' => fn ($row) => (string) $row->name],
+            'tax_code' => ['heading' => __('exports.col_tax_code'), 'width' => 18, 'value' => fn ($row) => (string) ($row->tax_code ?? '')],
+            'email'    => ['heading' => __('exports.col_email'),    'width' => 28, 'value' => fn ($row) => (string) ($row->email ?? '')],
+            'phone'    => ['heading' => __('exports.col_phone'),    'width' => 16, 'value' => fn ($row) => (string) ($row->phone ?? '')],
+            'address'  => ['heading' => __('exports.col_address'),  'width' => 30, 'value' => fn ($row) => (string) ($row->address ?? '')],
+            'created_at' => ['heading' => __('exports.col_created'), 'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at' => ['heading' => __('exports.col_updated'), 'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

@@ -4,7 +4,7 @@
       <div class="modal-header">
         <div class="title-wrap">
           <h2>{{ invoice.code }}</h2>
-          <span class="type-badge" :class="{ sale: isSale }">{{ isSale ? 'Sale' : 'Purchase' }}</span>
+          <span class="type-badge" :class="{ sale: isSale }">{{ isSale ? $t('invoices.saleType') : $t('invoices.purchaseType') }}</span>
         </div>
         <button class="close-btn" @click="$emit('close')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -13,23 +13,23 @@
 
       <div class="modal-body">
         <div class="meta-grid">
-          <div class="meta"><label>{{ isSale ? 'Customer' : 'Supplier' }}</label><span>{{ invoice.party_name || '—' }}</span></div>
-          <div class="meta"><label>Invoice date</label><span>{{ formatInvoiceDate(invoice.invoice_date) }}</span></div>
-          <div class="meta"><label>Payment method</label><span>{{ paymentMethodLabel(invoice.payment_method) }}</span></div>
-          <div class="meta"><label>Status</label><PaymentStatusBadge :status="invoice.payment_status" /></div>
-          <div v-if="invoice.description" class="meta full"><label>Description</label><span>{{ invoice.description }}</span></div>
+          <div class="meta"><label>{{ isSale ? $t('invoices.customer') : $t('invoices.supplier') }}</label><span>{{ invoice.party_name || '—' }}</span></div>
+          <div class="meta"><label>{{ $t('invoices.invoiceDate') }}</label><span>{{ formatInvoiceDate(invoice.invoice_date) }}</span></div>
+          <div class="meta"><label>{{ $t('invoices.paymentMethod') }}</label><span>{{ paymentMethodLabel(invoice.payment_method) }}</span></div>
+          <div class="meta"><label>{{ $t('invoices.status') }}</label><PaymentStatusBadge :status="invoice.payment_status" /></div>
+          <div v-if="invoice.description" class="meta full"><label>{{ $t('invoices.description') }}</label><span>{{ invoice.description }}</span></div>
         </div>
 
         <table class="items-table">
           <thead>
             <tr>
-              <th>Product</th>
-              <th class="num">Qty</th>
-              <th class="num">{{ isSale ? 'Sale price' : 'Unit price' }}</th>
-              <th>Taxes</th>
-              <th class="num">Subtotal</th>
-              <th v-if="isSale" class="num">Cost</th>
-              <th class="num">Total</th>
+              <th>{{ $t('invoices.product') }}</th>
+              <th class="num">{{ $t('invoices.qty') }}</th>
+              <th class="num">{{ isSale ? $t('invoices.salePrice') : $t('invoices.unitPrice') }}</th>
+              <th>{{ $t('invoices.taxes') }}</th>
+              <th class="num">{{ $t('invoices.subtotal') }}</th>
+              <th v-if="isSale" class="num">{{ $t('invoices.cost') }}</th>
+              <th class="num">{{ $t('invoices.total') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -58,16 +58,16 @@
 
       <div class="modal-footer">
         <div class="footer-left">
-          <button v-if="canManage || canEdit" class="btn-edit" @click="$emit('edit')">Edit</button>
-          <button v-if="canManage" class="btn-delete" @click="$emit('delete')">Delete</button>
+          <button v-if="canManage || canEdit" class="btn-edit" @click="$emit('edit')">{{ $t('common.edit') }}</button>
+          <button v-if="canManage" class="btn-delete" @click="$emit('delete')">{{ $t('common.delete') }}</button>
         </div>
         <div class="totals">
-          <div class="t-row"><span>Subtotal</span><span>{{ formatMoney(invoice.subtotal) }}</span></div>
-          <div class="t-row"><span>Tax</span><span>{{ formatMoney(invoice.tax_total) }}</span></div>
-          <div class="t-row grand"><span>Grand total</span><span>{{ formatMoney(invoice.grand_total) }}</span></div>
-          <div class="t-row"><span>Paid</span><span>{{ formatMoney(invoice.paid_amount) }}</span></div>
-          <div class="t-row" :style="Number(invoice.balance) > 0 ? 'color:#b45309;font-weight:600' : null"><span>Balance</span><span>{{ formatMoney(invoice.balance) }}</span></div>
-          <div v-if="isSale" class="t-row cogs"><span>Cost of goods</span><span>{{ formatMoney(costTotal) }}</span></div>
+          <div class="t-row"><span>{{ $t('invoices.subtotal') }}</span><span>{{ formatMoney(invoice.subtotal) }}</span></div>
+          <div class="t-row"><span>{{ $t('invoices.tax') }}</span><span>{{ formatMoney(invoice.tax_total) }}</span></div>
+          <div class="t-row grand"><span>{{ $t('invoices.grandTotal') }}</span><span>{{ formatMoney(invoice.grand_total) }}</span></div>
+          <div class="t-row"><span>{{ $t('invoices.paid') }}</span><span>{{ formatMoney(invoice.paid_amount) }}</span></div>
+          <div class="t-row" :style="Number(invoice.balance) > 0 ? 'color:#b45309;font-weight:600' : null"><span>{{ $t('invoices.balance') }}</span><span>{{ formatMoney(invoice.balance) }}</span></div>
+          <div v-if="isSale" class="t-row cogs"><span>{{ $t('invoices.costOfGoods') }}</span><span>{{ formatMoney(costTotal) }}</span></div>
         </div>
       </div>
     </div>

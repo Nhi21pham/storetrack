@@ -1,34 +1,34 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Banks" subtitle="Manage the master list of banks used across bank accounts.">
+    <PageHeader :title="$t('banking.banksTitle')" :subtitle="$t('banking.banksSubtitle')">
       <template v-if="currentBusiness && currentStore" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Bank
+          {{ $t('banking.newBank') }}
         </button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentBusiness"
-      title="No business found"
-      description="You need to create or select a business before managing banks."
+      :title="$t('shared.noBusinessTitle')"
+      :description="$t('banking.noBanksBusinessDesc')"
     />
 
     <EmptyState
       v-else-if="!currentStore"
-      title="No store selected"
-      description="Select a store to manage banks."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('banking.noBanksStoreDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('shared.searchByName')" />
         <label class="toggle">
           <input v-model="includeInactive" type="checkbox" />
-          Show inactive
+          {{ $t('banking.showInactive') }}
         </label>
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
@@ -62,17 +62,17 @@
         @delete="requestBulk('delete')"
       />
 
-      <LoadingState v-if="loading">Loading banks...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('banking.loadingBanks') }}</LoadingState>
 
       <EmptyState
         v-else-if="filteredBanks.length === 0 && banks.length === 0"
-        title="No banks yet"
-        description="Add your first bank to get started."
+        :title="$t('banking.noBanksTitle')"
+        :description="$t('banking.noBanksDesc')"
       />
 
       <EmptyState
         v-else-if="filteredBanks.length === 0"
-        description="No banks match the current filters."
+        :description="$t('shared.noResults')"
       />
 
       <div v-else class="table-wrap">
@@ -82,17 +82,17 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="$t(c.labelKey)"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
           <tr v-for="(bank, idx) in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
@@ -108,17 +108,17 @@
             <td v-if="columnVisibility.isVisible('status')">
               <ToggleSwitch
                 :model-value="bank.is_active"
-                :title="bank.is_active ? 'Click to deactivate' : 'Click to activate'"
+                :title="bank.is_active ? $t('shared.clickToDeactivate') : $t('shared.clickToActivate')"
                 @change="onToggleActive(bank)"
               />
             </td>
             <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(bank.created_at) }}</td>
             <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(bank.updated_at) }}</td>
             <td class="actions-col">
-              <button class="action-btn" @click="openEdit(bank)" title="Edit">
+              <button class="action-btn" @click="openEdit(bank)" :title="$t('common.edit')">
                 <Icon name="edit" :size="14" />
               </button>
-              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(bank)" title="Delete">
+              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(bank)" :title="$t('common.delete')">
                 <Icon name="delete" :size="14" />
               </button>
             </td>
@@ -147,7 +147,7 @@
 
     <ImportModal
       v-if="showImport"
-      title="Import Banks"
+      :title="$t('banking.importBanksTitle')"
       template-filename="banks-import-template.xlsx"
       :required-headers="['Short Name', 'Vietnamese Name', 'English Name']"
       :download-template="() => downloadBanksImportTemplate({ businessId: currentBusiness.id })"
@@ -161,7 +161,7 @@
 
     <HistoryModal
       v-if="showHistory"
-      title="Bank History"
+      :title="$t('banking.bankHistoryTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
@@ -176,10 +176,10 @@
 
     <ConfirmDialog
       v-if="deleteTarget"
-      :title="`Delete ${deleteTarget.short_name}?`"
-      message="This will permanently remove the bank from the master list."
-      confirm-text="Delete"
-      cancel-text="Cancel"
+      :title="$t('banking.deleteBankTitle', { name: deleteTarget.short_name })"
+      :message="$t('banking.deleteBankMessage')"
+      :confirm-text="$t('common.delete')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDelete"
       @cancel="deleteTarget = null"
     />
@@ -189,7 +189,7 @@
       :title="confirmConfig.title"
       :message="confirmConfig.message"
       :confirm-text="confirmConfig.confirmText"
-      cancel-text="Cancel"
+      :cancel-text="$t('common.cancel')"
       :type="confirmConfig.type"
       @confirm="confirmBulk"
       @cancel="cancelBulk"
@@ -197,22 +197,22 @@
 
     <ConfirmDialog
       v-if="deactivateTarget"
-      :title="`Bank is in use`"
-      :message="`${deactivateTarget.short_name} is referenced by existing bank accounts and cannot be deleted. Deactivate it instead? Inactive banks stay linked to existing accounts but won't appear in new-account pickers.`"
-      confirm-text="Deactivate"
-      cancel-text="Cancel"
+      :title="$t('banking.bankInUseTitle')"
+      :message="$t('banking.bankInUseMessage', { name: deactivateTarget.short_name })"
+      :confirm-text="$t('common.deactivate')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDeactivate"
       @cancel="deactivateTarget = null"
     />
 
     <ConfirmDialog
       v-if="togglingBank"
-      :title="togglingBank.is_active ? 'Deactivate Bank' : 'Reactivate Bank'"
+      :title="togglingBank.is_active ? $t('banking.toggleDeactivateBankTitle') : $t('banking.toggleReactivateBankTitle')"
       :message="togglingBank.is_active
-        ? `Are you sure you want to deactivate '${togglingBank.short_name}'? Existing bank accounts will stay linked, but this bank won't appear in new-account pickers.`
-        : `Are you sure you want to reactivate '${togglingBank.short_name}'?`"
-      :confirm-text="togglingBank.is_active ? 'Yes, deactivate' : 'Yes, reactivate'"
-      cancel-text="Cancel"
+        ? $t('banking.toggleDeactivateBankMessage', { name: togglingBank.short_name })
+        : $t('banking.toggleReactivateBankMessage', { name: togglingBank.short_name })"
+      :confirm-text="togglingBank.is_active ? $t('banking.toggleDeactivateConfirm') : $t('banking.toggleReactivateConfirm')"
+      :cancel-text="$t('common.cancel')"
       :type="togglingBank.is_active ? 'warning' : 'success'"
       @confirm="handleToggle"
       @cancel="togglingBank = null"
@@ -272,6 +272,8 @@ const tableKey = computed(() => columnVisibility.visibleColumnKeys.value.join('|
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const currentBusiness = inject('currentBusiness')
 const currentStore = inject('currentStore')
@@ -291,8 +293,8 @@ const showImport = ref(false)
 const showHistory = ref(false)
 
 const historyTabs = computed(() => [
-  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, type: 'banks' } },
-  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['banks'] } },
+  { key: 'imports', label: t('shared.imports'), component: ImportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, type: 'banks' } },
+  { key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['banks'] } },
 ])
 const editingBank = ref(null)
 const detailBank = ref(null)
@@ -372,12 +374,12 @@ const { exporting, run: runExport } = useExport({
     return startBankExport({ businessId: currentBusiness.value.id, params })
   },
   defaultFilename: (id) => `banks-${id}.xlsx`,
-  onSuccess: () => showToast('Bank export ready.', 'success'),
+  onSuccess: () => showToast(t('banking.bankExportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
-  selectedIds, clearSelection, reload: () => load(), noun: 'bank',
+  selectedIds, clearSelection, reload: () => load(), nounKey: 'bank',
   setActive: (id, isActive) => updateBank({ id, input: { is_active: isActive } }),
   remove: (id) => deleteBank({ id }),
 })
@@ -423,7 +425,7 @@ const onSaved = async () => {
 
 const onImported = async () => {
   await load()
-  showToast('Banks imported.', 'success')
+  showToast(t('banking.banksImported'), 'success')
 }
 
 const onPickExisting = (bank) => {
@@ -445,7 +447,7 @@ const performDelete = async () => {
     if (err.code === ErrorCode.BANK_IN_USE) {
       deactivateTarget.value = bank
     } else {
-      alert(err.message)
+      alert(translateError(err))
     }
   }
 }
@@ -457,7 +459,7 @@ const performDeactivate = async () => {
     await updateBank({ id: bank.id, input: { is_active: false } })
     await load()
   } catch (err) {
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 
@@ -476,7 +478,7 @@ const handleToggle = async () => {
     await updateBank({ id: bank.id, input: { is_active: nextValue } })
   } catch (err) {
     bank.is_active = previous
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 </script>

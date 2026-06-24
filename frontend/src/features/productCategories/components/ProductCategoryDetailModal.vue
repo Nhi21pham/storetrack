@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal">
       <div class="modal-header">
-        <h2>Category Details</h2>
+        <h2>{{ $t('productCategories.detailsTitle') }}</h2>
         <button class="close-btn" @click="$emit('close')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,51 +12,51 @@
 
       <div class="modal-body">
         <div class="detail-row">
-          <span class="detail-label">Code</span>
+          <span class="detail-label">{{ $t('productCategories.code') }}</span>
           <span class="detail-value code-text">{{ category.code }}</span>
         </div>
 
         <div class="detail-row">
-          <span class="detail-label">Name</span>
+          <span class="detail-label">{{ $t('common.name') }}</span>
           <span class="detail-value name-text">
             {{ displayCategoryName(category) }}
-            <span v-if="category.is_system" class="system-badge">System</span>
+            <span v-if="category.is_system" class="system-badge">{{ $t('productCategories.systemBadge') }}</span>
           </span>
         </div>
 
         <div class="detail-row">
-          <span class="detail-label">Description</span>
+          <span class="detail-label">{{ $t('common.description') }}</span>
           <span v-if="category.description" class="detail-value">{{ category.description }}</span>
           <span v-else class="detail-value empty-val">—</span>
         </div>
 
         <div class="detail-row">
-          <span class="detail-label">Status</span>
+          <span class="detail-label">{{ $t('common.status') }}</span>
           <span class="detail-value">
             <span class="status-pill" :class="category.is_active ? 'active' : 'inactive'">
-              {{ category.is_active ? 'Active' : 'Inactive' }}
+              {{ category.is_active ? $t('common.active') : $t('common.inactive') }}
             </span>
           </span>
         </div>
 
         <div class="detail-row">
-          <span class="detail-label">Created</span>
+          <span class="detail-label">{{ $t('common.createdAt') }}</span>
           <span v-if="category.created_at" class="detail-value">{{ formatDateTime(category.created_at) }}</span>
           <span v-else class="detail-value empty-val">—</span>
         </div>
 
         <div class="detail-row">
-          <span class="detail-label">Updated</span>
+          <span class="detail-label">{{ $t('common.updatedAt') }}</span>
           <span v-if="category.updated_at" class="detail-value">{{ formatDateTime(category.updated_at) }}</span>
           <span v-else class="detail-value empty-val">—</span>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-close" @click="$emit('close')">Close</button>
+        <button class="btn-close" @click="$emit('close')">{{ $t('common.close') }}</button>
         <button v-if="canEdit && !category.is_system" class="btn-edit" @click="$emit('edit', category)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Edit
+          {{ $t('common.edit') }}
         </button>
       </div>
     </div>

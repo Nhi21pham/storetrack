@@ -1,31 +1,31 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Products" subtitle="Manage the products and services available in this store.">
+    <PageHeader :title="$t('products.title')" :subtitle="$t('products.subtitle')">
       <template v-if="currentBusiness && currentStore" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Product
+          {{ $t('products.newProduct') }}
         </button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentBusiness"
-      title="No business found"
-      description="You need to create or select a business before managing products."
+      :title="$t('shared.noBusinessTitle')"
+      :description="$t('products.noBusinessDesc')"
     />
 
     <EmptyState
       v-else-if="!currentStore"
-      title="No store selected"
-      description="Select a store to manage products."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('products.noStoreDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('shared.searchByName')" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
@@ -58,12 +58,12 @@
         @delete="requestBulk('delete')"
       />
 
-      <LoadingState v-if="loading">Loading products...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('products.loadingProducts') }}</LoadingState>
 
       <EmptyState
         v-else-if="products.length === 0"
-        title="No products yet"
-        description="Add your first product to get started."
+        :title="$t('products.noProductsTitle')"
+        :description="$t('products.noProductsDesc')"
       />
 
       <div v-else class="table-wrap">
@@ -73,25 +73,25 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="$t(c.labelKey)"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
           <template #filter-category>
             <SearchableSelect
               :modelValue="categoryFilter"
               :options="categoryOptions"
-              all-label="(All categories)"
-              search-placeholder="Filter category..."
+              :all-label="$t('products.allCategories')"
+              :search-placeholder="$t('products.filterCategory')"
               teleport
               @update:modelValue="categoryFilter = $event"
             />
@@ -100,8 +100,8 @@
             <SearchableSelect
               :modelValue="unitFilter"
               :options="unitOptions"
-              all-label="(All units)"
-              search-placeholder="Filter unit..."
+              :all-label="$t('products.allUnits')"
+              :search-placeholder="$t('products.filterUnit')"
               teleport
               @update:modelValue="unitFilter = $event"
             />
@@ -110,8 +110,8 @@
             <SearchableSelect
               :modelValue="tagFilter"
               :options="tagOptions"
-              all-label="(All tags)"
-              search-placeholder="Filter tag..."
+              :all-label="$t('products.allTags')"
+              :search-placeholder="$t('products.filterTag')"
               teleport
               @update:modelValue="tagFilter = $event"
             />
@@ -119,9 +119,9 @@
           <template #filter-status>
             <SearchableSelect
               :modelValue="statusFilter"
-              :options="STATUS_OPTIONS"
-              all-label="(All)"
-              search-placeholder="Filter status..."
+              :options="statusOptions()"
+              :all-label="$t('shared.allParen')"
+              :search-placeholder="$t('shared.filterStatus')"
               teleport
               @update:modelValue="statusFilter = $event"
             />
@@ -129,7 +129,7 @@
 
           <tr v-if="filteredProducts.length === 0">
             <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
-              No products match the current filters.
+              {{ $t('shared.noResults') }}
             </td>
           </tr>
           <tr v-for="(product, idx) in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
@@ -153,7 +153,7 @@
               <div v-if="product.tags && product.tags.length" class="tags-cell">
                 <span v-for="(t, i) in product.tags" :key="i" class="chip-wrap">
                   <TagChip :tag-name="t.tag_name" :value="t.value" />
-                  <ChipRemoveButton v-if="canCreateUpdate" title="Detach tag" @click="detachTag(product, i)" />
+                  <ChipRemoveButton v-if="canCreateUpdate" :title="$t('products.detachTagTitle')" @click="detachTag(product, i)" />
                 </span>
               </div>
               <span v-else class="empty-val">—</span>
@@ -161,17 +161,17 @@
             <td v-if="columnVisibility.isVisible('status')">
               <ToggleSwitch
                 :model-value="product.is_active"
-                :title="product.is_active ? 'Click to deactivate' : 'Click to activate'"
+                :title="product.is_active ? $t('shared.clickToDeactivate') : $t('shared.clickToActivate')"
                 @change="onToggleActive(product)"
               />
             </td>
             <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(product.created_at) }}</td>
             <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(product.updated_at) }}</td>
             <td class="actions-col">
-              <button class="action-btn" @click="openEdit(product)" title="Edit">
+              <button class="action-btn" @click="openEdit(product)" :title="$t('common.edit')">
                 <Icon name="edit" :size="14" />
               </button>
-              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(product)" title="Delete">
+              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(product)" :title="$t('common.delete')">
                 <Icon name="delete" :size="14" />
               </button>
             </td>
@@ -208,7 +208,7 @@
 
     <ImportModal
       v-if="showImport"
-      title="Import Products"
+      :title="$t('products.importTitle')"
       template-filename="products-import-template.xlsx"
       :required-headers="['Category', 'Name', 'Unit']"
       :optional-headers="['Tags']"
@@ -232,17 +232,17 @@
 
     <HistoryModal
       v-if="showHistory"
-      title="Product History"
+      :title="$t('products.historyTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
 
     <ConfirmDialog
       v-if="deleteTarget"
-      :title="`Delete ${deleteTarget.name}?`"
-      message="This will permanently remove the product from the store."
-      confirm-text="Delete"
-      cancel-text="Cancel"
+      :title="$t('products.deleteTitle', { name: deleteTarget.name })"
+      :message="$t('products.deleteMessage')"
+      :confirm-text="$t('common.delete')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDelete"
       @cancel="deleteTarget = null"
     />
@@ -252,7 +252,7 @@
       :title="confirmConfig.title"
       :message="confirmConfig.message"
       :confirm-text="confirmConfig.confirmText"
-      cancel-text="Cancel"
+      :cancel-text="$t('common.cancel')"
       :type="confirmConfig.type"
       @confirm="confirmBulk"
       @cancel="cancelBulk"
@@ -260,20 +260,23 @@
 
     <ConfirmDialog
       v-if="deactivateTarget"
-      :title="`Product is in use`"
-      :message="`${deactivateTarget.name} is referenced elsewhere and cannot be deleted. Deactivate it instead? Inactive products stay linked to existing references but won't appear in new pickers.`"
-      confirm-text="Deactivate"
-      cancel-text="Cancel"
+      :title="$t('products.inUseTitle')"
+      :message="$t('products.inUseMessage', { name: deactivateTarget.name })"
+      :confirm-text="$t('common.deactivate')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDeactivate"
       @cancel="deactivateTarget = null"
     />
 
     <ConfirmDialog
       v-if="detachTarget"
-      :title="`Detach tag?`"
-      :message="`Remove the tag '${detachTarget.tag.value ? `${detachTarget.tag.tag_name}: ${detachTarget.tag.value}` : detachTarget.tag.tag_name}' from '${detachTarget.product.name}'? This won't delete the tag itself.`"
-      confirm-text="Detach"
-      cancel-text="Cancel"
+      :title="$t('products.detachConfirmTitle')"
+      :message="$t('products.detachConfirmMessage', {
+        tag: detachTarget.tag.value ? `${detachTarget.tag.tag_name}: ${detachTarget.tag.value}` : detachTarget.tag.tag_name,
+        product: detachTarget.product.name,
+      })"
+      :confirm-text="$t('products.detachAction')"
+      :cancel-text="$t('common.cancel')"
       type="warning"
       @confirm="performDetach"
       @cancel="detachTarget = null"
@@ -281,12 +284,12 @@
 
     <ConfirmDialog
       v-if="togglingProduct"
-      :title="togglingProduct.is_active ? 'Deactivate Product' : 'Reactivate Product'"
+      :title="togglingProduct.is_active ? $t('products.toggleDeactivateTitle') : $t('products.toggleReactivateTitle')"
       :message="togglingProduct.is_active
-        ? `Are you sure you want to deactivate '${togglingProduct.name}'? Existing references stay, but it won't appear in new pickers.`
-        : `Are you sure you want to reactivate '${togglingProduct.name}'?`"
-      :confirm-text="togglingProduct.is_active ? 'Yes, deactivate' : 'Yes, reactivate'"
-      cancel-text="Cancel"
+        ? $t('products.toggleDeactivateMessage', { name: togglingProduct.name })
+        : $t('products.toggleReactivateMessage', { name: togglingProduct.name })"
+      :confirm-text="togglingProduct.is_active ? $t('products.toggleDeactivateConfirm') : $t('products.toggleReactivateConfirm')"
+      :cancel-text="$t('common.cancel')"
       :type="togglingProduct.is_active ? 'warning' : 'success'"
       @confirm="handleToggle"
       @cancel="togglingProduct = null"
@@ -341,10 +344,12 @@ import { fetchTags } from '@/features/tags/services/tagService'
 import { fetchUnits } from '@/features/units/services/unitService'
 import { fetchProductCategories } from '@/features/productCategories/services/productCategoryService'
 import { displayCategoryName } from '@/features/productCategories/constants'
-import { PRODUCT_COLUMNS, PRODUCT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/products/constants'
+import { PRODUCT_COLUMNS, PRODUCT_INITIAL_COL_WIDTHS, statusOptions } from '@/features/products/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'products',
@@ -411,8 +416,8 @@ const showImport = ref(false)
 const showHistory = ref(false)
 
 const historyTabs = computed(() => [
-  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'products' } },
-  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['products'] } },
+  { key: 'imports', label: t('shared.imports'), component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'products' } },
+  { key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['products'] } },
 ])
 const editingProduct = ref(null)
 const detailProduct = ref(null)
@@ -421,13 +426,13 @@ const deactivateTarget = ref(null)
 const detachTarget = ref(null)
 const togglingProduct = ref(null)
 
-const importInstructions = [
-  { text: 'Category is matched by its code or its full name; create a missing category right from the preview.', example: 'VPP  ·  Văn phòng phẩm' },
-  'Name is the product name and must be unique within this store.',
-  { text: 'Unit is matched by name; create a missing unit from the preview.', example: 'Cái · Hộp · Thùng' },
-  { text: 'Tags are optional: list them as "Key: Value" separated by commas. A key with no value attaches the tag itself.', example: 'Color: Blue, Size: M, Brand' },
-  'Unknown tags or tag values can be created right from the preview before importing.',
-]
+const importInstructions = computed(() => [
+  { text: t('products.import.category'), example: 'VPP  ·  Văn phòng phẩm' },
+  t('products.import.name'),
+  { text: t('products.import.unit'), example: 'Cái · Hộp · Thùng' },
+  { text: t('products.import.tags'), example: 'Color: Blue, Size: M, Brand' },
+  t('products.import.unknownTags'),
+])
 
 const onDetailEdit = (product) => {
   detailProduct.value = null
@@ -533,12 +538,12 @@ const { exporting, run: runExport } = useExport({
     return startProductExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `products-${id}.xlsx`,
-  onSuccess: () => showToast('Product export ready.', 'success'),
+  onSuccess: () => showToast(t('products.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
-  selectedIds, clearSelection, reload: () => load(), noun: 'product',
+  selectedIds, clearSelection, reload: () => load(), nounKey: 'product',
   setActive: (id, isActive) => updateProduct({ id, input: { is_active: isActive } }),
   remove: (id) => deleteProduct({ id }),
 })
@@ -596,7 +601,7 @@ const onSaved = async () => {
 
 const onImported = async () => {
   await load()
-  showToast('Products imported.', 'success')
+  showToast(t('products.imported'), 'success')
 }
 
 const onPickExisting = (product) => {
@@ -618,7 +623,7 @@ const performDelete = async () => {
     if (err.code === ErrorCode.PRODUCT_IN_USE) {
       deactivateTarget.value = product
     } else {
-      alert(err.message)
+      alert(translateError(err))
     }
   }
 }
@@ -630,7 +635,7 @@ const performDeactivate = async () => {
     await updateProduct({ id: product.id, input: { is_active: false } })
     await load()
   } catch (err) {
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 
@@ -651,7 +656,7 @@ const performDetach = async () => {
     await updateProduct({ id: product.id, input: { tags } })
     await load()
   } catch (err) {
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 
@@ -670,7 +675,7 @@ const handleToggle = async () => {
     await updateProduct({ id: product.id, input: { is_active: nextValue } })
   } catch (err) {
     product.is_active = previous
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 </script>

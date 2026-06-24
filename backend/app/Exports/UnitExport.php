@@ -63,11 +63,11 @@ class UnitExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'id'         => ['heading' => 'ID',        'width' => 8,  'value' => fn ($row) => (int) $row->id],
-            'name'       => ['heading' => 'Unit Name', 'width' => 26, 'value' => fn ($row) => (string) $row->name],
-            'status'     => ['heading' => 'Status',    'width' => 14, 'value' => fn ($row) => $row->is_active ? 'Active' : 'Inactive'],
-            'created_at' => ['heading' => 'Created',   'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
-            'updated_at' => ['heading' => 'Updated',   'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
+            'id'         => ['heading' => __('exports.col_id'),        'width' => 8,  'value' => fn ($row) => (int) $row->id],
+            'name'       => ['heading' => __('exports.col_unit_name'), 'width' => 26, 'value' => fn ($row) => (string) $row->name],
+            'status'     => ['heading' => __('exports.col_status'),    'width' => 14, 'value' => fn ($row) => $row->is_active ? __('exports.status_active') : __('exports.status_inactive')],
+            'created_at' => ['heading' => __('exports.col_created'),   'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at' => ['heading' => __('exports.col_updated'),   'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

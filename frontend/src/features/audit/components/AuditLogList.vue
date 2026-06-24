@@ -4,7 +4,7 @@
       <ObjectBadge :type="log.object_type" block />
       <div class="log-body">
         <div class="log-actor-block" :title="actorTitle(log)">
-          <span class="log-actor">{{ log.actor_name || 'System' }}</span><span v-if="log.actor_email" class="log-actor-email">&nbsp;({{ log.actor_email }})</span>
+          <span class="log-actor">{{ log.actor_name || $t('audit.system') }}</span><span v-if="log.actor_email" class="log-actor-email">&nbsp;({{ log.actor_email }})</span>
         </div>
         <p class="log-action" :title="actionTitle(log)" v-html="renderAction(log)"></p>
         <div class="log-aside">

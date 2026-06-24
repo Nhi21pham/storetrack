@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Bank' : 'New Bank' }}</h2>
+        <h2>{{ isEdit ? $t('banking.editBank') : $t('banking.newBank') }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,11 +12,11 @@
 
       <div class="modal-body">
         <div class="form-group" :class="{ 'has-suggestions': showSuggestions && activeField === 'short_name' }">
-          <label>Short Name <span class="required">*</span></label>
+          <label>{{ $t('banking.shortName') }} <span class="required">*</span></label>
           <input
             v-model="form.short_name"
             type="text"
-            placeholder="e.g. Vietcombank"
+            :placeholder="$t('banking.shortNamePlaceholder')"
             :class="{ error: errors.short_name }"
             @focus="activeField = 'short_name'"
             @blur="onBlurField"
@@ -30,11 +30,11 @@
         </div>
 
         <div class="form-group" :class="{ 'has-suggestions': showSuggestions && activeField === 'full_name_vi' }">
-          <label>Full Name (Vietnamese) <span class="required">*</span></label>
+          <label>{{ $t('banking.fullNameVi') }} <span class="required">*</span></label>
           <input
             v-model="form.full_name_vi"
             type="text"
-            placeholder="e.g. Ngân hàng TMCP Ngoại thương Việt Nam"
+            :placeholder="$t('banking.fullNameViPlaceholder')"
             :class="{ error: errors.full_name_vi }"
             @focus="activeField = 'full_name_vi'"
             @blur="onBlurField"
@@ -48,11 +48,11 @@
         </div>
 
         <div class="form-group" :class="{ 'has-suggestions': showSuggestions && activeField === 'full_name_en' }">
-          <label>Full Name (English) <span class="required">*</span></label>
+          <label>{{ $t('banking.fullNameEn') }} <span class="required">*</span></label>
           <input
             v-model="form.full_name_en"
             type="text"
-            placeholder="e.g. Joint Stock Commercial Bank for Foreign Trade of Vietnam"
+            :placeholder="$t('banking.fullNameEnPlaceholder')"
             :class="{ error: errors.full_name_en }"
             @focus="activeField = 'full_name_en'"
             @blur="onBlurField"
@@ -68,19 +68,19 @@
         <div v-if="isEdit" class="form-group toggle-group">
           <label class="toggle-label">
             <input v-model="form.is_active" type="checkbox" />
-            <span>Active</span>
+            <span>{{ $t('banking.activeToggle') }}</span>
           </label>
-          <p class="hint">Inactive banks won't appear in the bank picker on new bank accounts.</p>
+          <p class="hint">{{ $t('banking.bankInactiveHint') }}</p>
         </div>
 
         <div v-if="apiError" class="api-error">{{ apiError }}</div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
+        <button class="btn-cancel" @click="handleClose" :disabled="loading">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Bank' }}
+          {{ isEdit ? $t('common.saveChanges') : $t('banking.createBank') }}
         </button>
       </div>
     </div>
@@ -88,10 +88,10 @@
 
   <ConfirmDialog
     v-if="showUnsavedWarning"
-    title="Unsaved Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirm-text="Yes, discard"
-    cancel-text="Keep editing"
+    :title="$t('account.unsavedTitle')"
+    :message="$t('account.unsavedMessage')"
+    :confirm-text="$t('account.discard')"
+    :cancel-text="$t('account.keepEditing')"
     @confirm="$emit('close')"
     @cancel="showUnsavedWarning = false"
   />
@@ -103,6 +103,8 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SuggestionList from '@/features/banking/components/BankSuggestionList.vue'
 import { createBank, updateBank, searchBanks } from '@/features/banking/services/bankService'
 import { normalizeText } from '@/utils/textNormalizer'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const props = defineProps({
   bank: { type: Object, default: null },
@@ -189,12 +191,12 @@ const onPickSuggestion = (bank) => {
 
 const validateForm = () => {
   errors.value = { short_name: '', full_name_vi: '', full_name_en: '' }
-  if (!form.value.short_name.trim()) errors.value.short_name = 'Short name is required.'
-  else if (form.value.short_name.length > 50) errors.value.short_name = 'Short name must be at most 50 characters.'
-  if (!form.value.full_name_vi.trim() || form.value.full_name_vi.trim().length < 2) errors.value.full_name_vi = 'Vietnamese name is required (min 2 characters).'
-  else if (form.value.full_name_vi.length > 255) errors.value.full_name_vi = 'Vietnamese name must be at most 255 characters.'
-  if (!form.value.full_name_en.trim() || form.value.full_name_en.trim().length < 2) errors.value.full_name_en = 'English name is required (min 2 characters).'
-  else if (form.value.full_name_en.length > 255) errors.value.full_name_en = 'English name must be at most 255 characters.'
+  if (!form.value.short_name.trim()) errors.value.short_name = t('banking.shortNameRequired')
+  else if (form.value.short_name.length > 50) errors.value.short_name = t('banking.shortNameTooLong')
+  if (!form.value.full_name_vi.trim() || form.value.full_name_vi.trim().length < 2) errors.value.full_name_vi = t('banking.viRequired')
+  else if (form.value.full_name_vi.length > 255) errors.value.full_name_vi = t('banking.viTooLong')
+  if (!form.value.full_name_en.trim() || form.value.full_name_en.trim().length < 2) errors.value.full_name_en = t('banking.enRequired')
+  else if (form.value.full_name_en.length > 255) errors.value.full_name_en = t('banking.enTooLong')
 
   if (!isEdit.value) {
     const shortNorm = normalizeText(form.value.short_name)
@@ -206,7 +208,7 @@ const validateForm = () => {
       normalizeText(s.full_name_en) === enNorm
     )
     if (dup) {
-      apiError.value = `A bank with this name already exists: ${dup.short_name}. Open it from the suggestion list above to edit.`
+      apiError.value = t('banking.duplicateBank', { name: dup.short_name })
       return false
     }
   }
@@ -239,7 +241,7 @@ const handleSubmit = async () => {
       emit('saved', result)
     }
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     loading.value = false
   }

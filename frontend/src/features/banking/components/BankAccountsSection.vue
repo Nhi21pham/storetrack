@@ -1,16 +1,16 @@
 <template>
   <section class="bank-accounts-section">
     <div class="section-head">
-      <h3>Bank Accounts</h3>
+      <h3>{{ $t('banking.sectionTitle') }}</h3>
       <button v-if="canManage && !addingNew && editingId == null" class="btn-add" type="button" @click="startAdd">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add bank account
+        {{ $t('banking.addBankAccount') }}
       </button>
     </div>
 
     <p v-if="loadError" class="section-error">{{ loadError }}</p>
 
-    <div v-if="loading" class="section-loading">Loading...</div>
+    <div v-if="loading" class="section-loading">{{ $t('common.loading') }}</div>
 
     <ul v-else-if="accounts.length > 0 || addingNew" class="account-list">
       <li v-for="(account, index) in accounts" :key="account._localId ?? account.id" class="account-row">
@@ -34,24 +34,24 @@
             </div>
             <dl class="row-details">
               <div v-if="account.account_holder_name" class="detail-item">
-                <dt>Holder</dt>
+                <dt>{{ $t('banking.holder') }}</dt>
                 <dd>{{ account.account_holder_name }}</dd>
               </div>
               <div v-if="account.branch" class="detail-item">
-                <dt>Branch</dt>
+                <dt>{{ $t('banking.branch') }}</dt>
                 <dd>{{ account.branch }}</dd>
               </div>
               <div v-if="account.province?.name_vi" class="detail-item">
-                <dt>Province</dt>
+                <dt>{{ $t('banking.province') }}</dt>
                 <dd>{{ account.province.name_vi }}</dd>
               </div>
             </dl>
           </div>
           <div v-if="canManage" class="row-actions">
-            <button type="button" class="action-btn" @click="startEdit(account)" title="Edit">
+            <button type="button" class="action-btn" @click="startEdit(account)" :title="$t('common.edit')">
               <Icon name="edit" :size="14" />
             </button>
-            <button type="button" class="action-btn danger" @click="removeAccount(account, index)" title="Remove">
+            <button type="button" class="action-btn danger" @click="removeAccount(account, index)" :title="$t('banking.remove')">
               <Icon name="delete" :size="14" />
             </button>
           </div>
@@ -72,7 +72,7 @@
       </li>
     </ul>
 
-    <p v-else class="empty">No bank accounts yet.</p>
+    <p v-else class="empty">{{ $t('banking.noAccountsInList') }}</p>
   </section>
 </template>
 
@@ -84,6 +84,8 @@ import {
   fetchBankAccountsForParty,
   deleteBankAccount,
 } from '@/features/banking/services/bankAccountService'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const currentStore = inject('currentStore', null)
 
@@ -123,7 +125,7 @@ const load = async () => {
   try {
     accounts.value = await fetchBankAccountsForParty({ partyId: props.partyId })
   } catch (err) {
-    loadError.value = err.message
+    loadError.value = translateError(err)
     accounts.value = []
   } finally {
     loading.value = false
@@ -189,17 +191,17 @@ const onEditSaved = async (index, payload) => {
 
 const removeAccount = async (account, index) => {
   if (isDraftMode.value) {
-    if (!confirm('Remove this bank account from the list?')) return
+    if (!confirm(t('banking.removeFromList'))) return
     accounts.value.splice(index, 1)
     emitDraftChange()
     return
   }
-  if (!confirm(`Delete bank account ${account.account_number}?`)) return
+  if (!confirm(t('banking.deleteAccountTitle', { accountNumber: account.account_number }))) return
   try {
     await deleteBankAccount({ id: account.id })
     await load()
   } catch (err) {
-    alert(err.message)
+    alert(translateError(err))
   }
 }
 </script>

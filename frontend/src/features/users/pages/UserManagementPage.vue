@@ -1,24 +1,24 @@
 <template>
   <PageContainer :maxWidth="900">
-    <PageHeader title="User Management" subtitle="Manage members and invitations across your stores.">
+    <PageHeader :title="$t('users.title')" :subtitle="$t('users.subtitle')">
       <template v-if="ownedStores.length" #actions>
         <button class="btn-history" @click="showHistory = true">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
-          Invitation History
+          {{ $t('users.invitationHistory') }}
         </button>
       </template>
     </PageHeader>
 
-    <SearchBar v-model="searchQuery" placeholder="Search member name or email..." />
+    <SearchBar v-model="searchQuery" :placeholder="$t('users.searchPlaceholder')" />
 
-    <LoadingState v-if="loading">Loading stores...</LoadingState>
+    <LoadingState v-if="loading">{{ $t('users.loadingStores') }}</LoadingState>
 
     <EmptyState
       v-else-if="ownedStores.length === 0"
-      title="No stores to manage"
-      description="You need to be an owner of a store to manage its members."
+      :title="$t('users.noStoresTitle')"
+      :description="$t('users.noStoresDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -45,7 +45,7 @@
             <div class="store-text">
               <div class="store-name-row">
                 <h3>{{ store.name }}</h3>
-                <span v-if="!store.is_active" class="inactive-badge">inactive</span>
+                <span v-if="!store.is_active" class="inactive-badge">{{ $t('users.inactiveBadge') }}</span>
               </div>
               <span class="biz-name">{{ store.business.name }}</span>
             </div>
@@ -57,7 +57,7 @@
 
         <div v-if="expandedStores.has(store.id)" class="card-body">
           <InactiveBanner v-if="!store.is_active">
-            This store is deactivated. Member list is read-only.
+            {{ $t('users.inactiveStoreBanner') }}
           </InactiveBanner>
           <StoreMembersPanel
             :ref="el => { if (el) panelRefs[store.id] = el }"
@@ -68,7 +68,7 @@
             @invite="openInvite(store)"
             @has-matches="storeMatchMap[store.id] = $event"
             @error="showToast($event, 'error')"
-            @member-removed="showToast('Member removed successfully.')"
+            @member-removed="showToast($t('users.memberRemoved'))"
           />
         </div>
       </div>
@@ -103,6 +103,8 @@ import InviteUserModal from '@/features/users/components/InviteUserModal.vue'
 import InvitationHistoryModal from '@/features/users/components/InvitationHistoryModal.vue'
 import { fetchAccessibleStoresBrief } from '@/features/users/services/userService'
 import { ROLE } from '@/features/users/constants'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const showToast = inject('showToast')
 
@@ -136,7 +138,7 @@ const fetchStores = async () => {
   try {
     stores.value = await fetchAccessibleStoresBrief()
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   } finally {
     loading.value = false
   }
@@ -152,7 +154,7 @@ const openInvite = (store) => { invitingStore.value = store }
 const onInvited = (email) => {
   const storeId = invitingStore.value?.id
   invitingStore.value = null
-  showToast(`Invitation sent to ${email}!`)
+  showToast(t('users.invitationSent', { email }))
   panelRefs.value[storeId]?.refresh()
 }
 

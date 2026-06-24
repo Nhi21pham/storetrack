@@ -3,22 +3,22 @@
     <div class="dash-header">
       <div class="scope-label">
         <span class="scope-name">{{ scope === 'business' ? currentBusiness?.name : currentStore?.name }}</span>
-        <span class="scope-tag" :class="scope">{{ scope === 'business' ? 'Business' : 'Store' }}</span>
+        <span class="scope-tag" :class="scope">{{ scope === 'business' ? $t('enums.objectType.business') : $t('enums.objectType.store') }}</span>
       </div>
       <label class="month-picker">
-        <span>Month</span>
+        <span>{{ $t('dashboard.month') }}</span>
         <input type="month" v-model="month" :max="maxMonth" />
       </label>
     </div>
 
     <EmptyState
       v-if="!scopeId"
-      title="No store selected"
-      description="Pick a store (or Business level) from the switcher to see its dashboard."
+      :title="$t('dashboard.noStoreTitle')"
+      :description="$t('dashboard.noStoreDesc')"
     />
 
     <template v-else>
-      <LoadingState v-if="loading">Loading dashboard…</LoadingState>
+      <LoadingState v-if="loading">{{ $t('dashboard.loadingDashboard') }}</LoadingState>
 
       <template v-else-if="data">
         <StatCards :summary="data" />

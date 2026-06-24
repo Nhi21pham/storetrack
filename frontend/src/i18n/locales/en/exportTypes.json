@@ -1,0 +1,19 @@
+{
+  "invoiceList": "Invoice list",
+  "invoicePdf": "Invoice PDF",
+  "customers": "Customers",
+  "suppliers": "Suppliers",
+  "units": "Units",
+  "tags": "Tags",
+  "products": "Products",
+  "categories": "Categories",
+  "banks": "Banks",
+  "bankAccounts": "Bank accounts",
+  "stockReport": "Stock report",
+  "saleReport": "Sale report",
+  "profitReport": "Profit report",
+  "receivablesReport": "Receivables report",
+  "payablesReport": "Payables report",
+  "topProductsReport": "Top products report",
+  "auditLog": "Audit log"
+}

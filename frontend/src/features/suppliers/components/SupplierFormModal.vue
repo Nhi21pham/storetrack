@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Supplier' : 'New Supplier' }}</h2>
+        <h2>{{ isEdit ? $t('suppliers.editSupplier') : $t('suppliers.newSupplier') }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,32 +12,32 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label>Supplier Name <span class="required">*</span></label>
-          <input v-model="form.name" type="text" placeholder="Enter supplier name" :class="{ error: errors.name }" />
+          <label>{{ $t('suppliers.supplierName') }} <span class="required">*</span></label>
+          <input v-model="form.name" type="text" :placeholder="$t('suppliers.namePlaceholder')" :class="{ error: errors.name }" />
           <span v-if="errors.name" class="error-text">{{ errors.name }}</span>
         </div>
 
         <div class="form-group">
-          <label>Tax Code</label>
-          <input v-model="form.tax_code" type="text" placeholder="Enter tax code" :class="{ error: errors.tax_code }" />
+          <label>{{ $t('suppliers.taxCode') }}</label>
+          <input v-model="form.tax_code" type="text" :placeholder="$t('suppliers.taxCodePlaceholder')" :class="{ error: errors.tax_code }" />
           <span v-if="errors.tax_code" class="error-text">{{ errors.tax_code }}</span>
         </div>
 
         <div class="form-group">
-          <label>Address</label>
-          <input v-model="form.address" type="text" placeholder="Enter address" :class="{ error: errors.address }" />
+          <label>{{ $t('suppliers.address') }}</label>
+          <input v-model="form.address" type="text" :placeholder="$t('suppliers.addressPlaceholder')" :class="{ error: errors.address }" />
           <span v-if="errors.address" class="error-text">{{ errors.address }}</span>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Email</label>
-            <input v-model="form.email" type="email" placeholder="Enter email" :class="{ error: errors.email }" />
+            <label>{{ $t('suppliers.email') }}</label>
+            <input v-model="form.email" type="email" :placeholder="$t('suppliers.emailPlaceholder')" :class="{ error: errors.email }" />
             <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
           </div>
           <div class="form-group">
-            <label>Phone</label>
-            <input v-model="form.phone" type="tel" placeholder="Enter phone number" :class="{ error: errors.phone }" />
+            <label>{{ $t('suppliers.phone') }}</label>
+            <input v-model="form.phone" type="tel" :placeholder="$t('suppliers.phonePlaceholder')" :class="{ error: errors.phone }" />
             <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
           </div>
         </div>
@@ -48,15 +48,15 @@
           ref="bankAccountsWidget"
           :party-id="supplier?.party?.id ?? null"
           :default-holder-name="form.name"
-          entity-label="Supplier"
+          :entity-label="$t('suppliers.entityLabel')"
         />
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
+        <button class="btn-cancel" @click="handleClose" :disabled="loading">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Supplier' }}
+          {{ isEdit ? $t('common.saveChanges') : $t('suppliers.createSupplier') }}
         </button>
       </div>
     </div>
@@ -64,10 +64,10 @@
 
   <ConfirmDialog
     v-if="showUnsavedWarning"
-    title="Unsaved Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirm-text="Yes, discard"
-    cancel-text="Keep editing"
+    :title="$t('account.unsavedTitle')"
+    :message="$t('account.unsavedMessage')"
+    :confirm-text="$t('account.discard')"
+    :cancel-text="$t('account.keepEditing')"
     @confirm="$emit('close')"
     @cancel="showUnsavedWarning = false"
   />
@@ -78,6 +78,7 @@ import { ref, computed, inject } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import BankAccountsFormWidget from '@/features/banking/components/BankAccountsFormWidget.vue'
 import { validators } from '@/utils/validators'
+import { translateError } from '@/utils/translateError'
 import { createSupplier, updateSupplier } from '@/features/suppliers/services/supplierService'
 
 const currentStore = inject('currentStore')
@@ -164,7 +165,7 @@ const handleSubmit = async () => {
 
     emit('saved', result)
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     loading.value = false
   }

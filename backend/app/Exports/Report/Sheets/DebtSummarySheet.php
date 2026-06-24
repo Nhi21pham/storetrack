@@ -38,7 +38,7 @@ class DebtSummarySheet extends DebtReportSheet
 
     public function title(): string
     {
-        return 'Summary';
+        return __('exports.sheet_summary');
     }
 
     public function array(): array
@@ -48,9 +48,9 @@ class DebtSummarySheet extends DebtReportSheet
 
     public function headings(): array
     {
-        $headings = ['No.'];
+        $headings = [__('exports.col_no')];
         if ($this->includeStore) {
-            $headings[] = 'Store';
+            $headings[] = __('exports.col_store');
         }
         $headings[] = $this->partyLabel;
         foreach ($this->activeKeys() as $key) {
@@ -81,7 +81,7 @@ class DebtSummarySheet extends DebtReportSheet
 
     protected function totalsRow(): array
     {
-        $row = ['TOTAL'];
+        $row = [__('exports.total')];
         if ($this->includeStore) {
             $row[] = '';
         }
@@ -155,12 +155,12 @@ class DebtSummarySheet extends DebtReportSheet
     private function columnDefinitions(): array
     {
         return [
-            'phone'         => ['heading' => 'Phone',          'width' => 18],
-            'invoice_count' => ['heading' => '# Invoices',     'width' => 12],
+            'phone'         => ['heading' => __('exports.col_phone'),          'width' => 18],
+            'invoice_count' => ['heading' => __('exports.col_num_invoices'),     'width' => 12],
             'spent'         => ['heading' => $this->spentLabel, 'width' => 18],
-            'paid'          => ['heading' => 'Total Paid',     'width' => 18],
-            'owe'           => ['heading' => 'Total Owe',      'width' => 18],
-            'email'         => ['heading' => 'Email',          'width' => 26],
+            'paid'          => ['heading' => __('exports.col_total_paid'),     'width' => 18],
+            'owe'           => ['heading' => __('exports.col_total_owe'),      'width' => 18],
+            'email'         => ['heading' => __('exports.col_email'),          'width' => 26],
         ];
     }
 

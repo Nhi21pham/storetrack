@@ -63,12 +63,12 @@ class ProductCategoryExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'code'        => ['heading' => 'Code',        'width' => 14, 'value' => fn ($row) => (string) $row->code],
-            'name'        => ['heading' => 'Name',        'width' => 30, 'value' => fn ($row) => (string) $row->name],
-            'description' => ['heading' => 'Description', 'width' => 40, 'value' => fn ($row) => (string) ($row->description ?? '')],
-            'status'      => ['heading' => 'Status',      'width' => 12, 'value' => fn ($row) => $row->is_active ? 'Active' : 'Inactive'],
-            'created_at'  => ['heading' => 'Created',     'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
-            'updated_at'  => ['heading' => 'Updated',     'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
+            'code'        => ['heading' => __('exports.col_code'),        'width' => 14, 'value' => fn ($row) => (string) $row->code],
+            'name'        => ['heading' => __('exports.col_name'),        'width' => 30, 'value' => fn ($row) => (string) $row->name],
+            'description' => ['heading' => __('exports.col_description'), 'width' => 40, 'value' => fn ($row) => (string) ($row->description ?? '')],
+            'status'      => ['heading' => __('exports.col_status'),      'width' => 12, 'value' => fn ($row) => $row->is_active ? __('exports.status_active') : __('exports.status_inactive')],
+            'created_at'  => ['heading' => __('exports.col_created'),     'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at'  => ['heading' => __('exports.col_updated'),     'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

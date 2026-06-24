@@ -3,22 +3,22 @@
     <div v-if="selected.length" class="selected-chips">
       <span v-for="(pair, idx) in selected" :key="idx" class="chip-wrap">
         <TagChip :tag-name="pair.tag_name" :value="pair.value" />
-        <ChipRemoveButton title="Remove" @click="removeAt(idx)" />
+        <ChipRemoveButton :title="$t('tags.removeTitle')" @click="removeAt(idx)" />
       </span>
     </div>
-    <p v-else class="no-tags">No tags attached.</p>
+    <p v-else class="no-tags">{{ $t('tags.noTagsAttached') }}</p>
 
     <div class="add-row">
       <SelectField v-model="draftTagId" :disabled="loading" size="small" class="tag-select">
-        <option value="">{{ loading ? 'Loading tags…' : 'Select a tag…' }}</option>
+        <option value="">{{ loading ? $t('tags.loadingTagsOption') : $t('tags.selectTag') }}</option>
         <option v-for="t in tags" :key="t.id" :value="String(t.id)">{{ t.name }}</option>
       </SelectField>
       <SelectField v-model="draftValueId" :disabled="!draftTagId || !draftTagValues.length" size="small" class="value-select">
-        <option value="">{{ draftTagValues.length ? '(No value)' : 'No values' }}</option>
+        <option value="">{{ draftTagValues.length ? $t('tags.noValueOption') : $t('tags.noValues') }}</option>
         <option v-for="v in draftTagValues" :key="v.id" :value="String(v.id)">{{ v.value }}</option>
       </SelectField>
-      <button type="button" class="add-btn" :disabled="!draftTagId" @click="addDraft">Add</button>
-      <AddItemButton v-if="canCreateTag" size="small" title="Create new tag" @click="showCreateTag = true" />
+      <button type="button" class="add-btn" :disabled="!draftTagId" @click="addDraft">{{ $t('tags.addValue') }}</button>
+      <AddItemButton v-if="canCreateTag" size="small" :title="$t('tags.createNewTag')" @click="showCreateTag = true" />
     </div>
     <p v-if="hint" class="picker-hint">{{ hint }}</p>
 
@@ -39,6 +39,7 @@ import AddItemButton from '@/components/common/AddItemButton.vue'
 import SelectField from '@/components/common/SelectField.vue'
 import TagFormModal from '@/features/tags/components/TagFormModal.vue'
 import { fetchTags } from '@/features/tags/services/tagService'
+import { t } from '@/i18n'
 
 const props = defineProps({
   modelValue: { type: Array, default: () => [] },
@@ -104,7 +105,7 @@ const addDraft = () => {
   const valueId = draftValueId.value || null
   const exists = selected.value.some(p => p.tag_id === String(tag.id) && (p.tag_value_id || null) === valueId)
   if (exists) {
-    hint.value = 'That tag is already attached.'
+    hint.value = t('tags.alreadyAttached')
     return
   }
   const valueObj = valueId ? draftTagValues.value.find(v => String(v.id) === valueId) : null

@@ -33,6 +33,7 @@ use App\Services\Payment\PaymentService;
 use App\Services\PermissionService;
 use App\Support\TransactionRunner;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 class InvoiceService
 {
@@ -343,7 +344,7 @@ class InvoiceService
 
         $this->paymentService->record($actor, $storeId, [
             'party_id'    => (int) $invoice->party_id,
-            'paid_at'     => $data['invoice_date'],
+            'paid_at'     => Carbon::parse($data['invoice_date'])->setTimeFrom(now())->format('Y-m-d H:i:s'),
             'method'      => $data['payment_method'],
             'allocations' => [
                 ['invoice_id' => (int) $invoice->id, 'amount' => $amount],

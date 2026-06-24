@@ -77,7 +77,8 @@ class CustomerAuditLogger extends AuditLogger
             AuditAction::EXPORTED,
             self::actor($actor) . " has EXPORTED customers of {$scopeLabel}.",
             [
-                'business_id' => $businessId,
+                'business_id'   => $businessId,
+                'business_name' => $storeId ? null : $scopeName,
                 'store_id'    => $auditStoreId,
                 'store_name'  => $auditStoreName,
                 'export_id'   => $export->id,

@@ -38,17 +38,17 @@ class ExportStockReportJob extends BaseExportJob
 
         if ($isBusinessView) {
             $scopeName = $metadata['scope_name'] ?? (Business::find($scopeId)?->name ?? '');
-            $title = 'Stock report of business '.$scopeName;
+            $title = __('exports.of_business', ['label' => __('exports.label_stock_report'), 'name' => $scopeName]);
             $query = $repository->listQueryForBusiness($scopeId, $filters);
         } else {
             $scopeName = $metadata['scope_name'] ?? (Store::find($scopeId)?->name ?? '');
-            $title = 'Stock report of store '.$scopeName;
+            $title = __('exports.of_store', ['label' => __('exports.label_stock_report'), 'name' => $scopeName]);
             $query = $repository->listQuery($scopeId, $filters);
         }
 
         $metaLines = [
-            'Exported by '.$user->name.' ('.$user->email.')',
-            'Date exported: '.now()->format('Y-m-d H:i:s'),
+            __('exports.exported_by', ['name' => $user->name, 'email' => $user->email]),
+            __('exports.date_exported', ['date' => now()->format('Y-m-d H:i:s')]),
         ];
 
         $columns = isset($filters['columns']) && is_array($filters['columns']) ? $filters['columns'] : null;

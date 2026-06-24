@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Store' : 'New Store' }}</h2>
+        <h2>{{ isEdit ? $t('stores.editStore') : $t('stores.newStore') }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -13,9 +13,9 @@
       <div class="modal-body">
         <!-- Business selector (create mode only) -->
         <div v-if="!isEdit" class="form-group">
-          <label>Business <span class="required">*</span></label>
+          <label>{{ $t('stores.business') }} <span class="required">*</span></label>
           <SelectField v-model="form.business_id" :error="!!errors.business_id">
-            <option value="">Select a business</option>
+            <option value="">{{ $t('stores.selectBusiness') }}</option>
             <option v-for="biz in ownedBusinesses" :key="biz.id" :value="biz.id">
               {{ biz.name }}
             </option>
@@ -32,26 +32,26 @@
         </div>
 
         <div class="form-group">
-          <label>Store Name <span class="required">*</span></label>
-          <input v-model="form.name" type="text" placeholder="Enter store name" :class="{ error: errors.name }" />
+          <label>{{ $t('stores.storeName') }} <span class="required">*</span></label>
+          <input v-model="form.name" type="text" :placeholder="$t('stores.namePlaceholder')" :class="{ error: errors.name }" />
           <span v-if="errors.name" class="error-text">{{ errors.name }}</span>
         </div>
 
         <div class="form-group">
-          <label>Address</label>
-          <input v-model="form.address" type="text" placeholder="Enter address" :class="{ error: errors.address }" />
+          <label>{{ $t('stores.address') }}</label>
+          <input v-model="form.address" type="text" :placeholder="$t('stores.addressPlaceholder')" :class="{ error: errors.address }" />
           <span v-if="errors.address" class="error-text">{{ errors.address }}</span>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label>Email</label>
-            <input v-model="form.email" type="email" placeholder="Enter email" :class="{ error: errors.email }" />
+            <label>{{ $t('stores.email') }}</label>
+            <input v-model="form.email" type="email" :placeholder="$t('stores.emailPlaceholder')" :class="{ error: errors.email }" />
             <span v-if="errors.email" class="error-text">{{ errors.email }}</span>
           </div>
           <div class="form-group">
-            <label>Phone</label>
-            <input v-model="form.phone" type="tel" placeholder="Enter phone number" :class="{ error: errors.phone }" />
+            <label>{{ $t('stores.phone') }}</label>
+            <input v-model="form.phone" type="tel" :placeholder="$t('stores.phonePlaceholder')" :class="{ error: errors.phone }" />
             <span v-if="errors.phone" class="error-text">{{ errors.phone }}</span>
           </div>
         </div>
@@ -60,10 +60,10 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
+        <button class="btn-cancel" @click="handleClose" :disabled="loading">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Store' }}
+          {{ isEdit ? $t('common.saveChanges') : $t('stores.createStore') }}
         </button>
       </div>
     </div>
@@ -71,10 +71,10 @@
 
   <ConfirmDialog
     v-if="showUnsavedWarning"
-    title="Unsaved Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirm-text="Yes, discard"
-    cancel-text="Keep editing"
+    :title="$t('account.unsavedTitle')"
+    :message="$t('account.unsavedMessage')"
+    :confirm-text="$t('account.discard')"
+    :cancel-text="$t('account.keepEditing')"
     @confirm="$emit('close')"
     @cancel="showUnsavedWarning = false"
   />
@@ -83,6 +83,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { validators } from '@/utils/validators'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import SelectField from '@/components/common/SelectField.vue'
 import {
@@ -122,7 +124,7 @@ const fetchOwnedBusinesses = async () => {
   try {
     ownedBusinesses.value = await fetchMyBusinesses()
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   }
 }
 
@@ -130,7 +132,7 @@ const validateForm = () => {
   errors.value = { business_id: '', name: '', address: '', email: '', phone: '' }
 
   if (!isEdit.value && !form.value.business_id) {
-    errors.value.business_id = 'Please select a business.'
+    errors.value.business_id = t('stores.selectBusinessError')
   }
 
   errors.value.name = validators.storeName(form.value.name)
@@ -160,7 +162,7 @@ const handleSubmit = async () => {
       : await createStore({ business_id: form.value.business_id, ...baseInput })
     emit('saved', result)
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     loading.value = false
   }

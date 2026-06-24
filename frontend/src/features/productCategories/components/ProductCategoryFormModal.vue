@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="handleClickOutside">
     <div class="modal">
       <div class="modal-header">
-        <h2>{{ isEdit ? 'Edit Category' : 'New Category' }}</h2>
+        <h2>{{ isEdit ? $t('productCategories.editCategory') : $t('productCategories.newCategory') }}</h2>
         <button class="close-btn" @click="handleClose">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -12,26 +12,26 @@
 
       <div class="modal-body">
         <div class="form-group">
-          <label>Code <span class="required">*</span></label>
+          <label>{{ $t('productCategories.code') }} <span class="required">*</span></label>
           <input
             v-model="form.code"
             type="text"
-            placeholder="e.g. SV"
+            :placeholder="$t('productCategories.codePlaceholder')"
             maxlength="10"
             :disabled="isEdit"
             :class="{ error: errors.code }"
             @input="form.code = form.code.toUpperCase()"
           />
           <span v-if="errors.code" class="error-text">{{ errors.code }}</span>
-          <p v-else class="hint">2-10 uppercase letters. Used as the prefix for product codes (e.g. SV000001). Cannot be changed once created.</p>
+          <p v-else class="hint">{{ $t('productCategories.codeHint') }}</p>
         </div>
 
         <div class="form-group" :class="{ 'has-suggestions': showSuggestions }">
-          <label>Name <span class="required">*</span></label>
+          <label>{{ $t('common.name') }} <span class="required">*</span></label>
           <input
             v-model="form.name"
             type="text"
-            placeholder="e.g. Dịch vụ"
+            :placeholder="$t('productCategories.namePlaceholder')"
             maxlength="100"
             :class="{ error: errors.name }"
             @focus="active = true"
@@ -46,12 +46,12 @@
         </div>
 
         <div class="form-group">
-          <label>Description</label>
+          <label>{{ $t('common.description') }}</label>
           <textarea
             v-model="form.description"
             rows="3"
             maxlength="500"
-            placeholder="Optional"
+            :placeholder="$t('tags.descriptionPlaceholder')"
             :class="{ error: errors.description }"
           />
           <span v-if="errors.description" class="error-text">{{ errors.description }}</span>
@@ -60,19 +60,19 @@
         <div v-if="isEdit" class="form-group toggle-group">
           <div class="toggle-row">
             <ToggleSwitch v-model="form.is_active" />
-            <span class="toggle-text">Active</span>
+            <span class="toggle-text">{{ $t('productCategories.activeToggle') }}</span>
           </div>
-          <p class="hint">Inactive categories won't appear in the category picker on new products.</p>
+          <p class="hint">{{ $t('productCategories.inactiveHint') }}</p>
         </div>
 
         <div v-if="apiError" class="api-error">{{ apiError }}</div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" @click="handleClose" :disabled="loading">Cancel</button>
+        <button class="btn-cancel" @click="handleClose" :disabled="loading">{{ $t('common.cancel') }}</button>
         <button class="btn-submit" @click="handleSubmit" :disabled="loading || !isDirty">
           <span v-if="loading" class="spinner"></span>
-          {{ isEdit ? 'Save Changes' : 'Create Category' }}
+          {{ isEdit ? $t('common.saveChanges') : $t('productCategories.createCategory') }}
         </button>
       </div>
     </div>
@@ -80,10 +80,10 @@
 
   <ConfirmDialog
     v-if="showUnsavedWarning"
-    title="Unsaved Changes"
-    message="You have unsaved changes. Are you sure you want to discard them?"
-    confirm-text="Yes, discard"
-    cancel-text="Keep editing"
+    :title="$t('account.unsavedTitle')"
+    :message="$t('account.unsavedMessage')"
+    :confirm-text="$t('account.discard')"
+    :cancel-text="$t('account.keepEditing')"
     @confirm="$emit('close')"
     @cancel="showUnsavedWarning = false"
   />
@@ -100,6 +100,8 @@ import {
   searchProductCategories,
 } from '@/features/productCategories/services/productCategoryService'
 import { normalizeText } from '@/utils/textNormalizer'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const props = defineProps({
   category: { type: Object, default: null },
@@ -187,22 +189,23 @@ const validateForm = () => {
   const name = form.value.name.trim()
 
   if (!isEdit.value) {
-    if (!code) errors.value.code = 'Code is required.'
-    else if (!/^[A-Z]{2,10}$/.test(code)) errors.value.code = 'Code must be 2-10 uppercase letters (A-Z).'
+    if (!code) errors.value.code = t('productCategories.codeRequired')
+    else if (!/^[A-Z]{2,10}$/.test(code)) errors.value.code = t('productCategories.codeFormat')
   }
 
-  if (!name) errors.value.name = 'Name is required.'
-  else if (name.length > 100) errors.value.name = 'Name must be at most 100 characters.'
+  if (!name) errors.value.name = t('productCategories.nameRequired')
+  else if (name.length > 100) errors.value.name = t('productCategories.nameTooLong')
 
   if ((form.value.description || '').length > 500) {
-    errors.value.description = 'Description must be at most 500 characters.'
+    errors.value.description = t('productCategories.descTooLong')
   }
 
   if (!isEdit.value) {
     const norm = normalizeText(name)
     const dup = suggestions.value.find(s => normalizeText(s.name) === norm || s.code === code)
     if (dup) {
-      apiError.value = `A category with this ${dup.code === code ? 'code' : 'name'} already exists: ${dup.code} - ${dup.name}. Open it from the suggestion list above to edit.`
+      const key = dup.code === code ? 'productCategories.duplicateByCode' : 'productCategories.duplicateByName'
+      apiError.value = t(key, { code: dup.code, name: dup.name })
       return false
     }
   }
@@ -234,7 +237,7 @@ const handleSubmit = async () => {
       emit('saved', result)
     }
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     loading.value = false
   }

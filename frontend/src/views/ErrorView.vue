@@ -10,14 +10,14 @@
             <line x1="19" y1="12" x2="5" y2="12"/>
             <polyline points="12 19 5 12 12 5"/>
           </svg>
-          Go Back
+          {{ $t('auth.goBackBtn') }}
         </button>
         <button class="btn-primary" @click="goHome">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
-          Go to Dashboard
+          {{ $t('auth.goToDashboard') }}
         </button>
       </div>
     </div>
@@ -27,29 +27,21 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const router = useRouter()
 const route = useRoute()
+const { t, te } = useI18n()
 
 const code = computed(() => route.params.code || '404')
 
-const title = computed(() => {
-  const titles = {
-    '404': 'Page not found',
-    '500': 'Server error',
-    '403': 'Access denied',
-  }
-  return titles[code.value] || 'Something went wrong'
-})
+const title = computed(() =>
+  te(`auth.errorTitle.${code.value}`) ? t(`auth.errorTitle.${code.value}`) : t('auth.errorTitle.default'),
+)
 
-const message = computed(() => {
-  const messages = {
-    '404': "The page you're looking for doesn't exist or has been moved.",
-    '500': 'Something went wrong on our end. Please try again later.',
-    '403': "You don't have permission to access this page.",
-  }
-  return messages[code.value] || 'An unexpected error occurred.'
-})
+const message = computed(() =>
+  te(`auth.errorMessage.${code.value}`) ? t(`auth.errorMessage.${code.value}`) : t('auth.errorMessage.default'),
+)
 
 const goHome = () => {
   const token = localStorage.getItem('token')

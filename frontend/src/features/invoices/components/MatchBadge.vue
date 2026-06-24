@@ -1,5 +1,5 @@
 <template>
-  <span class="match-badge" :class="matched ? 'matched' : 'new'">{{ matched ? 'Matched' : 'New' }}</span>
+  <span class="match-badge" :class="matched ? 'matched' : 'new'">{{ matched ? $t('invoices.matched') : $t('invoices.newCol') }}</span>
 </template>
 
 <script setup>

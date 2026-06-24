@@ -1,31 +1,31 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Units" subtitle="Manage the master list of measurement units used on products.">
+    <PageHeader :title="$t('units.title')" :subtitle="$t('units.subtitle')">
       <template v-if="currentBusiness && currentStore" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Unit
+          {{ $t('units.newUnit') }}
         </button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentBusiness"
-      title="No business found"
-      description="You need to create or select a business before managing units."
+      :title="$t('shared.noBusinessTitle')"
+      :description="$t('units.noBusinessDesc')"
     />
 
     <EmptyState
       v-else-if="!currentStore"
-      title="No store selected"
-      description="Select a store to manage units."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('units.noStoreDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by name..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('shared.searchByName')" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
           :togglable-columns="columnVisibility.togglableColumns"
@@ -58,12 +58,12 @@
         @delete="requestBulk('delete')"
       />
 
-      <LoadingState v-if="loading">Loading units...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('units.loadingUnits') }}</LoadingState>
 
       <EmptyState
         v-else-if="units.length === 0"
-        title="No units yet"
-        description="Add your first unit to get started."
+        :title="$t('units.noUnitsTitle')"
+        :description="$t('units.noUnitsDesc')"
       />
 
       <div v-else class="table-wrap">
@@ -73,25 +73,25 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="$t(c.labelKey)"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
           <template #filter-status>
             <SearchableSelect
               :modelValue="statusFilter"
-              :options="STATUS_OPTIONS"
-              all-label="(All)"
-              search-placeholder="Filter status..."
+              :options="statusOptions()"
+              :all-label="$t('shared.allParen')"
+              :search-placeholder="$t('shared.filterStatus')"
               teleport
               @update:modelValue="statusFilter = $event"
             />
@@ -99,7 +99,7 @@
 
           <tr v-if="filteredUnits.length === 0" class="empty-tr">
             <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
-              No units match the current filters.
+              {{ $t('shared.noResults') }}
             </td>
           </tr>
           <tr v-for="(unit, idx) in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
@@ -113,17 +113,17 @@
             <td v-if="columnVisibility.isVisible('status')">
               <ToggleSwitch
                 :model-value="unit.is_active"
-                :title="unit.is_active ? 'Click to deactivate' : 'Click to activate'"
+                :title="unit.is_active ? $t('shared.clickToDeactivate') : $t('shared.clickToActivate')"
                 @change="onToggleActive(unit)"
               />
             </td>
             <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(unit.created_at) }}</td>
             <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(unit.updated_at) }}</td>
             <td class="actions-col">
-              <button class="action-btn" @click="openEdit(unit)" title="Edit">
+              <button class="action-btn" @click="openEdit(unit)" :title="$t('common.edit')">
                 <Icon name="edit" :size="14" />
               </button>
-              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(unit)" title="Delete">
+              <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(unit)" :title="$t('common.delete')">
                 <Icon name="delete" :size="14" />
               </button>
             </td>
@@ -152,7 +152,7 @@
 
     <ImportModal
       v-if="showImport"
-      title="Import Units"
+      :title="$t('units.importTitle')"
       template-filename="units-import-template.xlsx"
       :required-headers="['Name']"
       :download-template="() => downloadUnitsImportTemplate({ storeId: currentStore.id })"
@@ -166,7 +166,7 @@
 
     <HistoryModal
       v-if="showHistory"
-      title="Unit History"
+      :title="$t('units.historyTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
@@ -181,10 +181,10 @@
 
     <ConfirmDialog
       v-if="deleteTarget"
-      :title="`Delete ${deleteTarget.name}?`"
-      message="This will permanently remove the unit from the master list."
-      confirm-text="Delete"
-      cancel-text="Cancel"
+      :title="$t('units.deleteTitle', { name: deleteTarget.name })"
+      :message="$t('units.deleteMessage')"
+      :confirm-text="$t('common.delete')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDelete"
       @cancel="deleteTarget = null"
     />
@@ -194,7 +194,7 @@
       :title="confirmConfig.title"
       :message="confirmConfig.message"
       :confirm-text="confirmConfig.confirmText"
-      cancel-text="Cancel"
+      :cancel-text="$t('common.cancel')"
       :type="confirmConfig.type"
       @confirm="confirmBulk"
       @cancel="cancelBulk"
@@ -202,22 +202,22 @@
 
     <ConfirmDialog
       v-if="deactivateTarget"
-      :title="`Unit is in use`"
-      :message="`${deactivateTarget.name} is referenced by existing products and cannot be deleted. Deactivate it instead? Inactive units stay linked to existing products but won't appear in new-product pickers.`"
-      confirm-text="Deactivate"
-      cancel-text="Cancel"
+      :title="$t('units.inUseTitle')"
+      :message="$t('units.inUseMessage', { name: deactivateTarget.name })"
+      :confirm-text="$t('common.deactivate')"
+      :cancel-text="$t('common.cancel')"
       @confirm="performDeactivate"
       @cancel="deactivateTarget = null"
     />
 
     <ConfirmDialog
       v-if="togglingUnit"
-      :title="togglingUnit.is_active ? 'Deactivate Unit' : 'Reactivate Unit'"
+      :title="togglingUnit.is_active ? $t('units.toggleDeactivateTitle') : $t('units.toggleReactivateTitle')"
       :message="togglingUnit.is_active
-        ? `Are you sure you want to deactivate '${togglingUnit.name}'? Existing products will stay linked, but this unit won't appear in new-product pickers.`
-        : `Are you sure you want to reactivate '${togglingUnit.name}'?`"
-      :confirm-text="togglingUnit.is_active ? 'Yes, deactivate' : 'Yes, reactivate'"
-      cancel-text="Cancel"
+        ? $t('units.toggleDeactivateMessage', { name: togglingUnit.name })
+        : $t('units.toggleReactivateMessage', { name: togglingUnit.name })"
+      :confirm-text="togglingUnit.is_active ? $t('units.toggleDeactivateConfirm') : $t('units.toggleReactivateConfirm')"
+      :cancel-text="$t('common.cancel')"
       :type="togglingUnit.is_active ? 'warning' : 'success'"
       @confirm="handleToggle"
       @cancel="togglingUnit = null"
@@ -265,10 +265,12 @@ import {
   downloadUnitsImportTemplate, previewUnitsImport, revalidateUnitsImport, startUnitsImport,
 } from '@/features/units/services/unitService'
 import { fetchImportStatus } from '@/features/imports/services/importService'
-import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, STATUS_OPTIONS } from '@/features/units/constants'
+import { UNIT_COLUMNS, UNIT_INITIAL_COL_WIDTHS, statusOptions } from '@/features/units/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
 import { formatDateTime } from '@/utils/datetime'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'units',
@@ -300,8 +302,8 @@ const showImport = ref(false)
 const showHistory = ref(false)
 
 const historyTabs = computed(() => [
-  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'units' } },
-  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['units'] } },
+  { key: 'imports', label: t('shared.imports'), component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'units' } },
+  { key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, types: ['units'] } },
 ])
 const editingUnit = ref(null)
 const detailUnit = ref(null)
@@ -378,12 +380,12 @@ const { exporting, run: runExport } = useExport({
     return startUnitExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `units-${id}.xlsx`,
-  onSuccess: () => showToast('Unit export ready.', 'success'),
+  onSuccess: () => showToast(t('units.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
 const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
-  selectedIds, clearSelection, reload: () => load(), noun: 'unit',
+  selectedIds, clearSelection, reload: () => load(), nounKey: 'unit',
   setActive: (id, isActive) => updateUnit({ id, input: { is_active: isActive } }),
   remove: (id) => deleteUnit({ id }),
 })
@@ -429,7 +431,7 @@ const onSaved = async () => {
 
 const onImported = async () => {
   await load()
-  showToast('Units imported.', 'success')
+  showToast(t('units.imported'), 'success')
 }
 
 const onPickExisting = (unit) => {
@@ -451,7 +453,7 @@ const performDelete = async () => {
     if (err.code === ErrorCode.UNIT_IN_USE) {
       deactivateTarget.value = unit
     } else {
-      alert(err.message)
+      alert(translateError(err))
     }
   }
 }

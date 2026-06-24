@@ -10,12 +10,11 @@ const props = defineProps({
   status: { type: String, default: '' },
 })
 
-const LABELS = { UNPAID: 'Unpaid', PARTIAL: 'Partial', PAID: 'Paid' }
-const label = computed(() => LABELS[props.status] || paymentStatusLabel(props.status))
+const label = computed(() => paymentStatusLabel(props.status))
 </script>
 
 <style scoped>
-.status-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.status-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
 .status-badge.unpaid { background: #fef3c7; color: #92400e; }
 .status-badge.partial { background: #dbeafe; color: #1e40af; }
 .status-badge.paid { background: #dcfce7; color: #166534; }

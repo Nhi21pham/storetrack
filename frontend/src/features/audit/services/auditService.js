@@ -3,7 +3,7 @@ import { graphql, rest } from '@/api'
 const STORE_AUDIT_LOGS_QUERY = `
   query AuditLogs($store_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String, $object_type: String, $action: String, $search: String) {
     auditLogs(store_id: $store_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date, object_type: $object_type, action: $action, search: $search) {
-      data { id actor_name actor_email object_type action message created_at }
+      data { id actor_name actor_email object_type action message metadata_json created_at }
       total current_page last_page per_page
     }
   }
@@ -12,7 +12,7 @@ const STORE_AUDIT_LOGS_QUERY = `
 const BUSINESS_AUDIT_LOGS_QUERY = `
   query BusinessAuditLogs($business_id: ID!, $page: Int, $per_page: Int, $start_date: String, $end_date: String, $object_type: String, $action: String, $search: String) {
     businessAuditLogs(business_id: $business_id, page: $page, per_page: $per_page, start_date: $start_date, end_date: $end_date, object_type: $object_type, action: $action, search: $search) {
-      data { id actor_name actor_email object_type action message store_name created_at }
+      data { id actor_name actor_email object_type action message metadata_json store_name created_at }
       total current_page last_page per_page
     }
   }

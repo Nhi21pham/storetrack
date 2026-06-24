@@ -22,7 +22,7 @@
     </div>
 
     <div class="navbar-right">
-      <span class="hello-text">Hello, <strong>{{ username }}</strong></span>
+      <span class="hello-text">{{ $t('nav.hello') }}, <strong>{{ username }}</strong></span>
       <div class="avatar-wrapper" @click.stop="dropdownOpen = !dropdownOpen">
         <button class="avatar-btn">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -44,31 +44,46 @@
           </div>
 
           <div class="dropdown-divider"></div>
-          <div class="dropdown-section-title">Store</div>
+          <div class="dropdown-section-title">{{ $t('nav.storeSection') }}</div>
           <div class="dropdown-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-            Store Information
+            {{ $t('nav.storeInformation') }}
           </div>
           <div class="dropdown-item">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M4.93 4.93l1.41 1.41"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M20 12h2"/><path d="M2 12h2"/><path d="M19.07 19.07l-1.41-1.41"/><path d="M4.93 19.07l1.41-1.41"/></svg>
-            Store Settings
+            {{ $t('nav.storeSettings') }}
           </div>
 
           <div class="dropdown-divider"></div>
-          <div class="dropdown-section-title">Account</div>
+          <div class="dropdown-section-title">{{ $t('nav.accountSection') }}</div>
           <div class="dropdown-item" @click.stop="handleAction('account-info')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Account Information
+            {{ $t('nav.accountInformation') }}
           </div>
           <div class="dropdown-item" @click.stop="handleAction('change-password')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Change Password
+            {{ $t('nav.changePassword') }}
+          </div>
+
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-section-title">{{ $t('nav.language') }}</div>
+          <div class="lang-toggle">
+            <button
+              class="lang-btn"
+              :class="{ active: locale === 'vi' }"
+              @click.stop="switchLocale('vi')"
+            >{{ $t('nav.languageVietnamese') }}</button>
+            <button
+              class="lang-btn"
+              :class="{ active: locale === 'en' }"
+              @click.stop="switchLocale('en')"
+            >{{ $t('nav.languageEnglish') }}</button>
           </div>
 
           <div class="dropdown-divider"></div>
           <div class="dropdown-item logout" @click.stop="handleAction('logout')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Logout
+            {{ $t('nav.logout') }}
           </div>
         </div>
       </div>
@@ -78,12 +93,17 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { setLocale } from '@/i18n'
 import StoreSwitcher from '@/components/layout/StoreSwitcher.vue'
 
 const props = defineProps({
   username: String,
   email: String
 })
+
+const { locale } = useI18n({ useScope: 'global' })
+const switchLocale = (code) => setLocale(code)
 
 const dropdownOpen = ref(false)
 const switcherRef = ref(null)
@@ -144,4 +164,8 @@ defineExpose({ refreshBusinesses })
 .dropdown-item:hover { background: #f9fafb; }
 .dropdown-item.logout { color: #dc2626; }
 .dropdown-item.logout:hover { background: #fef2f2; }
+.lang-toggle { display: flex; gap: 8px; padding: 4px 16px 10px; }
+.lang-btn { flex: 1; padding: 7px 10px; font-size: 13px; color: #374151; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.lang-btn:hover { background: #e5e7eb; }
+.lang-btn.active { background: #111; border-color: #111; color: #fff; font-weight: 600; }
 </style>

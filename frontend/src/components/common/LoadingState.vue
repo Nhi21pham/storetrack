@@ -1,7 +1,7 @@
 <template>
   <div class="loading-state">
     <div class="spinner"></div>
-    <span><slot>Loading...</slot></span>
+    <span><slot>{{ $t('shared.loading') }}</slot></span>
   </div>
 </template>
 

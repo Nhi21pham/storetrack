@@ -120,6 +120,13 @@ class PaymentService
             $storeId = (int) $payment->store_id;
             $this->permissionService->authorizeStore($actor, PermissionEnum::DELETE_PAYMENT, $storeId);
 
+            $invoices = $payment->allocations()
+                ->with('invoice')
+                ->get()
+                ->map(fn ($allocation) => $allocation->invoice?->code)
+                ->filter()
+                ->implode(', ');
+
             $this->releaseAllocations($id);
 
             $paymentId = (int) $payment->id;
@@ -127,7 +134,7 @@ class PaymentService
             $amount    = (float) $payment->amount;
 
             $this->paymentRepository->delete($payment);
-            $this->auditLogger->paymentDeleted($actor, $paymentId, $partyId, $amount, $storeId);
+            $this->auditLogger->paymentDeleted($actor, $paymentId, $partyId, $amount, $storeId, $invoices);
         });
     }
 

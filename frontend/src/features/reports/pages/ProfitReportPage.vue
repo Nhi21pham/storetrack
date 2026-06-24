@@ -1,22 +1,22 @@
 <template>
   <PageContainer :maxWidth="1280">
-    <PageHeader title="Profit Report" subtitle="Profit per batch sold, one row per batch-slice of a sale." />
+    <PageHeader :title="$t('reports.profit.title')" :subtitle="$t('reports.profit.subtitle')" />
 
     <EmptyState
       v-if="scope === 'store' && !currentStore"
-      title="No store selected"
-      description="Select a store to view its profit report."
+      :title="$t('audit.noStoreTitle')"
+      :description="$t('reports.profit.noStoreDesc')"
     />
 
     <EmptyState
       v-else-if="scope === 'business' && !currentBusiness"
-      title="No business selected"
-      description="Select a business to view its consolidated profit report."
+      :title="$t('audit.noBusinessTitle')"
+      :description="$t('reports.profit.noBusinessDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search product or invoice..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('reports.profit.search')" />
         <DateRangeFilter v-model:startDate="startDate" v-model:endDate="endDate" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
@@ -26,7 +26,7 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedRows.length === 0" @click="run" />
-        <HistoryButton label="Export history" title="View export history" @click="showHistory = true" />
+        <HistoryButton :label="$t('reports.exportHistory')" :title="$t('reports.viewExportHistory')" @click="showHistory = true" />
       </div>
 
       <ReportSelectionBar
@@ -37,12 +37,12 @@
         @export="run"
       />
 
-      <LoadingState v-if="loading">Loading profit report…</LoadingState>
+      <LoadingState v-if="loading">{{ $t('reports.profit.loading') }}</LoadingState>
 
       <EmptyState
         v-else-if="rows.length === 0"
-        title="No sales yet"
-        description="Record a sale invoice to start tracking profit per batch."
+        :title="$t('reports.noSalesTitle')"
+        :description="$t('reports.profit.emptyDesc')"
       />
 
       <div v-else class="table-wrap">
@@ -52,25 +52,25 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="c.labelKey ? $t(c.labelKey) : c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : (c.label || '') }}</template>
           </template>
 
           <template #filter-store_name>
             <SearchableSelect
               :modelValue="storeFilter"
               :options="storeOptions"
-              all-label="(All stores)"
-              search-placeholder="Filter store..."
+              :all-label="$t('reports.filters.allStores')"
+              :search-placeholder="$t('reports.filters.filterStore')"
               teleport
               @update:modelValue="storeFilter = $event"
             />
@@ -79,22 +79,22 @@
             <SearchableSelect
               :modelValue="tagFilter"
               :options="tagOptions"
-              all-label="(All tags)"
-              search-placeholder="Filter tag..."
+              :all-label="$t('reports.filters.allTags')"
+              :search-placeholder="$t('reports.filters.filterTag')"
               teleport
               @update:modelValue="tagFilter = $event"
             />
           </template>
           <template #filter-quantity>
             <div class="qty-range">
-              <input v-model="minQty" type="number" min="0" placeholder="Min" class="qty-input" />
-              <input v-model="maxQty" type="number" min="0" placeholder="Max" class="qty-input" />
+              <input v-model="minQty" type="number" min="0" :placeholder="$t('reports.filters.min')" class="qty-input" />
+              <input v-model="maxQty" type="number" min="0" :placeholder="$t('reports.filters.max')" class="qty-input" />
             </div>
           </template>
 
           <tr v-if="sortedRows.length === 0">
             <td :colspan="tableColumns.length" class="empty-row">
-              No sales match the current filters.
+              {{ $t('reports.profit.noMatch') }}
             </td>
           </tr>
           <tr v-for="(row, idx) in paginatedRows" :key="row.id" :class="{ 'row-selected': isSelected(row.id) }">
@@ -138,11 +138,11 @@
 
         <TotalsBar
           :items="[
-            { label: 'Lines', value: totals.lineCount },
-            { label: 'Qty sold', value: formatQuantity(totals.totalQty) },
-            { label: 'Cost', value: formatMoney(totals.totalCost) },
-            { label: 'Revenue', value: formatMoney(totals.totalRevenue) },
-            { label: 'Profit', value: formatMoney(totals.totalProfit), strong: true, variant: totals.totalProfit < 0 ? 'loss' : null },
+            { label: $t('reports.profit.sumLines'), value: totals.lineCount },
+            { label: $t('reports.profit.sumQtySold'), value: formatQuantity(totals.totalQty) },
+            { label: $t('reports.profit.sumCost'), value: formatMoney(totals.totalCost) },
+            { label: $t('reports.profit.sumRevenue'), value: formatMoney(totals.totalRevenue) },
+            { label: $t('reports.profit.sumProfit'), value: formatMoney(totals.totalProfit), strong: true, variant: totals.totalProfit < 0 ? 'loss' : null },
           ]"
         />
 
@@ -184,7 +184,7 @@
 
     <HistoryModal
       v-if="showHistory"
-      title="Profit Report — Export History"
+      :title="$t('reports.profit.exportHistoryTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
@@ -231,6 +231,7 @@ import {
   REPORT_STORE_COLUMN, REPORT_STORE_COLUMN_WIDTH,
   formatMoney, formatQuantity, formatDate,
 } from '@/features/reports/constants'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const showToast = inject('showToast')
@@ -247,7 +248,7 @@ const showHistory = ref(false)
 const historyTabs = computed(() => {
   const isBiz = scope.value === 'business'
   return [{
-    key: 'exports', label: 'Exports', component: ExportHistoryPanel,
+    key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel,
     props: {
       scope: isBiz ? 'business' : 'store',
       scopeId: isBiz ? currentBusiness.value?.id : currentStore.value?.id,
@@ -335,7 +336,7 @@ const onProductEdit = (product) => {
 
 const onProductSaved = async () => {
   editingProduct.value = null
-  showToast('Product updated.', 'success')
+  showToast(t('reports.productUpdated'), 'success')
   await load()
 }
 
@@ -374,7 +375,7 @@ const { exporting, run } = useExport({
     return startProfitReportExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `profit-report-${id}.xlsx`,
-  onSuccess: () => showToast('Profit report export ready.', 'success'),
+  onSuccess: () => showToast(t('reports.profit.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

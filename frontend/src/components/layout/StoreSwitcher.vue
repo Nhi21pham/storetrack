@@ -21,7 +21,7 @@
         </svg>
         <span class="switcher-text">
           <strong>{{ currentBusiness.name }}</strong>
-          <span class="role-tag">Business</span>
+          <span class="role-tag">{{ $t('nav.businessTag') }}</span>
         </span>
       </div>
       <div class="switcher-content placeholder" v-else>
@@ -29,7 +29,7 @@
           <path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/>
           <path d="M8 7v4"/><path d="M16 7v4"/>
         </svg>
-        <span class="switcher-text">Select a store</span>
+        <span class="switcher-text">{{ $t('nav.selectStore') }}</span>
       </div>
       <svg class="chevron" :class="{ flipped: open }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <polyline points="6 9 12 15 18 9"/>
@@ -37,7 +37,7 @@
     </button>
 
     <div v-if="open" class="dropdown">
-      <div class="dropdown-header">Switch Store</div>
+      <div class="dropdown-header">{{ $t('nav.switchStore') }}</div>
       <div class="dropdown-list">
         <div v-for="biz in businesses" :key="biz.id" class="biz-group">
           <div
@@ -54,7 +54,7 @@
             </svg>
             <span class="biz-name">{{ biz.name }}</span>
             <span class="biz-role-tag">{{ biz.role }}</span>
-            <span v-if="biz.role === 'owner'" class="biz-level-tag">Business level</span>
+            <span v-if="biz.role === 'owner'" class="biz-level-tag">{{ $t('nav.businessLevel') }}</span>
             <svg
               v-if="biz.role === 'owner' && !currentStore && currentBusiness?.id === biz.id"
               class="biz-check"
@@ -75,14 +75,14 @@
               <span v-if="store.is_active" class="store-dot"></span>
               <span class="store-name">{{ store.name }}</span>
               <span class="store-role">{{ store.my_role }}</span>
-              <span v-if="!store.is_active" class="inactive-tag">inactive</span>
+              <span v-if="!store.is_active" class="inactive-tag">{{ $t('nav.inactiveTag') }}</span>
             </div>
             <svg v-if="currentStore?.id === store.id && store.is_active" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
           </div>
 
-          <div v-if="biz.stores.length === 0" class="no-stores">No stores</div>
+          <div v-if="biz.stores.length === 0" class="no-stores">{{ $t('nav.noStores') }}</div>
         </div>
       </div>
 
@@ -91,7 +91,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Create your own business
+          {{ $t('nav.createOwnBusiness') }}
         </button>
       </div>
     </div>
@@ -102,6 +102,7 @@
 import { ref, inject, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { graphql } from '@/api'
+import { translateError } from '@/utils/translateError'
 
 const emit = defineEmits(['switched', 'create-business'])
 const showToast = inject('showToast', null)
@@ -140,7 +141,7 @@ const fetchBusinesses = async () => {
     restoreSelection()
   } catch (err) {
     console.error('Failed to fetch businesses:', err)
-    showToast?.(err.message, 'error')
+    showToast?.(translateError(err), 'error')
   }
 }
 

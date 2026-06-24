@@ -1,11 +1,11 @@
 <template>
   <PageContainer :maxWidth="1000">
-    <PageHeader title="Payments" subtitle="Record customer and supplier payments against their open invoices." />
+    <PageHeader :title="$t('payments.title')" :subtitle="$t('payments.subtitle')" />
 
     <EmptyState
       v-if="!currentStore && !isBusinessOwner"
-      title="Pick a store"
-      description="Payments are recorded per store — switch to a specific store from the store switcher."
+      :title="$t('payments.pickStoreTitle')"
+      :description="$t('payments.pickStoreDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -16,16 +16,16 @@
 
     <template v-else>
       <InactiveBanner v-if="!currentStore">
-        Business level — balances and payments across every store. Switch to a specific store to record a payment.
+        {{ $t('payments.businessLevelBanner') }}
       </InactiveBanner>
       <InactiveBanner v-else-if="!currentStore.is_active">
-        This store is deactivated. Payments are read-only until the store is reactivated.
+        {{ $t('payments.inactiveStoreBanner') }}
       </InactiveBanner>
 
       <div class="picker-bar">
         <SegmentedToggle
           :modelValue="partyType"
-          :options="[{ value: 'customer', label: 'Customers' }, { value: 'supplier', label: 'Suppliers' }]"
+          :options="[{ value: 'customer', label: $t('payments.customers') }, { value: 'supplier', label: $t('payments.suppliers') }]"
           @update:modelValue="setPartyType"
         />
         <div class="picker-select">
@@ -33,28 +33,28 @@
             v-model="selectedPartyId"
             :options="partyOptions"
             :allow-all="false"
-            :placeholder="partyType === 'customer' ? 'Select a customer…' : 'Select a supplier…'"
-            search-placeholder="Search…"
+            :placeholder="partyType === 'customer' ? $t('payments.selectCustomer') : $t('payments.selectSupplier')"
+            :search-placeholder="$t('payments.searchPlaceholder')"
             size="large"
             @change="onPartyChange"
           />
         </div>
       </div>
 
-      <LoadingState v-if="loadingParties">Loading {{ partyType }}s...</LoadingState>
+      <LoadingState v-if="loadingParties">{{ $t('payments.loadingParties', { party: partyType === 'customer' ? $t('payments.partyPluralCustomer') : $t('payments.partyPluralSupplier') }) }}</LoadingState>
 
       <EmptyState
         v-else-if="!selectedPartyId"
-        title="Pick a party"
-        :description="`Select a ${partyType} to see their open invoices and record a payment.`"
+        :title="$t('payments.pickPartyTitle')"
+        :description="$t('payments.pickPartyDesc', { party: partyType === 'customer' ? $t('payments.partyCustomer') : $t('payments.partySupplier') })"
       />
 
-      <LoadingState v-else-if="loadingDetail">Loading...</LoadingState>
+      <LoadingState v-else-if="loadingDetail">{{ $t('payments.loading') }}</LoadingState>
 
       <template v-else>
         <div class="summary">
           <div class="summary-item">
-            <span class="summary-label">Outstanding</span>
+            <span class="summary-label">{{ $t('payments.outstanding') }}</span>
             <span class="summary-value" :class="{ owed: outstanding > 0 }">{{ formatMoney(outstanding) }}</span>
           </div>
           <button
@@ -63,15 +63,15 @@
             :disabled="openInvoices.length === 0"
             @click="openRecord()"
           >
-            + Record Payment
+            + {{ $t('payments.recordPayment') }}
           </button>
         </div>
 
         <section class="block">
-          <h3>Open invoices</h3>
+          <h3>{{ $t('payments.openInvoices') }}</h3>
           <table v-if="openInvoices.length" class="data-table">
             <thead>
-              <tr><th>Code</th><th>Date</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th></tr>
+              <tr><th>{{ $t('payments.code') }}</th><th>{{ $t('payments.date') }}</th><th class="num">{{ $t('payments.total') }}</th><th class="num">{{ $t('payments.paid') }}</th><th class="num">{{ $t('payments.balance') }}</th><th>{{ $t('payments.status') }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="inv in openInvoices" :key="inv.id">
@@ -87,14 +87,14 @@
               </tr>
             </tbody>
           </table>
-          <p v-else class="empty">No open invoices — nothing outstanding.</p>
+          <p v-else class="empty">{{ $t('payments.noOpenInvoices') }}</p>
         </section>
 
         <section class="block">
-          <h3>Payment history</h3>
+          <h3>{{ $t('payments.paymentHistory') }}</h3>
           <table v-if="payments.length" class="data-table">
             <thead>
-              <tr><th>Date</th><th>Method</th><th>Applied to</th><th class="num">Amount</th><th></th></tr>
+              <tr><th>{{ $t('payments.date') }}</th><th>{{ $t('payments.method') }}</th><th>{{ $t('payments.appliedTo') }}</th><th class="num">{{ $t('payments.amount') }}</th><th></th></tr>
             </thead>
             <tbody>
               <tr v-for="p in pagedPayments" :key="p.id">
@@ -108,7 +108,7 @@
                 </td>
                 <td class="num strong">{{ formatMoney(p.amount) }}</td>
                 <td class="num">
-                  <button v-if="canDeletePayment && (!currentStore || currentStore.is_active)" class="link-danger" @click="confirmDelete(p)">Delete</button>
+                  <button v-if="canDeletePayment && (!currentStore || currentStore.is_active)" class="link-danger" @click="confirmDelete(p)">{{ $t('payments.deleteAction') }}</button>
                 </td>
               </tr>
             </tbody>
@@ -122,7 +122,7 @@
             @update:current-page="paymentsPage = $event"
             @update:per-page="setPaymentsPerPage"
           />
-          <p v-else class="empty">No payments recorded yet.</p>
+          <p v-else class="empty">{{ $t('payments.noPayments') }}</p>
         </section>
       </template>
     </template>
@@ -140,10 +140,10 @@
 
     <ConfirmDialog
       v-if="deletingPayment"
-      title="Delete Payment"
-      :message="`Delete this ${formatMoney(deletingPayment.amount)} payment? Its invoices will return to their previous balance.`"
-      confirm-text="Yes, delete"
-      cancel-text="Cancel"
+      :title="$t('payments.deletePaymentTitle')"
+      :message="$t('payments.deletePaymentMessage', { amount: formatMoney(deletingPayment.amount) })"
+      :confirm-text="$t('payments.confirmDelete')"
+      :cancel-text="$t('common.cancel')"
       type="danger"
       @confirm="handleDelete"
       @cancel="deletingPayment = null"
@@ -182,6 +182,8 @@ import { fetchInvoice } from '@/features/invoices/services/invoiceService'
 import { INVOICE_TYPE, formatMoney, formatInvoiceDate as formatDate, paymentMethodLabel } from '@/features/invoices/constants'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { formatDateTime } from '@/utils/datetime'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -251,7 +253,7 @@ const partyOptions = computed(() => {
     return {
       value: String(p.party?.id ?? ''),
       label: p.name,
-      sublabel: balance > 0 ? `Outstanding ${formatMoney(balance)}` : '',
+      sublabel: balance > 0 ? t('payments.outstandingSub', { amount: formatMoney(balance) }) : '',
     }
   })
 })
@@ -269,7 +271,7 @@ const openInvoiceDetail = async (id) => {
   try {
     detailInvoice.value = await fetchInvoice({ id })
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   }
 }
 
@@ -297,7 +299,7 @@ const loadParties = async () => {
       clearLinkQuery()
     }
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   } finally {
     loadingParties.value = false
   }
@@ -323,7 +325,7 @@ const loadDetail = async () => {
     payments.value = history
     resetPaymentsPage()
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   } finally {
     loadingDetail.value = false
   }
@@ -379,11 +381,11 @@ const handleDelete = async () => {
   try {
     await deletePayment({ id: deletingPayment.value.id })
     deletingPayment.value = null
-    showToast('Payment deleted.')
+    showToast(t('payments.paymentDeleted'))
     loadDetail()
     loadParties()
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   }
 }
 

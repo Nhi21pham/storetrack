@@ -1,13 +1,13 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Sale Invoices" subtitle="Sales recorded to your customers.">
+    <PageHeader :title="$t('invoices.saleTitle')" :subtitle="$t('invoices.saleSubtitle')">
       <template v-if="currentStore" #actions>
-        <HistoryButton label="History" title="View scan & export history" @click="showScanHistory = true" />
+        <HistoryButton :label="$t('common.history')" :title="$t('invoices.viewScanExportHistory')" @click="showScanHistory = true" />
         <template v-if="currentStore.is_active">
           <ScanInvoiceButton to="/sale-invoices/scan" />
           <button class="btn-create" @click="goToCreate">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New invoice
+            {{ $t('invoices.newInvoice') }}
           </button>
         </template>
       </template>
@@ -15,17 +15,17 @@
 
     <EmptyState
       v-if="!currentStore"
-      title="No store selected"
-      description="Select a store to view its sale invoices."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('invoices.noStoreSaleDesc')"
     />
 
     <template v-else>
       <InactiveBanner v-if="!currentStore.is_active">
-        This store is deactivated. Data is read-only until the store is reactivated.
+        {{ $t('invoices.inactiveStoreBanner') }}
       </InactiveBanner>
 
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search by code or customer..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('invoices.searchSale')" />
         <DateRangeFilter v-model:startDate="startDate" v-model:endDate="endDate" />
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
@@ -35,7 +35,7 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedInvoices.length === 0" @click="run" />
-        <ExportButton label="Export PDF" title="Export invoice contents as PDF" :exporting="exportingPdf" :disabled="sortedInvoices.length === 0" @click="runPdf" />
+        <ExportButton :label="$t('invoices.exportPdf')" :title="$t('invoices.exportPdfTitle')" :exporting="exportingPdf" :disabled="sortedInvoices.length === 0" @click="runPdf" />
       </div>
 
       <InvoiceSelectionBar
@@ -51,12 +51,12 @@
         @delete="confirmBulkDelete"
       />
 
-      <LoadingState v-if="loading">Loading invoices…</LoadingState>
+      <LoadingState v-if="loading">{{ $t('invoices.loadingInvoices') }}</LoadingState>
 
       <EmptyState
         v-else-if="invoices.length === 0"
-        title="No sale invoices yet"
-        description="Record your first sale to start tracking revenue and profit."
+        :title="$t('invoices.noSaleInvoices')"
+        :description="$t('invoices.noSaleInvoicesDescAlt')"
       />
 
       <div v-else class="table-wrap">
@@ -66,25 +66,25 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="$t(c.labelKey)"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
           <template #filter-party_name>
             <SearchableSelect
               :modelValue="partyFilter"
               :options="partyOptions"
-              all-label="(All customers)"
-              search-placeholder="Filter customer..."
+              :all-label="$t('invoices.allCustomers')"
+              :search-placeholder="$t('invoices.filterCustomer')"
               teleport
               @update:modelValue="partyFilter = $event"
             />
@@ -92,9 +92,9 @@
           <template #filter-payment_method>
             <SearchableSelect
               :modelValue="methodFilter"
-              :options="PAYMENT_METHODS"
-              all-label="(All)"
-              search-placeholder="Filter payment..."
+              :options="paymentMethodOptions()"
+              :all-label="$t('shared.allParen')"
+              :search-placeholder="$t('invoices.filterPayment')"
               teleport
               @update:modelValue="methodFilter = $event"
             />
@@ -102,9 +102,9 @@
           <template #filter-payment_status>
             <SearchableSelect
               :modelValue="statusFilter"
-              :options="PAYMENT_STATUSES"
-              all-label="(All)"
-              search-placeholder="Filter status..."
+              :options="paymentStatusOptions()"
+              :all-label="$t('shared.allParen')"
+              :search-placeholder="$t('shared.filterStatus')"
               teleport
               @update:modelValue="statusFilter = $event"
             />
@@ -112,7 +112,7 @@
 
           <tr v-if="sortedInvoices.length === 0">
             <td :colspan="columnVisibility.visibleColumns.value.length" class="empty-row">
-              No invoices match the current filters.
+              {{ $t('invoices.noMatch') }}
             </td>
           </tr>
           <tr v-for="(inv, idx) in paginatedInvoices" :key="inv.id" :class="{ 'row-selected': isSelected(inv.id) }">
@@ -135,8 +135,8 @@
             <td v-if="columnVisibility.isVisible('grand_total')" class="num strong">{{ formatMoney(inv.grand_total) }}</td>
             <td class="actions-col">
               <div v-if="currentStore.is_active" class="row-actions">
-                <button class="action-btn" @click="openEdit(inv)" title="Edit"><Icon name="edit" :size="14" /></button>
-                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(inv)" title="Delete"><Icon name="delete" :size="14" /></button>
+                <button class="action-btn" @click="openEdit(inv)" :title="$t('common.edit')"><Icon name="edit" :size="14" /></button>
+                <button v-if="canDelete" class="action-btn danger" @click="confirmDelete(inv)" :title="$t('common.delete')"><Icon name="delete" :size="14" /></button>
               </div>
             </td>
           </tr>
@@ -164,10 +164,10 @@
 
       <ConfirmDialog
         v-if="deletingInvoice"
-        title="Delete invoice?"
-        :message="`This permanently deletes ${deletingInvoice.code} and returns the stock it consumed to inventory. This can't be undone.`"
-        confirm-text="Yes, delete"
-        cancel-text="Cancel"
+        :title="$t('invoices.deleteInvoiceTitle')"
+        :message="$t('invoices.deleteSaleMessage', { code: deletingInvoice.code })"
+        :confirm-text="$t('invoices.confirmDelete')"
+        :cancel-text="$t('common.cancel')"
         type="danger"
         @confirm="handleDelete"
         @cancel="deletingInvoice = null"
@@ -175,10 +175,10 @@
 
       <ConfirmDialog
         v-if="showBulkDeleteConfirm"
-        title="Delete invoices?"
-        :message="`Delete ${selectedIds.size} invoice${selectedIds.size === 1 ? '' : 's'} and return the stock they consumed to inventory? This can't be undone.`"
-        confirm-text="Yes, delete"
-        cancel-text="Cancel"
+        :title="$t('invoices.deleteInvoicesTitle')"
+        :message="$t('invoices.deleteSaleBulkMessage', selectedIds.size, { count: selectedIds.size })"
+        :confirm-text="$t('invoices.confirmDelete')"
+        :cancel-text="$t('common.cancel')"
         type="danger"
         @confirm="handleBulkDelete"
         @cancel="showBulkDeleteConfirm = false"
@@ -186,7 +186,7 @@
 
       <HistoryModal
         v-if="showScanHistory"
-        title="Invoice History"
+        :title="$t('invoices.historyTitle')"
         :tabs="historyTabs"
         @close="showScanHistory = false"
       />
@@ -227,10 +227,11 @@ import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
+import { t } from '@/i18n'
 import { fetchInvoice, startInvoiceExport, startInvoiceDocumentExport } from '@/features/invoices/services/invoiceService'
 import {
   makeInvoiceColumns, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
-  PAYMENT_METHODS, PAYMENT_STATUSES,
+  paymentMethodOptions, paymentStatusOptions,
   formatMoney, formatInvoiceDate, paymentMethodLabel,
 } from '@/features/invoices/constants'
 
@@ -239,7 +240,7 @@ const showToast = inject('showToast')
 const currentStore = inject('currentStore')
 const currentBusiness = inject('currentBusiness')
 
-const SALE_COLUMNS = makeInvoiceColumns('Customer')
+const SALE_COLUMNS = makeInvoiceColumns('invoices.customer')
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'sale-invoices',
@@ -281,8 +282,8 @@ const showScanHistory = ref(false)
 const historyTabs = computed(() => {
   const storeId = currentStore.value?.id
   return [
-    { key: 'scans', label: 'Scans', component: ScanHistoryPanel, props: { storeId, type: 'sale' } },
-    { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'store', scopeId: storeId, types: ['invoices', 'invoice-documents'] } },
+    { key: 'scans', label: t('shared.scans'), component: ScanHistoryPanel, props: { storeId, type: 'sale' } },
+    { key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel, props: { scope: 'store', scopeId: storeId, types: ['invoices', 'invoice-documents'] } },
   ]
 })
 
@@ -306,7 +307,7 @@ const handleDelete = async () => {
   const target = deletingInvoice.value
   try {
     await removeOne(target)
-    showToast(`Invoice ${target.code} deleted.`)
+    showToast(t('invoices.invoiceDeletedCode', { code: target.code }))
     deletingInvoice.value = null
   } catch (err) {
     showToast(err.message, 'error')
@@ -323,9 +324,9 @@ const handleBulkDelete = async () => {
     showBulkDeleteConfirm.value = false
     clearSelection()
     if (failed > 0) {
-      showToast(`Deleted ${deleted}. ${failed} could not be deleted.`, 'error')
+      showToast(t('invoices.bulkDeletePartialSale', { deleted, failed }), 'error')
     } else {
-      showToast(`Deleted ${deleted} invoice${deleted === 1 ? '' : 's'}.`)
+      showToast(t('invoices.bulkDeleted', deleted, { count: deleted }))
     }
   } catch (err) {
     showToast(err.message, 'error')
@@ -361,14 +362,14 @@ const { exporting, run } = useExport({
     return startInvoiceExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `sale-invoices-${id}.xlsx`,
-  onSuccess: () => showToast('Invoice export ready.', 'success'),
+  onSuccess: () => showToast(t('invoices.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 
 const { exporting: exportingPdf, run: runPdf } = useExport({
   start: () => startInvoiceDocumentExport({ storeId: currentStore.value.id, params: baseExportParams() }),
   defaultFilename: (id) => `sale-invoices-${id}.zip`,
-  onSuccess: () => showToast('Invoice PDF export ready.', 'success'),
+  onSuccess: () => showToast(t('invoices.pdfExportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

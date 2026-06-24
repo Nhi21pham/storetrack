@@ -4,7 +4,7 @@
       <SelectCheckbox
         :checked="allVisibleSelected"
         :indeterminate="someVisibleSelected"
-        title="Select all"
+        :title="$t('shared.selectAll')"
         @change="$emit('toggleSelectAll')"
       />
     </template>
@@ -12,12 +12,12 @@
     <template v-for="col in headerColumns" :key="col.key" #[`header-${col.key}`]="{ col: c }">
       <SortableHeader
         v-if="c.sortable"
-        :label="c.label"
+        :label="$t(c.labelKey)"
         :sort-info="sort.getSortInfo(c.key)"
         :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
         @sort="(dir) => sort.toggleSort(c.key, dir)"
       />
-      <template v-else>{{ c.label }}</template>
+      <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
     </template>
 
     <tr v-for="(customer, idx) in customers" :key="customer.id" :class="{ 'row-selected': isSelected(customer.id) }">
@@ -54,10 +54,10 @@
       <td v-if="isVisible('updated_at')" class="date-col">{{ formatDateTime(customer.updated_at) }}</td>
       <td class="actions-col">
         <div v-if="rowActionsEnabled && canManageRow(customer)" class="row-actions">
-          <button class="action-btn" @click="$emit('edit', customer)" title="Edit">
+          <button class="action-btn" @click="$emit('edit', customer)" :title="$t('common.edit')">
             <Icon name="edit" :size="14" />
           </button>
-          <button v-if="canDelete" class="action-btn danger" @click="$emit('delete', customer)" title="Delete">
+          <button v-if="canDelete" class="action-btn danger" @click="$emit('delete', customer)" :title="$t('common.delete')">
             <Icon name="delete" :size="14" />
           </button>
         </div>

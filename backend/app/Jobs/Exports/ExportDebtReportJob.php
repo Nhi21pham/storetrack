@@ -48,17 +48,17 @@ class ExportDebtReportJob extends BaseExportJob
 
         if ($isBusinessView) {
             $scopeName = $metadata['scope_name'] ?? (Business::find($scopeId)?->name ?? '');
-            $title = "{$ledger['title_label']} debt report of business ".$scopeName;
+            $title = __('exports.of_business', ['label' => __($ledger['title_key']), 'name' => $scopeName]);
             $parties = $repository->listQueryForBusiness($ledger['model'], $ledger['type'], $scopeId, $filters)->get();
         } else {
             $scopeName = $metadata['scope_name'] ?? (Store::find($scopeId)?->name ?? '');
-            $title = "{$ledger['title_label']} debt report of store ".$scopeName;
+            $title = __('exports.of_store', ['label' => __($ledger['title_key']), 'name' => $scopeName]);
             $parties = $repository->listQueryForStore($ledger['model'], $ledger['type'], $scopeId, $filters)->get();
         }
 
         $metaLines = [
-            'Exported by '.$user->name.' ('.$user->email.')',
-            'Date exported: '.now()->format('Y-m-d H:i:s'),
+            __('exports.exported_by', ['name' => $user->name, 'email' => $user->email]),
+            __('exports.date_exported', ['date' => now()->format('Y-m-d H:i:s')]),
         ];
 
         $columns = isset($filters['columns']) && is_array($filters['columns']) ? $filters['columns'] : null;
@@ -117,25 +117,25 @@ class ExportDebtReportJob extends BaseExportJob
         return in_array($type, [self::TYPE_RECEIVABLES_BUSINESS, self::TYPE_PAYABLES_BUSINESS], true);
     }
 
-    /** @return array{model: class-string, type: InvoiceTypeEnum, party_label: string, title_label: string, spent_label: string} */
+    /** @return array{model: class-string, type: InvoiceTypeEnum, party_label: string, title_key: string, spent_label: string} */
     private function ledger(string $type): array
     {
         if ($this->isReceivables($type)) {
             return [
                 'model'       => Customer::class,
                 'type'        => InvoiceTypeEnum::SALE,
-                'party_label' => 'Customer',
-                'title_label' => 'Customer',
-                'spent_label' => 'Total Spent',
+                'party_label' => __('exports.col_customer'),
+                'title_key'   => 'exports.label_customer_debt_report',
+                'spent_label' => __('exports.col_total_spent'),
             ];
         }
 
         return [
             'model'       => Supplier::class,
             'type'        => InvoiceTypeEnum::PURCHASE,
-            'party_label' => 'Supplier',
-            'title_label' => 'Supplier',
-            'spent_label' => 'Total Purchased',
+            'party_label' => __('exports.col_supplier'),
+            'title_key'   => 'exports.label_supplier_debt_report',
+            'spent_label' => __('exports.col_total_purchased'),
         ];
     }
 }

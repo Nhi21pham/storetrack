@@ -28,22 +28,24 @@
 </template>
 
 <script setup>
+import { t } from '@/i18n'
+
 defineProps({
   title: {
     type: String,
-    default: 'Unsaved Changes'
+    default: () => t('common.unsavedChanges')
   },
   message: {
     type: String,
-    default: 'You have unsaved changes. Are you sure you want to cancel?'
+    default: () => t('common.unsavedChangesMessage')
   },
   confirmText: {
     type: String,
-    default: 'Yes, discard'
+    default: () => t('common.yesDiscard')
   },
   cancelText: {
     type: String,
-    default: 'Keep editing'
+    default: () => t('common.keepEditing')
   },
   type: {
     type: String,

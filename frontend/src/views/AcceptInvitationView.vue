@@ -13,7 +13,7 @@
     <div v-if="loading" class="card">
       <div class="loading-state">
         <div class="spinner"></div>
-        <span>Loading invitation...</span>
+        <span>{{ $t('auth.loadingInvitation') }}</span>
       </div>
     </div>
 
@@ -22,8 +22,8 @@
       <div class="state-icon error-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
       </div>
-      <h2>Invitation Not Found</h2>
-      <p>This invitation link is invalid or has been removed.</p>
+      <h2>{{ $t('auth.notFoundTitle') }}</h2>
+      <p>{{ $t('auth.notFoundMessage') }}</p>
     </div>
 
     <!-- Expired -->
@@ -31,8 +31,8 @@
       <div class="state-icon warning-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       </div>
-      <h2>Invitation Expired</h2>
-      <p>This invitation has expired. Ask the store owner to send a new one.</p>
+      <h2>{{ $t('auth.expiredTitle') }}</h2>
+      <p>{{ $t('auth.expiredMessage') }}</p>
     </div>
 
     <!-- Already Accepted -->
@@ -40,9 +40,9 @@
       <div class="state-icon success-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <h2>Already Accepted</h2>
-      <p>You've already accepted this invitation.</p>
-      <RouterLink class="btn-primary" to="/stores">Go to Stores</RouterLink>
+      <h2>{{ $t('auth.alreadyAcceptedTitle') }}</h2>
+      <p>{{ $t('auth.alreadyAcceptedMessage') }}</p>
+      <RouterLink class="btn-primary" to="/stores">{{ $t('auth.goToStores') }}</RouterLink>
     </div>
 
     <!-- Declined state -->
@@ -50,8 +50,10 @@
       <div class="state-icon warning-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <h2>Invitation Declined</h2>
-      <p>You've declined the invitation to join <strong>{{ preview.store_name }}</strong>.</p>
+      <h2>{{ $t('auth.declinedTitle') }}</h2>
+      <i18n-t keypath="auth.declinedMessage" tag="p">
+        <template #store><strong>{{ preview.store_name }}</strong></template>
+      </i18n-t>
     </div>
 
     <!-- Accepted state -->
@@ -59,9 +61,12 @@
       <div class="state-icon success-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <h2>Welcome aboard!</h2>
-      <p>You've joined <strong>{{ preview.store_name }}</strong> as <strong>{{ roleLabel }}</strong>.</p>
-      <RouterLink class="btn-primary" to="/stores">Go to Stores</RouterLink>
+      <h2>{{ $t('auth.welcomeTitle') }}</h2>
+      <i18n-t keypath="auth.welcomeMessage" tag="p">
+        <template #store><strong>{{ preview.store_name }}</strong></template>
+        <template #role><strong>{{ roleLabel }}</strong></template>
+      </i18n-t>
+      <RouterLink class="btn-primary" to="/stores">{{ $t('auth.goToStores') }}</RouterLink>
     </div>
 
     <!-- Main invite card (logged in) -->
@@ -74,22 +79,22 @@
           </svg>
         </div>
         <div>
-          <h2>You're invited!</h2>
-          <p class="subtitle">Review the details before accepting</p>
+          <h2>{{ $t('auth.invitedTitle') }}</h2>
+          <p class="subtitle">{{ $t('auth.invitedSubtitle') }}</p>
         </div>
       </div>
 
       <div class="invite-details">
         <div class="detail-row">
-          <span class="detail-label">Store</span>
+          <span class="detail-label">{{ $t('auth.store') }}</span>
           <span class="detail-value">{{ preview.store_name }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Invited by</span>
+          <span class="detail-label">{{ $t('auth.invitedBy') }}</span>
           <span class="detail-value">{{ preview.inviter_name }}</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Role</span>
+          <span class="detail-label">{{ $t('auth.role') }}</span>
           <span class="role-badge" :class="preview.role">{{ roleLabel }}</span>
         </div>
       </div>
@@ -98,11 +103,11 @@
 
       <div class="invite-actions">
         <button class="btn-decline" @click="handleDecline" :disabled="actionLoading">
-          Decline
+          {{ $t('auth.decline') }}
         </button>
         <button class="btn-accept" @click="handleAccept" :disabled="actionLoading">
           <span v-if="actionLoading" class="spinner spinner-white"></span>
-          Accept Invitation
+          {{ $t('auth.acceptInvitation') }}
         </button>
       </div>
     </div>
@@ -112,15 +117,16 @@
       <div class="state-icon info-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
-      <h2>Sign in to continue</h2>
-      <p>
-        You've been invited to join <strong>{{ preview.store_name }}</strong> as
-        <strong>{{ roleLabel }}</strong> by <strong>{{ preview.inviter_name }}</strong>.
-      </p>
-      <p class="hint">Sign in or create an account to accept this invitation.</p>
+      <h2>{{ $t('auth.signInToContinueTitle') }}</h2>
+      <i18n-t keypath="auth.invitedFullMessage" tag="p">
+        <template #store><strong>{{ preview.store_name }}</strong></template>
+        <template #role><strong>{{ roleLabel }}</strong></template>
+        <template #inviter><strong>{{ preview.inviter_name }}</strong></template>
+      </i18n-t>
+      <p class="hint">{{ $t('auth.signInHint') }}</p>
       <div class="auth-actions">
-        <RouterLink class="btn-primary" :to="`/login?redirect=${encodeURIComponent(route.fullPath)}`">Sign In</RouterLink>
-        <RouterLink class="btn-secondary" :to="`/register?redirect=${encodeURIComponent(route.fullPath)}`">Create Account</RouterLink>
+        <RouterLink class="btn-primary" :to="`/login?redirect=${encodeURIComponent(route.fullPath)}`">{{ $t('auth.signInBtn') }}</RouterLink>
+        <RouterLink class="btn-secondary" :to="`/register?redirect=${encodeURIComponent(route.fullPath)}`">{{ $t('auth.createAccount') }}</RouterLink>
       </div>
     </div>
   </div>
@@ -129,10 +135,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { graphql } from '@/api'
+import { translateError } from '@/utils/translateError'
 
 const route = useRoute()
 const token = route.params.token
+const { t, te } = useI18n()
 
 const loading = ref(true)
 const preview = ref(null)
@@ -146,8 +155,8 @@ const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
 const roleLabel = computed(() => {
   if (!preview.value) return ''
-  const map = { OWNER: 'Owner', ACCOUNTANT: 'Accountant', STAFF: 'Staff' }
-  return map[preview.value.role] ?? preview.value.role
+  const key = `enums.role.${preview.value.role}`
+  return te(key) ? t(key) : preview.value.role
 })
 
 const loadPreview = async () => {
@@ -179,7 +188,7 @@ const handleAccept = async () => {
     `, { token })
     accepted.value = true
   } catch (err) {
-    actionError.value = err.message
+    actionError.value = translateError(err)
   } finally {
     actionLoading.value = false
   }
@@ -196,7 +205,7 @@ const handleDecline = async () => {
     `, { token })
     declined.value = true
   } catch (err) {
-    actionError.value = err.message
+    actionError.value = translateError(err)
   } finally {
     actionLoading.value = false
   }

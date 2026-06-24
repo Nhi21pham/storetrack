@@ -31,7 +31,7 @@ class DebtPaymentSheet extends DebtReportSheet
 
     public function title(): string
     {
-        return 'Payments';
+        return __('exports.sheet_payments');
     }
 
     public function array(): array
@@ -41,11 +41,11 @@ class DebtPaymentSheet extends DebtReportSheet
 
     public function headings(): array
     {
-        $headings = ['No.', $this->partyLabel, 'Phone'];
+        $headings = [__('exports.col_no'), $this->partyLabel, __('exports.col_phone')];
         if ($this->includeStore) {
-            $headings[] = 'Store';
+            $headings[] = __('exports.col_store');
         }
-        array_push($headings, 'Date', 'Method', 'Applied to', 'Amount');
+        array_push($headings, __('exports.col_date'), __('exports.col_method'), __('exports.col_applied_to'), __('exports.col_amount'));
 
         return $headings;
     }
@@ -68,13 +68,23 @@ class DebtPaymentSheet extends DebtReportSheet
 
     protected function totalsRow(): array
     {
-        $row = ['TOTAL', '', ''];
+        $row = [__('exports.total'), '', ''];
         if ($this->includeStore) {
             $row[] = '';
         }
         array_push($row, '', '', '', round($this->total, 2));
 
         return $row;
+    }
+
+    private function methodLabel(string $value): string
+    {
+        if ($value === '') {
+            return '';
+        }
+        $key = 'exports.pm_'.$value;
+
+        return __($key) === $key ? ucfirst($value) : __($key);
     }
 
     private function build(Collection $parties): void
@@ -104,7 +114,7 @@ class DebtPaymentSheet extends DebtReportSheet
                 array_push(
                     $row,
                     optional($payment->paid_at)->format('Y-m-d') ?? '',
-                    ucfirst((string) ($payment->method?->value ?? '')),
+                    $this->methodLabel((string) ($payment->method?->value ?? '')),
                     $applied,
                     $amount,
                 );

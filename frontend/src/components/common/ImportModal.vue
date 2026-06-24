@@ -13,12 +13,12 @@
       <!-- SELECT -->
       <div v-if="im.phase.value === 'select'" class="modal-body">
         <div class="instructions">
-          <p class="lead">Upload an Excel (.xlsx, .xls) or .csv file. Required columns are marked with <strong>*</strong>:</p>
+          <p class="lead">{{ $t('importer.uploadLeadBefore') }}<strong>*</strong>:</p>
           <ul class="col-list">
             <li v-for="h in requiredHeaders" :key="h"><span class="req">{{ h }} *</span></li>
             <li v-for="h in optionalHeaders" :key="h"><span class="opt">{{ h }}</span></li>
           </ul>
-          <p class="hint">Header names must match exactly. Extra columns are ignored. Not sure of the format? Download the template below.</p>
+          <p class="hint">{{ $t('importer.headerHint') }}</p>
 
           <ImportFormatNotes :instructions="instructions" />
         </div>
@@ -26,12 +26,12 @@
         <div class="select-actions">
           <button class="btn-secondary" @click="im.getTemplate()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download template
+            {{ $t('importer.downloadTemplate') }}
           </button>
 
           <label class="btn-primary file-label" :class="{ disabled: im.busy.value }">
             <span v-if="im.busy.value" class="spinner"></span>
-            {{ im.busy.value ? 'Reading file...' : 'Choose file' }}
+            {{ im.busy.value ? $t('importer.readingFile') : $t('importer.chooseFile') }}
             <input type="file" accept=".xlsx,.xls,.csv" :disabled="im.busy.value" @change="onFileChange" />
           </label>
         </div>
@@ -44,10 +44,10 @@
         <slot name="review-banner" :rows="im.rows.value" :resolve-reference="im.resolveReference" />
 
         <div class="summary-bar">
-          <span class="chip ok">{{ liveCounts.valid }} to create</span>
-          <span class="chip warn">{{ liveCounts.duplicate }} will skip</span>
-          <span class="chip bad">{{ liveCounts.invalid }} need fixing</span>
-          <span v-if="liveCounts.checking" class="chip checking">{{ liveCounts.checking }} checking…</span>
+          <span class="chip ok">{{ $t('importer.toCreate', { count: liveCounts.valid }) }}</span>
+          <span class="chip warn">{{ $t('importer.willSkip', { count: liveCounts.duplicate }) }}</span>
+          <span class="chip bad">{{ $t('importer.needFixing', { count: liveCounts.invalid }) }}</span>
+          <span v-if="liveCounts.checking" class="chip checking">{{ $t('importer.checkingCount', { count: liveCounts.checking }) }}</span>
         </div>
 
         <ImportFormatNotes :instructions="instructions" class="review-notes" />
@@ -58,7 +58,7 @@
               <tr>
                 <th class="row-num">#</th>
                 <th v-for="col in columns" :key="col">{{ col }}</th>
-                <th class="status-col">Status</th>
+                <th class="status-col">{{ $t('shared.status') }}</th>
                 <th class="actions-col"></th>
               </tr>
             </thead>
@@ -80,7 +80,7 @@
                     <span class="badge" :class="statusInfo(row.status).cls">{{ statusInfo(row.status).label }}</span>
                   </td>
                   <td class="actions-col">
-                    <button class="icon-btn" title="Remove row" @click="im.removeRow(absoluteIndex(i))">
+                    <button class="icon-btn" :title="$t('importer.removeRow')" @click="im.removeRow(absoluteIndex(i))">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                     </button>
                   </td>
@@ -97,9 +97,9 @@
         </div>
 
         <div v-if="totalPages > 1" class="pager">
-          <button class="btn-secondary sm" :disabled="page === 1" @click="page--">Prev</button>
-          <span>Page {{ page }} / {{ totalPages }}</span>
-          <button class="btn-secondary sm" :disabled="page === totalPages" @click="page++">Next</button>
+          <button class="btn-secondary sm" :disabled="page === 1" @click="page--">{{ $t('shared.prev') }}</button>
+          <span>{{ $t('importer.pageOf', { page, total: totalPages }) }}</span>
+          <button class="btn-secondary sm" :disabled="page === totalPages" @click="page++">{{ $t('shared.next') }}</button>
         </div>
 
         <div v-if="im.error.value" class="api-error">{{ im.error.value }}</div>
@@ -107,30 +107,30 @@
 
       <!-- COMMITTING -->
       <div v-else-if="im.phase.value === 'committing'" class="modal-body committing">
-        <p class="lead">Creating records…</p>
+        <p class="lead">{{ $t('importer.creatingRecords') }}</p>
         <div class="progress-track"><div class="progress-fill" :style="{ width: percent + '%' }"></div></div>
-        <p class="progress-text">{{ processed }} of {{ total }} processed</p>
+        <p class="progress-text">{{ $t('importer.processedOf', { processed, total }) }}</p>
         <div class="summary-bar">
-          <span class="chip ok">{{ created }} created</span>
-          <span class="chip warn">{{ skipped }} skipped</span>
-          <span class="chip bad">{{ failed }} failed</span>
+          <span class="chip ok">{{ $t('importer.createdCount', { count: created }) }}</span>
+          <span class="chip warn">{{ $t('importer.skippedCount', { count: skipped }) }}</span>
+          <span class="chip bad">{{ $t('importer.failedCount', { count: failed }) }}</span>
         </div>
       </div>
 
       <!-- DONE -->
       <div v-else class="modal-body done">
         <div v-if="im.error.value" class="api-error">{{ im.error.value }}</div>
-        <p v-else class="lead">Import finished.</p>
+        <p v-else class="lead">{{ $t('importer.importFinished') }}</p>
         <div class="summary-bar">
-          <span class="chip ok">{{ created }} created</span>
-          <span class="chip warn">{{ skipped }} skipped</span>
-          <span class="chip bad">{{ failed }} failed</span>
+          <span class="chip ok">{{ $t('importer.createdCount', { count: created }) }}</span>
+          <span class="chip warn">{{ $t('importer.skippedCount', { count: skipped }) }}</span>
+          <span class="chip bad">{{ $t('importer.failedCount', { count: failed }) }}</span>
         </div>
         <div v-if="problems.length" class="problems">
-          <p class="hint">Rows that were skipped or failed:</p>
+          <p class="hint">{{ $t('importer.rowsSkippedOrFailed') }}</p>
           <ul>
             <li v-for="p in problems" :key="p.rowNumber">
-              <span class="badge" :class="statusInfo(p.status).cls">Row {{ p.rowNumber }}</span>
+              <span class="badge" :class="statusInfo(p.status).cls">{{ $t('shared.row', { number: p.rowNumber }) }}</span>
               <span v-if="formatValues(p.values)" class="row-data">{{ formatValues(p.values) }}</span>
               <span class="row-msg">— {{ p.message }}</span>
             </li>
@@ -140,16 +140,16 @@
 
       <div class="modal-footer">
         <template v-if="im.phase.value === 'review'">
-          <button class="btn-cancel" @click="im.reset()">Back</button>
+          <button class="btn-cancel" @click="im.reset()">{{ $t('common.back') }}</button>
           <button class="btn-submit" :disabled="!canCommit" @click="im.runCommit()">
-            {{ im.validating.value ? 'Checking…' : `Create ${liveCounts.valid} record(s)` }}
+            {{ im.validating.value ? $t('importer.checking') : $t('importer.createRecords', { count: liveCounts.valid }) }}
           </button>
         </template>
         <template v-else-if="im.phase.value === 'done'">
-          <button class="btn-submit" @click="$emit('close')">Done</button>
+          <button class="btn-submit" @click="$emit('close')">{{ $t('importer.done') }}</button>
         </template>
         <template v-else-if="im.phase.value === 'select'">
-          <button class="btn-cancel" @click="requestClose">Cancel</button>
+          <button class="btn-cancel" @click="requestClose">{{ $t('common.cancel') }}</button>
         </template>
       </div>
     </div>
@@ -157,10 +157,10 @@
 
   <ConfirmDialog
     v-if="showUnsavedWarning"
-    title="Discard import?"
-    message="You've loaded a file but haven't imported it yet. Closing now will discard the reviewed rows."
-    confirm-text="Yes, discard"
-    cancel-text="Keep reviewing"
+    :title="$t('importer.discardTitle')"
+    :message="$t('importer.discardMessage')"
+    :confirm-text="$t('importer.discardConfirm')"
+    :cancel-text="$t('importer.discardCancel')"
     type="warning"
     @confirm="discardAndClose"
     @cancel="showUnsavedWarning = false"
@@ -172,6 +172,7 @@ import { ref, computed, watch } from 'vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import ImportFormatNotes from '@/components/common/ImportFormatNotes.vue'
 import { useImport } from '@/composables/useImport'
+import { t } from '@/i18n'
 
 const props = defineProps({
   title:            { type: String, required: true },
@@ -267,13 +268,13 @@ const formatValues = (values) =>
 
 const statusInfo = (status) => {
   switch (status) {
-    case 'checking': return { label: 'Checking…', cls: 'checking' }
-    case 'invalid': return { label: 'Fix', cls: 'bad' }
-    case 'duplicate_db': return { label: 'Exists', cls: 'warn' }
-    case 'duplicate_file': return { label: 'Dup', cls: 'warn' }
-    case 'failed': return { label: 'Failed', cls: 'bad' }
-    case 'skipped': return { label: 'Skipped', cls: 'warn' }
-    default: return { label: 'New', cls: 'ok' }
+    case 'checking': return { label: t('importer.rowStatus.checking'), cls: 'checking' }
+    case 'invalid': return { label: t('importer.rowStatus.invalid'), cls: 'bad' }
+    case 'duplicate_db': return { label: t('importer.rowStatus.exists'), cls: 'warn' }
+    case 'duplicate_file': return { label: t('importer.rowStatus.dup'), cls: 'warn' }
+    case 'failed': return { label: t('importer.rowStatus.failed'), cls: 'bad' }
+    case 'skipped': return { label: t('importer.rowStatus.skipped'), cls: 'warn' }
+    default: return { label: t('importer.rowStatus.new'), cls: 'ok' }
   }
 }
 

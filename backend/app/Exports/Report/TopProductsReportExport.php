@@ -83,18 +83,18 @@ class TopProductsReportExport extends BaseExport
     /** The rank (No.) column is always first, independent of the selectable columns. */
     private function orderNumberColumn(): array
     {
-        return ['heading' => 'No.', 'width' => 8, 'value' => fn (InvoiceProduct $row) => ++$this->counter];
+        return ['heading' => __('exports.col_no'), 'width' => 8, 'value' => fn (InvoiceProduct $row) => ++$this->counter];
     }
 
     private function columnDefinitions(): array
     {
         return [
-            'product_name' => ['heading' => 'Product',   'width' => 28, 'value' => fn (InvoiceProduct $row) => (string) ($row->product_name ?? '')],
-            'product_code' => ['heading' => 'Code',      'width' => 16, 'value' => fn (InvoiceProduct $row) => (string) ($row->product_code ?? '')],
-            'qty_sold'     => ['heading' => 'Qty Sold',  'width' => 14, 'value' => fn (InvoiceProduct $row) => (float) $row->qty_sold,        'total' => fn () => $this->totalQty],
-            'revenue'      => ['heading' => 'Revenue',   'width' => 18, 'value' => fn (InvoiceProduct $row) => round((float) $row->revenue, 2), 'total' => fn () => round($this->totalRevenue, 2)],
-            'profit'       => ['heading' => 'Profit',    'width' => 18, 'value' => fn (InvoiceProduct $row) => $this->profit($row),            'total' => fn () => round($this->totalProfit, 2)],
-            'orders'       => ['heading' => '# Orders',  'width' => 12, 'value' => fn (InvoiceProduct $row) => (int) $row->orders],
+            'product_name' => ['heading' => __('exports.col_product'),   'width' => 28, 'value' => fn (InvoiceProduct $row) => (string) ($row->product_name ?? '')],
+            'product_code' => ['heading' => __('exports.col_code'),      'width' => 16, 'value' => fn (InvoiceProduct $row) => (string) ($row->product_code ?? '')],
+            'qty_sold'     => ['heading' => __('exports.col_qty_sold'),  'width' => 14, 'value' => fn (InvoiceProduct $row) => (float) $row->qty_sold,        'total' => fn () => $this->totalQty],
+            'revenue'      => ['heading' => __('exports.col_revenue'),   'width' => 18, 'value' => fn (InvoiceProduct $row) => round((float) $row->revenue, 2), 'total' => fn () => round($this->totalRevenue, 2)],
+            'profit'       => ['heading' => __('exports.col_profit'),    'width' => 18, 'value' => fn (InvoiceProduct $row) => $this->profit($row),            'total' => fn () => round($this->totalProfit, 2)],
+            'orders'       => ['heading' => __('exports.col_num_orders'),  'width' => 12, 'value' => fn (InvoiceProduct $row) => (int) $row->orders],
         ];
     }
 
@@ -111,7 +111,7 @@ class TopProductsReportExport extends BaseExport
         );
 
         if ($row !== [] && ($row[0] === '' || $row[0] === null)) {
-            $row[0] = 'TOTAL';
+            $row[0] = __('exports.total');
         }
 
         return $row;

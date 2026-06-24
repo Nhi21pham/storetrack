@@ -2,9 +2,9 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal">
       <div class="modal-header">
-        <h2>Invitation History</h2>
+        <h2>{{ $t('users.invitationHistory') }}</h2>
         <div class="header-actions">
-          <button class="refresh-btn" @click="fetchInvitations" :disabled="loading || refreshing" title="Refresh">
+          <button class="refresh-btn" @click="fetchInvitations" :disabled="loading || refreshing" :title="$t('shared.refresh')">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ spinning: refreshing }">
               <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
             </svg>
@@ -20,7 +20,7 @@
       <div class="modal-filters">
         <div class="filter-tabs">
           <button
-            v-for="f in INVITATION_STATUS_FILTERS"
+            v-for="f in invitationStatusFilters()"
             :key="f.value"
             class="filter-tab"
             :class="{ active: activeFilter === f.value }"
@@ -32,24 +32,24 @@
         </div>
         <button v-if="sort.sortCriteria.length" class="btn-clear-sort" @click="sort.clearSort">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          Clear sort
+          {{ $t('shared.clearSort') }}
         </button>
       </div>
 
       <div class="modal-body">
         <div v-if="loading" class="loading-state">
           <div class="spinner"></div>
-          <span>Loading invitations...</span>
+          <span>{{ $t('users.loadingInvitations') }}</span>
         </div>
         <template v-else>
-          <div v-if="!sortedInvitations.length" class="empty-state">No invitations found.</div>
+          <div v-if="!sortedInvitations.length" class="empty-state">{{ $t('users.noInvitations') }}</div>
           <div v-else class="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th v-for="col in INVITATION_HISTORY_COLUMNS" :key="col.key" class="sortable-th">
                     <SortableHeader
-                      :label="col.label"
+                      :label="$t(col.labelKey)"
                       :sort-info="sort.getSortInfo(col.key)"
                       :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(col.key) ? sort.sortRank(col.key) : null"
                       @sort="(dir) => sort.toggleSort(col.key, dir)"
@@ -94,7 +94,7 @@ import RoleBadge from '@/features/users/components/RoleBadge.vue'
 import { useInvitationHistory } from '@/features/users/composables/useInvitationHistory'
 import { statusLabel, formatDateTime, resolvedDateTime } from '@/features/users/utils/format'
 import {
-  INVITATION_STATUS_FILTERS,
+  invitationStatusFilters,
   INVITATION_HISTORY_COLUMNS,
 } from '@/features/users/constants'
 

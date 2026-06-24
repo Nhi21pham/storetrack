@@ -6,22 +6,13 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-const TYPE_LABELS = {
-  business:     'Business',
-  store:        'Store',
-  user:         'User',
-  invitation:   'Invitation',
-  supplier:     'Supplier',
-  customer:     'Customer',
-  bank:         'Bank',
-  bank_account: 'Bank Account',
-  unit:         'Unit',
-  product:      'Product',
-  product_category: 'Category',
-}
-
-const KNOWN_VARIANTS = new Set(Object.keys(TYPE_LABELS))
+const KNOWN_VARIANTS = new Set([
+  'business', 'store', 'user', 'invitation', 'supplier', 'customer',
+  'bank', 'bank_account', 'unit', 'product', 'product_category',
+  'tag', 'tax', 'invoice', 'payment', 'report',
+])
 
 const props = defineProps({
   type:  { type: String, default: '' },
@@ -29,15 +20,19 @@ const props = defineProps({
   block: { type: Boolean, default: false },
 })
 
+const { t, te } = useI18n()
+
 const normalizedType = computed(() => String(props.type || '').toLowerCase())
 
 const variant = computed(() =>
   KNOWN_VARIANTS.has(normalizedType.value) ? normalizedType.value : 'default'
 )
 
-const displayLabel = computed(() =>
-  props.label || TYPE_LABELS[normalizedType.value] || props.type || '—'
-)
+const displayLabel = computed(() => {
+  if (props.label) return props.label
+  const key = `enums.objectType.${normalizedType.value}`
+  return te(key) ? t(key) : (props.type || '—')
+})
 </script>
 
 <style scoped>
@@ -65,5 +60,10 @@ const displayLabel = computed(() =>
 .badge-unit         { background: #e0e7ff; color: #4338ca; } /* indigo  */
 .badge-product      { background: #ecfccb; color: #4d7c0f; } /* lime    */
 .badge-product_category { background: #fae8ff; color: #a21caf; } /* fuchsia */
+.badge-tag          { background: #cffafe; color: #0e7490; } /* cyan    */
+.badge-tax          { background: #fef3c7; color: #92400e; } /* amber   */
+.badge-invoice      { background: #e0e7ff; color: #3730a3; } /* indigo  */
+.badge-payment      { background: #dcfce7; color: #15803d; } /* green   */
+.badge-report       { background: #f1f5f9; color: #475569; } /* slate   */
 .badge-default      { background: #f3f4f6; color: #6b7280; } /* gray    */
 </style>

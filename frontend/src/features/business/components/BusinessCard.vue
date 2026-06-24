@@ -11,8 +11,8 @@
         <div class="card-info">
           <div class="card-title-row">
             <h3>{{ business.name }}</h3>
-            <span class="owner-badge" v-if="business.role === 'owner'">Owner</span>
-            <span class="member-badge" v-else>Member</span>
+            <span class="owner-badge" v-if="business.role === 'owner'">{{ $t('business.owner') }}</span>
+            <span class="member-badge" v-else>{{ $t('business.member') }}</span>
           </div>
           <span class="tax-badge">{{ business.tax_code }}</span>
         </div>
@@ -36,15 +36,15 @@
       <div class="card-meta">
         <span class="store-count">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v4H3z"/><path d="M3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7"/><path d="M8 7v4"/><path d="M16 7v4"/></svg>
-          {{ storeCount }} store{{ storeCount !== 1 ? 's' : '' }}
+          {{ $t('business.storeCount', storeCount) }}
         </span>
       </div>
     </div>
     <div v-if="business.role === 'owner'" class="card-actions">
-      <button class="action-btn" @click="$emit('edit', business)" title="Edit">
+      <button class="action-btn" @click="$emit('edit', business)" :title="$t('common.edit')">
         <Icon name="edit" :size="15" />
       </button>
-      <button class="action-btn danger" @click="$emit('delete', business)" title="Delete">
+      <button class="action-btn danger" @click="$emit('delete', business)" :title="$t('common.delete')">
         <Icon name="delete" :size="15" />
       </button>
     </div>

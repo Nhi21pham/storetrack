@@ -63,12 +63,12 @@ class BankExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'short_name'   => ['heading' => 'Short Name',      'width' => 18, 'value' => fn ($row) => (string) $row->short_name],
-            'full_name_vi' => ['heading' => 'Vietnamese Name', 'width' => 34, 'value' => fn ($row) => (string) ($row->full_name_vi ?? '')],
-            'full_name_en' => ['heading' => 'English Name',    'width' => 34, 'value' => fn ($row) => (string) ($row->full_name_en ?? '')],
-            'status'       => ['heading' => 'Status',          'width' => 12, 'value' => fn ($row) => $row->is_active ? 'Active' : 'Inactive'],
-            'created_at'   => ['heading' => 'Created',         'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
-            'updated_at'   => ['heading' => 'Updated',         'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
+            'short_name'   => ['heading' => __('exports.col_short_name'),      'width' => 18, 'value' => fn ($row) => (string) $row->short_name],
+            'full_name_vi' => ['heading' => __('exports.col_vietnamese_name'), 'width' => 34, 'value' => fn ($row) => (string) ($row->full_name_vi ?? '')],
+            'full_name_en' => ['heading' => __('exports.col_english_name'),    'width' => 34, 'value' => fn ($row) => (string) ($row->full_name_en ?? '')],
+            'status'       => ['heading' => __('exports.col_status'),          'width' => 12, 'value' => fn ($row) => $row->is_active ? __('exports.status_active') : __('exports.status_inactive')],
+            'created_at'   => ['heading' => __('exports.col_created'),         'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at'   => ['heading' => __('exports.col_updated'),         'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

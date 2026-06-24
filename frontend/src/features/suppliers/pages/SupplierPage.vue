@@ -1,20 +1,20 @@
 <template>
   <PageContainer :maxWidth="1100">
-    <PageHeader title="Suppliers" subtitle="Manage your supplier contacts and information.">
+    <PageHeader :title="$t('suppliers.title')" :subtitle="$t('suppliers.subtitle')">
       <template v-if="currentBusiness && currentStore?.is_active" #actions>
         <button class="btn-create" @click="openCreate">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          New Supplier
+          {{ $t('suppliers.newSupplier') }}
         </button>
       </template>
     </PageHeader>
 
     <EmptyState
       v-if="!currentBusiness"
-      title="No business found"
-      description="You need to create a business before managing suppliers."
+      :title="$t('shared.noBusinessTitle')"
+      :description="$t('suppliers.noBusinessDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -26,8 +26,8 @@
 
     <EmptyState
       v-else-if="!currentStore"
-      title="No store selected"
-      description="Select a store to manage suppliers."
+      :title="$t('shared.noStoreTitle')"
+      :description="$t('suppliers.noStoreDesc')"
     >
       <template #icon>
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -39,7 +39,7 @@
 
     <template v-else-if="currentStore">
       <InactiveBanner v-if="!currentStore.is_active">
-        This store is deactivated. Data is read-only until the store is reactivated.
+        {{ $t('suppliers.inactiveStoreBanner') }}
       </InactiveBanner>
 
       <SupplierFilterBar
@@ -69,12 +69,12 @@
         v-model:date-field="dateField"
       />
 
-      <LoadingState v-if="loading">Loading suppliers...</LoadingState>
+      <LoadingState v-if="loading">{{ $t('suppliers.loadingSuppliers') }}</LoadingState>
 
       <EmptyState
         v-else-if="baseSuppliers.length === 0 && suppliers.length === 0"
-        title="No suppliers yet"
-        description="Add your first supplier to get started."
+        :title="$t('suppliers.noSuppliersTitle')"
+        :description="$t('suppliers.noSuppliersDesc')"
       >
         <template #icon>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -86,8 +86,8 @@
 
       <EmptyState
         v-else-if="baseSuppliers.length === 0 && storeFilter === 'store'"
-        title="No suppliers at this store"
-        :description="`No suppliers were created at ${currentStore.name}. Switch to &quot;All stores&quot; to see business-wide suppliers.`"
+        :title="$t('suppliers.noSuppliersAtStoreTitle')"
+        :description="$t('suppliers.noSuppliersAtStoreDesc', { store: currentStore.name })"
       >
         <template #icon>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -98,7 +98,7 @@
 
       <EmptyState
         v-else-if="filteredSuppliers.length === 0"
-        :description="`No suppliers matching &quot;${searchQuery}&quot;`"
+        :description="$t('suppliers.noSuppliersMatching', { query: searchQuery })"
       />
 
       <template v-else>
@@ -153,7 +153,7 @@
 
       <ImportModal
         v-if="showImport && currentStore.is_active"
-        title="Import Suppliers"
+        :title="$t('suppliers.importTitle')"
         template-filename="suppliers-import-template.xlsx"
         :required-headers="['Name']"
         :optional-headers="['Phone', 'Email', 'Address', 'Tax Code']"
@@ -169,7 +169,7 @@
 
       <HistoryModal
         v-if="showHistory"
-        title="Supplier History"
+        :title="$t('suppliers.historyTitle')"
         :tabs="historyTabs"
         @close="showHistory = false"
       />
@@ -184,10 +184,10 @@
 
       <ConfirmDialog
         v-if="deletingSupplier"
-        title="Delete Supplier"
-        :message="`Are you sure you want to delete '${deletingSupplier.name}'? This action cannot be undone.`"
-        confirm-text="Yes, delete"
-        cancel-text="Cancel"
+        :title="$t('suppliers.deleteTitle')"
+        :message="$t('suppliers.deleteMessage', { name: deletingSupplier.name })"
+        :confirm-text="$t('suppliers.confirmDelete')"
+        :cancel-text="$t('common.cancel')"
         type="danger"
         @confirm="handleDelete"
         @cancel="deletingSupplier = null"
@@ -195,10 +195,10 @@
 
       <ConfirmDialog
         v-if="showBulkDeleteConfirm"
-        title="Delete Suppliers"
-        :message="`Are you sure you want to delete ${selectedIds.size} supplier${selectedIds.size === 1 ? '' : 's'}? This action cannot be undone.`"
-        confirm-text="Yes, delete"
-        cancel-text="Cancel"
+        :title="$t('suppliers.bulkDeleteTitle')"
+        :message="$t('suppliers.bulkDeleteMessage', selectedIds.size)"
+        :confirm-text="$t('suppliers.confirmDelete')"
+        :cancel-text="$t('common.cancel')"
         type="danger"
         @confirm="handleBulkDelete"
         @cancel="showBulkDeleteConfirm = false"
@@ -240,6 +240,8 @@ import { fetchImportStatus } from '@/features/imports/services/importService'
 import { SUPPLIER_COLUMNS, SUPPLIER_INITIAL_COL_WIDTHS } from '@/features/suppliers/constants'
 import ColumnSelector from '@/components/common/ColumnSelector.vue'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
+import { translateError } from '@/utils/translateError'
+import { t } from '@/i18n'
 
 const columnVisibility = useColumnVisibility({
   storageKey: 'suppliers',
@@ -296,18 +298,18 @@ const showImport  = ref(false)
 const showHistory = ref(false)
 
 const historyTabs = computed(() => [
-  { key: 'imports', label: 'Imports', component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'suppliers' } },
-  { key: 'exports', label: 'Exports', component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['suppliers'] } },
+  { key: 'imports', label: t('shared.imports'), component: ImportHistoryPanel, props: { scope: 'store', scopeId: currentStore.value?.id, type: 'suppliers' } },
+  { key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel, props: { scope: 'business', scopeId: currentBusiness.value?.id, types: ['suppliers'] } },
 ])
 
 // Explains the supplier import rules in the import dialog (kept in sync with
 // SupplierImporter on the backend).
-const supplierImportInstructions = [
-  'Name is required. Phone, Email, Address and Tax Code are optional.',
-  'Name is unique per business — a row whose name already exists is skipped (already imported).',
-  'Phone, when given, must be exactly 10 digits; Email, when given, must be a valid email address.',
-  'Imported suppliers are added to the current store.',
-]
+const supplierImportInstructions = computed(() => [
+  t('suppliers.import.required'),
+  t('suppliers.import.unique'),
+  t('suppliers.import.formats'),
+  t('suppliers.import.store'),
+])
 
 const openCreate    = () => { editingSupplier.value = null; showForm.value = true }
 const openEdit      = (s) => { editingSupplier.value = { ...s }; showForm.value = true }
@@ -318,7 +320,7 @@ const onSaved = () => {
   const wasEdit = !!editingSupplier.value
   showForm.value = false
   load()
-  showToast(wasEdit ? 'Supplier updated successfully!' : 'Supplier created successfully!')
+  showToast(wasEdit ? t('suppliers.updateSuccess') : t('suppliers.createSuccess'))
 }
 
 const onImported = () => {
@@ -331,9 +333,9 @@ const handleDelete = async () => {
   try {
     await removeOne(deletingSupplier.value)
     deletingSupplier.value = null
-    showToast('Supplier deleted successfully!')
+    showToast(t('suppliers.deleteSuccess'))
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   }
 }
 
@@ -346,9 +348,9 @@ const handleBulkDelete = async () => {
     const count = await removeMany(Array.from(selectedIds.value))
     showBulkDeleteConfirm.value = false
     clearSelection()
-    showToast(`Deleted ${count} supplier${count === 1 ? '' : 's'}.`)
+    showToast(t('suppliers.deletedCount', count))
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   } finally {
     bulkDeleting.value = false
   }
@@ -369,7 +371,7 @@ const { exporting, run } = useExport({
     return startSupplierExport({ businessId: currentBusiness.value.id, params })
   },
   defaultFilename: (id) => `suppliers-${id}.xlsx`,
-  onSuccess: () => showToast('Supplier export ready.', 'success'),
+  onSuccess: () => showToast(t('suppliers.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

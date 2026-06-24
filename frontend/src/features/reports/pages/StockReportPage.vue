@@ -1,26 +1,26 @@
 <template>
   <PageContainer :maxWidth="1200">
-    <PageHeader title="Stock Report" subtitle="Inventory on hand, one row per purchase lot." />
+    <PageHeader :title="$t('reports.stock.title')" :subtitle="$t('reports.stock.subtitle')" />
 
     <EmptyState
       v-if="scope === 'store' && !currentStore"
-      title="No store selected"
-      description="Select a store to view its stock report."
+      :title="$t('audit.noStoreTitle')"
+      :description="$t('reports.stock.noStoreDesc')"
     />
 
     <EmptyState
       v-else-if="scope === 'business' && !currentBusiness"
-      title="No business selected"
-      description="Select a business to view its consolidated stock report."
+      :title="$t('audit.noBusinessTitle')"
+      :description="$t('reports.stock.noBusinessDesc')"
     />
 
     <template v-else>
       <div class="toolbar">
-        <SearchBar v-model="searchQuery" placeholder="Search product, supplier, or invoice..." />
+        <SearchBar v-model="searchQuery" :placeholder="$t('reports.stock.search')" />
         <DateRangeFilter v-model:startDate="startDate" v-model:endDate="endDate" />
         <label class="oos-toggle">
           <input type="checkbox" v-model="includeOutOfStock" />
-          Show out-of-stock
+          {{ $t('reports.stock.showOutOfStock') }}
         </label>
         <ClearFiltersButton v-if="hasActiveFilters" @click="clearFilters" />
         <ColumnSelector
@@ -30,7 +30,7 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedRows.length === 0" @click="run" />
-        <HistoryButton label="Export history" title="View export history" @click="showHistory = true" />
+        <HistoryButton :label="$t('reports.exportHistory')" :title="$t('reports.viewExportHistory')" @click="showHistory = true" />
       </div>
 
       <ReportSelectionBar
@@ -41,12 +41,12 @@
         @export="run"
       />
 
-      <LoadingState v-if="loading">Loading stock report…</LoadingState>
+      <LoadingState v-if="loading">{{ $t('reports.stock.loading') }}</LoadingState>
 
       <EmptyState
         v-else-if="rows.length === 0"
-        title="No stock yet"
-        description="Record a purchase invoice to start tracking inventory on hand."
+        :title="$t('reports.stock.emptyTitle')"
+        :description="$t('reports.stock.emptyDesc')"
       />
 
       <div v-else class="table-wrap">
@@ -56,25 +56,25 @@
               v-if="c.key === 'select'"
               :checked="allVisibleSelected"
               :indeterminate="someVisibleSelected"
-              title="Select all"
+              :title="$t('shared.selectAll')"
               @change="toggleSelectAll"
             />
             <SortableHeader
               v-else-if="c.sortable"
-              :label="c.label"
+              :label="c.labelKey ? $t(c.labelKey) : c.label"
               :sort-info="sort.getSortInfo(c.key)"
               :rank="sort.sortCriteria.length > 1 && sort.getSortInfo(c.key) ? sort.sortRank(c.key) : null"
               @sort="(dir) => sort.toggleSort(c.key, dir)"
             />
-            <template v-else>{{ c.label }}</template>
+            <template v-else>{{ c.labelKey ? $t(c.labelKey) : (c.label || '') }}</template>
           </template>
 
           <template #filter-store_name>
             <SearchableSelect
               :modelValue="storeFilter"
               :options="storeOptions"
-              all-label="(All stores)"
-              search-placeholder="Filter store..."
+              :all-label="$t('reports.filters.allStores')"
+              :search-placeholder="$t('reports.filters.filterStore')"
               teleport
               @update:modelValue="storeFilter = $event"
             />
@@ -83,8 +83,8 @@
             <SearchableSelect
               :modelValue="tagFilter"
               :options="tagOptions"
-              all-label="(All tags)"
-              search-placeholder="Filter tag..."
+              :all-label="$t('reports.filters.allTags')"
+              :search-placeholder="$t('reports.filters.filterTag')"
               teleport
               @update:modelValue="tagFilter = $event"
             />
@@ -93,22 +93,22 @@
             <SearchableSelect
               :modelValue="supplierFilter"
               :options="supplierOptions"
-              all-label="(All suppliers)"
-              search-placeholder="Filter supplier..."
+              :all-label="$t('reports.filters.allSuppliers')"
+              :search-placeholder="$t('reports.filters.filterSupplier')"
               teleport
               @update:modelValue="supplierFilter = $event"
             />
           </template>
           <template #filter-quantity_remaining>
             <div class="qty-range">
-              <input v-model="minQty" type="number" min="0" placeholder="Min" class="qty-input" />
-              <input v-model="maxQty" type="number" min="0" placeholder="Max" class="qty-input" />
+              <input v-model="minQty" type="number" min="0" :placeholder="$t('reports.filters.min')" class="qty-input" />
+              <input v-model="maxQty" type="number" min="0" :placeholder="$t('reports.filters.max')" class="qty-input" />
             </div>
           </template>
 
           <tr v-if="sortedRows.length === 0">
             <td :colspan="tableColumns.length" class="empty-row">
-              No stock matches the current filters.
+              {{ $t('reports.stock.noMatch') }}
             </td>
           </tr>
           <tr v-for="row in paginatedRows" :key="row.id" :class="{ 'row-selected': isSelected(row.id) }">
@@ -150,10 +150,10 @@
 
         <TotalsBar
           :items="[
-            { label: 'Products', value: totals.productCount },
-            { label: 'Purchased', value: formatQuantity(totals.totalPurchased) },
-            { label: 'In stock', value: formatQuantity(totals.totalRemaining) },
-            { label: 'Total cost', value: formatMoney(totals.totalCost), strong: true },
+            { label: $t('reports.stock.sumProducts'), value: totals.productCount },
+            { label: $t('reports.stock.sumPurchased'), value: formatQuantity(totals.totalPurchased) },
+            { label: $t('reports.stock.sumInStock'), value: formatQuantity(totals.totalRemaining) },
+            { label: $t('reports.stock.sumTotalCost'), value: formatMoney(totals.totalCost), strong: true },
           ]"
         />
 
@@ -195,7 +195,7 @@
 
     <HistoryModal
       v-if="showHistory"
-      title="Stock Report — Export History"
+      :title="$t('reports.stock.exportHistoryTitle')"
       :tabs="historyTabs"
       @close="showHistory = false"
     />
@@ -241,6 +241,7 @@ import {
   REPORT_STORE_COLUMN, REPORT_STORE_COLUMN_WIDTH,
   formatMoney, formatQuantity, formatDate,
 } from '@/features/reports/constants'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const showToast = inject('showToast')
@@ -257,7 +258,7 @@ const showHistory = ref(false)
 const historyTabs = computed(() => {
   const isBiz = scope.value === 'business'
   return [{
-    key: 'exports', label: 'Exports', component: ExportHistoryPanel,
+    key: 'exports', label: t('shared.exports'), component: ExportHistoryPanel,
     props: {
       scope: isBiz ? 'business' : 'store',
       scopeId: isBiz ? currentBusiness.value?.id : currentStore.value?.id,
@@ -342,7 +343,7 @@ const onProductEdit = (product) => {
 
 const onProductSaved = async () => {
   editingProduct.value = null
-  showToast('Product updated.', 'success')
+  showToast(t('reports.productUpdated'), 'success')
   await load()
 }
 
@@ -382,7 +383,7 @@ const { exporting, run } = useExport({
     return startStockReportExport({ storeId: currentStore.value.id, params })
   },
   defaultFilename: (id) => `stock-report-${id}.xlsx`,
-  onSuccess: () => showToast('Stock report export ready.', 'success'),
+  onSuccess: () => showToast(t('reports.stock.exportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

@@ -19,8 +19,8 @@ class ExportUnitJob extends BaseExportJob
         [$user, $title, $query] = $this->resolveScope($export);
 
         $metaLines = [
-            'Exported by '.$user->name.' ('.$user->email.')',
-            'Date exported: '.now()->format('Y-m-d H:i:s'),
+            __('exports.exported_by', ['name' => $user->name, 'email' => $user->email]),
+            __('exports.date_exported', ['date' => now()->format('Y-m-d H:i:s')]),
         ];
 
         $filters = $export->metadata['filters'] ?? [];
@@ -80,7 +80,7 @@ class ExportUnitJob extends BaseExportJob
         $status = $filters['status'] ?? null;
 
         $storeName = $metadata['scope_name'] ?? (Store::find($storeId)?->name ?? '');
-        $title = 'Units of store '.$storeName;
+        $title = __('exports.of_store', ['label' => __('exports.label_units'), 'name' => $storeName]);
 
         $query = app(UnitRepository::class)->listQuery($storeId, $search, $ids, $status);
 

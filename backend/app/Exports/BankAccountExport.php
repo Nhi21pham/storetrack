@@ -64,15 +64,15 @@ class BankAccountExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'owner'          => ['heading' => 'Owner Type',     'width' => 14, 'value' => fn ($row) => $this->ownerType($row)],
-            'owner_name'     => ['heading' => 'Owner Name',     'width' => 26, 'value' => fn ($row) => $this->ownerName($row)],
-            'bank'           => ['heading' => 'Bank',           'width' => 18, 'value' => fn ($row) => (string) ($row->bank?->short_name ?? '')],
-            'account_number' => ['heading' => 'Account Number', 'width' => 22, 'value' => fn ($row) => (string) ($row->account_number ?? '')],
-            'holder_name'    => ['heading' => 'Holder Name',    'width' => 24, 'value' => fn ($row) => (string) ($row->account_holder_name ?? '')],
-            'branch'         => ['heading' => 'Branch',         'width' => 24, 'value' => fn ($row) => (string) ($row->branch ?? '')],
-            'province'       => ['heading' => 'Province',       'width' => 22, 'value' => fn ($row) => (string) ($row->province?->name_vi ?? '')],
-            'created_at'     => ['heading' => 'Created',        'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
-            'updated_at'     => ['heading' => 'Updated',        'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
+            'owner'          => ['heading' => __('exports.col_owner_type'),     'width' => 14, 'value' => fn ($row) => $this->ownerType($row)],
+            'owner_name'     => ['heading' => __('exports.col_owner_name'),     'width' => 26, 'value' => fn ($row) => $this->ownerName($row)],
+            'bank'           => ['heading' => __('exports.col_bank'),           'width' => 18, 'value' => fn ($row) => (string) ($row->bank?->short_name ?? '')],
+            'account_number' => ['heading' => __('exports.col_account_number'), 'width' => 22, 'value' => fn ($row) => (string) ($row->account_number ?? '')],
+            'holder_name'    => ['heading' => __('exports.col_holder_name'),    'width' => 24, 'value' => fn ($row) => (string) ($row->account_holder_name ?? '')],
+            'branch'         => ['heading' => __('exports.col_branch'),         'width' => 24, 'value' => fn ($row) => (string) ($row->branch ?? '')],
+            'province'       => ['heading' => __('exports.col_province'),       'width' => 22, 'value' => fn ($row) => (string) ($row->province?->name_vi ?? '')],
+            'created_at'     => ['heading' => __('exports.col_created'),        'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at'     => ['heading' => __('exports.col_updated'),        'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 
@@ -88,9 +88,9 @@ class BankAccountExport extends BaseExport
     private function ownerType(BankAccount $row): string
     {
         return match ($this->partyType($row)) {
-            PartyTypeEnum::BUSINESS => 'Business',
-            PartyTypeEnum::CUSTOMER => 'Customer',
-            PartyTypeEnum::SUPPLIER => 'Supplier',
+            PartyTypeEnum::BUSINESS => __('exports.owner_business'),
+            PartyTypeEnum::CUSTOMER => __('exports.col_customer'),
+            PartyTypeEnum::SUPPLIER => __('exports.col_supplier'),
             default                 => '',
         };
     }

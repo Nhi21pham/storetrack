@@ -1,15 +1,18 @@
-import {
-  ROLE_LABELS,
-  INVITATION_STATUS,
-  INVITATION_STATUS_LABELS,
-} from '@/features/users/constants'
+import { INVITATION_STATUS } from '@/features/users/constants'
 import { formatDateTime } from '@/utils/datetime'
+import { t, te } from '@/i18n'
 
 export { formatDateTime }
 
-export const roleLabel = (role) => ROLE_LABELS[role] ?? role
+export const roleLabel = (role) => {
+  const key = `enums.role.${role}`
+  return te(key) ? t(key) : role
+}
 
-export const statusLabel = (status) => INVITATION_STATUS_LABELS[status] ?? status
+export const statusLabel = (status) => {
+  const key = `users.invitationStatus.${status}`
+  return te(key) ? t(key) : status
+}
 
 // An invitation's "resolved" timestamp is whenever it left the PENDING state.
 // Accepted invitations record their own `accepted_at`; everything else uses
