@@ -104,6 +104,10 @@ export const rest = async (method, url, { params, data, responseType, headers: e
   const headers = { ...(extraHeaders || {}) }
   if (token) headers['Authorization'] = `Bearer ${token}`
   headers['X-Client-Id'] = getClientId()
+  // The active UI language, so request-triggered artifacts (Excel/PDF exports)
+  // can be rendered in the user's language. Read straight from storage to keep
+  // this layer dependency-light.
+  headers['X-Locale'] = localStorage.getItem('locale') || 'vi'
 
   let response
   try {

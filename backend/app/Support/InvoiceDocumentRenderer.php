@@ -6,7 +6,6 @@ use App\Enums\InvoiceTypeEnum;
 use App\Models\Invoice\Invoice;
 use App\Models\Store;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\View;
 use RuntimeException;
@@ -23,10 +22,8 @@ class InvoiceDocumentRenderer
      *
      * @param  Collection<int, Invoice>  $invoices
      */
-    public function renderEach(Collection $invoices, ?Store $store, string $outputDir, string $locale = 'vi'): void
+    public function renderEach(Collection $invoices, ?Store $store, string $outputDir): void
     {
-        App::setLocale($locale);
-
         $items = $invoices->map(fn (Invoice $invoice) => [
             'html' => View::make('exports.invoice-document', [
                 'invoice'    => $invoice,

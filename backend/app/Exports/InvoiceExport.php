@@ -69,17 +69,17 @@ class InvoiceExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'code'           => ['heading' => 'Code',          'width' => 18, 'value' => fn ($row) => (string) $row->code],
-            'invoice_date'   => ['heading' => 'Date',          'width' => 14, 'value' => fn ($row) => optional($row->invoice_date)->format('Y-m-d') ?? ''],
+            'code'           => ['heading' => __('exports.col_code'),          'width' => 18, 'value' => fn ($row) => (string) $row->code],
+            'invoice_date'   => ['heading' => __('exports.col_date'),          'width' => 14, 'value' => fn ($row) => optional($row->invoice_date)->format('Y-m-d') ?? ''],
             'party_name'     => ['heading' => $this->partyLabel, 'width' => 28, 'value' => fn ($row) => (string) ($row->party_name ?? '')],
-            'payment_method' => ['heading' => 'Payment',       'width' => 14, 'value' => fn ($row) => ucfirst($row->payment_method->value)],
-            'payment_status' => ['heading' => 'Status',        'width' => 14, 'value' => fn ($row) => ucfirst($row->payment_status->value)],
-            'subtotal'       => ['heading' => 'Subtotal',      'width' => 16, 'value' => fn ($row) => (float) $row->subtotal],
-            'tax_total'      => ['heading' => 'Tax',           'width' => 16, 'value' => fn ($row) => (float) $row->tax_total],
-            'grand_total'    => ['heading' => 'Grand Total',   'width' => 18, 'value' => fn ($row) => (float) $row->grand_total],
-            'paid_amount'    => ['heading' => 'Paid',          'width' => 16, 'value' => fn ($row) => (float) $row->paid_amount],
-            'balance'        => ['heading' => 'Balance',       'width' => 16, 'value' => fn ($row) => (float) $row->balance],
-            'created_at'     => ['heading' => 'Created',       'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'payment_method' => ['heading' => __('exports.col_payment'),       'width' => 14, 'value' => fn ($row) => __('exports.pm_'.$row->payment_method->value)],
+            'payment_status' => ['heading' => __('exports.col_status'),        'width' => 14, 'value' => fn ($row) => __('exports.ps_'.$row->payment_status->value)],
+            'subtotal'       => ['heading' => __('exports.col_subtotal'),      'width' => 16, 'value' => fn ($row) => (float) $row->subtotal],
+            'tax_total'      => ['heading' => __('exports.col_tax'),           'width' => 16, 'value' => fn ($row) => (float) $row->tax_total],
+            'grand_total'    => ['heading' => __('exports.col_grand_total'),   'width' => 18, 'value' => fn ($row) => (float) $row->grand_total],
+            'paid_amount'    => ['heading' => __('exports.col_paid'),          'width' => 16, 'value' => fn ($row) => (float) $row->paid_amount],
+            'balance'        => ['heading' => __('exports.col_balance'),       'width' => 16, 'value' => fn ($row) => (float) $row->balance],
+            'created_at'     => ['heading' => __('exports.col_created'),       'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

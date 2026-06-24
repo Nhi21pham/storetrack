@@ -6,6 +6,7 @@ use App\Models\Export;
 use App\Services\ExportService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -75,6 +76,10 @@ abstract class AbstractFileExportJob implements ShouldQueue
         $relative = null;
         try {
             $exportService->markProcessing($export);
+
+            // Render the file in the language the export was triggered in. Scoped to
+            // this job run on the queue worker; never touches request-time locale.
+            App::setLocale($export->metadata['filters']['locale'] ?? 'vi');
 
             $filename = $this->filename($export);
             $relative = $this->storagePath($export, $filename);

@@ -20,8 +20,8 @@ class ExportInvoiceJob extends BaseExportJob
         [$user, $title, $partyLabel, $query] = $this->resolveScope($export);
 
         $metaLines = [
-            'Exported by '.$user->name.' ('.$user->email.')',
-            'Date exported: '.now()->format('Y-m-d H:i:s'),
+            __('exports.exported_by', ['name' => $user->name, 'email' => $user->email]),
+            __('exports.date_exported', ['date' => now()->format('Y-m-d H:i:s')]),
         ];
 
         $filters = $export->metadata['filters'] ?? [];
@@ -81,7 +81,7 @@ class ExportInvoiceJob extends BaseExportJob
         $storeName = $metadata['scope_name'] ?? (Store::find($storeId)?->name ?? '');
         $type = $this->resolveType($filters['type'] ?? null);
 
-        $title = $this->titlePrefix($type).' of store '.$storeName;
+        $title = __('exports.of_store', ['label' => $this->titlePrefix($type), 'name' => $storeName]);
         $partyLabel = $this->partyLabel($type);
 
         $query = app(InvoiceRepository::class)->listQuery($storeId, $filters);
@@ -97,18 +97,18 @@ class ExportInvoiceJob extends BaseExportJob
     private function titlePrefix(?InvoiceTypeEnum $type): string
     {
         return match ($type) {
-            InvoiceTypeEnum::PURCHASE => 'Purchase invoices',
-            InvoiceTypeEnum::SALE     => 'Sale invoices',
-            default                   => 'Invoices',
+            InvoiceTypeEnum::PURCHASE => __('exports.label_purchase_invoices'),
+            InvoiceTypeEnum::SALE     => __('exports.label_sale_invoices'),
+            default                   => __('exports.label_invoices'),
         };
     }
 
     private function partyLabel(?InvoiceTypeEnum $type): string
     {
         return match ($type) {
-            InvoiceTypeEnum::PURCHASE => 'Supplier',
-            InvoiceTypeEnum::SALE     => 'Customer',
-            default                   => 'Party',
+            InvoiceTypeEnum::PURCHASE => __('exports.col_supplier'),
+            InvoiceTypeEnum::SALE     => __('exports.col_customer'),
+            default                   => __('exports.col_customer'),
         };
     }
 

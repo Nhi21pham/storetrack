@@ -36,14 +36,14 @@ class AuditLogExport extends BaseExport
     {
         $columns = [];
         if ($this->includeStoreColumn) {
-            $columns[] = 'Store Name';
+            $columns[] = __('exports.col_store_name');
         }
-        $columns[] = 'Object';
-        $columns[] = 'Actor Name';
-        $columns[] = 'Actor Email';
-        $columns[] = 'Action';
-        $columns[] = 'Message';
-        $columns[] = 'Datetime';
+        $columns[] = __('exports.col_object');
+        $columns[] = __('exports.col_actor_name');
+        $columns[] = __('exports.col_actor_email');
+        $columns[] = __('exports.col_action');
+        $columns[] = __('exports.col_message');
+        $columns[] = __('exports.col_datetime');
 
         return $columns;
     }

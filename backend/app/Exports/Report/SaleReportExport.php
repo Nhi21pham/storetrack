@@ -79,27 +79,27 @@ class SaleReportExport extends BaseExport
     /** The STT column is always first, independent of the selectable columns. */
     private function orderNumberColumn(): array
     {
-        return ['heading' => 'No.', 'width' => 8, 'value' => fn (InvoiceProduct $row) => ++$this->counter];
+        return ['heading' => __('exports.col_no'), 'width' => 8, 'value' => fn (InvoiceProduct $row) => ++$this->counter];
     }
 
     /** The Store column is added for consolidated business exports, after the STT column. */
     private function storeColumn(): array
     {
-        return ['heading' => 'Store', 'width' => 24, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->store?->name ?? '')];
+        return ['heading' => __('exports.col_store'), 'width' => 24, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->store?->name ?? '')];
     }
 
     private function columnDefinitions(): array
     {
         return [
-            'product_name' => ['heading' => 'Product',       'width' => 28, 'value' => fn (InvoiceProduct $row) => (string) ($row->product?->name ?? $row->product_name ?? '')],
-            'product_code' => ['heading' => 'Code',          'width' => 16, 'value' => fn (InvoiceProduct $row) => (string) ($row->product?->code ?? '')],
-            'tags'         => ['heading' => 'Tags',          'width' => 30, 'value' => fn (InvoiceProduct $row) => $this->formatTags($row)],
-            'customer_name' => ['heading' => 'Customer',     'width' => 26, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->party_name ?? '')],
-            'invoice_code' => ['heading' => 'Sale Invoice',  'width' => 18, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->code ?? '')],
-            'invoice_date' => ['heading' => 'Sale Date',     'width' => 16, 'value' => fn (InvoiceProduct $row) => optional($row->invoice?->invoice_date)->format('Y-m-d') ?? ''],
-            'quantity'     => ['heading' => 'Qty Sold',      'width' => 14, 'value' => fn (InvoiceProduct $row) => (float) $row->quantity,            'total' => fn () => $this->totalQty],
-            'unit_price'   => ['heading' => 'Sale Price / Unit', 'width' => 18, 'value' => fn (InvoiceProduct $row) => (float) $row->unit_price],
-            'total_sale'   => ['heading' => 'Total Sale',    'width' => 18, 'value' => fn (InvoiceProduct $row) => round((float) $row->subtotal, 2), 'total' => fn () => round($this->totalSale, 2)],
+            'product_name' => ['heading' => __('exports.col_product'),       'width' => 28, 'value' => fn (InvoiceProduct $row) => (string) ($row->product?->name ?? $row->product_name ?? '')],
+            'product_code' => ['heading' => __('exports.col_code'),          'width' => 16, 'value' => fn (InvoiceProduct $row) => (string) ($row->product?->code ?? '')],
+            'tags'         => ['heading' => __('exports.col_tags'),          'width' => 30, 'value' => fn (InvoiceProduct $row) => $this->formatTags($row)],
+            'customer_name' => ['heading' => __('exports.col_customer'),     'width' => 26, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->party_name ?? '')],
+            'invoice_code' => ['heading' => __('exports.col_sale_invoice'),  'width' => 18, 'value' => fn (InvoiceProduct $row) => (string) ($row->invoice?->code ?? '')],
+            'invoice_date' => ['heading' => __('exports.col_sale_date'),     'width' => 16, 'value' => fn (InvoiceProduct $row) => optional($row->invoice?->invoice_date)->format('Y-m-d') ?? ''],
+            'quantity'     => ['heading' => __('exports.col_qty_sold'),      'width' => 14, 'value' => fn (InvoiceProduct $row) => (float) $row->quantity,            'total' => fn () => $this->totalQty],
+            'unit_price'   => ['heading' => __('exports.col_sale_price_per_unit'), 'width' => 18, 'value' => fn (InvoiceProduct $row) => (float) $row->unit_price],
+            'total_sale'   => ['heading' => __('exports.col_total_sale'),    'width' => 18, 'value' => fn (InvoiceProduct $row) => round((float) $row->subtotal, 2), 'total' => fn () => round($this->totalSale, 2)],
         ];
     }
 
@@ -121,7 +121,7 @@ class SaleReportExport extends BaseExport
         );
 
         if ($row !== [] && ($row[0] === '' || $row[0] === null)) {
-            $row[0] = 'TOTAL';
+            $row[0] = __('exports.total');
         }
 
         return $row;

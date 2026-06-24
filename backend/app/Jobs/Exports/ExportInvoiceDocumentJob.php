@@ -37,7 +37,6 @@ class ExportInvoiceDocumentJob extends AbstractFileExportJob
         $storeId = (int) ($export->metadata['scope_id'] ?? 0);
         $store = Store::find($storeId);
         $filters = $export->metadata['filters'] ?? [];
-        $locale = $filters['locale'] ?? 'vi';
 
         $invoices = app(InvoiceRepository::class)->documentsQuery($storeId, $filters)->get();
         if ($invoices->isEmpty()) {
@@ -49,7 +48,7 @@ class ExportInvoiceDocumentJob extends AbstractFileExportJob
         $disk->makeDirectory($export->id.'/pdfs');
         $workDir = $disk->path($export->id.'/pdfs');
 
-        app(InvoiceDocumentRenderer::class)->renderEach($invoices, $store, $workDir, $locale);
+        app(InvoiceDocumentRenderer::class)->renderEach($invoices, $store, $workDir);
 
         $this->zip($disk->path($relative), $invoices, $workDir);
 

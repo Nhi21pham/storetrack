@@ -29,12 +29,12 @@ class ExportAuditLogJob extends BaseExportJob
         [$user, $scopeName, $isBusinessView, $query] = $this->resolveScope($export);
 
         $title = $isBusinessView
-            ? "Audit log of business {$scopeName}"
-            : "Audit log of store {$scopeName}";
+            ? __('exports.of_business', ['label' => __('exports.label_audit'), 'name' => $scopeName])
+            : __('exports.of_store', ['label' => __('exports.label_audit'), 'name' => $scopeName]);
 
         $metaLines = [
-            'Exported by '.$user->name.' ('.$user->email.')',
-            'Date exported: '.now()->format('Y-m-d H:i:s'),
+            __('exports.exported_by', ['name' => $user->name, 'email' => $user->email]),
+            __('exports.date_exported', ['date' => now()->format('Y-m-d H:i:s')]),
         ];
 
         return new AuditLogExport($query, $title, $metaLines, $isBusinessView);

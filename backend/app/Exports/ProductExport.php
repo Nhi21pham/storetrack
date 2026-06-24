@@ -63,15 +63,15 @@ class ProductExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'id'         => ['heading' => 'ID',           'width' => 8,  'value' => fn ($row) => (int) $row->id],
-            'code'       => ['heading' => 'Code',         'width' => 16, 'value' => fn ($row) => (string) ($row->code ?? '')],
-            'name'       => ['heading' => 'Product Name', 'width' => 28, 'value' => fn ($row) => (string) $row->name],
-            'category'   => ['heading' => 'Category',     'width' => 22, 'value' => fn ($row) => (string) ($row->category?->name ?? '')],
-            'unit'       => ['heading' => 'Unit',         'width' => 14, 'value' => fn ($row) => (string) ($row->unit?->name ?? '')],
-            'tags'       => ['heading' => 'Tags',         'width' => 36, 'value' => fn ($row) => $this->formatTags($row)],
-            'status'     => ['heading' => 'Status',       'width' => 12, 'value' => fn ($row) => $row->is_active ? 'Active' : 'Inactive'],
-            'created_at' => ['heading' => 'Created',      'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
-            'updated_at' => ['heading' => 'Updated',      'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
+            'id'         => ['heading' => __('exports.col_id'),           'width' => 8,  'value' => fn ($row) => (int) $row->id],
+            'code'       => ['heading' => __('exports.col_code'),         'width' => 16, 'value' => fn ($row) => (string) ($row->code ?? '')],
+            'name'       => ['heading' => __('exports.col_product_name'), 'width' => 28, 'value' => fn ($row) => (string) $row->name],
+            'category'   => ['heading' => __('exports.col_category'),     'width' => 22, 'value' => fn ($row) => (string) ($row->category?->name ?? '')],
+            'unit'       => ['heading' => __('exports.col_unit'),         'width' => 14, 'value' => fn ($row) => (string) ($row->unit?->name ?? '')],
+            'tags'       => ['heading' => __('exports.col_tags'),         'width' => 36, 'value' => fn ($row) => $this->formatTags($row)],
+            'status'     => ['heading' => __('exports.col_status'),       'width' => 12, 'value' => fn ($row) => $row->is_active ? __('exports.status_active') : __('exports.status_inactive')],
+            'created_at' => ['heading' => __('exports.col_created'),      'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at' => ['heading' => __('exports.col_updated'),      'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

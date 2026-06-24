@@ -20,8 +20,8 @@ class ExportCustomerJob extends BaseExportJob
         [$user, $title, $query] = $this->resolveScope($export);
 
         $metaLines = [
-            'Exported by '.$user->name.' ('.$user->email.')',
-            'Date exported: '.now()->format('Y-m-d H:i:s'),
+            __('exports.exported_by', ['name' => $user->name, 'email' => $user->email]),
+            __('exports.date_exported', ['date' => now()->format('Y-m-d H:i:s')]),
         ];
 
         $filters = $export->metadata['filters'] ?? [];
@@ -88,8 +88,8 @@ class ExportCustomerJob extends BaseExportJob
         $businessName = $metadata['scope_name'] ?? ($business?->name ?? '');
 
         $title = $storeId
-            ? 'Customers of store '.(Store::find($storeId)?->name ?? '')
-            : 'Customers of business '.$businessName;
+            ? __('exports.of_store', ['label' => __('exports.label_customers'), 'name' => Store::find($storeId)?->name ?? ''])
+            : __('exports.of_business', ['label' => __('exports.label_customers'), 'name' => $businessName]);
 
         $query = app(CustomerRepository::class)->listQuery($businessId, $storeId, $search, $ids);
 

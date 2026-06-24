@@ -123,6 +123,11 @@ class ExportService
         string $jobClass,
         ?string $clientId = null,
     ): Export {
+        // Stamp the UI language the export was triggered in so the render job can
+        // localize the file. Kept inside filters so it's part of the dedupe
+        // signature — each locale produces (and caches) its own file.
+        $filters['locale'] = $this->currentLocale();
+
         $filterSignature = $this->filterSignature($filters);
 
         $inProgress = $this->exportRepository->findInProgressDuplicate($user->id, $type, $scopeId, $filterSignature, $clientId);
@@ -157,6 +162,17 @@ class ExportService
     {
         ksort($filters);
         return sha1((string) json_encode($filters));
+    }
+
+    /**
+     * The UI language for this export, from the X-Locale request header.
+     * Only the supported locales are honoured; anything else falls back to 'vi'.
+     */
+    private function currentLocale(): string
+    {
+        $locale = strtolower((string) request()->header('X-Locale'));
+
+        return in_array($locale, ['vi', 'en'], true) ? $locale : 'vi';
     }
 
     public function markProcessing(Export $export): Export

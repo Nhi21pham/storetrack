@@ -31,7 +31,7 @@ class DebtInvoiceSheet extends DebtReportSheet
 
     public function title(): string
     {
-        return 'Invoices';
+        return __('exports.sheet_invoices');
     }
 
     public function array(): array
@@ -41,11 +41,11 @@ class DebtInvoiceSheet extends DebtReportSheet
 
     public function headings(): array
     {
-        $headings = ['No.', $this->partyLabel, 'Phone'];
+        $headings = [__('exports.col_no'), $this->partyLabel, __('exports.col_phone')];
         if ($this->includeStore) {
-            $headings[] = 'Store';
+            $headings[] = __('exports.col_store');
         }
-        array_push($headings, 'Invoice', 'Date', 'Amount');
+        array_push($headings, __('exports.col_invoice'), __('exports.col_date'), __('exports.col_amount'));
 
         return $headings;
     }
@@ -68,7 +68,7 @@ class DebtInvoiceSheet extends DebtReportSheet
 
     protected function totalsRow(): array
     {
-        $row = ['TOTAL', '', ''];
+        $row = [__('exports.total'), '', ''];
         if ($this->includeStore) {
             $row[] = '';
         }

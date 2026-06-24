@@ -1,5 +1,4 @@
 import { graphql, rest } from '@/api'
-import { activeLocale } from '@/i18n'
 
 const INVOICE_LIST_FIELDS = `
   id store_id type code party_id party_name created_by description
@@ -120,7 +119,6 @@ export const fetchInventoryBatches = async ({ storeId }) => {
 export const startInvoiceExport = ({ storeId, params }) =>
   rest('post', `/api/exports/invoices/${storeId}`, { params })
 
-// Queues a per-invoice PDF document export (a zip of one PDF per invoice). The
-// active UI locale is sent so the rendered document matches the chosen language.
+// Queues a per-invoice PDF document export (a zip of one PDF per invoice).
 export const startInvoiceDocumentExport = ({ storeId, params }) =>
-  rest('post', `/api/exports/invoice-documents/${storeId}`, { params: { ...params, locale: activeLocale() } })
+  rest('post', `/api/exports/invoice-documents/${storeId}`, { params })

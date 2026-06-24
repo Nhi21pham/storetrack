@@ -63,12 +63,12 @@ class TagExport extends BaseExport
     private function columnDefinitions(): array
     {
         return [
-            'id'          => ['heading' => 'ID',          'width' => 8,  'value' => fn ($row) => (int) $row->id],
-            'name'        => ['heading' => 'Key',         'width' => 22, 'value' => fn ($row) => (string) $row->name],
-            'values'      => ['heading' => 'Values',      'width' => 34, 'value' => fn ($row) => $row->values->pluck('value')->implode(', ')],
-            'description' => ['heading' => 'Description', 'width' => 34, 'value' => fn ($row) => (string) ($row->description ?? '')],
-            'created_at'  => ['heading' => 'Created',     'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
-            'updated_at'  => ['heading' => 'Updated',     'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
+            'id'          => ['heading' => __('exports.col_id'),          'width' => 8,  'value' => fn ($row) => (int) $row->id],
+            'name'        => ['heading' => __('exports.col_key'),         'width' => 22, 'value' => fn ($row) => (string) $row->name],
+            'values'      => ['heading' => __('exports.col_values'),      'width' => 34, 'value' => fn ($row) => $row->values->pluck('value')->implode(', ')],
+            'description' => ['heading' => __('exports.col_description'), 'width' => 34, 'value' => fn ($row) => (string) ($row->description ?? '')],
+            'created_at'  => ['heading' => __('exports.col_created'),     'width' => 20, 'value' => fn ($row) => optional($row->created_at)->format('Y-m-d H:i') ?? ''],
+            'updated_at'  => ['heading' => __('exports.col_updated'),     'width' => 20, 'value' => fn ($row) => optional($row->updated_at)->format('Y-m-d H:i') ?? ''],
         ];
     }
 

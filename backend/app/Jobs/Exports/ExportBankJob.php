@@ -19,8 +19,8 @@ class ExportBankJob extends BaseExportJob
         [$user, $title, $query] = $this->resolveScope($export);
 
         $metaLines = [
-            'Exported by '.$user->name.' ('.$user->email.')',
-            'Date exported: '.now()->format('Y-m-d H:i:s'),
+            __('exports.exported_by', ['name' => $user->name, 'email' => $user->email]),
+            __('exports.date_exported', ['date' => now()->format('Y-m-d H:i:s')]),
         ];
 
         $filters = $export->metadata['filters'] ?? [];
@@ -80,7 +80,7 @@ class ExportBankJob extends BaseExportJob
         $includeInactive = $filters['include_inactive'] ?? true;
 
         $businessName = $metadata['scope_name'] ?? (Business::find($businessId)?->name ?? '');
-        $title = 'Banks of business '.$businessName;
+        $title = __('exports.of_business', ['label' => __('exports.label_banks'), 'name' => $businessName]);
 
         $query = app(BankRepository::class)->listQuery($businessId, $search, $ids, $includeInactive);
 
