@@ -43,6 +43,11 @@
     "bank_account": "Bank Account",
     "unit": "Unit",
     "product": "Product",
-    "product_category": "Category"
+    "product_category": "Category",
+    "tag": "Tag",
+    "tax": "Tax",
+    "invoice": "Invoice",
+    "payment": "Payment",
+    "report": "Report"
   }
 }

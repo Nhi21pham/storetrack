@@ -11,6 +11,7 @@ import { useI18n } from 'vue-i18n'
 const KNOWN_VARIANTS = new Set([
   'business', 'store', 'user', 'invitation', 'supplier', 'customer',
   'bank', 'bank_account', 'unit', 'product', 'product_category',
+  'tag', 'tax', 'invoice', 'payment', 'report',
 ])
 
 const props = defineProps({
@@ -59,5 +60,10 @@ const displayLabel = computed(() => {
 .badge-unit         { background: #e0e7ff; color: #4338ca; } /* indigo  */
 .badge-product      { background: #ecfccb; color: #4d7c0f; } /* lime    */
 .badge-product_category { background: #fae8ff; color: #a21caf; } /* fuchsia */
+.badge-tag          { background: #cffafe; color: #0e7490; } /* cyan    */
+.badge-tax          { background: #fef3c7; color: #92400e; } /* amber   */
+.badge-invoice      { background: #e0e7ff; color: #3730a3; } /* indigo  */
+.badge-payment      { background: #dcfce7; color: #15803d; } /* green   */
+.badge-report       { background: #f1f5f9; color: #475569; } /* slate   */
 .badge-default      { background: #f3f4f6; color: #6b7280; } /* gray    */
 </style>

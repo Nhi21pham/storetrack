@@ -1,22 +1,20 @@
 <template>
   <div class="date-range">
     <div class="filter-group">
-      <label>{{ fromLabel }}</label>
-      <input
-        type="date"
-        :value="startDate"
-        :max="endDate || undefined"
-        @input="$emit('update:startDate', $event.target.value)"
+      <label>{{ displayFromLabel }}</label>
+      <DatePicker
+        :model-value="startDate"
+        :max="endDate"
+        @update:model-value="$emit('update:startDate', $event)"
         @change="$emit('change')"
       />
     </div>
     <div class="filter-group">
-      <label>{{ toLabel }}</label>
-      <input
-        type="date"
-        :value="endDate"
-        :min="startDate || undefined"
-        @input="$emit('update:endDate', $event.target.value)"
+      <label>{{ displayToLabel }}</label>
+      <DatePicker
+        :model-value="endDate"
+        :min="startDate"
+        @update:model-value="$emit('update:endDate', $event)"
         @change="$emit('change')"
       />
     </div>
@@ -24,14 +22,20 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { t } from '@/i18n'
+import DatePicker from '@/components/common/DatePicker.vue'
 
-defineProps({
+const props = defineProps({
   startDate: { type: String, default: '' },
   endDate:   { type: String, default: '' },
-  fromLabel: { type: String, default: () => t('shared.from') },
-  toLabel:   { type: String, default: () => t('shared.to') },
+  // Empty defaults = fall back to localized text, computed reactively below.
+  fromLabel: { type: String, default: '' },
+  toLabel:   { type: String, default: '' },
 })
+
+const displayFromLabel = computed(() => props.fromLabel || t('shared.from'))
+const displayToLabel = computed(() => props.toLabel || t('shared.to'))
 
 // `change` fires when a date is committed — for callers that filter on apply
 // (e.g. server-side). v-model callers can just react to startDate/endDate.

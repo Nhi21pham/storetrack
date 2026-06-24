@@ -94,7 +94,8 @@ class BankAuditLogger extends AuditLogger
         $this->log(null, $actor, AuditObjectType::BANK, AuditAction::EXPORTED,
             self::actor($actor) . " has EXPORTED banks of business {$businessName}.",
             [
-                'business_id' => $businessId,
+                'business_id'   => $businessId,
+                'business_name' => $businessName,
                 'export_id'   => $export->id,
                 'filename'    => $export->filename,
                 'filters'     => $metadata['filters'] ?? null,

@@ -5,6 +5,7 @@ type AuditLog {
     object_type: String!
     action: String!
     message: String!
+    metadata_json: String
     store_name: String
     created_at: DateTime!
 }

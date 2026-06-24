@@ -43,6 +43,11 @@
     "bank_account": "Tài khoản ngân hàng",
     "unit": "Đơn vị tính",
     "product": "Sản phẩm",
-    "product_category": "Danh mục"
+    "product_category": "Danh mục",
+    "tag": "Thẻ",
+    "tax": "Thuế",
+    "invoice": "Hóa đơn",
+    "payment": "Thanh toán",
+    "report": "Báo cáo"
   }
 }

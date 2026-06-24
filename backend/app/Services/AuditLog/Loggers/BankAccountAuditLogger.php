@@ -73,7 +73,8 @@ class BankAccountAuditLogger extends AuditLogger
         $this->log(null, $actor, AuditObjectType::BANK_ACCOUNT, AuditAction::EXPORTED,
             self::actor($actor) . " has EXPORTED bank accounts of business {$businessName}.",
             [
-                'business_id' => $businessId,
+                'business_id'   => $businessId,
+                'business_name' => $businessName,
                 'export_id'   => $export->id,
                 'filename'    => $export->filename,
                 'filters'     => $metadata['filters'] ?? null,

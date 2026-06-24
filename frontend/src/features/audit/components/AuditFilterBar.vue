@@ -13,6 +13,7 @@
         <SearchableSelect
           :modelValue="objectFilter"
           :options="objectOptions()"
+          :all-label="$t('common.all')"
           :search-placeholder="$t('audit.searchType')"
           @update:modelValue="$emit('update:objectFilter', $event)"
           @change="$emit('apply')"
@@ -23,6 +24,7 @@
         <SearchableSelect
           :modelValue="actionFilter"
           :options="actionOptions()"
+          :all-label="$t('common.all')"
           :search-placeholder="$t('audit.searchAction')"
           @update:modelValue="$emit('update:actionFilter', $event)"
           @change="$emit('apply')"

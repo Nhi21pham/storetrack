@@ -3,7 +3,9 @@
 namespace App\Exports;
 
 use App\Models\AuditLog;
+use App\Support\AuditMessageRenderer;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 
 class AuditLogExport extends BaseExport
@@ -62,14 +64,24 @@ class AuditLogExport extends BaseExport
         if ($this->includeStoreColumn) {
             $cells[] = $row->store_name ?? '';
         }
-        $cells[] = Str::headline((string) $row->object_type);
+        $cells[] = $this->objectLabel((string) $row->object_type);
         $cells[] = $row->actor_name ?? '';
         $cells[] = $row->actor_email ?? '';
-        $cells[] = Str::headline((string) $row->action);
-        $cells[] = (string) $row->message;
+        $cells[] = $this->actionLabel((string) $row->action);
+        $cells[] = app(AuditMessageRenderer::class)->render($row);
         $cells[] = optional($row->created_at)->format('Y-m-d H:i:s') ?? '';
 
         return $cells;
+    }
+
+    private function objectLabel(string $type): string
+    {
+        return Lang::has("audit.object.{$type}") ? __("audit.object.{$type}") : Str::headline($type);
+    }
+
+    private function actionLabel(string $action): string
+    {
+        return Lang::has("audit.action.{$action}") ? __("audit.action.{$action}") : Str::headline($action);
     }
 
     public function columnWidths(): array

@@ -1,0 +1,128 @@
+{
+  "unit": {
+    "created": "**CREATED** unit {name}",
+    "updated": "**UPDATED** unit {name}",
+    "deactivated": "**DEACTIVATED** unit {name}",
+    "reactivated": "**REACTIVATED** unit {name}",
+    "deleted": "**DELETED** unit {name}",
+    "exported_store": "**EXPORTED** units of store {store_name}"
+  },
+  "tax": {
+    "created": "**CREATED** tax {name}",
+    "updated": "**UPDATED** tax {name}",
+    "deactivated": "**DEACTIVATED** tax {name}",
+    "reactivated": "**REACTIVATED** tax {name}",
+    "deleted": "**DELETED** tax {name}"
+  },
+  "tag": {
+    "created": "**CREATED** tag {name}",
+    "updated": "**UPDATED** tag {name}",
+    "deleted": "**DELETED** tag {name}",
+    "value_added": "**ADDED** value {value} to tag {name}",
+    "value_updated": "**UPDATED** value {value} of tag {name}",
+    "value_deleted": "**DELETED** value {value} from tag {tag_name}",
+    "exported_store": "**EXPORTED** tags of store {store_name}"
+  },
+  "store": {
+    "created": "**CREATED** store {store_name}",
+    "updated": "**UPDATED** store {store_name}",
+    "deactivated": "**DEACTIVATED** store {store_name}",
+    "reactivated": "**REACTIVATED** store {store_name}",
+    "deleted": "**DELETED** store {store_name}",
+    "exported_store": "**EXPORTED** audit log of store {store_name}"
+  },
+  "business": {
+    "created": "**CREATED** business {business_name}",
+    "updated": "**UPDATED** business {business_name}",
+    "exported_business": "**EXPORTED** audit log of business {business_name}"
+  },
+  "bank": {
+    "created": "**CREATED** bank {short_name}",
+    "updated": "**UPDATED** bank {short_name}",
+    "deactivated": "**DEACTIVATED** bank {short_name}",
+    "reactivated": "**REACTIVATED** bank {short_name}",
+    "deleted": "**DELETED** bank {short_name}",
+    "exported_business": "**EXPORTED** banks of business {business_name}"
+  },
+  "bank_account": {
+    "created": "**CREATED** bank account {account_number} ({bank_short_name}) for {partyType}",
+    "updated": "**UPDATED** bank account {account_number} ({bank_short_name})",
+    "deleted": "**DELETED** bank account {account_number} ({bank_short_name})",
+    "exported_business": "**EXPORTED** bank accounts of business {business_name}"
+  },
+  "supplier": {
+    "created": "**CREATED** supplier {supplier_name}",
+    "updated": "**UPDATED** supplier {supplier_name}",
+    "deleted": "**DELETED** supplier {supplier_name}",
+    "exported_store": "**EXPORTED** suppliers of store {store_name}",
+    "exported_business": "**EXPORTED** suppliers of business {business_name}"
+  },
+  "customer": {
+    "created": "**CREATED** customer {customer_name}",
+    "updated": "**UPDATED** customer {customer_name}",
+    "deleted": "**DELETED** customer {customer_name}",
+    "exported_store": "**EXPORTED** customers of store {store_name}",
+    "exported_business": "**EXPORTED** customers of business {business_name}"
+  },
+  "product": {
+    "created": "**CREATED** product {code} - {name}",
+    "updated": "**UPDATED** product {code} - {name}",
+    "deactivated": "**DEACTIVATED** product {code} - {name}",
+    "reactivated": "**REACTIVATED** product {code} - {name}",
+    "deleted": "**DELETED** product {code} - {name}",
+    "exported_store": "**EXPORTED** products of store {store_name}"
+  },
+  "product_category": {
+    "created": "**CREATED** product category {code} - {name}",
+    "updated": "**UPDATED** product category {code} - {name}",
+    "deactivated": "**DEACTIVATED** product category {code} - {name}",
+    "reactivated": "**REACTIVATED** product category {code} - {name}",
+    "deleted": "**DELETED** product category {code} - {name}",
+    "exported_store": "**EXPORTED** product categories of store {store_name}"
+  },
+  "invoice": {
+    "created": "**CREATED** {invoiceType} invoice {code}",
+    "updated": "**UPDATED** {invoiceType} invoice {code}",
+    "deleted": "**DELETED** {invoiceType} invoice {code}",
+    "exported_store": "**EXPORTED** {invoiceLabel} of store {store_name}"
+  },
+  "payment": {
+    "created": "**RECORDED** a payment of {amount}",
+    "deleted": "**DELETED** a payment of {amount}",
+    "created_for": "**RECORDED** a payment of {amount} for invoice {invoices}",
+    "deleted_for": "**DELETED** a payment of {amount} from invoice {invoices}"
+  },
+  "report": {
+    "exported_store": "**EXPORTED** {report} report of store {store_name}",
+    "exported_business": "**EXPORTED** {report} report of business {business_name}"
+  },
+  "user": {
+    "assigned": "**ASSIGNED** {user_name} ({user_email}) as {role}",
+    "role_changed": "**UPDATED** role of {user_name} ({user_email}) from {old_role} to {new_role}",
+    "removed": "**REMOVED** {user_name} ({user_email}) from the store"
+  },
+  "invitation": {
+    "invited": "**INVITED** {invitee_email} as {role}",
+    "cancelled": "**CANCELLED** invitation for {invitee_email}",
+    "accepted": "**ACCEPTED** the invitation as {role}",
+    "declined": "**DECLINED** the invitation"
+  },
+  "invoiceLabel": {
+    "purchase": "purchase invoices",
+    "sale": "sale invoices",
+    "all": "invoices"
+  },
+  "partyType": {
+    "business": "the business",
+    "customer": "a customer",
+    "supplier": "a supplier"
+  },
+  "report_label": {
+    "sale": "sale",
+    "stock": "stock",
+    "profit": "profit",
+    "top products": "top products",
+    "receivable": "receivables",
+    "payable": "payables"
+  }
+}

@@ -35,7 +35,7 @@
           :class="{ 'ss-option--active': modelValue === '' }"
           @click="select('')"
         >
-          {{ allLabel }}
+          {{ displayAllLabel }}
         </li>
         <li
           v-for="opt in filteredOptions"
@@ -57,6 +57,7 @@
 
 <script setup>
 import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { t } from '@/i18n'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -64,7 +65,8 @@ const props = defineProps({
   placeholder: { type: String, default: 'Select...' },
   searchPlaceholder: { type: String, default: 'Search...' },
   allowAll: { type: Boolean, default: true },
-  allLabel: { type: String, default: 'All' },
+  // Empty default = fall back to the localized "All", computed reactively below.
+  allLabel: { type: String, default: '' },
   size: { type: String, default: 'default' },
   teleport: { type: Boolean, default: false },
 })
@@ -79,9 +81,11 @@ const search   = ref('')
 const flipUp   = ref(false)
 const floatingStyle = ref(null)
 
+const displayAllLabel = computed(() => props.allLabel || t('common.all'))
+
 const selectedLabel = computed(() => {
   if (props.modelValue === '' || props.modelValue == null) {
-    return props.allowAll ? props.allLabel : ''
+    return props.allowAll ? displayAllLabel.value : ''
   }
   const found = props.options.find(o => o.value === props.modelValue)
   return found ? found.label : ''

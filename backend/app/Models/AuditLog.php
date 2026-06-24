@@ -36,4 +36,10 @@ class AuditLog extends Model
     {
         return $this->store?->name ?? ($this->metadata['store_name'] ?? null);
     }
+
+    /** Structured metadata as a JSON string, for the GraphQL API to expose. */
+    public function getMetadataJsonAttribute(): ?string
+    {
+        return $this->metadata ? json_encode($this->metadata, JSON_UNESCAPED_UNICODE) : null;
+    }
 }
