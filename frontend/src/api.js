@@ -3,7 +3,9 @@ import { ErrorCode } from '@/utils/errorCodes'
 import { AppError } from '@/utils/AppError'
 
 const api = axios.create({
-  baseURL: 'http://localhost'
+  // Dev defaults to the local nginx; production builds set VITE_API_BASE_URL=''
+  // so calls go to the same origin Caddy serves the SPA from.
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost'
 })
 
 // Stable per-browser id used by the backend to dedupe export requests

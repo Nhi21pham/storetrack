@@ -1,0 +1,21 @@
+# StoreTrack — single entrypoint: serves the built Vue SPA and proxies
+# the API/GraphQL/storage to Laravel (php-fpm in the `app` container).
+# Starts on plain :80; swapped to the DuckDNS domain for auto-HTTPS later.
+:80 {
+	encode gzip
+
+	# --- Laravel backend (token-auth REST, GraphQL, public storage, health) ---
+	@backend path /api/* /graphql /graphql/* /storage/* /up
+	handle @backend {
+		root * /var/www/html/public
+		php_fastcgi app:9000
+		file_server
+	}
+
+	# --- Vue SPA (history-mode fallback to index.html) ---
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+}
