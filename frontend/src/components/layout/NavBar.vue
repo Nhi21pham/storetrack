@@ -7,11 +7,7 @@
         </svg>
       </button>
       <div class="brand">
-        <div class="brand-logo">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          </svg>
-        </div>
+        <BrandLogo />
         <span class="brand-name">storetrack</span>
       </div>
     </div>
@@ -96,6 +92,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { setLocale } from '@/i18n'
 import StoreSwitcher from '@/components/layout/StoreSwitcher.vue'
+import BrandLogo from '@/components/common/BrandLogo.vue'
 
 const props = defineProps({
   username: String,
@@ -148,7 +145,6 @@ defineExpose({ refreshBusinesses })
 .menu-btn { width: 40px; height: 40px; border: none; background: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #111; transition: background 0.2s; }
 .menu-btn:hover { background: #f3f4f6; }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand-logo { width: 36px; height: 36px; background: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 .brand-name { font-size: 18px; font-weight: 700; color: #111; }
 .avatar-wrapper { position: relative; }
 .avatar-btn { width: 40px; height: 40px; border: none; background: #111; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
