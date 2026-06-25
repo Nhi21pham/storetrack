@@ -6,14 +6,14 @@
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
-      <div class="brand">
+      <router-link to="/dashboard" class="brand">
         <div class="brand-logo">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
           </svg>
         </div>
         <span class="brand-name">storetrack</span>
-      </div>
+      </router-link>
     </div>
 
     <!-- NEW: Business Switcher in center -->
@@ -147,7 +147,8 @@ defineExpose({ refreshBusinesses })
 .hello-text strong { color: #111; }
 .menu-btn { width: 40px; height: 40px; border: none; background: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #111; transition: background 0.2s; }
 .menu-btn:hover { background: #f3f4f6; }
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; padding: 0; }
+.brand:hover { background-color: transparent; }
 .brand-logo { width: 36px; height: 36px; background: #111; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 .brand-name { font-size: 18px; font-weight: 700; color: #111; }
 .avatar-wrapper { position: relative; }
