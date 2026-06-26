@@ -1,7 +1,7 @@
 # StoreTrack — single entrypoint: serves the built Vue SPA and proxies
 # the API/GraphQL/storage to Laravel (php-fpm in the `app` container).
-# Starts on plain :80; swapped to the DuckDNS domain for auto-HTTPS later.
-:80 {
+# Naming the host turns on Caddy's automatic HTTPS (Let's Encrypt).
+storetrack.io.vn {
 	encode gzip
 
 	# --- Laravel backend (token-auth REST, GraphQL, public storage, health) ---
@@ -18,4 +18,9 @@
 		try_files {path} /index.html
 		file_server
 	}
+}
+
+# Canonicalize www → apex.
+www.storetrack.io.vn {
+	redir https://storetrack.io.vn{uri} permanent
 }
