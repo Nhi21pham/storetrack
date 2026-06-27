@@ -62,11 +62,11 @@ cd storetrack
 
 ### 2. Configure environment
 
-The root `.env` (MySQL credentials used by Docker Compose) is already committed. You only
-need to create the backend env file:
+Create both env files from their examples (neither is committed — they hold credentials):
 
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env                  # MySQL credentials used by Docker Compose
+cp backend/.env.example backend/.env  # Laravel app config
 ```
 
 Then edit `backend/.env` so it points at the Docker services instead of SQLite. Set:
@@ -84,7 +84,8 @@ QUEUE_CONNECTION=redis
 ```
 
 > The hostnames `mysql_db` and `redis_cache` are the Compose container names — leave them
-> as-is. These DB credentials must match the root `.env`.
+> as-is. The `DB_*` values must match what you set in the root `.env`; use strong, unique
+> values for any real deployment.
 
 Optional: to enable AI invoice scanning, add your own Google Gemini key:
 

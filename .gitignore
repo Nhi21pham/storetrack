@@ -1,0 +1,2 @@
+# Secrets / environment — never commit. Copy from .env.example instead.
+/.env
