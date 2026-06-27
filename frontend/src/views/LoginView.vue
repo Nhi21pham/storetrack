@@ -1,11 +1,7 @@
 <template>
   <div class="login-page">
     <div class="brand">
-      <div class="logo">
-        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-        </svg>
-      </div>
+      <BrandLogo :size="72" :icon="28" />
       <span class="brand-name">storetrack</span>
     </div>
 
@@ -53,6 +49,7 @@
 </template>
 
 <script setup>
+import BrandLogo from '@/components/common/BrandLogo.vue'
   import { ref } from 'vue'
   import { useRouter, useRoute } from 'vue-router'
   import { graphql } from '@/api'
@@ -130,16 +127,6 @@
     align-items: center;
     margin-bottom: 28px;
     gap: 12px;
-  }
-
-  .logo {
-    width: 72px;
-    height: 72px;
-    background: #111;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .brand-name {
