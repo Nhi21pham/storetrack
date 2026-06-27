@@ -4,7 +4,7 @@
       <div class="brand">
         <BrandLogo />
         <span class="brand-name">storetrack</span>
-      </div>
+      </router-link>
     </div>
 
     <div class="sidebar-menu">
