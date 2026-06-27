@@ -38,6 +38,8 @@ services:
   db:
     image: mysql:8.0
     container_name: mysql_db
+    ports:
+      - "127.0.0.1:3306:3306"  # loopback only — DB reachable via SSH tunnel, never public
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
