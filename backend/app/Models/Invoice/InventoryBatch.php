@@ -7,6 +7,7 @@ use App\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class InventoryBatch extends Model
 {
@@ -41,6 +42,12 @@ class InventoryBatch extends Model
     public function sourceInvoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'source_invoice_id');
+    }
+
+    /** The purchase date shown to users is the source invoice's date, not the stored received_at. */
+    public function getSourceInvoiceDateAttribute(): ?Carbon
+    {
+        return $this->sourceInvoice?->invoice_date;
     }
 
     public function sourceInvoiceProduct(): BelongsTo
