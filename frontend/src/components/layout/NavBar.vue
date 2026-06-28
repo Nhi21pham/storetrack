@@ -6,10 +6,10 @@
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
-      <div class="brand">
+      <RouterLink to="/dashboard" class="brand">
         <BrandLogo />
         <span class="brand-name">storetrack</span>
-      </div>
+      </RouterLink>
     </div>
 
     <!-- NEW: Business Switcher in center -->
@@ -37,17 +37,6 @@
               <div class="dropdown-name">{{ username }}</div>
               <div class="dropdown-email">{{ email }}</div>
             </div>
-          </div>
-
-          <div class="dropdown-divider"></div>
-          <div class="dropdown-section-title">{{ $t('nav.storeSection') }}</div>
-          <div class="dropdown-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-            {{ $t('nav.storeInformation') }}
-          </div>
-          <div class="dropdown-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M4.93 4.93l1.41 1.41"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M20 12h2"/><path d="M2 12h2"/><path d="M19.07 19.07l-1.41-1.41"/><path d="M4.93 19.07l1.41-1.41"/></svg>
-            {{ $t('nav.storeSettings') }}
           </div>
 
           <div class="dropdown-divider"></div>
@@ -144,7 +133,7 @@ defineExpose({ refreshBusinesses })
 .hello-text strong { color: #111; }
 .menu-btn { width: 40px; height: 40px; border: none; background: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #111; transition: background 0.2s; }
 .menu-btn:hover { background: #f3f4f6; }
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; }
 .brand-name { font-size: 18px; font-weight: 700; color: #111; }
 .avatar-wrapper { position: relative; }
 .avatar-btn { width: 40px; height: 40px; border: none; background: #111; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
