@@ -78,8 +78,6 @@ class InvitationService
             }
         });
 
-        Log::info('[Invitation] link for ' . $email . ': ' . config('app.frontend_url', 'http://localhost:5173') . '/invite/' . $invitation->token);
-
         Mail::to($email)->queue(new InvitationMail(
             inviterName: $inviter->name,
             inviteeEmail: $email,
