@@ -8,7 +8,7 @@ use App\Exports\Report\SaleReportExport;
 use App\Jobs\Exports\ExportSaleReportJob;
 use App\Models\Business;
 use App\Models\Export;
-use App\Models\Invoice\InvoiceProduct;
+use App\Models\Invoice\InvoiceProductCost;
 use App\Models\Store;
 use App\Models\User;
 use App\Repositories\Report\SaleReportRepository;
@@ -34,7 +34,7 @@ class SaleReportService
         $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
 
         return $this->saleReportRepository->all($storeId)
-            ->map(fn (InvoiceProduct $item) => $this->toRow($item))
+            ->map(fn (InvoiceProductCost $item) => $this->toRow($item))
             ->all();
     }
 
@@ -49,7 +49,7 @@ class SaleReportService
         $this->permissionService->authorizeBusinessOwner($user, $businessId);
 
         return $this->saleReportRepository->allForBusiness($businessId)
-            ->map(fn (InvoiceProduct $item) => $this->toRow($item))
+            ->map(fn (InvoiceProductCost $item) => $this->toRow($item))
             ->all();
     }
 
@@ -85,27 +85,36 @@ class SaleReportService
         );
     }
 
-    /** Projects a sold line into the report row shape exposed by GraphQL. */
-    private function toRow(InvoiceProduct $item): array
+    /** Projects a sold batch-slice into the report row shape exposed by GraphQL. */
+    private function toRow(InvoiceProductCost $item): array
     {
-        $invoice = $item->invoice;
+        $line = $item->invoiceProduct;
+        $invoice = $line?->invoice;
+        $batch = $item->batch;
+
+        $quantity = (float) $item->quantity;
+        $unitPrice = (float) ($line?->unit_price ?? 0);
 
         return [
-            'id'                => (int) $item->id,
-            'store_id'          => $invoice?->store_id !== null ? (int) $invoice->store_id : null,
-            'store_name'        => $invoice?->relationLoaded('store') ? $invoice->store?->name : null,
-            'product_id'        => (int) $item->product_id,
-            'product_name'      => $item->product?->name ?? $item->product_name,
-            'product_code'      => $item->product?->code,
-            'tags'              => $item->product?->tags ?? [],
-            'customer_party_id' => $invoice?->party_id !== null ? (int) $invoice->party_id : null,
-            'customer_name'     => $invoice?->party_name,
-            'invoice_id'        => $item->invoice_id !== null ? (int) $item->invoice_id : null,
-            'invoice_code'      => $invoice?->code,
-            'invoice_date'      => $invoice?->invoice_date,
-            'quantity'          => (float) $item->quantity,
-            'unit_price'        => (float) $item->unit_price,
-            'total_sale'        => round((float) $item->subtotal, 2),
+            'id'                    => (int) $item->id,
+            'store_id'              => $invoice?->store_id !== null ? (int) $invoice->store_id : null,
+            'store_name'            => $invoice?->relationLoaded('store') ? $invoice->store?->name : null,
+            'product_id'            => $line?->product_id !== null ? (int) $line->product_id : null,
+            'product_name'          => $line?->product?->name ?? $line?->product_name,
+            'product_code'          => $line?->product?->code,
+            'tags'                  => $line?->product?->tags ?? [],
+            'customer_party_id'     => $invoice?->party_id !== null ? (int) $invoice->party_id : null,
+            'customer_name'         => $invoice?->party_name,
+            'invoice_id'            => $line?->invoice_id !== null ? (int) $line->invoice_id : null,
+            'invoice_code'          => $invoice?->code,
+            'invoice_date'          => $invoice?->invoice_date,
+            'purchase_invoice_id'   => $batch?->source_invoice_id !== null ? (int) $batch->source_invoice_id : null,
+            'purchase_invoice_code' => $batch?->sourceInvoice?->code,
+            'purchase_date'         => $batch?->received_at,
+            'batch_id'              => (int) $item->inventory_batch_id,
+            'quantity'              => $quantity,
+            'unit_price'            => $unitPrice,
+            'total_sale'            => round($quantity * $unitPrice, 2),
         ];
     }
 

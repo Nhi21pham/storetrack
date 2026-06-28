@@ -131,8 +131,13 @@
               <span v-if="row.customer_name">{{ row.customer_name }}</span>
               <span v-else class="empty-val">—</span>
             </td>
+            <td v-if="columnVisibility.isVisible('purchase_invoice_code')">
+              <button v-if="row.purchase_invoice_code" class="code-link" @click="openInvoiceDetail(row.purchase_invoice_id)">{{ row.purchase_invoice_code }}</button>
+              <span v-else class="empty-val">—</span>
+            </td>
+            <td v-if="columnVisibility.isVisible('purchase_date')">{{ formatDate(row.purchase_date) }}</td>
             <td v-if="columnVisibility.isVisible('invoice_code')">
-              <button v-if="row.invoice_code" class="code-link" @click="openInvoiceDetail(row)">{{ row.invoice_code }}</button>
+              <button v-if="row.invoice_code" class="code-link" @click="openInvoiceDetail(row.invoice_id)">{{ row.invoice_code }}</button>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('invoice_date')">{{ formatDate(row.invoice_date) }}</td>
@@ -229,6 +234,7 @@ import { useExport } from '@/composables/useExport'
 import { startSaleReportExport, startSaleReportBusinessExport } from '@/features/reports/services/reportService'
 import { fetchProduct } from '@/features/products/services/productService'
 import { fetchInvoice } from '@/features/invoices/services/invoiceService'
+import { INVOICE_TYPE } from '@/features/invoices/constants'
 import {
   SALE_REPORT_COLUMNS, SALE_REPORT_INITIAL_COL_WIDTHS,
   REPORT_STORE_COLUMN, REPORT_STORE_COLUMN_WIDTH,
@@ -321,9 +327,12 @@ const openProductDetail = async (row) => {
   }
 }
 
-const openInvoiceDetail = async (row) => {
+// Both the sale invoice and the purchase invoice (the batch's origin) open in
+// the same detail modal; it renders the right badge from the invoice's type.
+const openInvoiceDetail = async (invoiceId) => {
+  if (!invoiceId) return
   try {
-    detailInvoice.value = await fetchInvoice({ id: row.invoice_id })
+    detailInvoice.value = await fetchInvoice({ id: invoiceId })
   } catch (err) {
     showToast(err.message, 'error')
   }
@@ -340,11 +349,12 @@ const onProductSaved = async () => {
   await load()
 }
 
-// The sale invoice has a full edit page, so open it in a new tab.
+// Invoices have full edit pages, so open the right one (sale or purchase) in a new tab.
 const onInvoiceEdit = () => {
   const invoice = detailInvoice.value
   detailInvoice.value = null
-  window.open(router.resolve(`/sale-invoices/${invoice.id}/edit`).href, '_blank')
+  const base = invoice.type === INVOICE_TYPE.SALE ? 'sale-invoices' : 'purchase-invoices'
+  window.open(router.resolve(`/${base}/${invoice.id}/edit`).href, '_blank')
 }
 
 const { exporting, run } = useExport({

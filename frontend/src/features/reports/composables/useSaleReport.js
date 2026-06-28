@@ -18,6 +18,7 @@ const matchesSearch = (row, query) => {
     (row.product_code || '').toLowerCase().includes(q) ||
     (row.customer_name || '').toLowerCase().includes(q) ||
     (row.invoice_code || '').toLowerCase().includes(q) ||
+    (row.purchase_invoice_code || '').toLowerCase().includes(q) ||
     (row.store_name || '').toLowerCase().includes(q)
   )
 }

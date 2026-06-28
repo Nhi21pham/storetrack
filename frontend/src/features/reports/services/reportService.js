@@ -40,8 +40,9 @@ const SALE_REPORT_FIELDS = `
   id store_id store_name product_id product_name product_code
   tags { tag_id tag_name tag_value_id value }
   customer_party_id customer_name
+  purchase_invoice_id purchase_invoice_code purchase_date
   invoice_id invoice_code invoice_date
-  quantity unit_price total_sale
+  batch_id quantity unit_price total_sale
 `
 
 const SALE_REPORT_QUERY = `
