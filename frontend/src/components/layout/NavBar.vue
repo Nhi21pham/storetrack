@@ -133,7 +133,8 @@ defineExpose({ refreshBusinesses })
 .hello-text strong { color: #111; }
 .menu-btn { width: 40px; height: 40px; border: none; background: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #111; transition: background 0.2s; }
 .menu-btn:hover { background: #f3f4f6; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; padding: 0; color: inherit; }
+.brand:hover { background: none; }
 .brand-name { font-size: 18px; font-weight: 700; color: #111; }
 .avatar-wrapper { position: relative; }
 .avatar-btn { width: 40px; height: 40px; border: none; background: #111; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
