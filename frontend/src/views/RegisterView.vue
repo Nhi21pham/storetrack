@@ -1,5 +1,6 @@
 <template>
   <div class="login-page">
+    <LanguageSwitcher floating />
     <div class="brand">
       <div class="logo">
         <svg
@@ -69,6 +70,7 @@
 </template>
 
 <script setup>
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { graphql } from '@/api'

@@ -53,16 +53,7 @@
           <div class="dropdown-divider"></div>
           <div class="dropdown-section-title">{{ $t('nav.language') }}</div>
           <div class="lang-toggle">
-            <button
-              class="lang-btn"
-              :class="{ active: locale === 'vi' }"
-              @click.stop="switchLocale('vi')"
-            >{{ $t('nav.languageVietnamese') }}</button>
-            <button
-              class="lang-btn"
-              :class="{ active: locale === 'en' }"
-              @click.stop="switchLocale('en')"
-            >{{ $t('nav.languageEnglish') }}</button>
+            <LanguageSwitcher />
           </div>
 
           <div class="dropdown-divider"></div>
@@ -78,18 +69,14 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { setLocale } from '@/i18n'
 import StoreSwitcher from '@/components/layout/StoreSwitcher.vue'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 
 const props = defineProps({
   username: String,
   email: String
 })
-
-const { locale } = useI18n({ useScope: 'global' })
-const switchLocale = (code) => setLocale(code)
 
 const dropdownOpen = ref(false)
 const switcherRef = ref(null)
@@ -150,8 +137,5 @@ defineExpose({ refreshBusinesses })
 .dropdown-item:hover { background: #f9fafb; }
 .dropdown-item.logout { color: #dc2626; }
 .dropdown-item.logout:hover { background: #fef2f2; }
-.lang-toggle { display: flex; gap: 8px; padding: 4px 16px 10px; }
-.lang-btn { flex: 1; padding: 7px 10px; font-size: 13px; color: #374151; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-.lang-btn:hover { background: #e5e7eb; }
-.lang-btn.active { background: #111; border-color: #111; color: #fff; font-weight: 600; }
+.lang-toggle { padding: 4px 16px 10px; }
 </style>

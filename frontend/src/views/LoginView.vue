@@ -1,5 +1,6 @@
 <template>
   <div class="login-page">
+    <LanguageSwitcher floating />
     <div class="brand">
       <BrandLogo :size="72" :icon="28" />
       <span class="brand-name">storetrack</span>
@@ -49,6 +50,7 @@
 </template>
 
 <script setup>
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import BrandLogo from '@/components/common/BrandLogo.vue'
   import { ref } from 'vue'
   import { useRouter, useRoute } from 'vue-router'
