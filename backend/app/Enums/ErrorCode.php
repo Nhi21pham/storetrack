@@ -13,6 +13,8 @@ enum ErrorCode: string
     case PASSWORDS_NOT_MATCH = 'PASSWORDS_NOT_MATCH';
     case OLD_PASSWORD_INCORRECT = 'OLD_PASSWORD_INCORRECT';
     case REGISTRATION_EXPIRED = 'REGISTRATION_EXPIRED';
+    case PASSWORD_SAME_AS_CURRENT = 'PASSWORD_SAME_AS_CURRENT';
+    case RESET_CODE_LOCKED = 'RESET_CODE_LOCKED';
 
     // Authorization
     case FORBIDDEN = 'FORBIDDEN';
@@ -143,6 +145,7 @@ enum ErrorCode: string
             self::OLD_PASSWORD_INCORRECT,
             self::CODE_EXPIRED,
             self::REGISTRATION_EXPIRED,
+            self::PASSWORD_SAME_AS_CURRENT,
             self::TAX_CODE_TAKEN,
             self::SUPPLIER_NAME_TAKEN,
             self::CUSTOMER_PHONE_TAKEN,
@@ -224,7 +227,8 @@ enum ErrorCode: string
             self::EXPORT_FILE_MISSING,
             self::NOT_FOUND => 404,
 
-            self::RATE_LIMITED => 429,
+            self::RATE_LIMITED,
+            self::RESET_CODE_LOCKED => 429,
 
             self::SERVER_ERROR,
             self::NETWORK_ERROR,

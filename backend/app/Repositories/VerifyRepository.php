@@ -26,4 +26,18 @@ class VerifyRepository
     {
         Cache::forget($prefix . ':' . $email);
     }
+
+    public function incrementAttempts(string $prefix, string $email): int
+    {
+        $key = $prefix . ':attempts:' . $email;
+        $attempts = (int) Cache::get($key, 0) + 1;
+        Cache::put($key, $attempts, now()->addMinutes(10));
+
+        return $attempts;
+    }
+
+    public function clearAttempts(string $prefix, string $email): void
+    {
+        Cache::forget($prefix . ':attempts:' . $email);
+    }
 }
