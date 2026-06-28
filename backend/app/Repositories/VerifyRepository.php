@@ -3,14 +3,12 @@
 namespace App\Repositories;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 class VerifyRepository
 {
     public function createRandomCode(string $email): string
     {
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        Log::info('Saved verification code to Redis: ' . $email . ' code: ' . $code);
         return $code;
     }
 
@@ -27,5 +25,19 @@ class VerifyRepository
     public function deleteCode(string $prefix, string $email): void
     {
         Cache::forget($prefix . ':' . $email);
+    }
+
+    public function incrementAttempts(string $prefix, string $email): int
+    {
+        $key = $prefix . ':attempts:' . $email;
+        $attempts = (int) Cache::get($key, 0) + 1;
+        Cache::put($key, $attempts, now()->addMinutes(10));
+
+        return $attempts;
+    }
+
+    public function clearAttempts(string $prefix, string $email): void
+    {
+        Cache::forget($prefix . ':attempts:' . $email);
     }
 }

@@ -3,8 +3,9 @@
 namespace App\GraphQL;
 
 use GraphQL\Error\ClientAware;
+use GraphQL\Error\ProvidesExtensions;
 
-class SafeError extends \Exception implements ClientAware
+class SafeError extends \Exception implements ClientAware, ProvidesExtensions
 {
     private array $extensions;
 

@@ -6,10 +6,10 @@
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
-      <div class="brand">
+      <RouterLink to="/dashboard" class="brand">
         <BrandLogo />
         <span class="brand-name">storetrack</span>
-      </div>
+      </RouterLink>
     </div>
 
     <!-- NEW: Business Switcher in center -->
@@ -40,17 +40,6 @@
           </div>
 
           <div class="dropdown-divider"></div>
-          <div class="dropdown-section-title">{{ $t('nav.storeSection') }}</div>
-          <div class="dropdown-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-            {{ $t('nav.storeInformation') }}
-          </div>
-          <div class="dropdown-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41"/><path d="M4.93 4.93l1.41 1.41"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M20 12h2"/><path d="M2 12h2"/><path d="M19.07 19.07l-1.41-1.41"/><path d="M4.93 19.07l1.41-1.41"/></svg>
-            {{ $t('nav.storeSettings') }}
-          </div>
-
-          <div class="dropdown-divider"></div>
           <div class="dropdown-section-title">{{ $t('nav.accountSection') }}</div>
           <div class="dropdown-item" @click.stop="handleAction('account-info')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -64,16 +53,7 @@
           <div class="dropdown-divider"></div>
           <div class="dropdown-section-title">{{ $t('nav.language') }}</div>
           <div class="lang-toggle">
-            <button
-              class="lang-btn"
-              :class="{ active: locale === 'vi' }"
-              @click.stop="switchLocale('vi')"
-            >{{ $t('nav.languageVietnamese') }}</button>
-            <button
-              class="lang-btn"
-              :class="{ active: locale === 'en' }"
-              @click.stop="switchLocale('en')"
-            >{{ $t('nav.languageEnglish') }}</button>
+            <LanguageSwitcher />
           </div>
 
           <div class="dropdown-divider"></div>
@@ -89,18 +69,14 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { setLocale } from '@/i18n'
 import StoreSwitcher from '@/components/layout/StoreSwitcher.vue'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 
 const props = defineProps({
   username: String,
   email: String
 })
-
-const { locale } = useI18n({ useScope: 'global' })
-const switchLocale = (code) => setLocale(code)
 
 const dropdownOpen = ref(false)
 const switcherRef = ref(null)
@@ -144,7 +120,8 @@ defineExpose({ refreshBusinesses })
 .hello-text strong { color: #111; }
 .menu-btn { width: 40px; height: 40px; border: none; background: none; cursor: pointer; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #111; transition: background 0.2s; }
 .menu-btn:hover { background: #f3f4f6; }
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; cursor: pointer; padding: 0; color: inherit; }
+.brand:hover { background: none; }
 .brand-name { font-size: 18px; font-weight: 700; color: #111; }
 .avatar-wrapper { position: relative; }
 .avatar-btn { width: 40px; height: 40px; border: none; background: #111; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
@@ -160,8 +137,5 @@ defineExpose({ refreshBusinesses })
 .dropdown-item:hover { background: #f9fafb; }
 .dropdown-item.logout { color: #dc2626; }
 .dropdown-item.logout:hover { background: #fef2f2; }
-.lang-toggle { display: flex; gap: 8px; padding: 4px 16px 10px; }
-.lang-btn { flex: 1; padding: 7px 10px; font-size: 13px; color: #374151; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-.lang-btn:hover { background: #e5e7eb; }
-.lang-btn.active { background: #111; border-color: #111; color: #fff; font-weight: 600; }
+.lang-toggle { padding: 4px 16px 10px; }
 </style>

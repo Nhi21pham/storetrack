@@ -4,6 +4,8 @@
   "SESSION_EXPIRED": "Session expired. Please log in again.",
   "INVALID_CODE": "The verification code is invalid.",
   "CODE_EXPIRED": "The verification code has expired.",
+  "RESET_CODE_LOCKED": "Too many incorrect attempts. Please request a new code.",
+  "PASSWORD_SAME_AS_CURRENT": "New password must be different from your current password.",
   "PASSWORDS_NOT_MATCH": "Passwords do not match.",
   "OLD_PASSWORD_INCORRECT": "The current password is incorrect.",
   "REGISTRATION_EXPIRED": "Your registration session has expired. Please start again.",

@@ -4,6 +4,8 @@
   "SESSION_EXPIRED": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
   "INVALID_CODE": "Mã xác minh không hợp lệ.",
   "CODE_EXPIRED": "Mã xác minh đã hết hạn.",
+  "RESET_CODE_LOCKED": "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.",
+  "PASSWORD_SAME_AS_CURRENT": "Mật khẩu mới phải khác mật khẩu hiện tại.",
   "PASSWORDS_NOT_MATCH": "Mật khẩu không khớp.",
   "OLD_PASSWORD_INCORRECT": "Mật khẩu hiện tại không đúng.",
   "REGISTRATION_EXPIRED": "Phiên đăng ký đã hết hạn. Vui lòng thực hiện lại.",
