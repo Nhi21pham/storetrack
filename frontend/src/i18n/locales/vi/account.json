@@ -27,5 +27,22 @@
   "discardMessage": "Bạn có thay đổi chưa lưu. Bạn có chắc muốn hủy không?",
   "passwordUpdated": "Đổi mật khẩu thành công!",
   "updatePasswordFailed": "Đổi mật khẩu thất bại",
-  "sendResetFailed": "Gửi mã đặt lại thất bại"
+  "sendResetFailed": "Gửi mã đặt lại thất bại",
+  "resetPassword": "Đặt lại mật khẩu",
+  "resetSubtitle": "Xác minh email để đặt mật khẩu mới",
+  "sendCode": "Gửi mã xác minh",
+  "sendingCode": "Đang gửi...",
+  "verificationCode": "Mã xác minh",
+  "enterCode": "Nhập mã gồm 6 chữ số",
+  "codeSent": "Đã gửi mã xác minh.",
+  "codeSentNote": "Chúng tôi đã gửi mã xác minh đến email của bạn.",
+  "codeResent": "Đã gửi mã mới.",
+  "didntReceive": "Chưa nhận được?",
+  "resendCode": "Gửi lại mã",
+  "resendIn": "Gửi lại sau {seconds}s",
+  "resetPendingNote": "Mật khẩu của bạn sẽ không thay đổi cho đến khi bạn nhập mã xác minh.",
+  "resetPasswordBtn": "Đặt lại mật khẩu",
+  "resetting": "Đang đặt lại...",
+  "back": "Quay lại",
+  "passwordChanged": "Đã đổi mật khẩu. Vui lòng đăng nhập lại."
 }

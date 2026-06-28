@@ -27,5 +27,22 @@
   "discardMessage": "You have unsaved changes. Are you sure you want to cancel?",
   "passwordUpdated": "Password updated successfully!",
   "updatePasswordFailed": "Failed to update password",
-  "sendResetFailed": "Failed to send reset code"
+  "sendResetFailed": "Failed to send reset code",
+  "resetPassword": "Reset Password",
+  "resetSubtitle": "Verify your email to set a new password",
+  "sendCode": "Send verification code",
+  "sendingCode": "Sending...",
+  "verificationCode": "Verification Code",
+  "enterCode": "Enter the 6-digit code",
+  "codeSent": "Verification code sent.",
+  "codeSentNote": "We've sent a verification code to your email.",
+  "codeResent": "A new code has been sent.",
+  "didntReceive": "Didn't receive it?",
+  "resendCode": "Resend code",
+  "resendIn": "Resend in {seconds}s",
+  "resetPendingNote": "Your password won't change until you enter the verification code.",
+  "resetPasswordBtn": "Reset Password",
+  "resetting": "Resetting...",
+  "back": "Back",
+  "passwordChanged": "Password changed. Please sign in again."
 }
