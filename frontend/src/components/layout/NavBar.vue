@@ -9,7 +9,7 @@
       <div class="brand">
         <BrandLogo />
         <span class="brand-name">storetrack</span>
-      </router-link>
+      </div>
     </div>
 
     <!-- NEW: Business Switcher in center -->
