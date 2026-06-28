@@ -21,8 +21,9 @@ class ForgotPasswordService
 
         $user = $this->userRepository->findByEmail($email);
 
+        // No-op for unknown emails so the response can't reveal which accounts exist.
         if (!$user) {
-            throw new AuthException(ErrorCode::ACCOUNT_NOT_FOUND, 'No account found with this email.');
+            return;
         }
 
         $code = $this->verifyRepository->createRandomCode($email);

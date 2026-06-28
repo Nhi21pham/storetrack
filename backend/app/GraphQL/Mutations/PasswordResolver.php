@@ -19,7 +19,7 @@ class PasswordResolver
         validator($args, AuthValidator::forgotPassword())->validate();
         try {
             $this->forgotPasswordService->sendResetCode($args['email']);
-            return ['message' => 'Reset code sent! Please check your email.'];
+            return ['message' => 'Reset code sent to ' . $args['email'] . '! Please check your email.'];
         } catch (\Exception $e) {
             throw new UserError($e->getMessage());
         }
