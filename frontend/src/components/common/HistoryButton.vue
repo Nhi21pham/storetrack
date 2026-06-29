@@ -3,11 +3,11 @@
     class="history-btn"
     :class="[variant, variant === 'solid' ? `size-${size}` : null]"
     :disabled="disabled"
-    :title="title"
+    :title="displayTitle"
     @click="$emit('click')"
   >
     <svg :width="iconSize" :height="iconSize" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
-    <span>{{ label }}</span>
+    <span>{{ displayLabel }}</span>
   </button>
 </template>
 
@@ -19,8 +19,10 @@ import { t } from '@/i18n'
 // import/export history modal on the page it sits in.
 const props = defineProps({
   disabled: { type: Boolean, default: false },
-  label:    { type: String,  default: () => t('shared.history') },
-  title:    { type: String,  default: () => t('shared.viewHistoryTitle') },
+  // Empty default = fall back to the localized text, computed reactively below so
+  // it re-translates live when the locale switches (a prop default would resolve once).
+  label:    { type: String,  default: '' },
+  title:    { type: String,  default: '' },
   variant:  { type: String,  default: 'solid', validator: (v) => ['solid', 'ghost'].includes(v) },
   size:     { type: String,  default: 'lg',    validator: (v) => ['sm', 'md', 'lg'].includes(v) },
 })
@@ -28,6 +30,8 @@ const props = defineProps({
 defineEmits(['click'])
 
 const iconSize = computed(() => (props.variant === 'ghost' ? 13 : 14))
+const displayLabel = computed(() => props.label || t('shared.history'))
+const displayTitle = computed(() => props.title || t('shared.viewHistoryTitle'))
 </script>
 
 <style scoped>

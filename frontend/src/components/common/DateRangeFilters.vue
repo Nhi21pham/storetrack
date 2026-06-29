@@ -7,7 +7,7 @@
         :value="dateField"
         @change="$emit('update:dateField', $event.target.value)"
       >
-        <option v-for="field in fields" :key="field.value" :value="field.value">{{ field.label }}</option>
+        <option v-for="field in effectiveFields" :key="field.value" :value="field.value">{{ field.label }}</option>
       </select>
     </div>
     <DateRangeFilter
@@ -20,23 +20,25 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import DateRangeFilter from '@/components/common/DateRangeFilter.vue'
 import { t } from '@/i18n'
 
-defineProps({
+const props = defineProps({
   startDate: { type: String, default: '' },
   endDate:   { type: String, default: '' },
   dateField: { type: String, default: 'created_at' },
-  fields: {
-    type: Array,
-    default: () => [
-      { value: 'created_at', label: t('common.createdAt') },
-      { value: 'updated_at', label: t('common.updatedAt') },
-    ],
-  },
+  // Null default = fall back to the localized fields, computed reactively below so the
+  // labels re-translate live when the locale switches (a prop default would resolve once).
+  fields: { type: Array, default: null },
 })
 
 defineEmits(['update:startDate', 'update:endDate', 'update:dateField'])
+
+const effectiveFields = computed(() => props.fields ?? [
+  { value: 'created_at', label: t('common.createdAt') },
+  { value: 'updated_at', label: t('common.updatedAt') },
+])
 </script>
 
 <style scoped>
