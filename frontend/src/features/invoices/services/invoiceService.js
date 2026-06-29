@@ -14,7 +14,7 @@ const INVOICE_DETAIL_FIELDS = `
     id product_id product_name quantity unit_price subtotal tax_total grand_total
     cost_total
     taxes { id tax_id tax_name tax_rate tax_amount }
-    costs { id inventory_batch_id quantity unit_cost }
+    costs { id inventory_batch_id quantity unit_cost batch { source_invoice_date } }
   }
 `
 
@@ -68,7 +68,7 @@ const PRODUCT_STOCKS_QUERY = `
 
 const INVENTORY_BATCHES_QUERY = `
   query InventoryBatches($store_id: ID!) {
-    inventoryBatches(store_id: $store_id) { id product_id unit_cost quantity_remaining received_at }
+    inventoryBatches(store_id: $store_id) { id product_id unit_cost quantity_remaining received_at source_invoice_date }
   }
 `
 

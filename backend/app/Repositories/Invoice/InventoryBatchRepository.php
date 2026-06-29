@@ -25,9 +25,10 @@ class InventoryBatchRepository
     {
         return InventoryBatch::where('store_id', $storeId)
             ->where('quantity_remaining', '>', 0)
+            ->with('sourceInvoice:id,invoice_date')
             ->orderBy('received_at')
             ->orderBy('id')
-            ->get(['id', 'product_id', 'unit_cost', 'quantity_remaining', 'received_at']);
+            ->get(['id', 'product_id', 'source_invoice_id', 'unit_cost', 'quantity_remaining', 'received_at']);
     }
 
     /**

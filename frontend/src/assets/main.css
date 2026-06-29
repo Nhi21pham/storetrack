@@ -32,3 +32,27 @@ a,
     padding: 0;
   }
 }
+
+/* Shared hover tooltip bubble (see directives/tooltip.ts). Teleported to <body>,
+   so it lives here rather than in a scoped component style. */
+.app-tooltip {
+  position: fixed;
+  z-index: 4000;
+  max-width: 320px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 500;
+  white-space: normal;
+  word-break: break-word;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+.app-tooltip--visible {
+  opacity: 1;
+}

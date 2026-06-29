@@ -43,6 +43,7 @@ type InvoiceProductCost {
     inventory_batch_id: ID!
     quantity: Float!
     unit_cost: Float!
+    batch: InventoryBatch @belongsTo
 }
 
 type ProductStock {
@@ -56,6 +57,7 @@ type InventoryBatch {
     unit_cost: Float!
     quantity_remaining: Float!
     received_at: DateTime!
+    source_invoice_date: DateTime
 }
 
 type InvoiceProductTax {
