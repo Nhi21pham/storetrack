@@ -4,8 +4,13 @@ StoreTrack is a multi-store inventory and accounting platform for small retail/w
 businesses. A single account can own one or more **businesses**, each with multiple
 **stores**, and manage the full operational cycle: products and stock, purchase and sale
 invoices, supplier/customer debt, payments, and financial reports.
-
-Highlights:
+## Live Demo
+[Link]:(https://storetrack.io.vn/) 
+Demo account:
+Email: test@example.com
+Password: 12345678
+*Demo data is shared and may be reset periodically*
+## Features
 
 - **Catalog** — products, categories, units, tags, and per-store stock levels.
 - **Parties** — suppliers and customers, scoped to the stores they belong to.
