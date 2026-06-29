@@ -12,8 +12,7 @@ https://storetrack.io.vn
 ### Demo Account
 
 **Email:** test@example.com<br>
-**Password:** 12345678
-
+**Password:** Demo@1234
 > *The demo account is publicly available. Data may be modified or reset periodically.*
 
 ## Features
