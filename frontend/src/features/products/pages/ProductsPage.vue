@@ -137,7 +137,9 @@
               <SelectCheckbox :checked="isSelected(product.id)" @change="toggleRow(product.id)" />
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
-            <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ product.code }}</td>
+            <td v-if="columnVisibility.isVisible('code')" class="code-col">
+              <button class="code-link" @click="detailProduct = product">{{ product.code }}</button>
+            </td>
             <td v-if="columnVisibility.isVisible('name')">
               <button class="name-link" @click="detailProduct = product">{{ product.name }}</button>
             </td>
@@ -698,6 +700,8 @@ tbody tr.inactive td.actions-col { background: #fafafa; }
 .stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .date-col { color: #6b7280; white-space: nowrap; }
 .code-col { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #4338ca; }
+.code-link { background: none; border: none; padding: 0; font: inherit; cursor: pointer; text-align: left; color: inherit; }
+.code-link:hover { text-decoration: underline; }
 .tags-cell { display: flex; flex-wrap: wrap; gap: 4px; }
 .tags-cell .chip-wrap { display: inline-flex; align-items: center; }
 .name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
