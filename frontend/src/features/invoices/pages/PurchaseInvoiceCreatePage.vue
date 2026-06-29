@@ -111,7 +111,7 @@
                   </div>
                 </td>
                 <td class="c-unit">
-                  <span v-if="unitNameFor(item.product_id)" class="unit-name" :title="unitNameFor(item.product_id)">{{ unitNameFor(item.product_id) }}</span>
+                  <span v-if="unitNameFor(item.product_id)" class="unit-name" v-tooltip="unitNameFor(item.product_id)">{{ unitNameFor(item.product_id) }}</span>
                   <span v-else class="muted">—</span>
                 </td>
                 <td class="c-qty">
@@ -122,7 +122,7 @@
                 </td>
                 <td class="c-tax">
                   <button type="button" class="tax-toggle" :class="{ active: item.expanded }" @click="item.expanded = !item.expanded">
-                    <span class="tax-summary" :title="taxSummary(item)">{{ taxSummary(item) }}</span>
+                    <span class="tax-summary" v-tooltip="taxSummary(item)">{{ taxSummary(item) }}</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
                 </td>
@@ -633,8 +633,8 @@ const keepEditing = () => {
 .card { background: #fff; border: 1px solid #eef0f2; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
 .card-title { margin: 0 0 16px; font-size: 15px; font-weight: 700; color: #111; }
 
-.details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
+.details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .form-group.full { grid-column: 1 / -1; }
 .form-group label { font-size: 13px; font-weight: 500; color: #374151; }
 .required { color: #dc2626; }

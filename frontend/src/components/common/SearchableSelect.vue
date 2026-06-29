@@ -1,7 +1,7 @@
 <template>
   <div class="searchable-select" :class="{ 'ss-large': size === 'large' }" ref="rootEl">
     <button type="button" class="ss-trigger" :class="{ open }" @click="toggleOpen">
-      <span class="ss-value" :class="{ 'ss-placeholder': !selectedLabel }" :title="selectedLabel || ''">
+      <span class="ss-value" :class="{ 'ss-placeholder': !selectedLabel }" v-tooltip="selectedLabel">
         {{ selectedLabel || placeholder }}
       </span>
       <svg class="ss-chevron" :class="{ open }" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -189,7 +189,7 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
   border-color: #d1d5db;
 }
 
-.ss-value { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ss-value { flex: 1 1 auto; min-width: 0; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ss-placeholder { color: #9ca3af; }
 .ss-chevron { color: #6b7280; flex-shrink: 0; transition: transform 0.15s; }
 .ss-chevron.open { transform: rotate(180deg); }

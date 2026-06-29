@@ -114,7 +114,7 @@
                   </span>
                 </td>
                 <td class="c-unit">
-                  <span v-if="unitNameFor(item.product_id)" class="unit-name" :title="unitNameFor(item.product_id)">{{ unitNameFor(item.product_id) }}</span>
+                  <span v-if="unitNameFor(item.product_id)" class="unit-name" v-tooltip="unitNameFor(item.product_id)">{{ unitNameFor(item.product_id) }}</span>
                   <span v-else class="muted">—</span>
                 </td>
                 <td class="c-qty">
@@ -125,7 +125,7 @@
                 </td>
                 <td class="c-tax">
                   <button type="button" class="tax-toggle" :class="{ active: item.expanded }" @click="item.expanded = !item.expanded">
-                    <span class="tax-summary" :title="taxSummary(item)">{{ taxSummary(item) }}</span>
+                    <span class="tax-summary" v-tooltip="taxSummary(item)">{{ taxSummary(item) }}</span>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                   </button>
                 </td>
@@ -401,7 +401,7 @@ const costLinesFor = (productId) => {
   const info = originalBatchInfo.value
 
   const released = Object.entries(info)
-    .filter(([id]) => !openIds.has(id))
+    .filter(([id, b]) => !openIds.has(id) && b.product_id === String(productId))
     .map(([id, b]) => ({ id: Number(id), remaining: b.quantity, unit_cost: b.unit_cost, invoice_date: b.invoice_date }))
     .sort((a, b) => a.id - b.id)
 
@@ -573,7 +573,7 @@ const loadInvoice = async () => {
     originalBatchInfo.value = (inv.items || []).reduce((map, it) => {
       for (const c of it.costs || []) {
         const id = String(c.inventory_batch_id)
-        if (!map[id]) map[id] = { quantity: 0, unit_cost: Number(c.unit_cost), invoice_date: c.batch?.source_invoice_date || null }
+        if (!map[id]) map[id] = { quantity: 0, unit_cost: Number(c.unit_cost), invoice_date: c.batch?.source_invoice_date || null, product_id: String(it.product_id) }
         map[id].quantity += Number(c.quantity || 0)
       }
       return map
@@ -781,8 +781,8 @@ const keepEditing = () => {
 .card { background: #fff; border: 1px solid #eef0f2; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
 .card-title { margin: 0 0 16px; font-size: 15px; font-weight: 700; color: #111; }
 
-.details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
+.details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .form-group.full { grid-column: 1 / -1; }
 .form-group label { font-size: 13px; font-weight: 500; color: #374151; }
 .required { color: #dc2626; }
