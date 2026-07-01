@@ -62,6 +62,11 @@
   "categoryRequired": "Danh mục là bắt buộc.",
   "duplicateName": "Sản phẩm với tên này đã tồn tại: {name}. Mở từ danh sách gợi ý phía trên để chỉnh sửa.",
   "detailsTitle": "Chi tiết sản phẩm",
+  "invoicesSection": "Xuất hiện trong hóa đơn",
+  "purchaseInvoices": "Hóa đơn mua",
+  "saleInvoices": "Hóa đơn bán",
+  "noInvoices": "Sản phẩm này chưa xuất hiện trong hóa đơn nào.",
+  "loadingInvoices": "Đang tải hóa đơn…",
   "import": {
     "category": "Danh mục được khớp theo mã hoặc tên đầy đủ; tạo danh mục còn thiếu ngay từ màn hình xem trước.",
     "name": "Name là tên sản phẩm và phải là duy nhất trong cửa hàng này.",

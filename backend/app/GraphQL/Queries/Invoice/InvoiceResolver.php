@@ -27,6 +27,13 @@ class InvoiceResolver extends BaseResolver
         );
     }
 
+    public function forProduct($_, array $args)
+    {
+        return $this->safe(fn() =>
+            $this->invoiceService->getForProduct($this->user(), (int) $args['product_id'])
+        );
+    }
+
     public function productStocks($_, array $args)
     {
         return $this->safe(fn() =>

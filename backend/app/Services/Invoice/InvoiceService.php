@@ -9,6 +9,7 @@ use App\Enums\InvoicePaymentStatusEnum;
 use App\Enums\InvoiceTypeEnum;
 use App\Enums\PermissionEnum;
 use App\Exceptions\InvoiceException;
+use App\Exceptions\ProductException;
 use App\Exceptions\TaxException;
 use App\Exports\InvoiceExport;
 use App\Jobs\Exports\ExportInvoiceDocumentJob;
@@ -25,6 +26,7 @@ use App\Repositories\Invoice\InvoiceRepository;
 use App\Repositories\Invoice\InvoiceSequenceRepository;
 use App\Repositories\Invoice\ProductStockRepository;
 use App\Repositories\Payment\PaymentAllocationRepository;
+use App\Repositories\ProductRepository;
 use App\Services\AuditLog\Loggers\InvoiceAuditLogger;
 use App\Services\ExportService;
 use App\Services\Invoice\Stock\InvoiceStockHandler;
@@ -48,6 +50,7 @@ class InvoiceService
         private ExportService $exportService,
         private PaymentService $paymentService,
         private PaymentAllocationRepository $allocationRepository,
+        private ProductRepository $productRepository,
     ) {}
 
     public function getAll(User $user, int $storeId, ?string $type = null): Collection
@@ -64,6 +67,16 @@ class InvoiceService
         }
         $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, (int) $invoice->store_id);
         return $invoice;
+    }
+
+    public function getForProduct(User $user, int $productId): Collection
+    {
+        $product = $this->productRepository->findById($productId);
+        if (!$product) {
+            throw new ProductException(ErrorCode::PRODUCT_NOT_FOUND, 'Product not found.');
+        }
+        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, (int) $product->store_id);
+        return $this->invoiceRepository->forProduct($productId);
     }
 
     public function getStockLevels(User $user, int $storeId): Collection
