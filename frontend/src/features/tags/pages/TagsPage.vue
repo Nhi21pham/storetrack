@@ -96,7 +96,7 @@
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" @click="detailTag = tag">{{ tag.name }}</button>
+              <button class="name-link" v-tooltip="tag.name" @click="detailTag = tag">{{ tag.name }}</button>
             </td>
             <td v-if="columnVisibility.isVisible('values')">
               <div class="values-cell">
@@ -438,7 +438,7 @@ const performDeleteKey = async () => {
 
 .stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .date-col { color: #6b7280; white-space: nowrap; }
-.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: #111; cursor: pointer; text-align: left; }
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 700; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 
 .values-cell { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
