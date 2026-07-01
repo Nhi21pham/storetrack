@@ -51,7 +51,7 @@
                   <span v-if="row.created_count > 0" class="created-count">{{ row.created_count }}</span>
                   <span v-else class="muted">—</span>
                 </td>
-                <td class="party-cell">{{ row.party_name || '—' }}</td>
+                <td class="party-cell" v-tooltip="row.party_name || ''">{{ row.party_name || '—' }}</td>
                 <td class="by-cell">{{ row.user_name || row.user_email || '—' }}</td>
                 <td class="date-cell">{{ formatDateTime(row.created_at) }}</td>
               </tr>

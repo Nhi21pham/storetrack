@@ -10,8 +10,8 @@
       <div v-else class="member-list">
         <div v-for="member in filteredMembers" :key="member.id" class="member-row">
           <div class="member-info">
-            <span class="member-name">{{ member.name }}</span>
-            <span class="member-email">{{ member.email }}</span>
+            <span class="member-name" v-tooltip="member.name">{{ member.name }}</span>
+            <span class="member-email" v-tooltip="member.email">{{ member.email }}</span>
           </div>
           <div class="member-right">
             <div v-if="canRemove && member.role !== ROLE.OWNER" class="role-dropdown-wrap">
@@ -65,8 +65,8 @@
       <div v-else class="member-list">
         <div v-for="inv in pendingInvitations" :key="inv.id" class="member-row">
           <div class="member-info">
-            <span class="member-name">{{ inv.invitee_email }}</span>
-            <span class="member-email">{{ $t('users.invitedBy', { name: inv.inviter.name }) }}</span>
+            <span class="member-name" v-tooltip="inv.invitee_email">{{ inv.invitee_email }}</span>
+            <span class="member-email" v-tooltip="$t('users.invitedBy', { name: inv.inviter.name })">{{ $t('users.invitedBy', { name: inv.inviter.name }) }}</span>
           </div>
           <div class="member-right">
             <RoleBadge :role="inv.role" />

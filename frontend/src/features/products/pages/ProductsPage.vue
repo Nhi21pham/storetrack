@@ -146,7 +146,7 @@
               <button class="code-link" @click="detailProduct = product">{{ product.code }}</button>
             </td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" @click="detailProduct = product">{{ product.name }}</button>
+              <button class="name-link" v-tooltip="product.name" @click="detailProduct = product">{{ product.name }}</button>
             </td>
             <td v-if="columnVisibility.isVisible('category')">
               <span v-if="product.category">{{ displayCategoryName(product.category) }}</span>

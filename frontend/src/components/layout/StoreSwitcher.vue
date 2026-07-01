@@ -52,7 +52,7 @@
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            <span class="biz-name">{{ biz.name }}</span>
+            <span class="biz-name" v-tooltip="biz.name">{{ biz.name }}</span>
             <span class="biz-role-tag">{{ biz.role }}</span>
             <span v-if="biz.role === 'owner'" class="biz-level-tag">{{ $t('nav.businessLevel') }}</span>
             <svg
@@ -73,7 +73,7 @@
           >
             <div class="store-info">
               <span v-if="store.is_active" class="store-dot"></span>
-              <span class="store-name">{{ store.name }}</span>
+              <span class="store-name" v-tooltip="store.name">{{ store.name }}</span>
               <span class="store-role">{{ store.my_role }}</span>
               <span v-if="!store.is_active" class="inactive-tag">{{ $t('nav.inactiveTag') }}</span>
             </div>

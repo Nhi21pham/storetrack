@@ -11,7 +11,7 @@
       <div class="product-item" v-for="(product, i) in ranked" :key="product.product_id">
         <div class="product-left">
           <span class="product-rank">#{{ i + 1 }}</span>
-          <div class="product-name">{{ product.product_name }}</div>
+          <div class="product-name" v-tooltip="product.product_name">{{ product.product_name }}</div>
         </div>
         <div class="product-metric">{{ metricValue(product) }}</div>
       </div>

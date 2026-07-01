@@ -101,7 +101,7 @@
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('short_name')">
-              <button class="name-link" @click="detailBank = bank">{{ bank.short_name }}</button>
+              <button class="name-link" v-tooltip="bank.short_name" @click="detailBank = bank">{{ bank.short_name }}</button>
             </td>
             <td v-if="columnVisibility.isVisible('full_name_vi')"><span class="truncate" :title="bank.full_name_vi">{{ bank.full_name_vi }}</span></td>
             <td v-if="columnVisibility.isVisible('full_name_en')"><span class="truncate" :title="bank.full_name_en">{{ bank.full_name_en }}</span></td>
