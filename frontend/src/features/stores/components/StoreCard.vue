@@ -10,7 +10,7 @@
         </div>
         <div class="card-info">
           <div class="card-title-row">
-            <h3>{{ store.name }}</h3>
+            <h3 v-tooltip="store.name">{{ store.name }}</h3>
             <ToggleSwitch
               v-if="store.my_role === 'OWNER'"
               :model-value="store.is_active"

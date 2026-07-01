@@ -56,9 +56,11 @@
   "affectedInactive": "inactive",
   "noTagsAttached": "No tags attached.",
   "selectTag": "Select a tag…",
+  "searchTag": "Search tags…",
   "loadingTagsOption": "Loading tags…",
   "noValueOption": "(No value)",
   "noValues": "No values",
+  "searchValue": "Search values…",
   "createNewTag": "Create new tag",
   "alreadyAttached": "That tag is already attached.",
   "import": {

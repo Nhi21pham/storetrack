@@ -101,14 +101,26 @@ class ProductRepository
             $query->where('product_category_id', (int) $filters['category_id']);
         }
 
-        if (!empty($filters['tag_id'])) {
-            $tagId = (int) $filters['tag_id'];
-            $query->whereHas('taggables', fn ($q) => $q->where('tag_id', $tagId));
+        if (!empty($filters['tag_ids']) && is_array($filters['tag_ids'])) {
+            foreach ($filters['tag_ids'] as $tagId) {
+                $tagId = (int) $tagId;
+                $query->whereHas('taggables', fn ($q) => $q->where('tag_id', $tagId));
+            }
         }
 
-        if (!empty($filters['tag_value_id'])) {
-            $tagValueId = (int) $filters['tag_value_id'];
-            $query->whereHas('taggables', fn ($q) => $q->where('tag_value_id', $tagValueId));
+        if (!empty($filters['tag_value_ids']) && is_array($filters['tag_value_ids'])) {
+            foreach ($filters['tag_value_ids'] as $tagValueId) {
+                $tagValueId = (int) $tagValueId;
+                $query->whereHas('taggables', fn ($q) => $q->where('tag_value_id', $tagValueId));
+            }
+        }
+
+        if (!empty($filters['untagged'])) {
+            $query->whereDoesntHave('taggables');
+        }
+
+        if (!empty($filters['tagged'])) {
+            $query->whereHas('taggables');
         }
 
         $search = $filters['search'] ?? null;

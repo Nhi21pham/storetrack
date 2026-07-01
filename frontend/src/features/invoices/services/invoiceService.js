@@ -60,6 +60,14 @@ const DELETE_INVOICE_MUTATION = `
   }
 `
 
+const INVOICES_FOR_PRODUCT_QUERY = `
+  query InvoicesForProduct($product_id: ID!) {
+    invoicesForProduct(product_id: $product_id) {
+      id type code invoice_date
+    }
+  }
+`
+
 const PRODUCT_STOCKS_QUERY = `
   query ProductStocks($store_id: ID!) {
     productStocks(store_id: $store_id) { product_id quantity }
@@ -80,6 +88,11 @@ export const fetchInvoices = async ({ storeId, type = null }) => {
 export const fetchInvoice = async ({ id }) => {
   const data = await graphql(INVOICE_QUERY, { id })
   return data.invoice
+}
+
+export const fetchInvoicesForProduct = async ({ productId }) => {
+  const data = await graphql(INVOICES_FOR_PRODUCT_QUERY, { product_id: productId })
+  return data.invoicesForProduct
 }
 
 export const createPurchaseInvoice = async ({ storeId, input }) => {

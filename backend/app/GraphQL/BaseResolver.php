@@ -2,7 +2,10 @@
 
 namespace App\GraphQL;
 
+use App\Enums\ErrorCode;
 use App\Exceptions\AppException;
+use App\Support\DatabaseError;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
@@ -31,6 +34,13 @@ abstract class BaseResolver
                 throw new SafeError($e->getMessage(), [
                     'code' => 'VALIDATION_ERROR',
                     'statusCode' => 422,
+                ]);
+            }
+
+            if ($e instanceof QueryException && DatabaseError::isRowReferenced($e)) {
+                throw new SafeError('This record is still in use by other data and cannot be deleted.', [
+                    'code' => ErrorCode::RESOURCE_IN_USE->value,
+                    'statusCode' => ErrorCode::RESOURCE_IN_USE->statusCode(),
                 ]);
             }
 

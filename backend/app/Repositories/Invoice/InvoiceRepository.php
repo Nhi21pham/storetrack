@@ -28,6 +28,16 @@ class InvoiceRepository
         return $query->orderByDesc('id')->get();
     }
 
+    /** Invoices containing a given product, newest first — for the product detail view. */
+    public function forProduct(int $productId): Collection
+    {
+        return Invoice::with(self::LIST_RELATIONS)
+            ->whereHas('items', fn (Builder $q) => $q->where('product_id', $productId))
+            ->orderByDesc('invoice_date')
+            ->orderByDesc('id')
+            ->get();
+    }
+
     private const DOCUMENT_RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.taxes', 'items.product.unit'];
 
     /**

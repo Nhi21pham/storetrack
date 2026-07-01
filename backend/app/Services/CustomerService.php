@@ -18,6 +18,8 @@ use App\Repositories\PartyRepository;
 use App\Repositories\CustomerRepository;
 use App\Repositories\PermissionRepository;
 use App\Services\AuditLog\Loggers\CustomerAuditLogger;
+use App\Support\DatabaseError;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 class CustomerService
@@ -174,11 +176,21 @@ class CustomerService
         $customerId = (int) $customer->id;
         $customerName = (string) $customer->name;
 
-        DB::transaction(function () use ($customer) {
-            $partyId = $customer->party_id;
-            $this->customerRepository->delete($customer);
-            $this->partyRepository->delete($partyId);
-        });
+        try {
+            DB::transaction(function () use ($customer) {
+                $partyId = $customer->party_id;
+                $this->customerRepository->delete($customer);
+                $this->partyRepository->delete($partyId);
+            });
+        } catch (QueryException $e) {
+            if (DatabaseError::isRowReferenced($e)) {
+                throw new CustomerException(
+                    ErrorCode::CUSTOMER_IN_USE,
+                    "Customer {$customerName} is referenced by existing invoices or payments and cannot be deleted."
+                );
+            }
+            throw $e;
+        }
 
         $this->auditLogger->customerDeleted($actor, $customerStoreId, $businessId, $customerId, $customerName);
     }

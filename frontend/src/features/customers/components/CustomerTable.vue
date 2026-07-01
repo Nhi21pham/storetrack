@@ -29,7 +29,7 @@
         />
       </td>
       <td v-if="isVisible('stt')" class="stt-col">{{ rowOffset + idx + 1 }}</td>
-      <td v-if="isVisible('name')"><button class="name-link" @click="$emit('openDetail', customer)">{{ customer.name }}</button></td>
+      <td v-if="isVisible('name')"><button class="name-link" v-tooltip="customer.name" @click="$emit('openDetail', customer)">{{ customer.name }}</button></td>
       <td v-if="isVisible('tax_code')">
         <span v-if="customer.tax_code" class="mono">{{ customer.tax_code }}</span>
         <span v-else class="empty-val">—</span>
@@ -101,7 +101,7 @@ defineEmits([
 <style scoped>
 .stt-col { color: #6b7280; font-variant-numeric: tabular-nums; }
 .date-col { color: #6b7280; white-space: nowrap; }
-.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; }
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .name-link:hover { color: #2563eb; text-decoration: underline; }
 .mono { font-family: monospace; font-size: 13px; }
 .empty-val { color: #d1d5db; }

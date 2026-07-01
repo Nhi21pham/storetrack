@@ -1,6 +1,6 @@
 <template>
   <div class="searchable-select" :class="{ 'ss-large': size === 'large' }" ref="rootEl">
-    <button type="button" class="ss-trigger" :class="{ open }" @click="toggleOpen">
+    <button type="button" class="ss-trigger" :class="{ open }" :disabled="disabled" @click="toggleOpen">
       <span class="ss-value" :class="{ 'ss-placeholder': !selectedLabel }" v-tooltip="selectedLabel">
         {{ selectedLabel || placeholder }}
       </span>
@@ -32,7 +32,7 @@
         <li
           v-if="allowAll"
           class="ss-option"
-          :class="{ 'ss-option--active': modelValue === '' }"
+          :class="{ 'ss-option--active': allActive }"
           @click="select('')"
         >
           {{ displayAllLabel }}
@@ -41,12 +41,15 @@
           v-for="opt in filteredOptions"
           :key="opt.value"
           class="ss-option"
-          :class="{ 'ss-option--active': modelValue === opt.value }"
+          :class="{ 'ss-option--active': isSelected(opt.value), 'ss-option--multi': multiple }"
           @click="select(opt.value)"
           :title="opt.sublabel ? `${opt.label} — ${opt.sublabel}` : opt.label"
         >
           <span class="ss-option-label">{{ opt.label }}</span>
           <span v-if="opt.sublabel" class="ss-option-sublabel">{{ opt.sublabel }}</span>
+          <svg v-if="multiple && isSelected(opt.value)" class="ss-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
         </li>
         <li v-if="filteredOptions.length === 0" class="ss-empty">{{ $t('shared.noMatches') }}</li>
       </ul>
@@ -60,7 +63,7 @@ import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t } from '@/i18n'
 
 const props = defineProps({
-  modelValue: { type: String, default: '' },
+  modelValue: { type: [String, Array], default: '' },
   options: { type: Array, required: true },
   placeholder: { type: String, default: 'Select...' },
   searchPlaceholder: { type: String, default: 'Search...' },
@@ -69,6 +72,9 @@ const props = defineProps({
   allLabel: { type: String, default: '' },
   size: { type: String, default: 'default' },
   teleport: { type: Boolean, default: false },
+  // When true, modelValue is an array; options toggle and the panel stays open.
+  multiple: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -83,7 +89,29 @@ const floatingStyle = ref(null)
 
 const displayAllLabel = computed(() => props.allLabel || t('common.all'))
 
+const selectedValues = computed(() =>
+  Array.isArray(props.modelValue) ? props.modelValue : []
+)
+
+const isSelected = (value) =>
+  props.multiple ? selectedValues.value.includes(value) : props.modelValue === value
+
+const allActive = computed(() =>
+  props.multiple
+    ? selectedValues.value.length === 0
+    : (props.modelValue === '' || props.modelValue == null)
+)
+
 const selectedLabel = computed(() => {
+  if (props.multiple) {
+    if (selectedValues.value.length === 0) {
+      return props.allowAll ? displayAllLabel.value : ''
+    }
+    return props.options
+      .filter(o => selectedValues.value.includes(o.value))
+      .map(o => o.label)
+      .join(', ')
+  }
   if (props.modelValue === '' || props.modelValue == null) {
     return props.allowAll ? displayAllLabel.value : ''
   }
@@ -131,6 +159,7 @@ const updateFlip = () => {
 }
 
 const toggleOpen = () => {
+  if (props.disabled) return
   open.value = !open.value
   if (open.value) {
     search.value = ''
@@ -149,6 +178,19 @@ const close = () => {
 }
 
 const select = (value) => {
+  if (props.multiple) {
+    let next
+    if (value === '') {
+      next = []
+    } else if (selectedValues.value.includes(value)) {
+      next = selectedValues.value.filter(v => v !== value)
+    } else {
+      next = [...selectedValues.value, value]
+    }
+    emit('update:modelValue', next)
+    emit('change', next)
+    return
+  }
   emit('update:modelValue', value)
   emit('change', value)
   close()
@@ -180,6 +222,8 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
 }
 .ss-trigger:hover { background: #fff; border-color: #d1d5db; }
 .ss-trigger.open { background: #fff; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(156,163,175,0.12); }
+.ss-trigger:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
+.ss-trigger:disabled:hover { background: #f9fafb; border-color: #e5e7eb; }
 
 .ss-large .ss-trigger {
   min-height: 44px;
@@ -227,6 +271,12 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
   display: flex; flex-direction: column; gap: 2px;
   padding: 8px 12px; font-size: 13.5px; color: #374151;
   cursor: pointer; transition: background 0.12s;
+  position: relative;
+}
+.ss-option--multi { padding-right: 32px; }
+.ss-check {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  color: #1d4ed8;
 }
 .ss-option:hover { background: #f9fafb; }
 .ss-option--active { background: #eff6ff; color: #1d4ed8; font-weight: 500; }

@@ -60,10 +60,10 @@
               <tbody>
                 <tr v-for="inv in paginatedInvitations" :key="inv.id">
                   <td>
-                    <div class="invitee-name">{{ inv.invitee_name || '—' }}</div>
-                    <div class="invitee-email">{{ inv.invitee_email }}</div>
+                    <div class="invitee-name" v-tooltip="inv.invitee_name || ''">{{ inv.invitee_name || '—' }}</div>
+                    <div class="invitee-email" v-tooltip="inv.invitee_email">{{ inv.invitee_email }}</div>
                   </td>
-                  <td class="store-cell">{{ inv.store.name }}</td>
+                  <td class="store-cell" v-tooltip="inv.store.name">{{ inv.store.name }}</td>
                   <td><RoleBadge :role="inv.role" /></td>
                   <td><span class="status-badge" :class="inv.status?.toLowerCase()">{{ statusLabel(inv.status) }}</span></td>
                   <td class="date-cell">{{ formatDateTime(inv.created_at) }}</td>

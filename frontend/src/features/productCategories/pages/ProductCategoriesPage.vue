@@ -108,7 +108,7 @@
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ category.code }}</td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" @click="detailCategory = category">{{ displayCategoryName(category) }}</button>
+              <button class="name-link" v-tooltip="displayCategoryName(category)" @click="detailCategory = category">{{ displayCategoryName(category) }}</button>
               <span v-if="category.is_system" class="system-badge">{{ $t('productCategories.systemBadge') }}</span>
             </td>
             <td v-if="columnVisibility.isVisible('description')">

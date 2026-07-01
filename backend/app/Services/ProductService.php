@@ -20,6 +20,7 @@ use App\Repositories\ProductRepository;
 use App\Repositories\Tag\TaggableRepository;
 use App\Services\AuditLog\Loggers\ProductAuditLogger;
 use App\Services\Tag\TaggableService;
+use App\Support\DatabaseError;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -249,10 +250,20 @@ class ProductService
         $code = (string) $product->code;
         $name = (string) $product->name;
 
-        DB::transaction(function () use ($actor, $product, $productId, $code, $name, $storeId) {
-            $this->productRepository->delete($product);
-            $this->auditLogger->productDeleted($actor, $productId, $code, $name, $storeId);
-        });
+        try {
+            DB::transaction(function () use ($actor, $product, $productId, $code, $name, $storeId) {
+                $this->productRepository->delete($product);
+                $this->auditLogger->productDeleted($actor, $productId, $code, $name, $storeId);
+            });
+        } catch (QueryException $e) {
+            if (DatabaseError::isRowReferenced($e)) {
+                throw new ProductException(
+                    ErrorCode::PRODUCT_IN_USE,
+                    "Product {$name} is referenced by existing invoices. Deactivate it instead of deleting."
+                );
+            }
+            throw $e;
+        }
     }
 
     // Additive bulk tag attach; only store-owned ids are touched, audit per changed row in the same transaction.
@@ -362,11 +373,23 @@ class ProductService
         if (!empty($filters['category_id'])) {
             $clean['category_id'] = (int) $filters['category_id'];
         }
-        if (!empty($filters['tag_id'])) {
-            $clean['tag_id'] = (int) $filters['tag_id'];
+        if (!empty($filters['tag_ids']) && is_array($filters['tag_ids'])) {
+            $tagIds = array_values(array_unique(array_filter(array_map('intval', $filters['tag_ids']))));
+            if (count($tagIds) > 0) {
+                $clean['tag_ids'] = $tagIds;
+            }
         }
-        if (!empty($filters['tag_value_id'])) {
-            $clean['tag_value_id'] = (int) $filters['tag_value_id'];
+        if (!empty($filters['tag_value_ids']) && is_array($filters['tag_value_ids'])) {
+            $tagValueIds = array_values(array_unique(array_filter(array_map('intval', $filters['tag_value_ids']))));
+            if (count($tagValueIds) > 0) {
+                $clean['tag_value_ids'] = $tagValueIds;
+            }
+        }
+        if (!empty($filters['untagged'])) {
+            $clean['untagged'] = true;
+        }
+        if (!empty($filters['tagged'])) {
+            $clean['tagged'] = true;
         }
         if (!empty($filters['ids']) && is_array($filters['ids'])) {
             $ids = array_values(array_unique(array_map('intval', $filters['ids'])));

@@ -14,6 +14,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Repositories\ProductCategoryRepository;
 use App\Services\AuditLog\Loggers\ProductCategoryAuditLogger;
+use App\Support\DatabaseError;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -198,10 +199,20 @@ class ProductCategoryService
         $code = (string) $category->code;
         $name = (string) $category->name;
 
-        DB::transaction(function () use ($actor, $category, $categoryId, $code, $name, $storeId) {
-            $this->productCategoryRepository->delete($category);
-            $this->auditLogger->productCategoryDeleted($actor, $categoryId, $code, $name, $storeId);
-        });
+        try {
+            DB::transaction(function () use ($actor, $category, $categoryId, $code, $name, $storeId) {
+                $this->productCategoryRepository->delete($category);
+                $this->auditLogger->productCategoryDeleted($actor, $categoryId, $code, $name, $storeId);
+            });
+        } catch (QueryException $e) {
+            if (DatabaseError::isRowReferenced($e)) {
+                throw new ProductCategoryException(
+                    ErrorCode::PRODUCT_CATEGORY_IN_USE,
+                    "Category {$name} is referenced by existing products. Deactivate it instead of deleting."
+                );
+            }
+            throw $e;
+        }
     }
 
     public function queueExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export

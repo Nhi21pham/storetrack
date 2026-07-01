@@ -10,7 +10,7 @@
         </div>
         <div class="card-info">
           <div class="card-title-row">
-            <h3>{{ business.name }}</h3>
+            <h3 v-tooltip="business.name">{{ business.name }}</h3>
             <span class="owner-badge" v-if="business.role === 'owner'">{{ $t('business.owner') }}</span>
             <span class="member-badge" v-else>{{ $t('business.member') }}</span>
           </div>

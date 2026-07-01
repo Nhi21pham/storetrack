@@ -108,7 +108,7 @@
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" @click="detailUnit = unit">{{ unit.name }}</button>
+              <button class="name-link" v-tooltip="unit.name" @click="detailUnit = unit">{{ unit.name }}</button>
             </td>
             <td v-if="columnVisibility.isVisible('status')">
               <ToggleSwitch
