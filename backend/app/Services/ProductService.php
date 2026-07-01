@@ -362,11 +362,17 @@ class ProductService
         if (!empty($filters['category_id'])) {
             $clean['category_id'] = (int) $filters['category_id'];
         }
-        if (!empty($filters['tag_id'])) {
-            $clean['tag_id'] = (int) $filters['tag_id'];
+        if (!empty($filters['tag_ids']) && is_array($filters['tag_ids'])) {
+            $tagIds = array_values(array_unique(array_filter(array_map('intval', $filters['tag_ids']))));
+            if (count($tagIds) > 0) {
+                $clean['tag_ids'] = $tagIds;
+            }
         }
-        if (!empty($filters['tag_value_id'])) {
-            $clean['tag_value_id'] = (int) $filters['tag_value_id'];
+        if (!empty($filters['tag_value_ids']) && is_array($filters['tag_value_ids'])) {
+            $tagValueIds = array_values(array_unique(array_filter(array_map('intval', $filters['tag_value_ids']))));
+            if (count($tagValueIds) > 0) {
+                $clean['tag_value_ids'] = $tagValueIds;
+            }
         }
         if (!empty($filters['ids']) && is_array($filters['ids'])) {
             $ids = array_values(array_unique(array_map('intval', $filters['ids'])));

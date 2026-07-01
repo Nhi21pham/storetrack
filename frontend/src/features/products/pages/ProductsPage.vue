@@ -116,6 +116,7 @@
               :options="tagOptions"
               :all-label="$t('products.allTags')"
               :search-placeholder="$t('products.filterTag')"
+              multiple
               teleport
               @update:modelValue="tagFilter = $event"
             />
@@ -412,7 +413,7 @@ const searchQuery = ref('')
 const statusFilter = ref('')
 const unitFilter = ref('')
 const categoryFilter = ref('')
-const tagFilter = ref('')
+const tagFilter = ref([])
 
 const unitOptions = computed(() =>
   units.value.map(u => ({ value: String(u.id), label: u.name }))
@@ -439,14 +440,14 @@ const tagOptions = computed(() => {
 const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
 
 const hasActiveFilters = computed(() =>
-  !!(statusFilter.value || unitFilter.value || categoryFilter.value || tagFilter.value) || dateRangeActive.value
+  !!(statusFilter.value || unitFilter.value || categoryFilter.value || tagFilter.value.length) || dateRangeActive.value
 )
 
 const clearFilters = () => {
   statusFilter.value = ''
   unitFilter.value = ''
   categoryFilter.value = ''
-  tagFilter.value = ''
+  tagFilter.value = []
   clearDateRange()
 }
 
@@ -489,12 +490,14 @@ const canCreateUpdate = computed(() => {
 })
 
 const matchesTagFilter = (product) => {
-  if (!tagFilter.value) return true
-  const [kind, id] = tagFilter.value.split(':')
+  if (!tagFilter.value.length) return true
   const productTags = product.tags || []
-  if (kind === 'tag') return productTags.some(t => String(t.tag_id) === id)
-  if (kind === 'val') return productTags.some(t => String(t.tag_value_id) === id)
-  return true
+  return tagFilter.value.every((selected) => {
+    const [kind, id] = selected.split(':')
+    if (kind === 'tag') return productTags.some(t => String(t.tag_id) === id)
+    if (kind === 'val') return productTags.some(t => String(t.tag_value_id) === id)
+    return true
+  })
 }
 
 const filteredProducts = computed(() => {
@@ -563,10 +566,16 @@ const { exporting, run: runExport } = useExport({
       unit_id: unitFilter.value || undefined,
       category_id: categoryFilter.value || undefined,
     }
-    if (tagFilter.value) {
-      const [kind, id] = tagFilter.value.split(':')
-      if (kind === 'tag') params.tag_id = id
-      else if (kind === 'val') params.tag_value_id = id
+    if (tagFilter.value.length) {
+      const tagIds = []
+      const tagValueIds = []
+      for (const selected of tagFilter.value) {
+        const [kind, id] = selected.split(':')
+        if (kind === 'tag') tagIds.push(id)
+        else if (kind === 'val') tagValueIds.push(id)
+      }
+      if (tagIds.length) params.tag_ids = tagIds
+      if (tagValueIds.length) params.tag_value_ids = tagValueIds
     }
     if (selectedIds.value.size > 0) {
       params.ids = Array.from(selectedIds.value)
