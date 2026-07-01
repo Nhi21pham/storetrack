@@ -46,4 +46,16 @@ class ProductResolver extends BaseResolver
             );
         });
     }
+
+    public function bulkDetachTags($_, array $args)
+    {
+        return $this->safe(function () use ($args) {
+            return $this->productService->bulkDetachTags(
+                $this->user(),
+                (int) $args['store_id'],
+                $args['product_ids'] ?? [],
+                $args['tags'] ?? []
+            );
+        });
+    }
 }

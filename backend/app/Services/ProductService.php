@@ -290,6 +290,40 @@ class ProductService
         });
     }
 
+    // Inverse of bulkAttachTags; audits the removed labels from the pre-detach snapshot (they're gone after).
+    public function bulkDetachTags(User $actor, int $storeId, array $productIds, array $pairs): Collection
+    {
+        $this->permissionService->authorizeStore($actor, PermissionEnum::UPDATE_PRODUCT, $storeId);
+
+        $ids = array_values(array_unique(array_map('intval', $productIds)));
+        $products = $this->productRepository->byIds($storeId, $ids, true);
+        if ($products->isEmpty()) {
+            return $products;
+        }
+
+        $validIds = $products->map(fn (Product $product) => (int) $product->id)->all();
+
+        return DB::transaction(function () use ($actor, $storeId, $validIds, $pairs, $products) {
+            $detached = $this->taggableService->detachTagsFromEntities(
+                $actor,
+                PermissionEnum::UPDATE_PRODUCT,
+                $storeId,
+                Product::class,
+                $validIds,
+                $pairs
+            );
+
+            foreach ($products as $product) {
+                $removedPairs = $detached[(int) $product->id] ?? [];
+                if (!empty($removedPairs)) {
+                    $this->auditLogger->productTagsDetached($actor, $product, $removedPairs);
+                }
+            }
+
+            return $this->productRepository->byIds($storeId, $validIds, true);
+        });
+    }
+
     public function queueExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
     {
         $this->authorizeView($user, $storeId);

@@ -51,10 +51,12 @@
         :can-delete="canDelete"
         show-export
         :show-tags="canCreateUpdate"
+        :show-remove-tags="canCreateUpdate"
         :exporting="exporting"
         @clear="clearSelection"
         @export="runExport"
         @tags="openBulkTags"
+        @remove-tags="openBulkRemoveTags"
         @activate="requestBulk('activate')"
         @deactivate="requestBulk('deactivate')"
         @delete="requestBulk('delete')"
@@ -308,6 +310,27 @@
       @apply="applyBulkTags"
       @close="closeBulkTags"
     />
+
+    <BulkRemoveTagsModal
+      v-if="removeTagsModalOpen"
+      :available-tags="selectedTagUnion"
+      :count="selectedIds.size"
+      :noun="bulkNoun(selectedIds.size)"
+      :busy="bulkBusy"
+      @apply="applyBulkRemoveTags"
+      @close="closeBulkRemoveTags"
+    />
+
+    <ConfirmDialog
+      v-if="removeTagsPending"
+      :title="removeTagsConfirmConfig.title"
+      :message="removeTagsConfirmConfig.message"
+      :confirm-text="removeTagsConfirmConfig.confirmText"
+      :cancel-text="$t('common.cancel')"
+      :type="removeTagsConfirmConfig.type"
+      @confirm="confirmBulkRemoveTags"
+      @cancel="cancelBulkRemoveTags"
+    />
   </PageContainer>
 </template>
 
@@ -343,6 +366,7 @@ import MissingReferencesImportBanner from '@/components/common/MissingReferences
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import BulkAddTagsModal from '@/features/tags/components/BulkAddTagsModal.vue'
+import BulkRemoveTagsModal from '@/features/tags/components/BulkRemoveTagsModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
@@ -351,7 +375,7 @@ import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
 import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 import {
-  fetchProducts, deleteProduct, updateProduct, startProductExport, bulkAttachProductTags,
+  fetchProducts, deleteProduct, updateProduct, startProductExport, bulkAttachProductTags, bulkDetachProductTags,
   downloadProductsImportTemplate, previewProductsImport, revalidateProductsImport, startProductsImport,
 } from '@/features/products/services/productService'
 import { fetchImportStatus } from '@/features/imports/services/importService'
@@ -558,14 +582,44 @@ const { exporting, run: runExport } = useExport({
 })
 
 const {
-  bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig,
-  tagsModalOpen, openTags: openBulkTags, closeTags: closeBulkTags, applyTags: applyBulkTags, noun: bulkNoun,
+  bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig, noun: bulkNoun,
+  tagsModalOpen, openTags: openBulkTags, closeTags: closeBulkTags, applyTags: applyBulkTags,
+  removeTagsModalOpen, openRemoveTags: openBulkRemoveTags, closeRemoveTags: closeBulkRemoveTags, applyRemoveTags: applyBulkRemoveTags,
+  removeTagsPending, cancelRemoveTags: cancelBulkRemoveTags, confirmRemoveTags: confirmBulkRemoveTags, removeTagsConfirmConfig,
 } = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), nounKey: 'product',
   setActive: (id, isActive) => updateProduct({ id, input: { is_active: isActive } }),
   remove: (id) => deleteProduct({ id }),
   attachTags: (ids, pairs) => bulkAttachProductTags({ storeId: currentStore.value.id, productIds: ids, tags: pairs }),
   onTagsAttached: () => showToast(t('products.bulkTagsSuccess'), 'success'),
+  detachTags: (ids, pairs) => bulkDetachProductTags({ storeId: currentStore.value.id, productIds: ids, tags: pairs }),
+  onTagsDetached: () => showToast(t('products.bulkTagsRemoved'), 'success'),
+})
+
+// Union of tags across the currently-selected products, with how many of the selection carry each.
+const selectedTagUnion = computed(() => {
+  const map = new Map()
+  for (const product of sortedProducts.value) {
+    if (!selectedIds.value.has(String(product.id))) continue
+    for (const tag of (product.tags || [])) {
+      const key = `${tag.tag_id}:${tag.tag_value_id != null ? tag.tag_value_id : ''}`
+      const existing = map.get(key)
+      if (existing) {
+        existing.count += 1
+      } else {
+        map.set(key, {
+          tag_id: tag.tag_id,
+          tag_value_id: tag.tag_value_id != null ? tag.tag_value_id : null,
+          tag_name: tag.tag_name,
+          value: tag.value,
+          count: 1,
+        })
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) =>
+    (a.tag_name || '').localeCompare(b.tag_name || '') || (a.value || '').localeCompare(b.value || ''),
+  )
 })
 
 watch([searchQuery, statusFilter, unitFilter, categoryFilter, tagFilter, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })

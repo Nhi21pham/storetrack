@@ -14,6 +14,10 @@ extend type Mutation {
     bulkAttachProductTags(store_id: ID!, input: BulkAttachProductTagsInput! @spread): [Product!]!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\ProductResolver@bulkAttachTags")
+
+    bulkDetachProductTags(store_id: ID!, input: BulkDetachProductTagsInput! @spread): [Product!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\ProductResolver@bulkDetachTags")
 }
 
 input CreateProductInput {
@@ -37,6 +41,11 @@ input ProductTagInput {
 }
 
 input BulkAttachProductTagsInput {
+    product_ids: [ID!]! @rulesForArray(apply: ["required", "min:1"])
+    tags: [ProductTagInput!]! @rulesForArray(apply: ["required", "min:1"])
+}
+
+input BulkDetachProductTagsInput {
     product_ids: [ID!]! @rulesForArray(apply: ["required", "min:1"])
     tags: [ProductTagInput!]! @rulesForArray(apply: ["required", "min:1"])
 }
