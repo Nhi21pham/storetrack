@@ -20,6 +20,7 @@ use App\Repositories\ProductRepository;
 use App\Repositories\Tag\TaggableRepository;
 use App\Services\AuditLog\Loggers\ProductAuditLogger;
 use App\Services\Tag\TaggableService;
+use App\Support\DatabaseError;
 use App\Support\TextNormalizer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -249,10 +250,20 @@ class ProductService
         $code = (string) $product->code;
         $name = (string) $product->name;
 
-        DB::transaction(function () use ($actor, $product, $productId, $code, $name, $storeId) {
-            $this->productRepository->delete($product);
-            $this->auditLogger->productDeleted($actor, $productId, $code, $name, $storeId);
-        });
+        try {
+            DB::transaction(function () use ($actor, $product, $productId, $code, $name, $storeId) {
+                $this->productRepository->delete($product);
+                $this->auditLogger->productDeleted($actor, $productId, $code, $name, $storeId);
+            });
+        } catch (QueryException $e) {
+            if (DatabaseError::isRowReferenced($e)) {
+                throw new ProductException(
+                    ErrorCode::PRODUCT_IN_USE,
+                    "Product {$name} is referenced by existing invoices. Deactivate it instead of deleting."
+                );
+            }
+            throw $e;
+        }
     }
 
     // Additive bulk tag attach; only store-owned ids are touched, audit per changed row in the same transaction.

@@ -18,6 +18,8 @@ use App\Repositories\PartyRepository;
 use App\Repositories\SupplierRepository;
 use App\Repositories\PermissionRepository;
 use App\Services\AuditLog\Loggers\SupplierAuditLogger;
+use App\Support\DatabaseError;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 class SupplierService
@@ -174,11 +176,21 @@ class SupplierService
         $supplierId = (int) $supplier->id;
         $supplierName = (string) $supplier->name;
 
-        DB::transaction(function () use ($supplier) {
-            $partyId = $supplier->party_id;
-            $this->supplierRepository->delete($supplier);
-            $this->partyRepository->delete($partyId);
-        });
+        try {
+            DB::transaction(function () use ($supplier) {
+                $partyId = $supplier->party_id;
+                $this->supplierRepository->delete($supplier);
+                $this->partyRepository->delete($partyId);
+            });
+        } catch (QueryException $e) {
+            if (DatabaseError::isRowReferenced($e)) {
+                throw new SupplierException(
+                    ErrorCode::SUPPLIER_IN_USE,
+                    "Supplier {$supplierName} is referenced by existing invoices or payments and cannot be deleted."
+                );
+            }
+            throw $e;
+        }
 
         $this->auditLogger->supplierDeleted($actor, $supplierStoreId, $businessId, $supplierId, $supplierName);
     }

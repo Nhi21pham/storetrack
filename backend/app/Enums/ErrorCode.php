@@ -31,10 +31,12 @@ enum ErrorCode: string
     // Supplier
     case SUPPLIER_NOT_FOUND = 'SUPPLIER_NOT_FOUND';
     case SUPPLIER_NAME_TAKEN = 'SUPPLIER_NAME_TAKEN';
+    case SUPPLIER_IN_USE = 'SUPPLIER_IN_USE';
 
     // Customer
     case CUSTOMER_NOT_FOUND = 'CUSTOMER_NOT_FOUND';
     case CUSTOMER_PHONE_TAKEN = 'CUSTOMER_PHONE_TAKEN';
+    case CUSTOMER_IN_USE = 'CUSTOMER_IN_USE';
 
     // Bank
     case BANK_NOT_FOUND = 'BANK_NOT_FOUND';
@@ -130,6 +132,7 @@ enum ErrorCode: string
     case INVITATION_INVALID = 'INVITATION_INVALID';
 
     // General
+    case RESOURCE_IN_USE = 'RESOURCE_IN_USE';
     case VALIDATION_ERROR = 'VALIDATION_ERROR';
     case NOT_FOUND = 'NOT_FOUND';
     case SERVER_ERROR = 'SERVER_ERROR';
@@ -148,7 +151,10 @@ enum ErrorCode: string
             self::PASSWORD_SAME_AS_CURRENT,
             self::TAX_CODE_TAKEN,
             self::SUPPLIER_NAME_TAKEN,
+            self::SUPPLIER_IN_USE,
             self::CUSTOMER_PHONE_TAKEN,
+            self::CUSTOMER_IN_USE,
+            self::RESOURCE_IN_USE,
             self::BANK_NAME_TAKEN,
             self::BANK_IN_USE,
             self::BANK_INACTIVE,
