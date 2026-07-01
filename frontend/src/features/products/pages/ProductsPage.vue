@@ -428,9 +428,11 @@ const categoryOptions = computed(() =>
 
 const tagOptions = computed(() => {
   const opts = []
-  for (const t of tags.value) {
+  const sortedTags = [...tags.value].sort((a, b) => a.name.localeCompare(b.name))
+  for (const t of sortedTags) {
     opts.push({ value: `tag:${t.id}`, label: `${t.name} (any)` })
-    for (const v of (t.values || [])) {
+    const sortedValues = [...(t.values || [])].sort((a, b) => a.value.localeCompare(b.value))
+    for (const v of sortedValues) {
       opts.push({ value: `val:${v.id}`, label: `${t.name}: ${v.value}` })
     }
   }

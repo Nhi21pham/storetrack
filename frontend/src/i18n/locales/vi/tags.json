@@ -56,9 +56,11 @@
   "affectedInactive": "ngừng hoạt động",
   "noTagsAttached": "Chưa gắn thẻ nào.",
   "selectTag": "Chọn một thẻ…",
+  "searchTag": "Tìm thẻ…",
   "loadingTagsOption": "Đang tải thẻ…",
   "noValueOption": "(Không có giá trị)",
   "noValues": "Không có giá trị",
+  "searchValue": "Tìm giá trị…",
   "createNewTag": "Tạo thẻ mới",
   "alreadyAttached": "Thẻ đó đã được gắn.",
   "import": {

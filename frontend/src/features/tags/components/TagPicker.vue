@@ -9,14 +9,25 @@
     <p v-else class="no-tags">{{ $t('tags.noTagsAttached') }}</p>
 
     <div class="add-row">
-      <SelectField v-model="draftTagId" :disabled="loading" size="small" class="tag-select">
-        <option value="">{{ loading ? $t('tags.loadingTagsOption') : $t('tags.selectTag') }}</option>
-        <option v-for="t in tags" :key="t.id" :value="String(t.id)">{{ t.name }}</option>
-      </SelectField>
-      <SelectField v-model="draftValueId" :disabled="!draftTagId || !draftTagValues.length" size="small" class="value-select">
-        <option value="">{{ draftTagValues.length ? $t('tags.noValueOption') : $t('tags.noValues') }}</option>
-        <option v-for="v in draftTagValues" :key="v.id" :value="String(v.id)">{{ v.value }}</option>
-      </SelectField>
+      <SearchableSelect
+        v-model="draftTagId"
+        :options="tagOptions"
+        :allow-all="false"
+        :disabled="loading"
+        :placeholder="loading ? $t('tags.loadingTagsOption') : $t('tags.selectTag')"
+        :search-placeholder="$t('tags.searchTag')"
+        teleport
+        class="tag-select"
+      />
+      <SearchableSelect
+        v-model="draftValueId"
+        :options="valueOptions"
+        :all-label="$t('tags.noValueOption')"
+        :disabled="!draftTagId || !valueOptions.length"
+        :search-placeholder="$t('tags.searchValue')"
+        teleport
+        class="value-select"
+      />
       <button type="button" class="add-btn" :disabled="!draftTagId" @click="addDraft">{{ $t('tags.addValue') }}</button>
       <AddItemButton v-if="canCreateTag" size="small" :title="$t('tags.createNewTag')" @click="showCreateTag = true" />
     </div>
@@ -36,7 +47,7 @@ import { ref, computed, watch, onMounted, inject } from 'vue'
 import TagChip from '@/components/common/TagChip.vue'
 import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
 import AddItemButton from '@/components/common/AddItemButton.vue'
-import SelectField from '@/components/common/SelectField.vue'
+import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import TagFormModal from '@/features/tags/components/TagFormModal.vue'
 import { fetchTags } from '@/features/tags/services/tagService'
 import { t } from '@/i18n'
@@ -73,6 +84,18 @@ function normalizeIncoming(list) {
 
 const draftTag = computed(() => tags.value.find(t => String(t.id) === draftTagId.value) || null)
 const draftTagValues = computed(() => draftTag.value?.values || [])
+
+const tagOptions = computed(() =>
+  tags.value
+    .map(t => ({ value: String(t.id), label: t.name }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+)
+
+const valueOptions = computed(() =>
+  draftTagValues.value
+    .map(v => ({ value: String(v.id), label: v.value }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+)
 
 watch(draftTagId, () => { draftValueId.value = '' })
 

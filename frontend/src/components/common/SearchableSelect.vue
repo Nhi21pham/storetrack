@@ -1,6 +1,6 @@
 <template>
   <div class="searchable-select" :class="{ 'ss-large': size === 'large' }" ref="rootEl">
-    <button type="button" class="ss-trigger" :class="{ open }" @click="toggleOpen">
+    <button type="button" class="ss-trigger" :class="{ open }" :disabled="disabled" @click="toggleOpen">
       <span class="ss-value" :class="{ 'ss-placeholder': !selectedLabel }" v-tooltip="selectedLabel">
         {{ selectedLabel || placeholder }}
       </span>
@@ -74,6 +74,7 @@ const props = defineProps({
   teleport: { type: Boolean, default: false },
   // When true, modelValue is an array; options toggle and the panel stays open.
   multiple: { type: Boolean, default: false },
+  disabled: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -158,6 +159,7 @@ const updateFlip = () => {
 }
 
 const toggleOpen = () => {
+  if (props.disabled) return
   open.value = !open.value
   if (open.value) {
     search.value = ''
@@ -220,6 +222,8 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick)
 }
 .ss-trigger:hover { background: #fff; border-color: #d1d5db; }
 .ss-trigger.open { background: #fff; border-color: #9ca3af; box-shadow: 0 0 0 3px rgba(156,163,175,0.12); }
+.ss-trigger:disabled { background: #f9fafb; color: #9ca3af; cursor: not-allowed; }
+.ss-trigger:disabled:hover { background: #f9fafb; border-color: #e5e7eb; }
 
 .ss-large .ss-trigger {
   min-height: 44px;
