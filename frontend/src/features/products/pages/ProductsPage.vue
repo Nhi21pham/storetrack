@@ -114,11 +114,11 @@
             <SearchableSelect
               :modelValue="tagFilter"
               :options="tagOptions"
-              :all-label="$t('products.allTags')"
+              :all-label="$t('shared.allParen')"
               :search-placeholder="$t('products.filterTag')"
               multiple
               teleport
-              @update:modelValue="tagFilter = $event"
+              @update:modelValue="onTagFilterChange"
             />
           </template>
           <template #filter-status>
@@ -426,18 +426,39 @@ const categoryOptions = computed(() =>
   }))
 )
 
+// The "(All)" row of the selector (empty selection) shows every product; these two
+// broad options narrow to products that have any tag / that have none.
+const BROAD_TAG_FILTERS = ['tagged', 'none']
+
 const tagOptions = computed(() => {
-  const opts = []
+  const opts = [
+    { value: 'tagged', label: t('products.allTags') },
+    { value: 'none', label: t('products.noTagsOption') },
+  ]
   const sortedTags = [...tags.value].sort((a, b) => a.name.localeCompare(b.name))
-  for (const t of sortedTags) {
-    opts.push({ value: `tag:${t.id}`, label: `${t.name} (any)` })
-    const sortedValues = [...(t.values || [])].sort((a, b) => a.value.localeCompare(b.value))
+  for (const tag of sortedTags) {
+    opts.push({ value: `tag:${tag.id}`, label: `${tag.name} (any)` })
+    const sortedValues = [...(tag.values || [])].sort((a, b) => a.value.localeCompare(b.value))
     for (const v of sortedValues) {
-      opts.push({ value: `val:${v.id}`, label: `${t.name}: ${v.value}` })
+      opts.push({ value: `val:${v.id}`, label: `${tag.name}: ${v.value}` })
     }
   }
   return opts
 })
+
+// "All tags" / "No tags" are broad, mutually-exclusive filters: each replaces any
+// other selection, and picking a specific tag drops whichever broad one was active
+// (combining them under the AND filter would always match nothing).
+const onTagFilterChange = (next) => {
+  const addedBroad = BROAD_TAG_FILTERS.find(v => next.includes(v) && !tagFilter.value.includes(v))
+  if (addedBroad) {
+    tagFilter.value = [addedBroad]
+  } else if (next.length > 1) {
+    tagFilter.value = next.filter(v => !BROAD_TAG_FILTERS.includes(v))
+  } else {
+    tagFilter.value = next
+  }
+}
 
 const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
 
@@ -495,6 +516,8 @@ const matchesTagFilter = (product) => {
   if (!tagFilter.value.length) return true
   const productTags = product.tags || []
   return tagFilter.value.every((selected) => {
+    if (selected === 'none') return productTags.length === 0
+    if (selected === 'tagged') return productTags.length > 0
     const [kind, id] = selected.split(':')
     if (kind === 'tag') return productTags.some(t => String(t.tag_id) === id)
     if (kind === 'val') return productTags.some(t => String(t.tag_value_id) === id)
@@ -568,7 +591,11 @@ const { exporting, run: runExport } = useExport({
       unit_id: unitFilter.value || undefined,
       category_id: categoryFilter.value || undefined,
     }
-    if (tagFilter.value.length) {
+    if (tagFilter.value.includes('none')) {
+      params.untagged = true
+    } else if (tagFilter.value.includes('tagged')) {
+      params.tagged = true
+    } else if (tagFilter.value.length) {
       const tagIds = []
       const tagValueIds = []
       for (const selected of tagFilter.value) {

@@ -21,6 +21,7 @@
   "allUnits": "(All units)",
   "filterUnit": "Filter unit...",
   "allTags": "(All tags)",
+  "noTagsOption": "(No tags)",
   "filterTag": "Filter tag...",
   "detachTagTitle": "Detach tag",
   "deleteTitle": "Delete {name}?",

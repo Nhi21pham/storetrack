@@ -115,6 +115,14 @@ class ProductRepository
             }
         }
 
+        if (!empty($filters['untagged'])) {
+            $query->whereDoesntHave('taggables');
+        }
+
+        if (!empty($filters['tagged'])) {
+            $query->whereHas('taggables');
+        }
+
         $search = $filters['search'] ?? null;
         if (is_string($search) && $search !== '') {
             $needle = TextNormalizer::normalize($search);

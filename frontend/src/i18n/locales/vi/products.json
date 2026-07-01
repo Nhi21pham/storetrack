@@ -21,6 +21,7 @@
   "allUnits": "(Tất cả đơn vị)",
   "filterUnit": "Lọc đơn vị...",
   "allTags": "(Tất cả thẻ)",
+  "noTagsOption": "(Không có thẻ)",
   "filterTag": "Lọc thẻ...",
   "detachTagTitle": "Gỡ thẻ",
   "deleteTitle": "Xóa {name}?",

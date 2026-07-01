@@ -374,6 +374,12 @@ class ProductService
                 $clean['tag_value_ids'] = $tagValueIds;
             }
         }
+        if (!empty($filters['untagged'])) {
+            $clean['untagged'] = true;
+        }
+        if (!empty($filters['tagged'])) {
+            $clean['tagged'] = true;
+        }
         if (!empty($filters['ids']) && is_array($filters['ids'])) {
             $ids = array_values(array_unique(array_map('intval', $filters['ids'])));
             sort($ids);
