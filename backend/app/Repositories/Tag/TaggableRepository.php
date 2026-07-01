@@ -44,6 +44,17 @@ class TaggableRepository
             ->get(['tag_id', 'tag_value_id']);
     }
 
+    public function pairsForEntities(string $taggableType, array $taggableIds): Collection
+    {
+        if (empty($taggableIds)) {
+            return new Collection();
+        }
+        return Taggable::query()
+            ->where('taggable_type', $taggableType)
+            ->whereIn('taggable_id', $taggableIds)
+            ->get(['taggable_id', 'tag_id', 'tag_value_id']);
+    }
+
     public function entityIdsByTag(int $storeId, string $taggableType, int $tagId, ?int $tagValueId = null): array
     {
         $query = Taggable::query()

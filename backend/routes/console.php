@@ -13,6 +13,8 @@ Schedule::command('invitations:expire')->hourly();
 Schedule::command('exports:cleanup')->everyFiveMinutes();
 Schedule::command('imports:cleanup')->hourly();
 
+Schedule::command('demo:restore')->everyFiveMinutes();
+
 Schedule::command('backup:run')->dailyAt('02:00')->withoutOverlapping();
 Schedule::command('backup:run --only-db')->hourlyAt(30)->withoutOverlapping();
 Schedule::command('backup:clean')->dailyAt('03:00');

@@ -44,6 +44,130 @@ class TaggableService
         });
     }
 
+    // Additive: attaches only missing pairs to each entity (keeps existing); returns pairs newly attached, keyed by entity id.
+    public function attachTagsToEntities(
+        User $actor,
+        PermissionEnum $entityPermission,
+        int $storeId,
+        string $taggableType,
+        array $entityIds,
+        array $pairs
+    ): array {
+        $this->permissionService->authorizeStore($actor, $entityPermission, $storeId);
+
+        $entityIds = array_values(array_unique(array_map('intval', $entityIds)));
+        $normalized = $this->normalizePairs($storeId, $pairs);
+        if (empty($entityIds) || empty($normalized)) {
+            return [];
+        }
+
+        return DB::transaction(function () use ($storeId, $taggableType, $entityIds, $normalized) {
+            $existing = $this->taggableRepository
+                ->pairsForEntities($taggableType, $entityIds)
+                ->groupBy(fn ($row) => (int) $row->taggable_id);
+
+            $attached = [];
+            foreach ($entityIds as $entityId) {
+                $present = [];
+                foreach ($existing->get($entityId, collect()) as $row) {
+                    $present[$this->pairKey((int) $row->tag_id, $row->tag_value_id)] = true;
+                }
+
+                foreach ($normalized as $pair) {
+                    $key = $this->pairKey($pair['tag_id'], $pair['tag_value_id']);
+                    if (isset($present[$key])) {
+                        continue;
+                    }
+                    $present[$key] = true;
+                    $this->taggableRepository->attach(
+                        $storeId,
+                        $taggableType,
+                        $entityId,
+                        $pair['tag_id'],
+                        $pair['tag_value_id']
+                    );
+                    $attached[$entityId][] = $pair;
+                }
+            }
+            return $attached;
+        });
+    }
+
+    // Inverse of attachTagsToEntities: detaches only pairs actually present on each entity; returns pairs removed, keyed by entity id.
+    public function detachTagsFromEntities(
+        User $actor,
+        PermissionEnum $entityPermission,
+        int $storeId,
+        string $taggableType,
+        array $entityIds,
+        array $pairs
+    ): array {
+        $this->permissionService->authorizeStore($actor, $entityPermission, $storeId);
+
+        $entityIds = array_values(array_unique(array_map('intval', $entityIds)));
+        $targets = $this->dedupePairs($pairs);
+        if (empty($entityIds) || empty($targets)) {
+            return [];
+        }
+
+        return DB::transaction(function () use ($taggableType, $entityIds, $targets) {
+            $existing = $this->taggableRepository
+                ->pairsForEntities($taggableType, $entityIds)
+                ->groupBy(fn ($row) => (int) $row->taggable_id);
+
+            $detached = [];
+            foreach ($entityIds as $entityId) {
+                $present = [];
+                foreach ($existing->get($entityId, collect()) as $row) {
+                    $present[$this->pairKey((int) $row->tag_id, $row->tag_value_id)] = true;
+                }
+
+                foreach ($targets as $pair) {
+                    $key = $this->pairKey($pair['tag_id'], $pair['tag_value_id']);
+                    if (!isset($present[$key])) {
+                        continue;
+                    }
+                    $this->taggableRepository->detach(
+                        $taggableType,
+                        $entityId,
+                        $pair['tag_id'],
+                        $pair['tag_value_id']
+                    );
+                    $detached[$entityId][] = $pair;
+                }
+            }
+            return $detached;
+        });
+    }
+
+    private function pairKey(int $tagId, ?int $tagValueId): string
+    {
+        return $tagId . ':' . ($tagValueId ?? 0);
+    }
+
+    // Cast + dedupe pair shapes without touching the DB (detach doesn't need tag-existence checks).
+    private function dedupePairs(array $pairs): array
+    {
+        $seen = [];
+        $result = [];
+        foreach ($pairs as $pair) {
+            $tagId = (int) ($pair['tag_id'] ?? 0);
+            if ($tagId <= 0) {
+                continue;
+            }
+            $tagValueId = isset($pair['tag_value_id']) && $pair['tag_value_id'] !== null
+                ? (int) $pair['tag_value_id']
+                : null;
+            $key = $this->pairKey($tagId, $tagValueId);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $result[] = ['tag_id' => $tagId, 'tag_value_id' => $tagValueId];
+        }
+        return $result;
+    }
+
     private function normalizePairs(int $storeId, array $pairs): array
     {
         $seen = [];

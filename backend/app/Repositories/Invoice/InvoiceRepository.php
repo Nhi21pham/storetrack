@@ -28,7 +28,7 @@ class InvoiceRepository
         return $query->orderByDesc('id')->get();
     }
 
-    private const DOCUMENT_RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.taxes'];
+    private const DOCUMENT_RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.taxes', 'items.product.unit'];
 
     /**
      * A filtered, ordered query of invoices for a store. Used by the export job,

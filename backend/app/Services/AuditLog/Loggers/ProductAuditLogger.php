@@ -117,6 +117,76 @@ class ProductAuditLogger extends AuditLogger
         );
     }
 
+    public function productTagsAttached(User $actor, Product $product, array $attachedPairs): void
+    {
+        $storeId = (int) $product->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+
+        $attachedKeys = [];
+        foreach ($attachedPairs as $pair) {
+            $attachedKeys[$pair['tag_id'] . ':' . ($pair['tag_value_id'] ?? 0)] = true;
+        }
+
+        $labels = [];
+        foreach ($product->tags as $tag) {
+            $key = $tag['tag_id'] . ':' . ($tag['tag_value_id'] ?? 0);
+            if (!isset($attachedKeys[$key])) {
+                continue;
+            }
+            $labels[] = $tag['value'] ? "{$tag['tag_name']}: {$tag['value']}" : $tag['tag_name'];
+        }
+
+        $this->log($storeId, $actor, AuditObjectType::PRODUCT, AuditAction::UPDATED,
+            self::actor($actor) . ' has ATTACHED tags [' . implode(', ', $labels) . "] to product {$product->code} - {$product->name}.",
+            [
+                'product_id'  => $product->id,
+                'code'        => $product->code,
+                'name'        => $product->name,
+                'tags'        => $labels,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
+    public function productTagsDetached(User $actor, Product $product, array $detachedPairs): void
+    {
+        $storeId = (int) $product->store_id;
+        $store = Store::find($storeId);
+        $businessId = $store?->business_id;
+
+        $detachedKeys = [];
+        foreach ($detachedPairs as $pair) {
+            $detachedKeys[$pair['tag_id'] . ':' . ($pair['tag_value_id'] ?? 0)] = true;
+        }
+
+        $labels = [];
+        foreach ($product->tags as $tag) {
+            $key = $tag['tag_id'] . ':' . ($tag['tag_value_id'] ?? 0);
+            if (!isset($detachedKeys[$key])) {
+                continue;
+            }
+            $labels[] = $tag['value'] ? "{$tag['tag_name']}: {$tag['value']}" : $tag['tag_name'];
+        }
+
+        $this->log($storeId, $actor, AuditObjectType::PRODUCT, AuditAction::UPDATED,
+            self::actor($actor) . ' has REMOVED tags [' . implode(', ', $labels) . "] from product {$product->code} - {$product->name}.",
+            [
+                'product_id'  => $product->id,
+                'code'        => $product->code,
+                'name'        => $product->name,
+                'tags'        => $labels,
+                'store_id'    => $storeId,
+                'store_name'  => $store?->name,
+                'business_id' => $businessId,
+            ],
+            $businessId
+        );
+    }
+
     public function productExported(User $actor, int $storeId, Export $export, string $scopeName): void
     {
         $store = Store::find($storeId);

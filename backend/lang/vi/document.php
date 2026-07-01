@@ -23,6 +23,7 @@ return [
 
     'col_no'         => 'STT',
     'col_product'    => 'Sản phẩm',
+    'col_unit'       => 'ĐVT',
     'col_qty'        => 'SL',
     'col_unit_price' => 'Đơn giá',
     'col_taxes'      => 'Thuế',

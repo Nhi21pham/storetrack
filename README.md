@@ -51,7 +51,8 @@ The repo is a two-app monorepo wired together by Docker Compose:
   Data access follows a repository pattern; business logic lives in services.
 - **`frontend/`** — Vue 3 single-page app that talks to the backend over GraphQL.
 - **Infra** — MySQL for storage, Redis for queues/cache, nginx (dev) or Caddy (prod)
-  as the web server, plus dedicated `queue` (Horizon) and `scheduler` containers.
+  as the web server, plus dedicated `queue` (Horizon) and `scheduler` containers, and
+  **Mailpit** to capture outbound email in local development.
 
 ## Prerequisites
 
@@ -110,7 +111,7 @@ docker compose up -d --build
 ```
 
 This starts the backend (php-fpm), nginx, MySQL, Redis, the Vite dev server, the Horizon
-queue worker, and the scheduler.
+queue worker, the scheduler, and Mailpit (local mail capture).
 
 ### 4. Initialize the application
 
@@ -131,6 +132,7 @@ docker compose exec app php artisan migrate --seed
 | GraphQL endpoint     | http://localhost/graphql |
 | GraphiQL explorer    | http://localhost/graphiql |
 | Horizon dashboard    | http://localhost/horizon |
+| Mailpit (email inbox)| http://localhost:8025 |
 
 Create your first account through the **Register** screen in the frontend, then sign in.
 
