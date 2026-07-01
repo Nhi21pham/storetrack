@@ -23,6 +23,7 @@ return [
 
     'col_no'         => 'No.',
     'col_product'    => 'Product',
+    'col_unit'       => 'Unit',
     'col_qty'        => 'Qty',
     'col_unit_price' => 'Unit price',
     'col_taxes'      => 'Taxes',

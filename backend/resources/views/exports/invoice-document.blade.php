@@ -141,6 +141,7 @@
             <tr>
                 <th style="width: 28px;">{{ __('document.col_no') }}</th>
                 <th>{{ __('document.col_product') }}</th>
+                <th style="width: 54px;">{{ __('document.col_unit') }}</th>
                 <th class="num" style="width: 56px;">{{ __('document.col_qty') }}</th>
                 <th class="num" style="width: 92px;">{{ __('document.col_unit_price') }}</th>
                 <th style="width: 122px;">{{ __('document.col_taxes') }}</th>
@@ -153,6 +154,7 @@
                 <tr>
                     <td class="center">{{ $i + 1 }}</td>
                     <td class="product">{{ $item->product_name }}</td>
+                    <td class="center">{{ $item->product?->unit?->name ?? '—' }}</td>
                     <td class="num">{{ $fmtQty($item->quantity) }}</td>
                     <td class="num">{{ Money::vnd($item->unit_price) }}</td>
                     <td>
