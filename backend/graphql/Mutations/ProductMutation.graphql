@@ -10,6 +10,10 @@ extend type Mutation {
     deleteProduct(id: ID!): Boolean!
         @guard(with: ["sanctum"])
         @field(resolver: "App\\GraphQL\\Mutations\\ProductResolver@delete")
+
+    bulkAttachProductTags(store_id: ID!, input: BulkAttachProductTagsInput! @spread): [Product!]!
+        @guard(with: ["sanctum"])
+        @field(resolver: "App\\GraphQL\\Mutations\\ProductResolver@bulkAttachTags")
 }
 
 input CreateProductInput {
@@ -30,4 +34,9 @@ input UpdateProductInput {
 input ProductTagInput {
     tag_id: ID! @rules(apply: ["required", "integer"])
     tag_value_id: ID @rules(apply: ["sometimes", "nullable", "integer"])
+}
+
+input BulkAttachProductTagsInput {
+    product_ids: [ID!]! @rulesForArray(apply: ["required", "min:1"])
+    tags: [ProductTagInput!]! @rulesForArray(apply: ["required", "min:1"])
 }

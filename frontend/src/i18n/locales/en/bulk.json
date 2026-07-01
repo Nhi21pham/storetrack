@@ -16,6 +16,10 @@
   "delete": "Delete",
   "activate": "Activate",
   "deactivate": "Deactivate",
+  "addTags": "Add tags",
+  "addTagsTitle": "Add tags",
+  "addTagsSubtitle": "These tags will be added to the {count} selected {noun}. Existing tags are kept.",
+  "addTagsConfirm": "Add tags",
   "failedAction": "{count} {noun} could not be {verb}.",
   "verb": {
     "activated": "activated",

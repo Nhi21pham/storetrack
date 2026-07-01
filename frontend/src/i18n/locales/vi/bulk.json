@@ -16,6 +16,10 @@
   "delete": "Xóa",
   "activate": "Kích hoạt",
   "deactivate": "Ngừng hoạt động",
+  "addTags": "Thêm thẻ",
+  "addTagsTitle": "Thêm thẻ",
+  "addTagsSubtitle": "Các thẻ này sẽ được thêm vào {count} {noun} đã chọn. Các thẻ hiện có được giữ nguyên.",
+  "addTagsConfirm": "Thêm thẻ",
   "failedAction": "{count} {noun} không thể {verb}.",
   "verb": {
     "activated": "kích hoạt",

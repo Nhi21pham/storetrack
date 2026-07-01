@@ -34,4 +34,16 @@ class ProductResolver extends BaseResolver
             return true;
         });
     }
+
+    public function bulkAttachTags($_, array $args)
+    {
+        return $this->safe(function () use ($args) {
+            return $this->productService->bulkAttachTags(
+                $this->user(),
+                (int) $args['store_id'],
+                $args['product_ids'] ?? [],
+                $args['tags'] ?? []
+            );
+        });
+    }
 }

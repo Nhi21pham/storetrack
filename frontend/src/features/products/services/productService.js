@@ -51,6 +51,12 @@ const DELETE_PRODUCT_MUTATION = `
   }
 `
 
+const BULK_ATTACH_PRODUCT_TAGS_MUTATION = `
+  mutation BulkAttachProductTags($store_id: ID!, $input: BulkAttachProductTagsInput!) {
+    bulkAttachProductTags(store_id: $store_id, input: $input) { ${PRODUCT_FIELDS} }
+  }
+`
+
 export const fetchProducts = async ({ storeId, includeInactive = false }) => {
   const data = await graphql(PRODUCTS_QUERY, { store_id: storeId, include_inactive: includeInactive })
   return data.products
@@ -78,6 +84,14 @@ export const updateProduct = async ({ id, input }) => {
 
 export const deleteProduct = async ({ id }) => {
   await graphql(DELETE_PRODUCT_MUTATION, { id })
+}
+
+export const bulkAttachProductTags = async ({ storeId, productIds, tags }) => {
+  const data = await graphql(BULK_ATTACH_PRODUCT_TAGS_MUTATION, {
+    store_id: storeId,
+    input: { product_ids: productIds, tags },
+  })
+  return data.bulkAttachProductTags
 }
 
 export const fetchProductsByTag = async ({ storeId, tagId, tagValueId = null, includeInactive = true }) => {

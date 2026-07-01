@@ -50,9 +50,11 @@
         :busy="bulkBusy"
         :can-delete="canDelete"
         show-export
+        :show-tags="canCreateUpdate"
         :exporting="exporting"
         @clear="clearSelection"
         @export="runExport"
+        @tags="openBulkTags"
         @activate="requestBulk('activate')"
         @deactivate="requestBulk('deactivate')"
         @delete="requestBulk('delete')"
@@ -296,6 +298,16 @@
       @confirm="handleToggle"
       @cancel="togglingProduct = null"
     />
+
+    <BulkAddTagsModal
+      v-if="tagsModalOpen"
+      :store-id="currentStore?.id"
+      :count="selectedIds.size"
+      :noun="bulkNoun(selectedIds.size)"
+      :busy="bulkBusy"
+      @apply="applyBulkTags"
+      @close="closeBulkTags"
+    />
   </PageContainer>
 </template>
 
@@ -330,6 +342,7 @@ import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import MissingReferencesImportBanner from '@/components/common/MissingReferencesImportBanner.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
+import BulkAddTagsModal from '@/features/tags/components/BulkAddTagsModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
@@ -338,7 +351,7 @@ import { useBulkActions } from '@/composables/useBulkActions'
 import { useExport } from '@/composables/useExport'
 import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 import {
-  fetchProducts, deleteProduct, updateProduct, startProductExport,
+  fetchProducts, deleteProduct, updateProduct, startProductExport, bulkAttachProductTags,
   downloadProductsImportTemplate, previewProductsImport, revalidateProductsImport, startProductsImport,
 } from '@/features/products/services/productService'
 import { fetchImportStatus } from '@/features/imports/services/importService'
@@ -544,10 +557,15 @@ const { exporting, run: runExport } = useExport({
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-const { bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig } = useBulkActions({
+const {
+  bulkBusy, pendingAction, request: requestBulk, confirm: confirmBulk, cancel: cancelBulk, confirmConfig,
+  tagsModalOpen, openTags: openBulkTags, closeTags: closeBulkTags, applyTags: applyBulkTags, noun: bulkNoun,
+} = useBulkActions({
   selectedIds, clearSelection, reload: () => load(), nounKey: 'product',
   setActive: (id, isActive) => updateProduct({ id, input: { is_active: isActive } }),
   remove: (id) => deleteProduct({ id }),
+  attachTags: (ids, pairs) => bulkAttachProductTags({ storeId: currentStore.value.id, productIds: ids, tags: pairs }),
+  onTagsAttached: () => showToast(t('products.bulkTagsSuccess'), 'success'),
 })
 
 watch([searchQuery, statusFilter, unitFilter, categoryFilter, tagFilter, startDate, endDate, dateField, () => sort.sortCriteria.value], resetPage, { deep: true })

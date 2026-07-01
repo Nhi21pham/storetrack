@@ -255,6 +255,41 @@ class ProductService
         });
     }
 
+    // Additive bulk tag attach; only store-owned ids are touched, audit per changed row in the same transaction.
+    public function bulkAttachTags(User $actor, int $storeId, array $productIds, array $pairs): Collection
+    {
+        $this->permissionService->authorizeStore($actor, PermissionEnum::UPDATE_PRODUCT, $storeId);
+
+        $ids = array_values(array_unique(array_map('intval', $productIds)));
+        $products = $this->productRepository->byIds($storeId, $ids, true);
+        if ($products->isEmpty()) {
+            return $products;
+        }
+
+        $validIds = $products->map(fn (Product $product) => (int) $product->id)->all();
+
+        return DB::transaction(function () use ($actor, $storeId, $validIds, $pairs) {
+            $attached = $this->taggableService->attachTagsToEntities(
+                $actor,
+                PermissionEnum::UPDATE_PRODUCT,
+                $storeId,
+                Product::class,
+                $validIds,
+                $pairs
+            );
+
+            $refreshed = $this->productRepository->byIds($storeId, $validIds, true);
+            foreach ($refreshed as $product) {
+                $newPairs = $attached[(int) $product->id] ?? [];
+                if (!empty($newPairs)) {
+                    $this->auditLogger->productTagsAttached($actor, $product, $newPairs);
+                }
+            }
+
+            return $refreshed;
+        });
+    }
+
     public function queueExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
     {
         $this->authorizeView($user, $storeId);
