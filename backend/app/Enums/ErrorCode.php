@@ -89,6 +89,7 @@ enum ErrorCode: string
     case INVOICE_IMMUTABLE = 'INVOICE_IMMUTABLE';
     case INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK';
     case INVOICE_STOCK_CONSUMED = 'INVOICE_STOCK_CONSUMED';
+    case INVOICE_EDIT_SHORTFALL = 'INVOICE_EDIT_SHORTFALL';
     case INVOICE_HAS_PAYMENTS = 'INVOICE_HAS_PAYMENTS';
 
     // Payment
@@ -182,6 +183,7 @@ enum ErrorCode: string
             self::INVOICE_IMMUTABLE,
             self::INSUFFICIENT_STOCK,
             self::INVOICE_STOCK_CONSUMED,
+            self::INVOICE_EDIT_SHORTFALL,
             self::INVOICE_HAS_PAYMENTS,
             self::PAYMENT_PARTY_INVALID,
             self::PAYMENT_INVALID_ALLOCATION,

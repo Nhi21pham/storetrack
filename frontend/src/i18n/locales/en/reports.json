@@ -144,6 +144,7 @@
     "exportHistoryTitle": "Debt Report — Export History",
     "exportReady": "Debt report export ready.",
     "sumTotalPaid": "Total paid",
-    "sumTotalOwe": "Total owe"
+    "sumTotalOwe": "Total owe",
+    "credit": "credit"
   }
 }

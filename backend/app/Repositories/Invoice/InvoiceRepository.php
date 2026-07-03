@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Invoice;
 
+use App\Enums\InvoiceTypeEnum;
 use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Invoice\InvoiceProductTax;
@@ -164,6 +165,26 @@ class InvoiceRepository
     public function deleteItems(Invoice $invoice): void
     {
         $invoice->items()->delete();
+    }
+
+    /**
+     * Every sale line for the given products in a store, oldest sale first
+     * (invoice_date, then invoice id, then line id) — the order a FIFO re-flow
+     * replays consumption in. The line's invoice is eager-loaded for its date.
+     */
+    public function saleLinesForProducts(int $storeId, array $productIds): Collection
+    {
+        return InvoiceProduct::query()
+            ->join('invoices', 'invoices.id', '=', 'invoice_products.invoice_id')
+            ->where('invoices.store_id', $storeId)
+            ->where('invoices.type', InvoiceTypeEnum::SALE->value)
+            ->whereIn('invoice_products.product_id', $productIds)
+            ->with('invoice:id,invoice_date,code')
+            ->orderBy('invoices.invoice_date')
+            ->orderBy('invoices.id')
+            ->orderBy('invoice_products.id')
+            ->select('invoice_products.*')
+            ->get();
     }
 
     public function delete(Invoice $invoice): void

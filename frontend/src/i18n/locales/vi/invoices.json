@@ -144,6 +144,7 @@
   "stockWarning": "Một số dòng vượt quá tồn kho hiện có. Bạn vẫn có thể thử lưu, nhưng giao dịch bán sẽ bị từ chối nếu không đủ tồn kho.",
   "onlyInStock": "Chỉ còn {qty} trong kho",
   "inStock": "Tồn kho: {qty}",
+  "batchLeft": "còn {qty}",
   "scanPurchaseTitle": "Quét hóa đơn mua",
   "scanSaleTitle": "Quét hóa đơn bán",
   "scanSubtitle": "Tải lên một PDF hoặc ảnh và chúng tôi sẽ điền sẵn hóa đơn để bạn xem lại.",

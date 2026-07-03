@@ -41,7 +41,7 @@
 
             <div class="form-group">
               <label>{{ $t('invoices.invoiceDate') }} <span class="required">*</span></label>
-              <input ref="dateInputRef" v-model="form.invoice_date" type="date" class="text-input" :class="{ error: errors.invoice_date }" />
+              <DatePicker ref="dateInputRef" v-model="form.invoice_date" :error="!!errors.invoice_date" style="width: 100%" />
               <FormMessage v-if="errors.invoice_date" :text="errors.invoice_date" />
             </div>
 
@@ -132,8 +132,8 @@
                 <td class="c-cost">
                   <template v-if="item.product_id">
                     <div v-for="(b, bi) in costLinesFor(item.product_id)" :key="bi" class="cost-line">
-                      <span class="cl-amount">{{ formatQuantity(b.remaining) }} × {{ formatMoney(b.unit_cost) }}</span>
-                      <span class="cl-date">{{ formatInvoiceDate(b.invoice_date) }}</span>
+                      <span class="cl-amount">{{ formatQuantity(b.consumed) }} × {{ formatMoney(b.unit_cost) }}</span>
+                      <span class="cl-date">{{ formatInvoiceDate(b.invoice_date) }} · {{ $t('invoices.batchLeft', { qty: formatQuantity(b.leftover) }) }}</span>
                     </div>
                     <span v-if="costLinesFor(item.product_id).length === 0" class="muted">{{ $t('invoices.noStock') }}</span>
                   </template>
@@ -225,6 +225,7 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import DatePicker from '@/components/common/DatePicker.vue'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -248,6 +249,7 @@ import { fetchTaxes } from '@/features/taxes/services/taxService'
 import { createSaleInvoice, updateSaleInvoice, fetchInvoice, fetchProductStocks, fetchInventoryBatches } from '@/features/invoices/services/invoiceService'
 import { takeInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import { t } from '@/i18n'
+import { translateError } from '@/utils/translateError'
 import {
   paymentMethodOptions,
   paymentStatusOptions,
@@ -391,10 +393,10 @@ const exceedsStock = (item) => {
 const remainingAfterSale = (productId) =>
   availableForProduct(productId) - (requestedByProduct.value[productId] || 0)
 
-// The FIFO batches for the cost column, each showing what it holds after this sale's
-// requested quantity is drawn (oldest first). On edit the invoice's own draw is
-// restored first — including any batch it had fully emptied — so the figures stay in
-// step with the In-stock hint and update as lines change.
+// The FIFO batches this sale's cost is drawn from — the quantity taken from each,
+// oldest received first — so the Cost column shows the sale's COGS sources (a batch
+// the sale fully consumes is a source too). On edit the invoice's own draw is
+// restored first so the figures update live as lines change.
 const costLinesFor = (productId) => {
   const open = batchesFor(productId)
   const openIds = new Set(open.map((b) => String(b.id)))
@@ -403,20 +405,22 @@ const costLinesFor = (productId) => {
   const released = Object.entries(info)
     .filter(([id, b]) => !openIds.has(id) && b.product_id === String(productId))
     .map(([id, b]) => ({ id: Number(id), remaining: b.quantity, unit_cost: b.unit_cost, invoice_date: b.invoice_date }))
-    .sort((a, b) => a.id - b.id)
 
   const restored = open.map((b) => ({
     ...b,
     remaining: b.remaining + (info[String(b.id)]?.quantity || 0),
   }))
 
+  const batches = [...released, ...restored]
+    .filter(batchPurchasedBySaleDate)
+    .sort((a, b) => String(a.invoice_date).slice(0, 10).localeCompare(String(b.invoice_date).slice(0, 10)) || a.id - b.id)
+
   let outstanding = Math.max(requestedByProduct.value[productId] || 0, 0)
   const lines = []
-  for (const b of [...released, ...restored].filter(batchPurchasedBySaleDate)) {
+  for (const b of batches) {
     const taken = Math.min(b.remaining, outstanding)
     outstanding -= taken
-    const remaining = b.remaining - taken
-    if (remaining > 0.0001) lines.push({ ...b, remaining })
+    if (taken > 0.0001) lines.push({ ...b, consumed: taken, leftover: b.remaining - taken })
   }
   return lines
 }
@@ -537,7 +541,7 @@ const loadOptions = async () => {
     stockByProduct.value = buildStockMap(stockList)
     batchesByProduct.value = buildBatchMap(batchList)
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     optionsLoading.value = false
   }
@@ -580,7 +584,7 @@ const loadInvoice = async () => {
     }, {})
     if (items.value.length === 0) items.value = [newItem()]
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   }
 }
 
@@ -641,7 +645,7 @@ const scrollToError = async () => {
   if (errors.value.party_id && partyFieldRef.value) {
     partyFieldRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
   } else if (errors.value.invoice_date && dateInputRef.value) {
-    dateInputRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    dateInputRef.value.$el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     dateInputRef.value.focus()
   } else if (errors.value.items && itemsSectionRef.value) {
     itemsSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -710,7 +714,7 @@ const submit = async () => {
     leaveConfirmed.value = true
     router.push('/sale-invoices')
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
     await nextTick()
     itemsSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } finally {
@@ -781,7 +785,7 @@ const keepEditing = () => {
 .card { background: #fff; border: 1px solid #eef0f2; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
 .card-title { margin: 0 0 16px; font-size: 15px; font-weight: 700; color: #111; }
 
-.details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.details-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .form-group.full { grid-column: 1 / -1; }
 .form-group label { font-size: 13px; font-weight: 500; color: #374151; }

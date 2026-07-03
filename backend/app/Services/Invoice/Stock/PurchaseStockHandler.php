@@ -59,6 +59,29 @@ class PurchaseStockHandler implements InvoiceStockHandler
         float $unitPrice,
         string $invoiceDate,
     ): void {
+        $this->addBatchForLine($invoice, $line, $product, $quantity, $unitPrice, $invoiceDate);
+    }
+
+    /** A purchase's supply is its batch — the same effect on a re-flow rebuild as on a fresh create. */
+    public function establishSupply(
+        Invoice $invoice,
+        InvoiceProduct $line,
+        Product $product,
+        float $quantity,
+        float $unitPrice,
+        string $invoiceDate,
+    ): void {
+        $this->addBatchForLine($invoice, $line, $product, $quantity, $unitPrice, $invoiceDate);
+    }
+
+    private function addBatchForLine(
+        Invoice $invoice,
+        InvoiceProduct $line,
+        Product $product,
+        float $quantity,
+        float $unitPrice,
+        string $invoiceDate,
+    ): void {
         $unitCost = $quantity > 0
             ? round((float) $line->grand_total / $quantity, 2)
             : $unitPrice;
@@ -83,7 +106,7 @@ class PurchaseStockHandler implements InvoiceStockHandler
             if ((float) $batch->quantity_remaining < (float) $batch->quantity_received) {
                 throw new InvoiceException(
                     ErrorCode::INVOICE_STOCK_CONSUMED,
-                    'Some items from this invoice have already been sold, so it can no longer be edited or deleted.'
+                    'Some items from this invoice have already been sold, so it can no longer be deleted. Reduce or remove those sales first.'
                 );
             }
         }

@@ -58,8 +58,22 @@ class SaleStockHandler implements InvoiceStockHandler
             (string) $product->name,
             (int) $line->id,
             $quantity,
+            $invoiceDate,
         );
     }
+
+    /**
+     * A sale supplies no stock; its consumption is (re)applied when the product's
+     * sales are replayed during a re-flow, so there is nothing to do here.
+     */
+    public function establishSupply(
+        Invoice $invoice,
+        InvoiceProduct $line,
+        Product $product,
+        float $quantity,
+        float $unitPrice,
+        string $invoiceDate,
+    ): void {}
 
     /** Returns the stock this sale consumed back to its FIFO batches. */
     public function reverse(Invoice $invoice): void

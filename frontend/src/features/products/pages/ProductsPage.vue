@@ -137,7 +137,7 @@
               {{ $t('shared.noResults') }}
             </td>
           </tr>
-          <tr v-for="(product, idx) in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active }">
+          <tr v-for="(product, idx) in paginatedProducts" :key="product.id" :class="{ inactive: !product.is_active, 'row-edited': isRecent(product.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(product.id)" @change="toggleRow(product.id)" />
             </td>
@@ -369,6 +369,8 @@ import ProductDetailModal from '@/features/products/components/ProductDetailModa
 import BulkAddTagsModal from '@/features/tags/components/BulkAddTagsModal.vue'
 import BulkRemoveTagsModal from '@/features/tags/components/BulkRemoveTagsModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
+import { useSessionOrder } from '@/composables/useSessionOrder'
+import { useRowHighlight } from '@/composables/useRowHighlight'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -548,12 +550,14 @@ const filteredProducts = computed(() => {
   })
 })
 
-// Most recently updated first by default, so the No. column reads newest-to-oldest.
-const orderedProducts = computed(() =>
+// Newest-first on load, then held stable within the session so saving an edit
+// doesn't bump the row to the top and cost you your place while editing down the list.
+const newestFirstProducts = computed(() =>
   [...filteredProducts.value].sort(
     (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
   )
 )
+const { ordered: orderedProducts } = useSessionOrder(newestFirstProducts)
 
 const sort = useSortCriteria()
 const sortedProducts = computed(() =>
@@ -576,6 +580,8 @@ const {
   setPerPage,
   resetPage,
 } = useClientPagination(sortedProducts)
+
+const { mark, markMany, isRecent } = useRowHighlight()
 
 const selectableIds = computed(() => sortedProducts.value.map(p => String(p.id)))
 const {
@@ -629,9 +635,9 @@ const {
   setActive: (id, isActive) => updateProduct({ id, input: { is_active: isActive } }),
   remove: (id) => deleteProduct({ id }),
   attachTags: (ids, pairs) => bulkAttachProductTags({ storeId: currentStore.value.id, productIds: ids, tags: pairs }),
-  onTagsAttached: () => showToast(t('products.bulkTagsSuccess'), 'success'),
+  onTagsAttached: (ids) => { markMany(ids); showToast(t('products.bulkTagsSuccess'), 'success') },
   detachTags: (ids, pairs) => bulkDetachProductTags({ storeId: currentStore.value.id, productIds: ids, tags: pairs }),
-  onTagsDetached: () => showToast(t('products.bulkTagsRemoved'), 'success'),
+  onTagsDetached: (ids) => { markMany(ids); showToast(t('products.bulkTagsRemoved'), 'success') },
 })
 
 // Union of tags across the currently-selected products, with how many of the selection carry each.
@@ -670,7 +676,7 @@ const load = async () => {
     tags.value = []
     return
   }
-  loading.value = true
+  if (!products.value.length) loading.value = true
   try {
     const [productList, unitList, categoryList, tagList] = await Promise.all([
       fetchProducts({ storeId: currentStore.value.id, includeInactive: true }),
@@ -707,8 +713,10 @@ const closeForm = () => {
 }
 
 const onSaved = async () => {
+  const editedId = editingProduct.value?.id
   closeForm()
   await load()
+  if (editedId) mark(editedId)
 }
 
 const onImported = async () => {
@@ -746,6 +754,7 @@ const performDeactivate = async () => {
   try {
     await updateProduct({ id: product.id, input: { is_active: false } })
     await load()
+    mark(product.id)
   } catch (err) {
     alert(translateError(err))
   }
@@ -767,6 +776,7 @@ const performDetach = async () => {
   try {
     await updateProduct({ id: product.id, input: { tags } })
     await load()
+    mark(product.id)
   } catch (err) {
     alert(translateError(err))
   }
@@ -785,6 +795,7 @@ const handleToggle = async () => {
   product.is_active = nextValue
   try {
     await updateProduct({ id: product.id, input: { is_active: nextValue } })
+    mark(product.id)
   } catch (err) {
     product.is_active = previous
     alert(translateError(err))

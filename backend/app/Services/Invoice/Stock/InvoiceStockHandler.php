@@ -29,6 +29,20 @@ interface InvoiceStockHandler
         string $invoiceDate,
     ): void;
 
+    /**
+     * Establish a line's *supply* side while rebuilding an invoice during a re-flow:
+     * a purchase creates its batch; a sale contributes no supply, since its draw is
+     * re-applied when the product's sales are replayed.
+     */
+    public function establishSupply(
+        Invoice $invoice,
+        InvoiceProduct $line,
+        Product $product,
+        float $quantity,
+        float $unitPrice,
+        string $invoiceDate,
+    ): void;
+
     /** Undo all of this invoice's stock effects, for an edit or a delete. */
     public function reverse(Invoice $invoice): void;
 }

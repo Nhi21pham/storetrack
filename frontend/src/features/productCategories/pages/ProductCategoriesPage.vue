@@ -97,7 +97,7 @@
               {{ $t('shared.noResults') }}
             </td>
           </tr>
-          <tr v-for="(category, idx) in paginatedCategories" :key="category.id" :class="{ inactive: !category.is_active, system: category.is_system }">
+          <tr v-for="(category, idx) in paginatedCategories" :key="category.id" :class="{ inactive: !category.is_active, system: category.is_system, 'row-edited': isRecent(category.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox
                 v-if="!category.is_system"
@@ -236,6 +236,8 @@ import ExportButton from '@/components/common/ExportButton.vue'
 import ProductCategoryFormModal from '@/features/productCategories/components/ProductCategoryFormModal.vue'
 import ProductCategoryDetailModal from '@/features/productCategories/components/ProductCategoryDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
+import { useSessionOrder } from '@/composables/useSessionOrder'
+import { useRowHighlight } from '@/composables/useRowHighlight'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -318,12 +320,14 @@ const filteredCategories = computed(() => {
   })
 })
 
-// Most recently updated first by default, so the No. column reads newest-to-oldest.
-const orderedCategories = computed(() =>
+// Newest-first on load, then held stable within the session so saving an edit
+// doesn't bump the row to the top and cost you your place while editing down the list.
+const newestFirstCategories = computed(() =>
   [...filteredCategories.value].sort(
     (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
   )
 )
+const { ordered: orderedCategories } = useSessionOrder(newestFirstCategories)
 
 const sort = useSortCriteria()
 const sortedCategories = computed(() =>
@@ -345,6 +349,8 @@ const {
   setPerPage,
   resetPage,
 } = useClientPagination(sortedCategories)
+
+const { mark, isRecent } = useRowHighlight()
 
 const visibleIds = computed(() =>
   paginatedCategories.value.filter(c => !c.is_system).map(c => String(c.id))
@@ -386,7 +392,7 @@ const load = async () => {
     categories.value = []
     return
   }
-  loading.value = true
+  if (!categories.value.length) loading.value = true
   try {
     categories.value = await fetchProductCategories({ storeId: currentStore.value.id, includeInactive: true })
   } finally {
@@ -415,8 +421,10 @@ const closeForm = () => {
 }
 
 const onSaved = async () => {
+  const editedId = editingCategory.value?.id
   closeForm()
   await load()
+  if (editedId) mark(editedId)
 }
 
 const onPickExisting = (category) => {
@@ -450,6 +458,7 @@ const performDeactivate = async () => {
   try {
     await updateProductCategory({ id: category.id, input: { is_active: false } })
     await load()
+    mark(category.id)
   } catch (err) {
     alert(translateError(err))
   }
@@ -469,6 +478,7 @@ const handleToggle = async () => {
   category.is_active = nextValue
   try {
     await updateProductCategory({ id: category.id, input: { is_active: nextValue } })
+    mark(category.id)
   } catch (err) {
     category.is_active = previous
     alert(translateError(err))

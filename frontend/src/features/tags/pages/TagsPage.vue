@@ -90,7 +90,7 @@
               {{ $t('shared.noResults') }}
             </td>
           </tr>
-          <tr v-for="(tag, idx) in paginatedTags" :key="tag.id">
+          <tr v-for="(tag, idx) in paginatedTags" :key="tag.id" :class="{ 'row-edited': isRecent(tag.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(tag.id)" @change="toggleRow(tag.id)" />
             </td>
@@ -225,6 +225,8 @@ import TagFormModal from '@/features/tags/components/TagFormModal.vue'
 import TagDetailModal from '@/features/tags/components/TagDetailModal.vue'
 import TagDeleteDialog from '@/features/tags/components/TagDeleteDialog.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
+import { useSessionOrder } from '@/composables/useSessionOrder'
+import { useRowHighlight } from '@/composables/useRowHighlight'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -304,12 +306,14 @@ const filteredTags = computed(() => {
   })
 })
 
-// Most recently updated first by default, so the No. column reads newest-to-oldest.
-const orderedTags = computed(() =>
+// Newest-first on load, then held stable within the session so saving an edit
+// doesn't bump the row to the top and cost you your place while editing down the list.
+const newestFirstTags = computed(() =>
   [...filteredTags.value].sort(
     (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
   )
 )
+const { ordered: orderedTags } = useSessionOrder(newestFirstTags)
 
 const sort = useSortCriteria()
 const sortedTags = computed(() =>
@@ -330,6 +334,8 @@ const {
   setPerPage,
   resetPage,
 } = useClientPagination(sortedTags)
+
+const { mark, isRecent } = useRowHighlight()
 
 const selectableIds = computed(() => sortedTags.value.map(t => String(t.id)))
 const {
@@ -366,7 +372,7 @@ const load = async () => {
     tags.value = []
     return
   }
-  loading.value = true
+  if (!tags.value.length) loading.value = true
   try {
     tags.value = await fetchTags({ storeId: currentStore.value.id })
   } finally {
@@ -397,8 +403,10 @@ const closeForm = () => {
 }
 
 const onSaved = async () => {
+  const editedId = editingTag.value?.id
   closeForm()
   await load()
+  if (editedId) mark(editedId)
 }
 
 const onDetailEdit = (tag) => {

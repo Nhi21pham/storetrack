@@ -95,7 +95,7 @@
             <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
-          <tr v-for="(a, idx) in paginatedAccounts" :key="a.id">
+          <tr v-for="(a, idx) in paginatedAccounts" :key="a.id" :class="{ 'row-edited': isRecent(a.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(a.id)" @change="toggleRow(a.id)" />
             </td>
@@ -239,6 +239,8 @@ import BankAccountDetailModal from '@/features/banking/components/BankAccountDet
 import MissingReferencesImportBanner from '@/components/common/MissingReferencesImportBanner.vue'
 import ObjectBadge from '@/components/common/ObjectBadge.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
+import { useSessionOrder } from '@/composables/useSessionOrder'
+import { useRowHighlight } from '@/composables/useRowHighlight'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -308,12 +310,14 @@ const canDelete = computed(() => {
 
 const filteredAccounts = computed(() => accounts.value.filter(inDateRange))
 
-// Most recently updated first by default, so the No. column reads newest-to-oldest.
-const orderedAccounts = computed(() =>
+// Newest-first on load, then held stable within the session so saving an edit
+// doesn't bump the row to the top and cost you your place while editing down the list.
+const newestFirstAccounts = computed(() =>
   [...filteredAccounts.value].sort(
     (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
   )
 )
+const { ordered: orderedAccounts } = useSessionOrder(newestFirstAccounts)
 
 const sort = useSortCriteria()
 const sortedAccounts = computed(() =>
@@ -342,6 +346,8 @@ const {
   setPerPage,
   resetPage,
 } = useClientPagination(sortedAccounts)
+
+const { mark, isRecent } = useRowHighlight()
 
 const selectableIds = computed(() => sortedAccounts.value.map(a => String(a.id)))
 const {
@@ -376,7 +382,7 @@ let searchTimer = null
 
 const load = async () => {
   if (!currentBusiness?.value?.id) return
-  loading.value = true
+  if (!accounts.value.length) loading.value = true
   try {
     accounts.value = await fetchBankAccounts({
       businessId: currentBusiness.value.id,
@@ -412,8 +418,10 @@ const closeForm = () => {
 }
 
 const onSaved = async () => {
+  const editedId = editingAccount.value?.id
   closeForm()
   await load()
+  if (editedId) mark(editedId)
 }
 
 const onImported = async () => {

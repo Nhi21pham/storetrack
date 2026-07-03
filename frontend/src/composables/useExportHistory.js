@@ -1,5 +1,6 @@
-import { ref, onBeforeUnmount } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
 import { fetchExportHistory } from '@/services/exportHistoryService'
+import { loadPerPage, savePerPage } from '@/composables/useClientPagination'
 
 const REFRESH_MS = 3000
 
@@ -13,7 +14,8 @@ export const useExportHistory = ({ scope = 'store', scopeId, types }) => {
   const error = ref('')
   const rows = ref([])
   const page = ref(1)
-  const perPage = ref(20)
+  const perPage = ref(loadPerPage(20))
+  watch(perPage, savePerPage)
   const total = ref(0)
   const lastPage = ref(1)
   const startDate = ref('')

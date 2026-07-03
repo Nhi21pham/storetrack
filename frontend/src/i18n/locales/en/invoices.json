@@ -149,6 +149,7 @@
   "stockWarning": "Some lines exceed available stock. You can still try to save, but the sale will be rejected if stock is insufficient.",
   "onlyInStock": "Only {qty} in stock",
   "inStock": "In stock: {qty}",
+  "batchLeft": "{qty} left",
 
   "scanPurchaseTitle": "Scan Purchase Invoice",
   "scanSaleTitle": "Scan Sale Invoice",

@@ -5,6 +5,7 @@ import {
   deleteCustomers as deleteCustomersRequest,
 } from '@/features/customers/services/customerService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { useSessionOrder } from '@/composables/useSessionOrder'
 import { useDateRangeFilter } from '@/composables/useDateRangeFilter'
 
 const getSortValue = (customer, key) => {
@@ -98,11 +99,14 @@ export const useCustomers = ({ currentStore, currentBusiness, onError }) => {
   })
 
   const sort = useSortCriteria()
-  const sortedCustomers = computed(() => sort.sortItems(filteredCustomers.value, getSortValue))
+  // Hold the row order stable within a session so saving an edit doesn't bump the
+  // row to the top and cost you your place; the store/all-stores toggle re-seeds it.
+  const { ordered: orderedCustomers, reseed: reseedOrder } = useSessionOrder(filteredCustomers)
+  const sortedCustomers = computed(() => sort.sortItems(orderedCustomers.value, getSortValue))
 
   const load = async () => {
     if (!currentStore.value?.id || !currentBusiness.value?.id) return
-    loading.value = true
+    if (!customers.value.length) loading.value = true
     try {
       customers.value = await fetchCustomers({
         storeId: currentStore.value.id,
@@ -130,7 +134,11 @@ export const useCustomers = ({ currentStore, currentBusiness, onError }) => {
     return count
   }
 
+  // Switching store, or the store/all-stores view, changes the seed order for the
+  // same rows, so drop the frozen order and let it re-seed from the new one.
+  watch(storeFilter, reseedOrder)
   watch(() => currentStore.value?.id, (id) => {
+    reseedOrder()
     if (id && currentBusiness.value?.id) load()
   }, { immediate: true })
 

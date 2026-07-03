@@ -41,7 +41,7 @@
 
             <div class="form-group">
               <label>{{ $t('invoices.invoiceDate') }} <span class="required">*</span></label>
-              <input ref="dateInputRef" v-model="form.invoice_date" type="date" class="text-input" :class="{ error: errors.invoice_date }" />
+              <DatePicker ref="dateInputRef" v-model="form.invoice_date" :error="!!errors.invoice_date" style="width: 100%" />
               <FormMessage v-if="errors.invoice_date" :text="errors.invoice_date" />
             </div>
 
@@ -205,6 +205,7 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import DatePicker from '@/components/common/DatePicker.vue'
 import PageContainer from '@/components/common/PageContainer.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -228,6 +229,7 @@ import { fetchTaxes } from '@/features/taxes/services/taxService'
 import { createPurchaseInvoice, updatePurchaseInvoice, fetchInvoice } from '@/features/invoices/services/invoiceService'
 import { takeInvoiceDraft } from '@/features/invoices/services/invoiceDraft'
 import { t } from '@/i18n'
+import { translateError } from '@/utils/translateError'
 import {
   paymentMethodOptions,
   paymentStatusOptions,
@@ -412,7 +414,7 @@ const loadOptions = async () => {
     products.value = productList
     taxes.value = taxList
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   } finally {
     optionsLoading.value = false
   }
@@ -439,7 +441,7 @@ const loadInvoice = async () => {
     }))
     if (items.value.length === 0) items.value = [newItem()]
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
   }
 }
 
@@ -500,7 +502,7 @@ const scrollToError = async () => {
   if (errors.value.party_id && partyFieldRef.value) {
     partyFieldRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
   } else if (errors.value.invoice_date && dateInputRef.value) {
-    dateInputRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    dateInputRef.value.$el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     dateInputRef.value.focus()
   } else if (errors.value.items && itemsSectionRef.value) {
     itemsSectionRef.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -569,7 +571,7 @@ const submit = async () => {
     leaveConfirmed.value = true
     router.push('/purchase-invoices')
   } catch (err) {
-    apiError.value = err.message
+    apiError.value = translateError(err)
     await nextTick()
     itemsSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } finally {
@@ -633,7 +635,7 @@ const keepEditing = () => {
 .card { background: #fff; border: 1px solid #eef0f2; border-radius: 14px; padding: 20px 24px; margin-bottom: 16px; }
 .card-title { margin: 0 0 16px; font-size: 15px; font-weight: 700; color: #111; }
 
-.details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.details-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; }
 .form-group { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .form-group.full { grid-column: 1 / -1; }
 .form-group label { font-size: 13px; font-weight: 500; color: #374151; }

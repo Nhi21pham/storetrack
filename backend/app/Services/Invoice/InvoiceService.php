@@ -17,6 +17,7 @@ use App\Jobs\Exports\ExportInvoiceJob;
 use App\Models\Export;
 use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
+use App\Models\Invoice\InvoiceProductTax;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\Tax;
@@ -51,6 +52,7 @@ class InvoiceService
         private PaymentService $paymentService,
         private PaymentAllocationRepository $allocationRepository,
         private ProductRepository $productRepository,
+        private InventoryReflowService $reflowService,
     ) {}
 
     public function getAll(User $user, int $storeId, ?string $type = null): Collection
@@ -159,22 +161,32 @@ class InvoiceService
             $handler->assertParty((int) $data['party_id'], $storeId);
             $handler->linkPartyToStore((int) $data['party_id'], $storeId);
 
-            // Reverse the invoice's old stock effects, then re-apply the new lines. Existing
-            // payments are KEPT — the status re-derives from paid_amount vs the new total
-            // (e.g. a fully-paid 200 invoice edited up to 210 becomes PARTIAL, 10 owed).
-            $handler->reverse($invoice);
-            $this->invoiceRepository->deleteItems($invoice);
-
-            $this->invoiceRepository->update($invoice, [
+            $header = [
                 'party_id'       => (int) $data['party_id'],
                 'description'    => $data['description'] ?? null,
                 'invoice_date'   => $data['invoice_date'],
                 'payment_method' => $data['payment_method'],
-            ]);
+            ];
 
-            [$subtotal, $taxTotal] = $this->addLines($invoice, $storeId, $handler, $items, (string) $data['invoice_date']);
+            if (!$this->stockChanged($invoice, $items, (string) $data['invoice_date'])) {
+                $this->invoiceRepository->update($invoice, $header);
+                $this->auditLogger->invoiceUpdated($actor, $invoice);
+                return $this->invoiceRepository->findById((int) $invoice->id);
+            }
 
+            $affectedProductIds = $this->affectedProductIds($invoice, $items);
+            $this->reflowService->lock($storeId, $affectedProductIds);
+            $this->reflowService->release($storeId, $affectedProductIds);
+
+            $handler->reverse($invoice);
+            $this->invoiceRepository->deleteItems($invoice);
+            $this->invoiceRepository->update($invoice, $header);
+
+            [$subtotal, $taxTotal] = $this->rebuildLines($invoice, $storeId, $handler, $items, (string) $data['invoice_date']);
             $invoice = $this->applyTotals($invoice, $subtotal, $taxTotal);
+
+            $this->reflowService->replay($storeId, $affectedProductIds);
+
             $this->invoiceRepository->update($invoice, [
                 'payment_status' => InvoicePaymentStatusEnum::fromAmounts((float) $invoice->paid_amount, (float) $invoice->grand_total)->value,
             ]);
@@ -389,8 +401,37 @@ class InvoiceService
         return [$subtotal, $taxTotal];
     }
 
-    /** Creates one invoice line (with its tax snapshot) and applies its stock effect via the handler. */
+    /** Re-applies each line on an edit, establishing only supply (sale draws are replayed separately), and returns the [subtotal, taxTotal] totals. */
+    private function rebuildLines(Invoice $invoice, int $storeId, InvoiceStockHandler $handler, array $items, string $invoiceDate): array
+    {
+        $subtotal = 0.0;
+        $taxTotal = 0.0;
+        foreach ($items as $item) {
+            $line = $this->rebuildLine($invoice, $storeId, $handler, $item, $invoiceDate);
+            $subtotal += (float) $line->subtotal;
+            $taxTotal += (float) $line->tax_total;
+        }
+        return [$subtotal, $taxTotal];
+    }
+
+    /** Creates one invoice line (with its tax snapshot) and applies its immediate stock effect — for a fresh invoice. */
     private function addLine(Invoice $invoice, int $storeId, InvoiceStockHandler $handler, array $item, string $invoiceDate): InvoiceProduct
+    {
+        [$line, $product, $quantity, $unitPrice] = $this->buildLineRow($invoice, $storeId, $item);
+        $handler->applyLine($invoice, $line, $product, $quantity, $unitPrice, $invoiceDate);
+        return $line;
+    }
+
+    /** Creates one invoice line and establishes only its supply — for an edit re-flow, where sale consumption is replayed. */
+    private function rebuildLine(Invoice $invoice, int $storeId, InvoiceStockHandler $handler, array $item, string $invoiceDate): InvoiceProduct
+    {
+        [$line, $product, $quantity, $unitPrice] = $this->buildLineRow($invoice, $storeId, $item);
+        $handler->establishSupply($invoice, $line, $product, $quantity, $unitPrice, $invoiceDate);
+        return $line;
+    }
+
+    /** Creates a line row + its tax snapshot + totals, with no stock effect. Returns [line, product, quantity, unitPrice]. */
+    private function buildLineRow(Invoice $invoice, int $storeId, array $item): array
     {
         $product   = $this->assertProduct((int) $item['product_id'], $storeId);
         $quantity  = (float) $item['quantity'];
@@ -416,9 +457,7 @@ class InvoiceService
             ]);
         }
 
-        $handler->applyLine($invoice, $line, $product, $quantity, $unitPrice, $invoiceDate);
-
-        return $line;
+        return [$line, $product, $quantity, $unitPrice];
     }
 
     /** Snapshots the taxes entered on a line and returns the line's total tax amount. */
@@ -450,6 +489,74 @@ class InvoiceService
             'tax_total'   => round($taxTotal, 2),
             'grand_total' => round($subtotal + $taxTotal, 2),
         ]);
+    }
+
+    /** Whether an edit touches stock/costing — the invoice date (batch receipt order) or any line. */
+    private function stockChanged(Invoice $invoice, array $items, string $submittedDate): bool
+    {
+        return $this->dateChanged($invoice, $submittedDate) || $this->itemsChanged($invoice, $items);
+    }
+
+    private function dateChanged(Invoice $invoice, string $submittedDate): bool
+    {
+        return $invoice->invoice_date->format('Y-m-d') !== Carbon::parse($submittedDate)->format('Y-m-d');
+    }
+
+    /** Whether the submitted lines differ from the stored ones in any stock-bearing way (product, qty, price, taxes). Order-independent. */
+    private function itemsChanged(Invoice $invoice, array $items): bool
+    {
+        $invoice->loadMissing('items.taxes');
+
+        $stored = $invoice->items
+            ->map(fn (InvoiceProduct $line) => $this->lineSignature(
+                (int) $line->product_id,
+                (float) $line->quantity,
+                (float) $line->unit_price,
+                $line->taxes->map(fn (InvoiceProductTax $tax) => [(int) $tax->tax_id, (float) $tax->tax_rate])->all(),
+            ))
+            ->sort()
+            ->values()
+            ->all();
+
+        $submitted = collect($items)
+            ->map(fn (array $item) => $this->lineSignature(
+                (int) $item['product_id'],
+                (float) $item['quantity'],
+                (float) $item['unit_price'],
+                collect($item['taxes'] ?? [])->map(fn (array $tax) => [(int) $tax['tax_id'], (float) $tax['rate']])->all(),
+            ))
+            ->sort()
+            ->values()
+            ->all();
+
+        return $stored !== $submitted;
+    }
+
+    /** A canonical string for a line so two lines compare equal iff their product, quantity, price and taxes all match. */
+    private function lineSignature(int $productId, float $quantity, float $unitPrice, array $taxes): string
+    {
+        $taxParts = array_map(
+            fn (array $tax) => $tax[0] . ':' . number_format($tax[1], 4, '.', ''),
+            $taxes,
+        );
+        sort($taxParts);
+
+        return implode('|', [
+            $productId,
+            number_format($quantity, 3, '.', ''),
+            number_format($unitPrice, 2, '.', ''),
+            implode(',', $taxParts),
+        ]);
+    }
+
+    /** Products whose FIFO ledger this edit can disturb: everything the invoice touched before, and everything it touches now. */
+    private function affectedProductIds(Invoice $invoice, array $items): array
+    {
+        $invoice->loadMissing('items');
+        $old = $invoice->items->map(fn (InvoiceProduct $line) => (int) $line->product_id)->all();
+        $new = array_map(fn (array $item) => (int) $item['product_id'], $items);
+
+        return array_values(array_unique(array_merge($old, $new)));
     }
 
     private function assertType(Invoice $invoice, InvoiceTypeEnum $type): void

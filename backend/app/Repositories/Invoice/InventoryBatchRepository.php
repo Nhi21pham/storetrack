@@ -34,13 +34,26 @@ class InventoryBatchRepository
     /**
      * Open batches for a product in FIFO order (oldest received first, id as
      * tie-breaker), locked for update so a concurrent sale can't double-spend them.
+     * Only batches received on or before the sale date are eligible — a sale can't
+     * draw stock it hadn't received yet.
      */
-    public function lockFifoForProduct(int $storeId, int $productId): Collection
+    public function lockFifoForProduct(int $storeId, int $productId, string $saleDate): Collection
     {
         return InventoryBatch::where('store_id', $storeId)
             ->where('product_id', $productId)
             ->where('quantity_remaining', '>', 0)
+            ->whereDate('received_at', '<=', $saleDate)
             ->orderBy('received_at')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /** Every batch of the given products in a store, locked — serialises a re-flow against concurrent sales. */
+    public function lockAllForProducts(int $storeId, array $productIds): Collection
+    {
+        return InventoryBatch::where('store_id', $storeId)
+            ->whereIn('product_id', $productIds)
             ->orderBy('id')
             ->lockForUpdate()
             ->get();

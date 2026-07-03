@@ -228,6 +228,7 @@ import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
 import { t } from '@/i18n'
+import { translateError } from '@/utils/translateError'
 import { fetchInvoice, startInvoiceExport, startInvoiceDocumentExport } from '@/features/invoices/services/invoiceService'
 import {
   makeInvoiceColumns, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
@@ -294,7 +295,7 @@ const openDetail = async (inv) => {
   try {
     detailInvoice.value = await fetchInvoice({ id: inv.id })
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   }
 }
 
@@ -310,7 +311,7 @@ const handleDelete = async () => {
     showToast(t('invoices.invoiceDeletedCode', { code: target.code }))
     deletingInvoice.value = null
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   }
 }
 
@@ -329,7 +330,7 @@ const handleBulkDelete = async () => {
       showToast(t('invoices.bulkDeleted', deleted, { count: deleted }))
     }
   } catch (err) {
-    showToast(err.message, 'error')
+    showToast(translateError(err), 'error')
   } finally {
     bulkDeleting.value = false
   }

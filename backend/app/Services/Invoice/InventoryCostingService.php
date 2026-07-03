@@ -66,8 +66,9 @@ class InventoryCostingService
         string $productName,
         int $invoiceProductId,
         float $quantity,
+        string $saleDate,
     ): float {
-        $batches = $this->batchRepository->lockFifoForProduct($storeId, $productId);
+        $batches = $this->batchRepository->lockFifoForProduct($storeId, $productId, $saleDate);
 
         $outstanding = $quantity;
         $cogs = 0.0;

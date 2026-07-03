@@ -122,6 +122,7 @@
           :is-visible="columnVisibility.isVisible"
           :sort="sort"
           :isSelected="isSelected"
+          :isRecent="isRecent"
           :canManageRow="canManageRow"
           :canDelete="canDelete"
           :rowActionsEnabled="!!currentStore?.is_active"
@@ -231,6 +232,7 @@ import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
 import { useSuppliers } from '@/features/suppliers/composables/useSuppliers'
 import { useExport } from '@/composables/useExport'
 import { useRowSelection } from '@/composables/useRowSelection'
+import { useRowHighlight } from '@/composables/useRowHighlight'
 import { useClientPagination } from '@/composables/useClientPagination'
 import {
   startSupplierExport,
@@ -287,6 +289,8 @@ const {
   allVisibleSelected, someVisibleSelected,
 } = useRowSelection({ eligibleIds: selectableIds, scopeToEligible: true })
 
+const { mark, isRecent } = useRowHighlight()
+
 const showForm        = ref(false)
 const editingSupplier = ref(null)
 const detailSupplier  = ref(null)
@@ -316,11 +320,12 @@ const openEdit      = (s) => { editingSupplier.value = { ...s }; showForm.value 
 const openDetail    = (s) => { detailSupplier.value = s }
 const onDetailEdit  = (s) => { detailSupplier.value = null; openEdit(s) }
 
-const onSaved = () => {
-  const wasEdit = !!editingSupplier.value
+const onSaved = async () => {
+  const editedId = editingSupplier.value?.id
   showForm.value = false
-  load()
-  showToast(wasEdit ? t('suppliers.updateSuccess') : t('suppliers.createSuccess'))
+  await load()
+  if (editedId) mark(editedId)
+  showToast(editedId ? t('suppliers.updateSuccess') : t('suppliers.createSuccess'))
 }
 
 const onImported = () => {
