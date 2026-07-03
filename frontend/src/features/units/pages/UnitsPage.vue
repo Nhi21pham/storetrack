@@ -102,7 +102,7 @@
               {{ $t('shared.noResults') }}
             </td>
           </tr>
-          <tr v-for="(unit, idx) in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active }">
+          <tr v-for="(unit, idx) in paginatedUnits" :key="unit.id" :class="{ inactive: !unit.is_active, 'row-edited': isRecent(unit.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(unit.id)" @change="toggleRow(unit.id)" />
             </td>
@@ -254,6 +254,8 @@ import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import UnitFormModal from '@/features/units/components/UnitFormModal.vue'
 import UnitDetailModal from '@/features/units/components/UnitDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
+import { useSessionOrder } from '@/composables/useSessionOrder'
+import { useRowHighlight } from '@/composables/useRowHighlight'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -332,12 +334,14 @@ const filteredUnits = computed(() => {
   })
 })
 
-// Most recently updated first by default, so the No. column reads newest-to-oldest.
-const orderedUnits = computed(() =>
+// Newest-first on load, then held stable within the session so saving an edit
+// doesn't bump the row to the top and cost you your place while editing down the list.
+const newestFirstUnits = computed(() =>
   [...filteredUnits.value].sort(
     (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
   )
 )
+const { ordered: orderedUnits } = useSessionOrder(newestFirstUnits)
 
 const sort = useSortCriteria()
 const sortedUnits = computed(() =>
@@ -358,6 +362,8 @@ const {
   setPerPage,
   resetPage,
 } = useClientPagination(sortedUnits)
+
+const { mark, isRecent } = useRowHighlight()
 
 const selectableIds = computed(() => sortedUnits.value.map(u => String(u.id)))
 const {
@@ -397,7 +403,7 @@ const load = async () => {
     units.value = []
     return
   }
-  loading.value = true
+  if (!units.value.length) loading.value = true
   try {
     units.value = await fetchUnits({ storeId: currentStore.value.id, includeInactive: true })
   } finally {
@@ -425,8 +431,10 @@ const closeForm = () => {
 }
 
 const onSaved = async () => {
+  const editedId = editingUnit.value?.id
   closeForm()
   await load()
+  if (editedId) mark(editedId)
 }
 
 const onImported = async () => {
@@ -464,6 +472,7 @@ const performDeactivate = async () => {
   try {
     await updateUnit({ id: unit.id, input: { is_active: false } })
     await load()
+    mark(unit.id)
   } catch (err) {
     alert(err.message)
   }
@@ -482,6 +491,7 @@ const handleToggle = async () => {
   unit.is_active = nextValue
   try {
     await updateUnit({ id: unit.id, input: { is_active: nextValue } })
+    mark(unit.id)
   } catch (err) {
     unit.is_active = previous
     alert(err.message)

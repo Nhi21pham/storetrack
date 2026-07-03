@@ -32,11 +32,12 @@ export const useBulkActions = ({
     if (bulkBusy.value || !op) return
     bulkBusy.value = true
     try {
-      await op(Array.from(selectedIds.value), pairs)
+      const ids = Array.from(selectedIds.value)
+      await op(ids, pairs)
       modalRef.value = false
       clearSelection()
       await reload()
-      onDone?.()
+      onDone?.(ids)
     } catch (err) {
       alert(translateError(err))
     } finally {

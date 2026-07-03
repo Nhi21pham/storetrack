@@ -95,7 +95,7 @@
             <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
           </template>
 
-          <tr v-for="(bank, idx) in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active }">
+          <tr v-for="(bank, idx) in paginatedBanks" :key="bank.id" :class="{ inactive: !bank.is_active, 'row-edited': isRecent(bank.id) }">
             <td v-if="columnVisibility.isVisible('select')">
               <SelectCheckbox :checked="isSelected(bank.id)" @change="toggleRow(bank.id)" />
             </td>
@@ -248,6 +248,8 @@ import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
 import BankFormModal from '@/features/banking/components/BankFormModal.vue'
 import BankDetailModal from '@/features/banking/components/BankDetailModal.vue'
 import { useClientPagination } from '@/composables/useClientPagination'
+import { useSessionOrder } from '@/composables/useSessionOrder'
+import { useRowHighlight } from '@/composables/useRowHighlight'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useSortCriteria } from '@/composables/useSortCriteria'
 import { useRowSelection } from '@/composables/useRowSelection'
@@ -326,12 +328,14 @@ const filteredBanks = computed(() => {
   })
 })
 
-// Most recently updated first by default, so the No. column reads newest-to-oldest.
-const orderedBanks = computed(() =>
+// Newest-first on load, then held stable within the session so saving an edit
+// doesn't bump the row to the top and cost you your place while editing down the list.
+const newestFirstBanks = computed(() =>
   [...filteredBanks.value].sort(
     (a, b) => new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0),
   )
 )
+const { ordered: orderedBanks } = useSessionOrder(newestFirstBanks)
 
 const sort = useSortCriteria()
 const sortedBanks = computed(() =>
@@ -352,6 +356,8 @@ const {
   setPerPage,
   resetPage,
 } = useClientPagination(sortedBanks)
+
+const { mark, isRecent } = useRowHighlight()
 
 const selectableIds = computed(() => sortedBanks.value.map(b => String(b.id)))
 const {
@@ -391,7 +397,7 @@ const load = async () => {
     banks.value = []
     return
   }
-  loading.value = true
+  if (!banks.value.length) loading.value = true
   try {
     banks.value = await fetchBanks({ businessId: currentBusiness.value.id, includeInactive: true })
   } finally {
@@ -419,8 +425,10 @@ const closeForm = () => {
 }
 
 const onSaved = async () => {
+  const editedId = editingBank.value?.id
   closeForm()
   await load()
+  if (editedId) mark(editedId)
 }
 
 const onImported = async () => {
@@ -458,6 +466,7 @@ const performDeactivate = async () => {
   try {
     await updateBank({ id: bank.id, input: { is_active: false } })
     await load()
+    mark(bank.id)
   } catch (err) {
     alert(translateError(err))
   }
@@ -476,6 +485,7 @@ const handleToggle = async () => {
   bank.is_active = nextValue
   try {
     await updateBank({ id: bank.id, input: { is_active: nextValue } })
+    mark(bank.id)
   } catch (err) {
     bank.is_active = previous
     alert(translateError(err))

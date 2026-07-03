@@ -20,7 +20,7 @@
       <template v-else>{{ c.labelKey ? $t(c.labelKey) : '' }}</template>
     </template>
 
-    <tr v-for="(supplier, idx) in suppliers" :key="supplier.id" :class="{ 'row-selected': isSelected(supplier.id) }">
+    <tr v-for="(supplier, idx) in suppliers" :key="supplier.id" :class="{ 'row-selected': isSelected(supplier.id), 'row-edited': isRecent(supplier.id) }">
       <td v-if="isVisible('select')">
         <SelectCheckbox
           v-if="canManageRow(supplier)"
@@ -83,6 +83,7 @@ const props = defineProps({
   isVisible:           { type: Function, required: true },
   sort:                { type: Object,  required: true },
   isSelected:          { type: Function, required: true },
+  isRecent:            { type: Function, default: () => false },
   canManageRow:        { type: Function, required: true },
   canDelete:           { type: Boolean, required: true },
   rowActionsEnabled:   { type: Boolean, required: true },

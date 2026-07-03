@@ -79,10 +79,20 @@ th { position: relative; padding: 11px 16px; text-align: left; font-size: 11.5px
 
 table :deep(td) { padding: 13px 16px; color: #374151; border-bottom: 1px solid #f3f4f6; vertical-align: middle; overflow: hidden; }
 table :deep(tbody tr:last-child td) { border-bottom: none; }
-table :deep(tbody tr:hover) { background: #fafafa; }
+table :deep(tbody tr:hover) { background: #f1f5f9; }
 
 th.col-pinned { position: sticky; right: 0; z-index: 2; background: #f9fafb; border-left: 1px solid #d1d5db; }
 .filter-row th.col-pinned { background: #fff; border-left: 1px solid #d1d5db; }
 table :deep(td.actions-col) { position: sticky; right: 0; z-index: 1; background: #fff; border-left: 1px solid #d1d5db; }
-table :deep(tbody tr:hover td.actions-col) { background: #fafafa; }
+table :deep(tbody tr:hover td.actions-col) { background: #f1f5f9; }
+
+/* A just-edited row briefly glows so you can spot where you were after a save.
+   The animation overrides any row background (hover / selected / inactive) while
+   it plays, then the row reverts to normal. */
+@keyframes rowEditedGlow {
+  0%   { background-color: #fde68a; }
+  45%  { background-color: #fef3c7; }
+  100% { background-color: transparent; }
+}
+table :deep(tbody tr.row-edited td) { animation: rowEditedGlow 1.8s ease-out; }
 </style>
