@@ -86,7 +86,7 @@
               <td v-if="columnVisibility.isVisible('invoice_count')" class="num">{{ row.invoice_count }}</td>
               <td v-if="columnVisibility.isVisible('spent')" class="num">{{ formatMoney(row.spent) }}</td>
               <td v-if="columnVisibility.isVisible('paid')" class="num">{{ formatMoney(row.paid) }}</td>
-              <td v-if="columnVisibility.isVisible('owe')" class="num strong" :class="{ owed: row.owe > 0 }">{{ formatMoney(row.owe) }}</td>
+              <td v-if="columnVisibility.isVisible('owe')" class="num strong" :class="{ owed: row.owe > 0, credit: row.owe < 0 }">{{ oweDisplay(row.owe) }}</td>
             </tr>
             <tr v-if="isExpanded(row.id)" class="detail-row">
               <td :colspan="tableColumns.length">
@@ -148,7 +148,7 @@
             { label: partyLabel, value: totals.partyCount },
             { label: spentLabel, value: formatMoney(totals.spent) },
             { label: $t('reports.debt.sumTotalPaid'), value: formatMoney(totals.paid) },
-            { label: $t('reports.debt.sumTotalOwe'), value: formatMoney(totals.owe), strong: true },
+            { label: $t('reports.debt.sumTotalOwe'), value: oweDisplay(totals.owe), strong: true },
           ]"
         />
 
@@ -216,6 +216,8 @@ import {
   formatMoney, formatDate,
 } from '@/features/reports/constants'
 import { t } from '@/i18n'
+
+const oweDisplay = (owe) => (owe < 0 ? `${formatMoney(-owe)} ${t('reports.debt.credit')}` : formatMoney(owe))
 
 const props = defineProps({
   ledger:        { type: String, required: true },   // 'receivable' | 'payable'
@@ -363,6 +365,7 @@ watch([() => currentStore.value?.id, () => currentBusiness.value?.id], () => {
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .num.strong { font-weight: 700; color: #111; }
 .num.owed { color: #b45309; }
+.num.credit { color: #15803d; }
 
 /* Only the outer colspan cell — a direct-child selector so it doesn't clobber the nested detail-table cell padding. */
 .detail-row > td { background: #eef1f5; padding: 0 !important; }

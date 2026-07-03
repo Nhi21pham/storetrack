@@ -65,9 +65,7 @@ export const useDebtReport = ({ currentStore, currentBusiness, scope, fetchers, 
         invoice_count: rangeInvoices.length,
         spent,
         paid,
-        // Owe never goes below 0: paying more than was billed in the window
-        // (a payment for an invoice dated before the range) clamps to nil owed.
-        owe: Math.max(0, spent - paid),
+        owe: hasActiveFilters.value ? Math.max(0, spent - paid) : spent - paid,
         rangeInvoices,
         rangePayments,
       }

@@ -31,4 +31,21 @@ class InvoiceProductCostRepository
             fn ($query) => $query->where('invoice_id', $invoiceId),
         )->delete();
     }
+
+    /** Every cost slice drawn by a sale line of the given products, locked — the rows a re-flow releases. */
+    public function lockForProducts(array $productIds): Collection
+    {
+        return InvoiceProductCost::whereHas(
+            'invoiceProduct',
+            fn ($query) => $query->whereIn('product_id', $productIds),
+        )->lockForUpdate()->get();
+    }
+
+    public function deleteForProducts(array $productIds): void
+    {
+        InvoiceProductCost::whereHas(
+            'invoiceProduct',
+            fn ($query) => $query->whereIn('product_id', $productIds),
+        )->delete();
+    }
 }
