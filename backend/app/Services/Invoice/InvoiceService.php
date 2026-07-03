@@ -161,6 +161,8 @@ class InvoiceService
             $handler->assertParty((int) $data['party_id'], $storeId);
             $handler->linkPartyToStore((int) $data['party_id'], $storeId);
 
+            $this->paymentService->reassignInvoicePaymentsToParty((int) $invoice->id, (int) $data['party_id']);
+
             $header = [
                 'party_id'       => (int) $data['party_id'],
                 'description'    => $data['description'] ?? null,

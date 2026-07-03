@@ -14,6 +14,12 @@ class PaymentRepository
         return Payment::create($data);
     }
 
+    public function update(Payment $payment, array $data): Payment
+    {
+        $payment->update($data);
+        return $payment;
+    }
+
     public function findById(int $id): ?Payment
     {
         return Payment::with(self::RELATIONS)->find($id);
