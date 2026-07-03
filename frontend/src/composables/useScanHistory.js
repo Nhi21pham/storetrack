@@ -1,5 +1,6 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { fetchScanHistory } from '@/features/invoices/services/scanHistoryService'
+import { loadPerPage, savePerPage } from '@/composables/useClientPagination'
 
 // Loads a store's invoice scan history (server-side paginated) for one invoice
 // kind (`type`: 'purchase' | 'sale'). Scans are synchronous, so unlike import
@@ -11,7 +12,8 @@ export const useScanHistory = ({ storeId, type }) => {
   const error = ref('')
   const rows = ref([])
   const page = ref(1)
-  const perPage = ref(20)
+  const perPage = ref(loadPerPage(20))
+  watch(perPage, savePerPage)
   const total = ref(0)
   const lastPage = ref(1)
   const startDate = ref('')
