@@ -104,6 +104,7 @@ class SaleReportService
             'product_code'          => $line?->product?->code,
             'tags'                  => $line?->product?->tags ?? [],
             'customer_party_id'     => $invoice?->party_id !== null ? (int) $invoice->party_id : null,
+            'customer_id'           => $invoice?->party?->customer?->id !== null ? (int) $invoice->party->customer->id : null,
             'customer_name'         => $invoice?->party_name,
             'invoice_id'            => $line?->invoice_id !== null ? (int) $line->invoice_id : null,
             'invoice_code'          => $invoice?->code,

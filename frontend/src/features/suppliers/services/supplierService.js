@@ -10,6 +10,16 @@ const SUPPLIERS_QUERY = `
   }
 `
 
+const SUPPLIER_QUERY = `
+  query Supplier($id: ID!) {
+    supplier(id: $id) {
+      id store_id name email phone address tax_code created_at updated_at
+      party { id }
+      stores { id name }
+    }
+  }
+`
+
 const CREATE_SUPPLIER_MUTATION = `
   mutation CreateSupplier($store_id: ID!, $business_id: ID!, $input: CreateSupplierInput!) {
     createSupplier(store_id: $store_id, business_id: $business_id, input: $input) {
@@ -41,6 +51,11 @@ const DELETE_SUPPLIERS_MUTATION = `
 export const fetchSuppliers = async ({ storeId, businessId }) => {
   const data = await graphql(SUPPLIERS_QUERY, { store_id: storeId, business_id: businessId })
   return data.suppliers
+}
+
+export const fetchSupplier = async ({ id }) => {
+  const data = await graphql(SUPPLIER_QUERY, { id })
+  return data.supplier
 }
 
 export const createSupplier = async ({ storeId, businessId, input }) => {

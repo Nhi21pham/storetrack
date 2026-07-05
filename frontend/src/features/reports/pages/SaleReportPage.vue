@@ -116,7 +116,10 @@
               <span v-if="row.store_name">{{ row.store_name }}</span>
               <span v-else class="empty-val">—</span>
             </td>
-            <td v-if="columnVisibility.isVisible('product_name')">{{ row.product_name }}</td>
+            <td v-if="columnVisibility.isVisible('product_name')">
+              <button v-if="row.product_id" class="name-link" @click="openProductDetail(row)">{{ row.product_name }}</button>
+              <span v-else>{{ row.product_name }}</span>
+            </td>
             <td v-if="columnVisibility.isVisible('product_code')">
               <button v-if="row.product_code" class="code-link" @click="openProductDetail(row)">{{ row.product_code }}</button>
               <span v-else class="empty-val">—</span>
@@ -128,7 +131,8 @@
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('customer_name')">
-              <span v-if="row.customer_name">{{ row.customer_name }}</span>
+              <button v-if="row.customer_id" class="name-link" @click="openCustomerDetail(row)">{{ row.customer_name }}</button>
+              <span v-else-if="row.customer_name">{{ row.customer_name }}</span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('purchase_invoice_code')">
@@ -182,6 +186,21 @@
         @saved="onProductSaved"
       />
 
+      <CustomerDetailModal
+        v-if="detailCustomer"
+        :customer="detailCustomer"
+        :can-edit="canManage"
+        @close="detailCustomer = null"
+        @edit="onCustomerEdit"
+      />
+
+      <CustomerFormModal
+        v-if="editingCustomer"
+        :customer="editingCustomer"
+        @close="editingCustomer = null"
+        @saved="onCustomerSaved"
+      />
+
       <InvoiceDetailModal
         v-if="detailInvoice"
         :invoice="detailInvoice"
@@ -225,6 +244,8 @@ import TotalsBar from '@/components/common/TotalsBar.vue'
 import ReportSelectionBar from '@/features/reports/components/ReportSelectionBar.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
+import CustomerDetailModal from '@/features/customers/components/CustomerDetailModal.vue'
+import CustomerFormModal from '@/features/customers/components/CustomerFormModal.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import { useSaleReport } from '@/features/reports/composables/useSaleReport'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
@@ -233,6 +254,7 @@ import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
 import { startSaleReportExport, startSaleReportBusinessExport } from '@/features/reports/services/reportService'
 import { fetchProduct } from '@/features/products/services/productService'
+import { fetchCustomer } from '@/features/customers/services/customerService'
 import { fetchInvoice } from '@/features/invoices/services/invoiceService'
 import { INVOICE_TYPE } from '@/features/invoices/constants'
 import {
@@ -318,10 +340,20 @@ const {
 const detailProduct = ref(null)
 const detailInvoice = ref(null)
 const editingProduct = ref(null)
+const detailCustomer = ref(null)
+const editingCustomer = ref(null)
 
 const openProductDetail = async (row) => {
   try {
     detailProduct.value = await fetchProduct({ id: row.product_id })
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
+
+const openCustomerDetail = async (row) => {
+  try {
+    detailCustomer.value = await fetchCustomer({ id: row.customer_id })
   } catch (err) {
     showToast(err.message, 'error')
   }
@@ -346,6 +378,17 @@ const onProductEdit = (product) => {
 const onProductSaved = async () => {
   editingProduct.value = null
   showToast(t('reports.productUpdated'), 'success')
+  await load()
+}
+
+const onCustomerEdit = (customer) => {
+  detailCustomer.value = null
+  editingCustomer.value = { ...customer }
+}
+
+const onCustomerSaved = async () => {
+  editingCustomer.value = null
+  showToast(t('customers.updateSuccess'), 'success')
   await load()
 }
 
@@ -402,6 +445,8 @@ watch([() => currentStore.value?.id, () => currentBusiness.value?.id], clearSele
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 .empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; }
+.name-link:hover { color: #4338ca; text-decoration: underline; }
 .code-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #4338ca; cursor: pointer; text-align: left; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .code-link:hover { text-decoration: underline; }
 .tags-list { display: flex; flex-wrap: wrap; gap: 4px; }

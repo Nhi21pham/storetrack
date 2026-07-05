@@ -59,6 +59,7 @@ export const useDebtReport = ({ currentStore, currentBusiness, scope, fetchers, 
       const paid = rangePayments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
       return {
         id: r.party_id,
+        party_record_id: r.party_record_id,
         name: r.name,
         phone: r.phone,
         email: r.email,

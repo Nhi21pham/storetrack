@@ -102,6 +102,7 @@ class StockReportService
             'product_code'       => $batch->product?->code,
             'tags'               => $batch->product?->tags ?? [],
             'supplier_party_id'  => $invoice?->party_id !== null ? (int) $invoice->party_id : null,
+            'supplier_id'        => $invoice?->party?->supplier?->id !== null ? (int) $invoice->party->supplier->id : null,
             'supplier_name'      => $invoice?->party_name,
             'invoice_id'         => $batch->source_invoice_id !== null ? (int) $batch->source_invoice_id : null,
             'invoice_code'       => $invoice?->code,

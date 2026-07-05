@@ -10,6 +10,16 @@ const CUSTOMERS_QUERY = `
   }
 `
 
+const CUSTOMER_QUERY = `
+  query Customer($id: ID!) {
+    customer(id: $id) {
+      id store_id name email phone address tax_code created_at updated_at
+      party { id }
+      stores { id name }
+    }
+  }
+`
+
 const CREATE_CUSTOMER_MUTATION = `
   mutation CreateCustomer($store_id: ID!, $business_id: ID!, $input: CreateCustomerInput!) {
     createCustomer(store_id: $store_id, business_id: $business_id, input: $input) {
@@ -41,6 +51,11 @@ const DELETE_CUSTOMERS_MUTATION = `
 export const fetchCustomers = async ({ storeId, businessId }) => {
   const data = await graphql(CUSTOMERS_QUERY, { store_id: storeId, business_id: businessId })
   return data.customers
+}
+
+export const fetchCustomer = async ({ id }) => {
+  const data = await graphql(CUSTOMER_QUERY, { id })
+  return data.customer
 }
 
 export const createCustomer = async ({ storeId, businessId, input }) => {
