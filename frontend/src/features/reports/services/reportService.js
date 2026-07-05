@@ -3,7 +3,7 @@ import { graphql, rest } from '@/api'
 const STOCK_REPORT_FIELDS = `
   id store_id store_name product_id product_name product_code
   tags { tag_id tag_name tag_value_id value }
-  supplier_party_id supplier_name
+  supplier_party_id supplier_id supplier_name
   invoice_id invoice_code purchase_date
   quantity_received quantity_remaining unit_cost total_cost
 `
@@ -39,7 +39,7 @@ export const startStockReportBusinessExport = ({ businessId, params }) =>
 const SALE_REPORT_FIELDS = `
   id store_id store_name product_id product_name product_code
   tags { tag_id tag_name tag_value_id value }
-  customer_party_id customer_name
+  customer_party_id customer_id customer_name
   purchase_invoice_id purchase_invoice_code purchase_date
   invoice_id invoice_code invoice_date
   batch_id quantity unit_price total_sale

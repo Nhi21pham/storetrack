@@ -73,7 +73,7 @@
               <td v-if="columnVisibility.isVisible('order_number')" class="num">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
               <td v-if="columnVisibility.isVisible('name')">
                 <button class="expand-btn" :class="{ open: isExpanded(row.id) }" @click="toggleExpand(row.id)" :title="isExpanded(row.id) ? $t('reports.debt.collapse') : $t('reports.debt.expand')">▸</button>
-                <span class="name">{{ row.name }}</span>
+                <button class="name-link" @click="openPartyDetail(row)">{{ row.name }}</button>
               </td>
               <td v-if="columnVisibility.isVisible('phone')">
                 <span v-if="row.phone">{{ row.phone }}</span>
@@ -171,6 +171,23 @@
         @close="detailInvoice = null"
         @edit="onInvoiceEdit"
       />
+
+      <component
+        :is="detailComponent"
+        v-if="detailParty"
+        v-bind="{ [partyType]: detailParty }"
+        :can-edit="canManage"
+        @close="detailParty = null"
+        @edit="onPartyEdit"
+      />
+
+      <component
+        :is="formComponent"
+        v-if="editingParty"
+        v-bind="{ [partyType]: editingParty }"
+        @close="editingParty = null"
+        @saved="onPartySaved"
+      />
     </template>
 
     <HistoryModal
@@ -204,12 +221,18 @@ import Pagination from '@/components/common/Pagination.vue'
 import TotalsBar from '@/components/common/TotalsBar.vue'
 import ReportSelectionBar from '@/features/reports/components/ReportSelectionBar.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
+import CustomerDetailModal from '@/features/customers/components/CustomerDetailModal.vue'
+import SupplierDetailModal from '@/features/suppliers/components/SupplierDetailModal.vue'
+import CustomerFormModal from '@/features/customers/components/CustomerFormModal.vue'
+import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
 import { useDebtReport } from '@/features/reports/composables/useDebtReport'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
 import { useRowSelection } from '@/composables/useRowSelection'
 import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
 import { fetchInvoice } from '@/features/invoices/services/invoiceService'
+import { fetchCustomer } from '@/features/customers/services/customerService'
+import { fetchSupplier } from '@/features/suppliers/services/supplierService'
 import { INVOICE_TYPE, paymentMethodLabel } from '@/features/invoices/constants'
 import {
   makeDebtReportColumns, DEBT_REPORT_INITIAL_COL_WIDTHS, DEBT_REPORT_DEFAULT_HIDDEN,
@@ -271,7 +294,7 @@ const tableKey = computed(() => [scope.value, ...columnVisibility.visibleColumnK
 const {
   rows, loading, searchQuery, startDate, endDate,
   hasActiveFilters, clearFilters,
-  sortedRows, totals, sort,
+  sortedRows, totals, sort, load,
 } = useDebtReport({
   currentStore,
   currentBusiness,
@@ -317,6 +340,34 @@ const onInvoiceEdit = () => {
   window.open(router.resolve(`/${base}/${invoice.id}/edit`).href, '_blank')
 }
 
+const partyType = computed(() => (props.ledger === 'payable' ? 'supplier' : 'customer'))
+const detailComponent = computed(() => (partyType.value === 'supplier' ? SupplierDetailModal : CustomerDetailModal))
+const formComponent = computed(() => (partyType.value === 'supplier' ? SupplierFormModal : CustomerFormModal))
+const fetchParty = (id) => (partyType.value === 'supplier' ? fetchSupplier({ id }) : fetchCustomer({ id }))
+
+const detailParty = ref(null)
+const editingParty = ref(null)
+
+const openPartyDetail = async (row) => {
+  if (!row.party_record_id) return
+  try {
+    detailParty.value = await fetchParty(row.party_record_id)
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
+
+const onPartyEdit = (party) => {
+  detailParty.value = null
+  editingParty.value = { ...party }
+}
+
+const onPartySaved = async () => {
+  editingParty.value = null
+  showToast(t(partyType.value === 'supplier' ? 'suppliers.updateSuccess' : 'customers.updateSuccess'), 'success')
+  await load()
+}
+
 const { exporting, run } = useExport({
   start: () => {
     const params = {
@@ -357,7 +408,8 @@ watch([() => currentStore.value?.id, () => currentBusiness.value?.id], () => {
 .expand-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #eef2ff; border: 1px solid #c7d2fe; color: #4f46e5; font-size: 10px; line-height: 1; cursor: pointer; margin-right: 8px; vertical-align: middle; transition: transform 0.15s, background 0.15s, color 0.15s, border-color 0.15s; }
 .expand-btn:hover { background: #e0e7ff; }
 .expand-btn.open { transform: rotate(90deg); background: #4f46e5; color: #fff; border-color: #4f46e5; }
-.name { font-weight: 600; color: #111; }
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; vertical-align: middle; }
+.name-link:hover { color: #4338ca; text-decoration: underline; }
 
 .code-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #4338ca; cursor: pointer; text-align: left; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .code-link:hover { text-decoration: underline; }

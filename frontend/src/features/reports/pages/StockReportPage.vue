@@ -119,7 +119,10 @@
               <span v-if="row.store_name">{{ row.store_name }}</span>
               <span v-else class="empty-val">—</span>
             </td>
-            <td v-if="columnVisibility.isVisible('product_name')">{{ row.product_name }}</td>
+            <td v-if="columnVisibility.isVisible('product_name')">
+              <button v-if="row.product_id" class="name-link" @click="openProductDetail(row)">{{ row.product_name }}</button>
+              <span v-else>{{ row.product_name }}</span>
+            </td>
             <td v-if="columnVisibility.isVisible('product_code')">
               <button v-if="row.product_code" class="code-link" @click="openProductDetail(row)">{{ row.product_code }}</button>
               <span v-else class="empty-val">—</span>
@@ -131,7 +134,8 @@
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('supplier_name')">
-              <span v-if="row.supplier_name">{{ row.supplier_name }}</span>
+              <button v-if="row.supplier_id" class="name-link" @click="openSupplierDetail(row)">{{ row.supplier_name }}</button>
+              <span v-else-if="row.supplier_name">{{ row.supplier_name }}</span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('invoice_code')">
@@ -184,6 +188,21 @@
         @saved="onProductSaved"
       />
 
+      <SupplierDetailModal
+        v-if="detailSupplier"
+        :supplier="detailSupplier"
+        :can-edit="canManage"
+        @close="detailSupplier = null"
+        @edit="onSupplierEdit"
+      />
+
+      <SupplierFormModal
+        v-if="editingSupplier"
+        :supplier="editingSupplier"
+        @close="editingSupplier = null"
+        @saved="onSupplierSaved"
+      />
+
       <InvoiceDetailModal
         v-if="detailInvoice"
         :invoice="detailInvoice"
@@ -227,6 +246,8 @@ import TotalsBar from '@/components/common/TotalsBar.vue'
 import ReportSelectionBar from '@/features/reports/components/ReportSelectionBar.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
 import ProductFormModal from '@/features/products/components/ProductFormModal.vue'
+import SupplierDetailModal from '@/features/suppliers/components/SupplierDetailModal.vue'
+import SupplierFormModal from '@/features/suppliers/components/SupplierFormModal.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'
 import { useStockReport } from '@/features/reports/composables/useStockReport'
 import { useColumnVisibility } from '@/composables/useColumnVisibility'
@@ -235,6 +256,7 @@ import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
 import { startStockReportExport, startStockReportBusinessExport } from '@/features/reports/services/reportService'
 import { fetchProduct } from '@/features/products/services/productService'
+import { fetchSupplier } from '@/features/suppliers/services/supplierService'
 import { fetchInvoice } from '@/features/invoices/services/invoiceService'
 import {
   STOCK_REPORT_COLUMNS, STOCK_REPORT_INITIAL_COL_WIDTHS,
@@ -319,10 +341,20 @@ const {
 const detailProduct = ref(null)
 const detailInvoice = ref(null)
 const editingProduct = ref(null)
+const detailSupplier = ref(null)
+const editingSupplier = ref(null)
 
 const openProductDetail = async (row) => {
   try {
     detailProduct.value = await fetchProduct({ id: row.product_id })
+  } catch (err) {
+    showToast(err.message, 'error')
+  }
+}
+
+const openSupplierDetail = async (row) => {
+  try {
+    detailSupplier.value = await fetchSupplier({ id: row.supplier_id })
   } catch (err) {
     showToast(err.message, 'error')
   }
@@ -344,6 +376,17 @@ const onProductEdit = (product) => {
 const onProductSaved = async () => {
   editingProduct.value = null
   showToast(t('reports.productUpdated'), 'success')
+  await load()
+}
+
+const onSupplierEdit = (supplier) => {
+  detailSupplier.value = null
+  editingSupplier.value = { ...supplier }
+}
+
+const onSupplierSaved = async () => {
+  editingSupplier.value = null
+  showToast(t('suppliers.updateSuccess'), 'success')
   await load()
 }
 
@@ -403,6 +446,8 @@ watch([() => currentStore.value?.id, () => currentBusiness.value?.id], clearSele
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 .empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; }
+.name-link:hover { color: #4338ca; text-decoration: underline; }
 .code-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #4338ca; cursor: pointer; text-align: left; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .code-link:hover { text-decoration: underline; }
 .tags-list { display: flex; flex-wrap: wrap; gap: 4px; }

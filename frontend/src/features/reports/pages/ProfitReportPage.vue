@@ -106,7 +106,10 @@
               <span v-if="row.store_name">{{ row.store_name }}</span>
               <span v-else class="empty-val">—</span>
             </td>
-            <td v-if="columnVisibility.isVisible('product_name')">{{ row.product_name }}</td>
+            <td v-if="columnVisibility.isVisible('product_name')">
+              <button v-if="row.product_id" class="name-link" @click="openProductDetail(row)">{{ row.product_name }}</button>
+              <span v-else>{{ row.product_name }}</span>
+            </td>
             <td v-if="columnVisibility.isVisible('product_code')">
               <button v-if="row.product_code" class="code-link" @click="openProductDetail(row)">{{ row.product_code }}</button>
               <span v-else class="empty-val">—</span>
@@ -392,6 +395,8 @@ watch([() => currentStore.value?.id, () => currentBusiness.value?.id], clearSele
 .table-wrap { background: transparent; border-radius: 12px; overflow: visible; }
 .empty-row { padding: 24px 16px; text-align: center; color: #9ca3af; font-size: 13px; }
 
+.name-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #111; cursor: pointer; text-align: left; }
+.name-link:hover { color: #4338ca; text-decoration: underline; }
 .code-link { background: none; border: none; padding: 0; font: inherit; font-weight: 600; color: #4338ca; cursor: pointer; text-align: left; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .code-link:hover { text-decoration: underline; }
 .tags-list { display: flex; flex-wrap: wrap; gap: 4px; }

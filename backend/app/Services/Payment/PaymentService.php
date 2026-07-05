@@ -138,6 +138,44 @@ class PaymentService
         });
     }
 
+    public function reassignInvoicePaymentsToParty(int $invoiceId, int $newPartyId): void
+    {
+        foreach ($this->allocationRepository->lockByInvoice($invoiceId) as $allocation) {
+            $this->reassignAllocationToParty($allocation, $newPartyId);
+        }
+    }
+
+    private function reassignAllocationToParty(Model $allocation, int $newPartyId): void
+    {
+        $payment = $this->paymentRepository->lockById((int) $allocation->payment_id);
+        if (!$payment) {
+            return;
+        }
+
+        if ((int) $payment->party_id === $newPartyId) {
+            return;
+        }
+
+        if ($this->allocationRepository->countByPayment((int) $payment->id) <= 1) {
+            $this->paymentRepository->update($payment, ['party_id' => $newPartyId]);
+            return;
+        }
+
+        $moved = $this->paymentRepository->create([
+            'store_id'   => (int) $payment->store_id,
+            'party_id'   => $newPartyId,
+            'amount'     => (float) $allocation->amount,
+            'paid_at'    => $payment->paid_at,
+            'method'     => $payment->method->value,
+            'note'       => $payment->note,
+            'created_by' => (int) $payment->created_by,
+        ]);
+        $this->allocationRepository->update($allocation, ['payment_id' => (int) $moved->id]);
+        $this->paymentRepository->update($payment, [
+            'amount' => round((float) $payment->amount - (float) $allocation->amount, 2),
+        ]);
+    }
+
     /**
      * Lock + validate every targeted invoice and return the parsed allocations as
      * [['invoice' => Invoice, 'amount' => float], ...].
