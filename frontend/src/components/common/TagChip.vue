@@ -1,5 +1,5 @@
 <template>
-  <span class="tag-chip" :class="{ 'tag-chip-keyonly': !value }">
+  <span class="tag-chip" :class="{ 'tag-chip-keyonly': !value, 'tag-chip-hit': highlighted }">
     <span class="tag-chip-key">{{ tagName }}</span>
     <span v-if="value" class="tag-chip-sep">:</span>
     <span v-if="value" class="tag-chip-value">{{ value }}</span>
@@ -8,8 +8,9 @@
 
 <script setup>
 defineProps({
-  tagName: { type: String, default: '' },
-  value:   { type: String, default: '' },
+  tagName:     { type: String, default: '' },
+  value:       { type: String, default: '' },
+  highlighted: { type: Boolean, default: false },
 })
 </script>
 
@@ -28,6 +29,7 @@ defineProps({
   white-space: nowrap;
 }
 .tag-chip-keyonly { background: #f3f4f6; color: #4b5563; }
+.tag-chip-hit { background: #fde68a; color: #78350f; box-shadow: 0 0 0 1px rgba(217, 164, 6, 0.45); }
 .tag-chip-key { font-weight: 700; }
 .tag-chip-sep { opacity: 0.6; }
 .tag-chip-value { font-weight: 500; }

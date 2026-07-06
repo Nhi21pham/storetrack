@@ -73,14 +73,14 @@
               <td v-if="columnVisibility.isVisible('order_number')" class="num">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
               <td v-if="columnVisibility.isVisible('name')">
                 <button class="expand-btn" :class="{ open: isExpanded(row.id) }" @click="toggleExpand(row.id)" :title="isExpanded(row.id) ? $t('reports.debt.collapse') : $t('reports.debt.expand')">▸</button>
-                <button class="name-link" @click="openPartyDetail(row)">{{ row.name }}</button>
+                <button class="name-link" @click="openPartyDetail(row)"><HighlightText :text="row.name" :query="searchQuery" /></button>
               </td>
               <td v-if="columnVisibility.isVisible('phone')">
-                <span v-if="row.phone">{{ row.phone }}</span>
+                <span v-if="row.phone"><HighlightText :text="row.phone" :query="searchQuery" /></span>
                 <span v-else class="empty-val">—</span>
               </td>
               <td v-if="columnVisibility.isVisible('email')">
-                <span v-if="row.email">{{ row.email }}</span>
+                <span v-if="row.email"><HighlightText :text="row.email" :query="searchQuery" /></span>
                 <span v-else class="empty-val">—</span>
               </td>
               <td v-if="columnVisibility.isVisible('invoice_count')" class="num">{{ row.invoice_count }}</td>
@@ -236,6 +236,7 @@ import HistoryButton from '@/components/common/HistoryButton.vue'
 import HistoryModal from '@/components/common/HistoryModal.vue'
 import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import TotalsBar from '@/components/common/TotalsBar.vue'
 import ReportSelectionBar from '@/features/reports/components/ReportSelectionBar.vue'
 import InvoiceDetailModal from '@/features/invoices/components/InvoiceDetailModal.vue'

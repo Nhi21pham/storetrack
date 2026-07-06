@@ -108,7 +108,7 @@
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" v-tooltip="unit.name" @click="detailUnit = unit">{{ unit.name }}</button>
+              <button class="name-link" v-tooltip="unit.name" @click="detailUnit = unit"><HighlightText :text="unit.name" :query="searchQuery" /></button>
             </td>
             <td v-if="columnVisibility.isVisible('status')">
               <ToggleSwitch
@@ -232,6 +232,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'

@@ -106,13 +106,13 @@
               />
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
-            <td v-if="columnVisibility.isVisible('code')" class="code-col">{{ category.code }}</td>
+            <td v-if="columnVisibility.isVisible('code')" class="code-col"><HighlightText :text="category.code" :query="searchQuery" /></td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" v-tooltip="displayCategoryName(category)" @click="detailCategory = category">{{ displayCategoryName(category) }}</button>
+              <button class="name-link" v-tooltip="displayCategoryName(category)" @click="detailCategory = category"><HighlightText :text="displayCategoryName(category)" :query="searchQuery" /></button>
               <span v-if="category.is_system" class="system-badge">{{ $t('productCategories.systemBadge') }}</span>
             </td>
             <td v-if="columnVisibility.isVisible('description')">
-              <span v-if="category.description" class="truncate" :title="category.description">{{ category.description }}</span>
+              <span v-if="category.description" class="truncate" :title="category.description"><HighlightText :text="category.description" :query="searchQuery" /></span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('status')">
@@ -220,6 +220,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'

@@ -119,6 +119,7 @@
         <CustomerTable
           :key="tableKey"
           :customers="paginatedCustomers"
+          :query="searchQuery"
           :row-offset="(currentPage - 1) * perPage"
           :columns="columnVisibility.visibleColumns.value"
           :initial-widths="visibleWidths"

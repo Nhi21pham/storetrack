@@ -109,13 +109,13 @@
                 class="name-link"
                 :title="a.party.display_name"
                 @click="detailAccount = a"
-              >{{ a.party.display_name }}</button>
+              ><HighlightText :text="a.party.display_name" :query="searchQuery" /></button>
               <span v-else class="empty-val">—</span>
             </td>
-            <td v-if="columnVisibility.isVisible('bank')"><span class="bank-cell">{{ a.bank?.short_name }}</span></td>
-            <td v-if="columnVisibility.isVisible('account_number')"><span class="mono">{{ a.account_number }}</span></td>
-            <td v-if="columnVisibility.isVisible('holder_name')"><span class="truncate" :title="a.account_holder_name || ''">{{ a.account_holder_name || '—' }}</span></td>
-            <td v-if="columnVisibility.isVisible('branch')"><span class="truncate" :title="a.branch || ''">{{ a.branch || '—' }}</span></td>
+            <td v-if="columnVisibility.isVisible('bank')"><span class="bank-cell"><HighlightText :text="a.bank?.short_name || ''" :query="searchQuery" /></span></td>
+            <td v-if="columnVisibility.isVisible('account_number')"><span class="mono"><HighlightText :text="a.account_number" :query="searchQuery" /></span></td>
+            <td v-if="columnVisibility.isVisible('holder_name')"><span class="truncate" :title="a.account_holder_name || ''"><HighlightText :text="a.account_holder_name || '—'" :query="searchQuery" /></span></td>
+            <td v-if="columnVisibility.isVisible('branch')"><span class="truncate" :title="a.branch || ''"><HighlightText :text="a.branch || '—'" :query="searchQuery" /></span></td>
             <td v-if="columnVisibility.isVisible('province')"><span class="truncate" :title="a.province?.name_vi || ''">{{ a.province?.name_vi || '—' }}</span></td>
             <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(a.created_at) }}</td>
             <td v-if="columnVisibility.isVisible('updated_at')" class="date-col">{{ formatDateTime(a.updated_at) }}</td>
@@ -217,6 +217,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
 import Pagination from '@/components/common/Pagination.vue'

@@ -96,7 +96,7 @@
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" v-tooltip="tag.name" @click="detailTag = tag">{{ tag.name }}</button>
+              <button class="name-link" v-tooltip="tag.name" @click="detailTag = tag"><HighlightText :text="tag.name" :query="searchQuery" /></button>
             </td>
             <td v-if="columnVisibility.isVisible('values')">
               <div class="values-cell">
@@ -105,7 +105,7 @@
               </div>
             </td>
             <td v-if="columnVisibility.isVisible('description')">
-              <span v-if="tag.description" class="truncate" :title="tag.description">{{ tag.description }}</span>
+              <span v-if="tag.description" class="truncate" :title="tag.description"><HighlightText :text="tag.description" :query="searchQuery" /></span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('created_at')" class="date-col">{{ formatDateTime(tag.created_at) }}</td>
@@ -203,6 +203,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import Icon from '@/components/common/Icon.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'

@@ -143,23 +143,23 @@
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('code')" class="code-col">
-              <button class="code-link" @click="detailProduct = product">{{ product.code }}</button>
+              <button class="code-link" @click="detailProduct = product"><HighlightText :text="product.code" :query="searchQuery" /></button>
             </td>
             <td v-if="columnVisibility.isVisible('name')">
-              <button class="name-link" v-tooltip="product.name" @click="detailProduct = product">{{ product.name }}</button>
+              <button class="name-link" v-tooltip="product.name" @click="detailProduct = product"><HighlightText :text="product.name" :query="searchQuery" /></button>
             </td>
             <td v-if="columnVisibility.isVisible('category')">
-              <span v-if="product.category">{{ displayCategoryName(product.category) }}</span>
+              <span v-if="product.category"><HighlightText :text="displayCategoryName(product.category)" :query="searchQuery" /></span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('unit')">
-              <span v-if="product.unit?.name">{{ product.unit.name }}</span>
+              <span v-if="product.unit?.name"><HighlightText :text="product.unit.name" :query="searchQuery" /></span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('tags')">
               <div v-if="product.tags && product.tags.length" class="tags-cell">
                 <span v-for="(t, i) in product.tags" :key="i" class="chip-wrap">
-                  <TagChip :tag-name="t.tag_name" :value="t.value" />
+                  <TagChip :tag-name="t.tag_name" :value="t.value" :highlighted="isTagChipHit(t, tagFilter)" />
                   <ChipRemoveButton v-if="canCreateUpdate" :title="$t('products.detachTagTitle')" @click="detachTag(product, i)" />
                 </span>
               </div>
@@ -352,6 +352,7 @@ import ExportButton from '@/components/common/ExportButton.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SearchableSelect from '@/components/common/SearchableSelect.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import ChipRemoveButton from '@/components/common/ChipRemoveButton.vue'
 import ClearFiltersButton from '@/components/common/ClearFiltersButton.vue'
 import DateRangeFilters from '@/components/common/DateRangeFilters.vue'
@@ -389,7 +390,7 @@ import { displayCategoryName } from '@/features/productCategories/constants'
 import { PRODUCT_COLUMNS, PRODUCT_INITIAL_COL_WIDTHS, statusOptions } from '@/features/products/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
-import { matchesTagFilter } from '@/utils/tagFilter'
+import { matchesTagFilter, isTagChipHit } from '@/utils/tagFilter'
 import { formatDateTime } from '@/utils/datetime'
 import { translateError } from '@/utils/translateError'
 import { t } from '@/i18n'
