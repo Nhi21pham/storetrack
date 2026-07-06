@@ -101,10 +101,10 @@
             </td>
             <td v-if="columnVisibility.isVisible('stt')" class="stt-col">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="columnVisibility.isVisible('short_name')">
-              <button class="name-link" v-tooltip="bank.short_name" @click="detailBank = bank">{{ bank.short_name }}</button>
+              <button class="name-link" v-tooltip="bank.short_name" @click="detailBank = bank"><HighlightText :text="bank.short_name" :query="searchQuery" /></button>
             </td>
-            <td v-if="columnVisibility.isVisible('full_name_vi')"><span class="truncate" :title="bank.full_name_vi">{{ bank.full_name_vi }}</span></td>
-            <td v-if="columnVisibility.isVisible('full_name_en')"><span class="truncate" :title="bank.full_name_en">{{ bank.full_name_en }}</span></td>
+            <td v-if="columnVisibility.isVisible('full_name_vi')"><span class="truncate" :title="bank.full_name_vi"><HighlightText :text="bank.full_name_vi" :query="searchQuery" /></span></td>
+            <td v-if="columnVisibility.isVisible('full_name_en')"><span class="truncate" :title="bank.full_name_en"><HighlightText :text="bank.full_name_en" :query="searchQuery" /></span></td>
             <td v-if="columnVisibility.isVisible('status')">
               <ToggleSwitch
                 :model-value="bank.is_active"
@@ -227,6 +227,7 @@ import PageHeader from '@/components/common/PageHeader.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import SearchBar from '@/components/common/SearchBar.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Icon from '@/components/common/Icon.vue'
 import ToggleSwitch from '@/components/common/ToggleSwitch.vue'

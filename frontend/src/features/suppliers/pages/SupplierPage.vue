@@ -116,6 +116,7 @@
         <SupplierTable
           :key="tableKey"
           :suppliers="paginatedSuppliers"
+          :query="searchQuery"
           :row-offset="(currentPage - 1) * perPage"
           :columns="columnVisibility.visibleColumns.value"
           :initial-widths="visibleWidths"

@@ -116,35 +116,35 @@
             </td>
             <td v-if="columnVisibility.isVisible('order_number')" class="num">{{ (currentPage - 1) * perPage + idx + 1 }}</td>
             <td v-if="scope === 'business'">
-              <span v-if="row.store_name">{{ row.store_name }}</span>
+              <span v-if="row.store_name"><HighlightText :text="row.store_name" :query="searchQuery" /></span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('product_name')">
-              <button v-if="row.product_id" class="name-link" @click="openProductDetail(row)">{{ row.product_name }}</button>
-              <span v-else>{{ row.product_name }}</span>
+              <button v-if="row.product_id" class="name-link" @click="openProductDetail(row)"><HighlightText :text="row.product_name" :query="searchQuery" /></button>
+              <span v-else><HighlightText :text="row.product_name" :query="searchQuery" /></span>
             </td>
             <td v-if="columnVisibility.isVisible('product_code')">
-              <button v-if="row.product_code" class="code-link" @click="openProductDetail(row)">{{ row.product_code }}</button>
+              <button v-if="row.product_code" class="code-link" @click="openProductDetail(row)"><HighlightText :text="row.product_code" :query="searchQuery" /></button>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('tags')">
               <span v-if="row.tags && row.tags.length" class="tags-list">
-                <TagChip v-for="(t, i) in row.tags" :key="i" :tag-name="t.tag_name" :value="t.value" />
+                <TagChip v-for="(t, i) in row.tags" :key="i" :tag-name="t.tag_name" :value="t.value" :highlighted="isTagChipHit(t, tagFilter)" />
               </span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('customer_name')">
-              <button v-if="row.customer_id" class="name-link" @click="openCustomerDetail(row)">{{ row.customer_name }}</button>
-              <span v-else-if="row.customer_name">{{ row.customer_name }}</span>
+              <button v-if="row.customer_id" class="name-link" @click="openCustomerDetail(row)"><HighlightText :text="row.customer_name" :query="searchQuery" /></button>
+              <span v-else-if="row.customer_name"><HighlightText :text="row.customer_name" :query="searchQuery" /></span>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('purchase_invoice_code')">
-              <button v-if="row.purchase_invoice_code" class="code-link" @click="openInvoiceDetail(row.purchase_invoice_id)">{{ row.purchase_invoice_code }}</button>
+              <button v-if="row.purchase_invoice_code" class="code-link" @click="openInvoiceDetail(row.purchase_invoice_id)"><HighlightText :text="row.purchase_invoice_code" :query="searchQuery" /></button>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('purchase_date')">{{ formatDate(row.purchase_date) }}</td>
             <td v-if="columnVisibility.isVisible('invoice_code')">
-              <button v-if="row.invoice_code" class="code-link" @click="openInvoiceDetail(row.invoice_id)">{{ row.invoice_code }}</button>
+              <button v-if="row.invoice_code" class="code-link" @click="openInvoiceDetail(row.invoice_id)"><HighlightText :text="row.invoice_code" :query="searchQuery" /></button>
               <span v-else class="empty-val">—</span>
             </td>
             <td v-if="columnVisibility.isVisible('invoice_date')">{{ formatDate(row.invoice_date) }}</td>
@@ -243,6 +243,7 @@ import HistoryModal from '@/components/common/HistoryModal.vue'
 import ExportHistoryPanel from '@/components/common/ExportHistoryPanel.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import TotalsBar from '@/components/common/TotalsBar.vue'
 import ReportSelectionBar from '@/features/reports/components/ReportSelectionBar.vue'
 import ProductDetailModal from '@/features/products/components/ProductDetailModal.vue'
@@ -265,6 +266,7 @@ import {
   REPORT_STORE_COLUMN, REPORT_STORE_COLUMN_WIDTH,
   formatMoney, formatQuantity, formatDate,
 } from '@/features/reports/constants'
+import { isTagChipHit } from '@/utils/tagFilter'
 import { t } from '@/i18n'
 
 const router = useRouter()

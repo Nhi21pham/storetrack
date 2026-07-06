@@ -29,3 +29,11 @@ export const normalizeText = (value) => {
   v = v.replace(/\s+/g, ' ')
   return v
 }
+
+// Case- and diacritic-insensitive, but character-for-character length-preserving
+// (no trim / whitespace collapse) so an index into the normalized string maps
+// back onto the original — used to highlight search matches without losing accents.
+export const normalizeChars = (value) => {
+  if (value == null) return ''
+  return stripDiacritics(String(value).toLowerCase())
+}

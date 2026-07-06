@@ -23,6 +23,13 @@ export const matchesTagFilter = (rowTags, selected) => {
   })
 }
 
+// Whether a row's tag chip is one the active tag filter selected (for highlighting).
+export const isTagChipHit = (tag, selected) => {
+  if (!selected || !selected.length) return false
+  return selected.includes(`tag:${tag.tag_id}`) ||
+    (tag.tag_value_id != null && selected.includes(`val:${tag.tag_value_id}`))
+}
+
 // Tag options from the tags present in the given rows, mirroring the products
 // filter: broad "(All tags)"/"(No tags)" first, then each tag's "(any)" + values.
 export const buildTagOptions = (rows) => {

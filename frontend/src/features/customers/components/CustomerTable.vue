@@ -29,21 +29,21 @@
         />
       </td>
       <td v-if="isVisible('stt')" class="stt-col">{{ rowOffset + idx + 1 }}</td>
-      <td v-if="isVisible('name')"><button class="name-link" v-tooltip="customer.name" @click="$emit('openDetail', customer)">{{ customer.name }}</button></td>
+      <td v-if="isVisible('name')"><button class="name-link" v-tooltip="customer.name" @click="$emit('openDetail', customer)"><HighlightText :text="customer.name" :query="query" /></button></td>
       <td v-if="isVisible('tax_code')">
-        <span v-if="customer.tax_code" class="mono">{{ customer.tax_code }}</span>
+        <span v-if="customer.tax_code" class="mono"><HighlightText :text="customer.tax_code" :query="query" /></span>
         <span v-else class="empty-val">—</span>
       </td>
       <td v-if="isVisible('email')">
-        <span v-if="customer.email">{{ customer.email }}</span>
+        <span v-if="customer.email"><HighlightText :text="customer.email" :query="query" /></span>
         <span v-else class="empty-val">—</span>
       </td>
       <td v-if="isVisible('phone')">
-        <span v-if="customer.phone" class="mono">{{ customer.phone }}</span>
+        <span v-if="customer.phone" class="mono"><HighlightText :text="customer.phone" :query="query" /></span>
         <span v-else class="empty-val">—</span>
       </td>
       <td v-if="isVisible('address')">
-        <span v-if="customer.address" :title="customer.address" class="truncate">{{ customer.address }}</span>
+        <span v-if="customer.address" :title="customer.address" class="truncate"><HighlightText :text="customer.address" :query="query" /></span>
         <span v-else class="empty-val">—</span>
       </td>
       <td v-if="isVisible('outstanding')">
@@ -71,12 +71,14 @@ import { computed } from 'vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import Icon from '@/components/common/Icon.vue'
 import { formatMoney } from '@/features/invoices/constants'
 import { formatDateTime } from '@/utils/datetime'
 
 const props = defineProps({
   customers:           { type: Array,   required: true },
+  query:               { type: String,  default: '' },
   columns:             { type: Array,   required: true },
   initialWidths:       { type: Array,   required: true },
   rowOffset:           { type: Number,  default: 0 },

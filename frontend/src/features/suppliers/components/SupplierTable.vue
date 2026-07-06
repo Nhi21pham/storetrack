@@ -29,21 +29,21 @@
         />
       </td>
       <td v-if="isVisible('stt')" class="stt-col">{{ rowOffset + idx + 1 }}</td>
-      <td v-if="isVisible('name')"><button class="name-link" v-tooltip="supplier.name" @click="$emit('openDetail', supplier)">{{ supplier.name }}</button></td>
+      <td v-if="isVisible('name')"><button class="name-link" v-tooltip="supplier.name" @click="$emit('openDetail', supplier)"><HighlightText :text="supplier.name" :query="query" /></button></td>
       <td v-if="isVisible('tax_code')">
-        <span v-if="supplier.tax_code" class="mono">{{ supplier.tax_code }}</span>
+        <span v-if="supplier.tax_code" class="mono"><HighlightText :text="supplier.tax_code" :query="query" /></span>
         <span v-else class="empty-val">—</span>
       </td>
       <td v-if="isVisible('email')">
-        <span v-if="supplier.email">{{ supplier.email }}</span>
+        <span v-if="supplier.email"><HighlightText :text="supplier.email" :query="query" /></span>
         <span v-else class="empty-val">—</span>
       </td>
       <td v-if="isVisible('phone')">
-        <span v-if="supplier.phone" class="mono">{{ supplier.phone }}</span>
+        <span v-if="supplier.phone" class="mono"><HighlightText :text="supplier.phone" :query="query" /></span>
         <span v-else class="empty-val">—</span>
       </td>
       <td v-if="isVisible('address')">
-        <span v-if="supplier.address" :title="supplier.address" class="truncate">{{ supplier.address }}</span>
+        <span v-if="supplier.address" :title="supplier.address" class="truncate"><HighlightText :text="supplier.address" :query="query" /></span>
         <span v-else class="empty-val">—</span>
       </td>
       <td v-if="isVisible('outstanding')">
@@ -71,12 +71,14 @@ import { computed } from 'vue'
 import ResizableTable from '@/components/common/ResizableTable.vue'
 import SortableHeader from '@/components/common/SortableHeader.vue'
 import SelectCheckbox from '@/components/common/SelectCheckbox.vue'
+import HighlightText from '@/components/common/HighlightText.vue'
 import Icon from '@/components/common/Icon.vue'
 import { formatMoney } from '@/features/invoices/constants'
 import { formatDateTime } from '@/utils/datetime'
 
 const props = defineProps({
   suppliers:           { type: Array,   required: true },
+  query:               { type: String,  default: '' },
   columns:             { type: Array,   required: true },
   initialWidths:       { type: Array,   required: true },
   rowOffset:           { type: Number,  default: 0 },
