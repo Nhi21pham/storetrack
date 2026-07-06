@@ -318,6 +318,7 @@ const {
   currentBusiness,
   scope,
   fetchers: props.fetchers,
+  storageKey: `${props.ledger}-debt-report`,
   onError: (msg) => showToast(msg, 'error'),
 })
 
@@ -402,17 +403,18 @@ const onPartySaved = async () => {
 
 const { exporting, run } = useExport({
   start: () => {
+    // Ordered party ids reproduce the on-screen order; the date range still
+    // defines the window the exported spent/paid/owe amounts are computed over.
     const params = {
-      search: searchQuery.value.trim() || undefined,
+      ids: sortedRows.value
+        .map((r) => String(r.id))
+        .filter((id) => selectedIds.value.size === 0 || selectedIds.value.has(id)),
       start_date: startDate.value || undefined,
       end_date: endDate.value || undefined,
+      columns: columnVisibility.togglableColumns
+        .filter((col) => columnVisibility.isVisible(col.key))
+        .map((col) => col.key),
     }
-    if (selectedIds.value.size > 0) {
-      params.ids = Array.from(selectedIds.value)
-    }
-    params.columns = columnVisibility.togglableColumns
-      .filter((col) => columnVisibility.isVisible(col.key))
-      .map((col) => col.key)
     if (scope.value === 'business') {
       return props.exporters.business({ businessId: currentBusiness.value.id, params })
     }

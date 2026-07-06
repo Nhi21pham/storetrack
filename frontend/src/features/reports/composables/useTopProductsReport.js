@@ -1,6 +1,8 @@
 import { ref, computed, watch } from 'vue'
 import { fetchTopProductsReport, fetchTopProductsReportByBusiness } from '@/features/reports/services/reportService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { usePersistentRef } from '@/composables/usePersistentRef'
+import { matchesTagFilter, buildTagOptions } from '@/utils/tagFilter'
 
 const NUMERIC_KEYS = new Set(['qty_sold', 'revenue', 'profit', 'orders'])
 
@@ -28,18 +30,18 @@ const matchesSearch = (row, query) => {
 export const useTopProductsReport = ({ currentStore, currentBusiness, scope, onError }) => {
   const rows        = ref([])
   const loading     = ref(false)
-  const searchQuery = ref('')
-  const tagFilter   = ref('')
-  const startDate   = ref('')
-  const endDate     = ref('')
-  const rankBy      = ref('qty_sold')
+  const searchQuery = usePersistentRef('top-products-report:search', '')
+  const tagFilter   = usePersistentRef('top-products-report:tags', [])
+  const startDate   = usePersistentRef('top-products-report:startDate', '')
+  const endDate     = usePersistentRef('top-products-report:endDate', '')
+  const rankBy      = usePersistentRef('top-products-report:rankBy', 'qty_sold')
 
   const isBusinessScope = computed(() => scope?.value === 'business')
 
-  const hasActiveFilters = computed(() => !!(tagFilter.value || startDate.value || endDate.value))
+  const hasActiveFilters = computed(() => !!(tagFilter.value.length || startDate.value || endDate.value))
 
   const clearFilters = () => {
-    tagFilter.value = ''
+    tagFilter.value = []
     startDate.value = ''
     endDate.value = ''
   }
@@ -52,14 +54,8 @@ export const useTopProductsReport = ({ currentStore, currentBusiness, scope, onE
 
   const baseRows = computed(() => {
     let list = rows.value
-    if (tagFilter.value) {
-      const [kind, id] = tagFilter.value.split(':')
-      list = list.filter((r) => {
-        const tags = r.tags || []
-        if (kind === 'tag') return tags.some((t) => String(t.tag_id) === id)
-        if (kind === 'val') return tags.some((t) => String(t.tag_value_id) === id)
-        return true
-      })
+    if (tagFilter.value.length) {
+      list = list.filter((r) => matchesTagFilter(r.tags, tagFilter.value))
     }
     return list
   })
@@ -71,25 +67,7 @@ export const useTopProductsReport = ({ currentStore, currentBusiness, scope, onE
 
   const sortedRows = computed(() => sort.sortItems(filteredRows.value, getSortValue))
 
-  // Tags present in the loaded rows: each tag offers an "(any)" option plus one
-  // per distinct value. Filter value is "tag:<id>" or "val:<id>" (mirrors products).
-  const tagOptions = computed(() => {
-    const byTag = new Map()
-    for (const r of rows.value) {
-      for (const t of (r.tags || [])) {
-        if (!byTag.has(t.tag_id)) byTag.set(t.tag_id, { name: t.tag_name, values: new Map() })
-        if (t.tag_value_id != null) byTag.get(t.tag_id).values.set(t.tag_value_id, t.value)
-      }
-    }
-    const opts = []
-    for (const [tagId, { name, values }] of byTag) {
-      opts.push({ value: `tag:${tagId}`, label: `${name} (any)` })
-      for (const [valueId, value] of values) {
-        opts.push({ value: `val:${valueId}`, label: `${name}: ${value}` })
-      }
-    }
-    return opts
-  })
+  const tagOptions = computed(() => buildTagOptions(rows.value))
 
   const totals = computed(() => {
     const list = filteredRows.value

@@ -1,6 +1,8 @@
 import { ref, computed, watch } from 'vue'
 import { fetchProfitReport, fetchProfitReportByBusiness } from '@/features/reports/services/reportService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { usePersistentRef } from '@/composables/usePersistentRef'
+import { matchesTagFilter, buildTagOptions } from '@/utils/tagFilter'
 
 const NUMERIC_KEYS = new Set(['quantity', 'unit_cost', 'unit_price', 'revenue', 'cost', 'profit'])
 
@@ -23,26 +25,26 @@ const matchesSearch = (row, query) => {
 }
 
 export const useProfitReport = ({ currentStore, currentBusiness, scope, onError }) => {
-  const rows        = ref([])
-  const loading     = ref(false)
-  const searchQuery = ref('')
-  const storeFilter = ref('')
-  const tagFilter   = ref('')
-  const minQty      = ref('')
-  const maxQty      = ref('')
-  const startDate   = ref('')
-  const endDate     = ref('')
+  const rows         = ref([])
+  const loading      = ref(false)
+  const searchQuery  = usePersistentRef('profit-report:search', '')
+  const storeFilters = usePersistentRef('profit-report:stores', [])
+  const tagFilter    = usePersistentRef('profit-report:tags', [])
+  const minQty       = usePersistentRef('profit-report:minQty', '')
+  const maxQty       = usePersistentRef('profit-report:maxQty', '')
+  const startDate    = usePersistentRef('profit-report:startDate', '')
+  const endDate      = usePersistentRef('profit-report:endDate', '')
 
   const isBusinessScope = computed(() => scope?.value === 'business')
 
   const hasActiveFilters = computed(() =>
-    !!(storeFilter.value || tagFilter.value || minQty.value !== '' || maxQty.value !== '' ||
+    !!(storeFilters.value.length || tagFilter.value.length || minQty.value !== '' || maxQty.value !== '' ||
        startDate.value || endDate.value),
   )
 
   const clearFilters = () => {
-    storeFilter.value = ''
-    tagFilter.value = ''
+    storeFilters.value = []
+    tagFilter.value = []
     minQty.value = ''
     maxQty.value = ''
     startDate.value = ''
@@ -52,17 +54,11 @@ export const useProfitReport = ({ currentStore, currentBusiness, scope, onError 
   const baseRows = computed(() => {
     let list = rows.value
 
-    if (storeFilter.value) {
-      list = list.filter((r) => String(r.store_id) === storeFilter.value)
+    if (storeFilters.value.length) {
+      list = list.filter((r) => storeFilters.value.includes(String(r.store_id)))
     }
-    if (tagFilter.value) {
-      const [kind, id] = tagFilter.value.split(':')
-      list = list.filter((r) => {
-        const tags = r.tags || []
-        if (kind === 'tag') return tags.some((t) => String(t.tag_id) === id)
-        if (kind === 'val') return tags.some((t) => String(t.tag_value_id) === id)
-        return true
-      })
+    if (tagFilter.value.length) {
+      list = list.filter((r) => matchesTagFilter(r.tags, tagFilter.value))
     }
     if (minQty.value !== '') {
       const min = Number(minQty.value)
@@ -90,7 +86,7 @@ export const useProfitReport = ({ currentStore, currentBusiness, scope, onError 
     return baseRows.value.filter((r) => matchesSearch(r, searchQuery.value))
   })
 
-  const sort = useSortCriteria()
+  const sort = useSortCriteria('profit-report')
   const sortedRows = computed(() => sort.sortItems(filteredRows.value, getSortValue))
 
   // Distinct stores present in the loaded rows, for the column filter (business scope only).
@@ -103,25 +99,7 @@ export const useProfitReport = ({ currentStore, currentBusiness, scope, onError 
     return Array.from(seen, ([value, label]) => ({ value, label }))
   })
 
-  // Tags present in the loaded rows: each tag offers an "(any)" option plus one
-  // per distinct value. Filter value is "tag:<id>" or "val:<id>" (mirrors products).
-  const tagOptions = computed(() => {
-    const byTag = new Map()
-    for (const r of rows.value) {
-      for (const t of (r.tags || [])) {
-        if (!byTag.has(t.tag_id)) byTag.set(t.tag_id, { name: t.tag_name, values: new Map() })
-        if (t.tag_value_id != null) byTag.get(t.tag_id).values.set(t.tag_value_id, t.value)
-      }
-    }
-    const opts = []
-    for (const [tagId, { name, values }] of byTag) {
-      opts.push({ value: `tag:${tagId}`, label: `${name} (any)` })
-      for (const [valueId, value] of values) {
-        opts.push({ value: `val:${valueId}`, label: `${name}: ${value}` })
-      }
-    }
-    return opts
-  })
+  const tagOptions = computed(() => buildTagOptions(rows.value))
 
   // Footer totals over the full filtered set (independent of pagination).
   const totals = computed(() => {
@@ -167,7 +145,7 @@ export const useProfitReport = ({ currentStore, currentBusiness, scope, onError 
   )
 
   return {
-    rows, loading, searchQuery, storeFilter, tagFilter, minQty, maxQty, startDate, endDate,
+    rows, loading, searchQuery, storeFilters, tagFilter, minQty, maxQty, startDate, endDate,
     hasActiveFilters, clearFilters,
     baseRows, filteredRows, sortedRows, storeOptions, tagOptions, totals,
     sort, load,

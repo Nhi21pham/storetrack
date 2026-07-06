@@ -27,8 +27,9 @@
           <SearchableSelect
             :modelValue="tagFilter"
             :options="tagOptions"
-            :all-label="$t('reports.filters.allTags')"
+            :all-label="$t('shared.allParen')"
             :search-placeholder="$t('reports.filters.filterTag')"
+            multiple
             @update:modelValue="tagFilter = $event"
           />
         </div>
@@ -271,23 +272,16 @@ const onProductSaved = async () => {
 
 const { exporting, run } = useExport({
   start: () => {
+    // The export mirrors exactly what's on screen: the ranked/filtered products
+    // in their on-screen order (scoped to the selection when any), as an id list.
     const params = {
-      search: searchQuery.value.trim() || undefined,
-      start_date: startDate.value || undefined,
-      end_date: endDate.value || undefined,
-      sort: rankBy.value,
+      ids: sortedRows.value
+        .map((r) => String(r.product_id))
+        .filter((id) => selectedIds.value.size === 0 || selectedIds.value.has(id)),
+      columns: columnVisibility.togglableColumns
+        .filter((col) => columnVisibility.isVisible(col.key))
+        .map((col) => col.key),
     }
-    if (tagFilter.value) {
-      const [kind, id] = tagFilter.value.split(':')
-      if (kind === 'tag') params.tag_id = id
-      else if (kind === 'val') params.tag_value_id = id
-    }
-    if (selectedIds.value.size > 0) {
-      params.ids = Array.from(selectedIds.value)
-    }
-    params.columns = columnVisibility.togglableColumns
-      .filter((col) => columnVisibility.isVisible(col.key))
-      .map((col) => col.key)
     if (scope.value === 'business') {
       return startTopProductsReportBusinessExport({ businessId: currentBusiness.value.id, params })
     }

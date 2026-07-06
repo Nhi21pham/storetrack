@@ -1,7 +1,9 @@
 import { ref } from 'vue'
+import { usePersistentRef } from '@/composables/usePersistentRef'
 
-export function useSortCriteria() {
-  const sortCriteria = ref([])
+// Pass a storageKey to persist the active sort across reloads/edits.
+export function useSortCriteria(storageKey = null) {
+  const sortCriteria = storageKey ? usePersistentRef(`sort:${storageKey}`, []) : ref([])
 
   const getSortInfo = (key) => sortCriteria.value.find(c => c.key === key)
   const sortRank    = (key) => sortCriteria.value.findIndex(c => c.key === key) + 1

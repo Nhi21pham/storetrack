@@ -67,32 +67,35 @@
 
           <template #filter-store_name>
             <SearchableSelect
-              :modelValue="storeFilter"
+              :modelValue="storeFilters"
               :options="storeOptions"
               :all-label="$t('reports.filters.allStores')"
               :search-placeholder="$t('reports.filters.filterStore')"
+              multiple
               teleport
-              @update:modelValue="storeFilter = $event"
+              @update:modelValue="storeFilters = $event"
             />
           </template>
           <template #filter-tags>
             <SearchableSelect
               :modelValue="tagFilter"
               :options="tagOptions"
-              :all-label="$t('reports.filters.allTags')"
+              :all-label="$t('shared.allParen')"
               :search-placeholder="$t('reports.filters.filterTag')"
+              multiple
               teleport
               @update:modelValue="tagFilter = $event"
             />
           </template>
           <template #filter-customer_name>
             <SearchableSelect
-              :modelValue="customerFilter"
+              :modelValue="customerFilters"
               :options="customerOptions"
               :all-label="$t('reports.filters.allCustomers')"
               :search-placeholder="$t('reports.filters.filterCustomer')"
+              multiple
               teleport
-              @update:modelValue="customerFilter = $event"
+              @update:modelValue="customerFilters = $event"
             />
           </template>
           <template #filter-quantity>
@@ -316,7 +319,7 @@ const tableWidths = computed(() => {
 const tableKey = computed(() => [scope.value, ...columnVisibility.visibleColumnKeys.value].join('|'))
 
 const {
-  rows, loading, searchQuery, customerFilter, storeFilter, tagFilter, minQty, maxQty, startDate, endDate,
+  rows, loading, searchQuery, customerFilters, storeFilters, tagFilter, minQty, maxQty, startDate, endDate,
   hasActiveFilters, clearFilters,
   sortedRows, customerOptions, storeOptions, tagOptions, totals, sort, load,
 } = useSaleReport({
@@ -402,27 +405,15 @@ const onInvoiceEdit = () => {
 
 const { exporting, run } = useExport({
   start: () => {
+    // The export mirrors exactly what's on screen: the filtered rows in their
+    // sorted order (scoped to the selection when any), sent as an ordered id list.
     const params = {
-      search: searchQuery.value.trim() || undefined,
-      customer_id: customerFilter.value || undefined,
-      min_quantity: minQty.value !== '' ? minQty.value : undefined,
-      max_quantity: maxQty.value !== '' ? maxQty.value : undefined,
-      start_date: startDate.value || undefined,
-      end_date: endDate.value || undefined,
+      ids: exportOrderedIds(),
+      columns: columnVisibility.togglableColumns
+        .filter((col) => columnVisibility.isVisible(col.key))
+        .map((col) => col.key),
     }
-    if (tagFilter.value) {
-      const [kind, id] = tagFilter.value.split(':')
-      if (kind === 'tag') params.tag_id = id
-      else if (kind === 'val') params.tag_value_id = id
-    }
-    if (selectedIds.value.size > 0) {
-      params.ids = Array.from(selectedIds.value)
-    }
-    params.columns = columnVisibility.togglableColumns
-      .filter((col) => columnVisibility.isVisible(col.key))
-      .map((col) => col.key)
     if (scope.value === 'business') {
-      if (storeFilter.value) params.store_ids = [storeFilter.value]
       return startSaleReportBusinessExport({ businessId: currentBusiness.value.id, params })
     }
     return startSaleReportExport({ storeId: currentStore.value.id, params })
@@ -432,9 +423,13 @@ const { exporting, run } = useExport({
   onError:   (msg) => showToast(msg, 'error'),
 })
 
-watch([searchQuery, customerFilter, storeFilter, tagFilter, minQty, maxQty, startDate, endDate, () => scope.value, () => sort.sortCriteria.value], resetPage, { deep: true })
+const exportOrderedIds = () => sortedRows.value
+  .map((r) => String(r.id))
+  .filter((id) => selectedIds.value.size === 0 || selectedIds.value.has(id))
+
+watch([searchQuery, customerFilters, storeFilters, tagFilter, minQty, maxQty, startDate, endDate, () => scope.value, () => sort.sortCriteria.value], resetPage, { deep: true })
 // Switching store/business (via the switcher) clears the cross-store filter and selection.
-watch(scope, () => { storeFilter.value = '' })
+watch(scope, () => { storeFilters.value = [] })
 watch([() => currentStore.value?.id, () => currentBusiness.value?.id], clearSelection)
 </script>
 
