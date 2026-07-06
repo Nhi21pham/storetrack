@@ -1,11 +1,8 @@
 import { t } from '@/i18n'
 
-// Broad tag filters: "has any tag" / "has no tags". They OR-combine with any
-// specific tag/value picks, so "No tags" + "Color: Blue" matches untagged rows
-// OR blue ones. Specific picks still narrow together (AND) among themselves.
+// Broad tag filters: "has any tag" / "has no tags".
 export const TAG_TAGGED = 'tagged'
 export const TAG_NONE = 'none'
-const BROAD = new Set([TAG_TAGGED, TAG_NONE])
 
 const matchesSpecific = (rowTags, selected) => {
   const [kind, id] = selected.split(':')
@@ -14,15 +11,16 @@ const matchesSpecific = (rowTags, selected) => {
   return true
 }
 
+// A row matches when it satisfies ANY selected criterion (OR): "No tags", "All
+// tags", or any specific tag/value — so "Color" + "Shape" shows rows with either.
 export const matchesTagFilter = (rowTags, selected) => {
   if (!selected.length) return true
   const tags = rowTags || []
-  const specifics = selected.filter((v) => !BROAD.has(v))
-  const buckets = []
-  if (selected.includes(TAG_NONE)) buckets.push(tags.length === 0)
-  if (selected.includes(TAG_TAGGED)) buckets.push(tags.length > 0)
-  if (specifics.length) buckets.push(specifics.every((sel) => matchesSpecific(tags, sel)))
-  return buckets.some(Boolean)
+  return selected.some((sel) => {
+    if (sel === TAG_NONE) return tags.length === 0
+    if (sel === TAG_TAGGED) return tags.length > 0
+    return matchesSpecific(tags, sel)
+  })
 }
 
 // Tag options from the tags present in the given rows, mirroring the products
