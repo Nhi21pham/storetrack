@@ -3,6 +3,7 @@
 namespace App\Repositories\Report;
 
 use App\Enums\InvoiceTypeEnum;
+use App\Support\ReportExportOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -51,6 +52,7 @@ class DebtReportRepository
         $ids = $filters['ids'] ?? null;
         if (is_array($ids) && count($ids) > 0) {
             $query->whereIn('party_id', $ids);
+            ReportExportOrder::byIds($query, 'party_id', $ids);
         }
 
         $search = $filters['search'] ?? null;

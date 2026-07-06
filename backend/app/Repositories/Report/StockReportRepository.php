@@ -3,6 +3,7 @@
 namespace App\Repositories\Report;
 
 use App\Models\Invoice\InventoryBatch;
+use App\Support\ReportExportOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -93,6 +94,7 @@ class StockReportRepository
         $ids = $filters['ids'] ?? null;
         if (is_array($ids) && count($ids) > 0) {
             $query->whereIn('id', $ids);
+            ReportExportOrder::byIds($query, 'id', $ids);
         }
 
         $search = $filters['search'] ?? null;
