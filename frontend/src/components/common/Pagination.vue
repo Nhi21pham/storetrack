@@ -3,6 +3,7 @@
     <div class="pagination-left">
       <span class="page-info">{{ $t('shared.pageInfo', { start: pageStart, end: pageEnd, total }) }}</span>
       <SelectField
+        v-if="!compact"
         :model-value="perPage"
         size="small"
         inline
@@ -47,6 +48,8 @@ const props = defineProps({
   total:          { type: Number, required: true },
   perPage:        { type: Number, default: 20 },
   pageSizeOptions:{ type: Array,  default: () => [10, 20, 50, 100] },
+  // Hides the per-page selector — for inline/nested lists with a fixed page size.
+  compact:        { type: Boolean, default: false },
 })
 
 defineEmits(['update:currentPage', 'update:perPage'])

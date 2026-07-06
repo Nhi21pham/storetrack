@@ -98,7 +98,7 @@
                         <tr><th>{{ $t('reports.debt.code') }}</th><th>{{ $t('reports.debt.date') }}</th><th v-if="scope === 'business'">{{ $t('reports.col.store') }}</th><th class="num">{{ $t('reports.debt.amount') }}</th></tr>
                       </thead>
                       <tbody>
-                        <tr v-for="inv in row.rangeInvoices" :key="inv.id">
+                        <tr v-for="inv in pagedInvoices(row)" :key="inv.id">
                           <td><button class="code-link" @click="openInvoiceDetail(inv.id)">{{ inv.code }}</button></td>
                           <td>{{ formatDate(inv.invoice_date) }}</td>
                           <td v-if="scope === 'business'"><span v-if="inv.store_name" class="store-tag">{{ inv.store_name }}</span></td>
@@ -106,7 +106,16 @@
                         </tr>
                       </tbody>
                     </table>
-                    <p v-else class="detail-empty">{{ $t('reports.debt.noInvoicesInRange') }}</p>
+                    <Pagination
+                      v-if="row.rangeInvoices.length > DETAIL_PER_PAGE"
+                      compact
+                      :current-page="invPage(row)"
+                      :total-pages="invTotalPages(row)"
+                      :total="row.rangeInvoices.length"
+                      :per-page="DETAIL_PER_PAGE"
+                      @update:current-page="setInvPage(row, $event)"
+                    />
+                    <p v-if="!row.rangeInvoices.length" class="detail-empty">{{ $t('reports.debt.noInvoicesInRange') }}</p>
                   </div>
 
                   <div class="detail-col payments">
@@ -116,7 +125,7 @@
                         <tr><th>{{ $t('reports.debt.date') }}</th><th>{{ $t('reports.debt.method') }}</th><th v-if="scope === 'business'">{{ $t('reports.col.store') }}</th><th>{{ $t('reports.debt.appliedTo') }}</th><th class="num">{{ $t('reports.debt.amount') }}</th></tr>
                       </thead>
                       <tbody>
-                        <tr v-for="p in row.rangePayments" :key="p.id">
+                        <tr v-for="p in pagedPayments(row)" :key="p.id">
                           <td>{{ formatDate(p.paid_at) }}</td>
                           <td>{{ paymentMethodLabel(p.method) }}</td>
                           <td v-if="scope === 'business'"><span v-if="p.store_name" class="store-tag">{{ p.store_name }}</span></td>
@@ -129,7 +138,16 @@
                         </tr>
                       </tbody>
                     </table>
-                    <p v-else class="detail-empty">{{ $t('reports.debt.noPaymentsInRange') }}</p>
+                    <Pagination
+                      v-if="row.rangePayments.length > DETAIL_PER_PAGE"
+                      compact
+                      :current-page="payPage(row)"
+                      :total-pages="payTotalPages(row)"
+                      :total="row.rangePayments.length"
+                      :per-page="DETAIL_PER_PAGE"
+                      @update:current-page="setPayPage(row, $event)"
+                    />
+                    <p v-if="!row.rangePayments.length" class="detail-empty">{{ $t('reports.debt.noPaymentsInRange') }}</p>
                   </div>
                 </div>
               </td>
@@ -323,6 +341,20 @@ const toggleExpand = (id) => {
   else next.add(key)
   expandedIds.value = next
 }
+
+// Each expanded row paginates its invoices/payments independently, keyed by row id.
+const DETAIL_PER_PAGE = 5
+const invPages = ref({})
+const payPages = ref({})
+
+const invTotalPages = (row) => Math.max(1, Math.ceil(row.rangeInvoices.length / DETAIL_PER_PAGE))
+const payTotalPages = (row) => Math.max(1, Math.ceil(row.rangePayments.length / DETAIL_PER_PAGE))
+const invPage = (row) => Math.min(invPages.value[row.id] || 1, invTotalPages(row))
+const payPage = (row) => Math.min(payPages.value[row.id] || 1, payTotalPages(row))
+const setInvPage = (row, p) => { invPages.value = { ...invPages.value, [row.id]: p } }
+const setPayPage = (row, p) => { payPages.value = { ...payPages.value, [row.id]: p } }
+const pagedInvoices = (row) => row.rangeInvoices.slice((invPage(row) - 1) * DETAIL_PER_PAGE, invPage(row) * DETAIL_PER_PAGE)
+const pagedPayments = (row) => row.rangePayments.slice((payPage(row) - 1) * DETAIL_PER_PAGE, payPage(row) * DETAIL_PER_PAGE)
 
 const detailInvoice = ref(null)
 const openInvoiceDetail = async (id) => {
