@@ -1,6 +1,8 @@
 import { ref, computed, watch } from 'vue'
 import { fetchStockReport, fetchStockReportByBusiness } from '@/features/reports/services/reportService'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { usePersistentRef } from '@/composables/usePersistentRef'
+import { matchesTagFilter, buildTagOptions } from '@/utils/tagFilter'
 
 const NUMERIC_KEYS = new Set(['quantity_received', 'quantity_remaining', 'unit_cost', 'total_cost'])
 
@@ -25,27 +27,27 @@ const matchesSearch = (row, query) => {
 export const useStockReport = ({ currentStore, currentBusiness, scope, onError }) => {
   const rows              = ref([])
   const loading           = ref(false)
-  const searchQuery       = ref('')
-  const supplierFilter    = ref('')
-  const storeFilter       = ref('')
-  const tagFilter         = ref('')
-  const minQty            = ref('')
-  const maxQty            = ref('')
-  const includeOutOfStock = ref(false)
-  const startDate         = ref('')
-  const endDate           = ref('')
+  const searchQuery       = usePersistentRef('stock-report:search', '')
+  const supplierFilters   = usePersistentRef('stock-report:suppliers', [])
+  const storeFilters      = usePersistentRef('stock-report:stores', [])
+  const tagFilter         = usePersistentRef('stock-report:tags', [])
+  const minQty            = usePersistentRef('stock-report:minQty', '')
+  const maxQty            = usePersistentRef('stock-report:maxQty', '')
+  const includeOutOfStock = usePersistentRef('stock-report:includeOutOfStock', false)
+  const startDate         = usePersistentRef('stock-report:startDate', '')
+  const endDate           = usePersistentRef('stock-report:endDate', '')
 
   const isBusinessScope = computed(() => scope?.value === 'business')
 
   const hasActiveFilters = computed(() =>
-    !!(supplierFilter.value || storeFilter.value || tagFilter.value || minQty.value !== '' || maxQty.value !== '' ||
-       includeOutOfStock.value || startDate.value || endDate.value),
+    !!(supplierFilters.value.length || storeFilters.value.length || tagFilter.value.length ||
+       minQty.value !== '' || maxQty.value !== '' || includeOutOfStock.value || startDate.value || endDate.value),
   )
 
   const clearFilters = () => {
-    supplierFilter.value = ''
-    storeFilter.value = ''
-    tagFilter.value = ''
+    supplierFilters.value = []
+    storeFilters.value = []
+    tagFilter.value = []
     minQty.value = ''
     maxQty.value = ''
     includeOutOfStock.value = false
@@ -59,20 +61,14 @@ export const useStockReport = ({ currentStore, currentBusiness, scope, onError }
     if (!includeOutOfStock.value) {
       list = list.filter((r) => Number(r.quantity_remaining) > 0)
     }
-    if (supplierFilter.value) {
-      list = list.filter((r) => String(r.supplier_party_id) === supplierFilter.value)
+    if (supplierFilters.value.length) {
+      list = list.filter((r) => supplierFilters.value.includes(String(r.supplier_party_id)))
     }
-    if (storeFilter.value) {
-      list = list.filter((r) => String(r.store_id) === storeFilter.value)
+    if (storeFilters.value.length) {
+      list = list.filter((r) => storeFilters.value.includes(String(r.store_id)))
     }
-    if (tagFilter.value) {
-      const [kind, id] = tagFilter.value.split(':')
-      list = list.filter((r) => {
-        const tags = r.tags || []
-        if (kind === 'tag') return tags.some((t) => String(t.tag_id) === id)
-        if (kind === 'val') return tags.some((t) => String(t.tag_value_id) === id)
-        return true
-      })
+    if (tagFilter.value.length) {
+      list = list.filter((r) => matchesTagFilter(r.tags, tagFilter.value))
     }
     if (minQty.value !== '') {
       const min = Number(minQty.value)
@@ -99,7 +95,7 @@ export const useStockReport = ({ currentStore, currentBusiness, scope, onError }
     return baseRows.value.filter((r) => matchesSearch(r, searchQuery.value))
   })
 
-  const sort = useSortCriteria()
+  const sort = useSortCriteria('stock-report')
   const sortedRows = computed(() => sort.sortItems(filteredRows.value, getSortValue))
 
   // Distinct suppliers present in the loaded rows, for the column filter.
@@ -122,25 +118,7 @@ export const useStockReport = ({ currentStore, currentBusiness, scope, onError }
     return Array.from(seen, ([value, label]) => ({ value, label }))
   })
 
-  // Tags present in the loaded rows: each tag offers an "(any)" option plus one
-  // per distinct value. Filter value is "tag:<id>" or "val:<id>" (mirrors products).
-  const tagOptions = computed(() => {
-    const byTag = new Map()
-    for (const r of rows.value) {
-      for (const t of (r.tags || [])) {
-        if (!byTag.has(t.tag_id)) byTag.set(t.tag_id, { name: t.tag_name, values: new Map() })
-        if (t.tag_value_id != null) byTag.get(t.tag_id).values.set(t.tag_value_id, t.value)
-      }
-    }
-    const opts = []
-    for (const [tagId, { name, values }] of byTag) {
-      opts.push({ value: `tag:${tagId}`, label: `${name} (any)` })
-      for (const [valueId, value] of values) {
-        opts.push({ value: `val:${valueId}`, label: `${name}: ${value}` })
-      }
-    }
-    return opts
-  })
+  const tagOptions = computed(() => buildTagOptions(rows.value))
 
   // Footer totals over the full filtered set (independent of pagination).
   const totals = computed(() => {
@@ -186,7 +164,7 @@ export const useStockReport = ({ currentStore, currentBusiness, scope, onError }
   )
 
   return {
-    rows, loading, searchQuery, supplierFilter, storeFilter, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
+    rows, loading, searchQuery, supplierFilters, storeFilters, tagFilter, minQty, maxQty, includeOutOfStock, startDate, endDate,
     hasActiveFilters, clearFilters,
     baseRows, filteredRows, sortedRows, supplierOptions, storeOptions, tagOptions, totals,
     sort, load,

@@ -12,6 +12,7 @@
       :value="modelValue"
       :min="min || undefined"
       :max="max || undefined"
+      @click="openPicker"
       @input="$emit('update:modelValue', $event.target.value)"
       @change="$emit('change')"
     />
@@ -33,6 +34,14 @@ defineEmits(['update:modelValue', 'change'])
 
 const nativeRef = ref(null)
 defineExpose({ focus: () => nativeRef.value?.focus() })
+
+const openPicker = () => {
+  try {
+    nativeRef.value?.showPicker?.()
+  } catch {
+    // showPicker throws outside a user gesture.
+  }
+}
 
 // dd/mm/yyyy for Vietnamese, mm/dd/yyyy for English — derived from the
 // YYYY-MM-DD model value so it's stable across browsers/timezones.

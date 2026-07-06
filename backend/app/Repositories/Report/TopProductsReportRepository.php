@@ -5,6 +5,7 @@ namespace App\Repositories\Report;
 use App\Enums\InvoiceTypeEnum;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Product;
+use App\Support\ReportExportOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -113,6 +114,10 @@ class TopProductsReportRepository
         $ids = $filters['ids'] ?? null;
         if (is_array($ids) && count($ids) > 0) {
             $query->whereIn('invoice_products.product_id', $ids);
+            // Exact on-screen order/set — the id list already reflects every filter.
+            ReportExportOrder::byIds($query, 'invoice_products.product_id', $ids);
+
+            return $query;
         }
 
         $search = $filters['search'] ?? null;

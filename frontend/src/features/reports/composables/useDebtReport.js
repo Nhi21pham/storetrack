@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { useSortCriteria } from '@/composables/useSortCriteria'
+import { usePersistentRef } from '@/composables/usePersistentRef'
 
 const NUMERIC_KEYS = new Set(['spent', 'paid', 'owe', 'invoice_count'])
 
@@ -26,12 +27,12 @@ const dayOf = (value) => String(value).slice(0, 10)
  * invoice_date), paid (payments by paid_at) and owe (= spent − paid). All
  * search / sort / totals run client-side over the derived rows.
  */
-export const useDebtReport = ({ currentStore, currentBusiness, scope, fetchers, onError }) => {
+export const useDebtReport = ({ currentStore, currentBusiness, scope, fetchers, storageKey, onError }) => {
   const rows        = ref([])
   const loading     = ref(false)
-  const searchQuery = ref('')
-  const startDate   = ref('')
-  const endDate     = ref('')
+  const searchQuery = usePersistentRef(`${storageKey}:search`, '')
+  const startDate   = usePersistentRef(`${storageKey}:startDate`, '')
+  const endDate     = usePersistentRef(`${storageKey}:endDate`, '')
 
   const isBusinessScope = computed(() => scope?.value === 'business')
 
@@ -78,7 +79,7 @@ export const useDebtReport = ({ currentStore, currentBusiness, scope, fetchers, 
     return decoratedRows.value.filter((r) => matchesSearch(r, searchQuery.value))
   })
 
-  const sort = useSortCriteria()
+  const sort = useSortCriteria(storageKey)
   const sortedRows = computed(() => sort.sortItems(filteredRows.value, getSortValue))
 
   // Footer totals over the full filtered set (independent of pagination).

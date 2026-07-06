@@ -4,6 +4,7 @@ namespace App\Repositories\Report;
 
 use App\Enums\InvoiceTypeEnum;
 use App\Models\Invoice\InvoiceProductCost;
+use App\Support\ReportExportOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -96,6 +97,7 @@ class SaleReportRepository
         $ids = $filters['ids'] ?? null;
         if (is_array($ids) && count($ids) > 0) {
             $query->whereIn('invoice_product_costs.id', $ids);
+            ReportExportOrder::byIds($query, 'invoice_product_costs.id', $ids);
         }
 
         $search = $filters['search'] ?? null;

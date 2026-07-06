@@ -118,7 +118,7 @@
               :search-placeholder="$t('products.filterTag')"
               multiple
               teleport
-              @update:modelValue="onTagFilterChange"
+              @update:modelValue="tagFilter = $event"
             />
           </template>
           <template #filter-status>
@@ -389,6 +389,7 @@ import { displayCategoryName } from '@/features/productCategories/constants'
 import { PRODUCT_COLUMNS, PRODUCT_INITIAL_COL_WIDTHS, statusOptions } from '@/features/products/constants'
 import { ErrorCode } from '@/utils/errorCodes'
 import { normalizeText } from '@/utils/textNormalizer'
+import { matchesTagFilter } from '@/utils/tagFilter'
 import { formatDateTime } from '@/utils/datetime'
 import { translateError } from '@/utils/translateError'
 import { t } from '@/i18n'
@@ -428,10 +429,6 @@ const categoryOptions = computed(() =>
   }))
 )
 
-// The "(All)" row of the selector (empty selection) shows every product; these two
-// broad options narrow to products that have any tag / that have none.
-const BROAD_TAG_FILTERS = ['tagged', 'none']
-
 const tagOptions = computed(() => {
   const opts = [
     { value: 'tagged', label: t('products.allTags') },
@@ -447,20 +444,6 @@ const tagOptions = computed(() => {
   }
   return opts
 })
-
-// "All tags" / "No tags" are broad, mutually-exclusive filters: each replaces any
-// other selection, and picking a specific tag drops whichever broad one was active
-// (combining them under the AND filter would always match nothing).
-const onTagFilterChange = (next) => {
-  const addedBroad = BROAD_TAG_FILTERS.find(v => next.includes(v) && !tagFilter.value.includes(v))
-  if (addedBroad) {
-    tagFilter.value = [addedBroad]
-  } else if (next.length > 1) {
-    tagFilter.value = next.filter(v => !BROAD_TAG_FILTERS.includes(v))
-  } else {
-    tagFilter.value = next
-  }
-}
 
 const { startDate, endDate, dateField, isActive: dateRangeActive, inDateRange, clear: clearDateRange } = useDateRangeFilter()
 
@@ -514,19 +497,6 @@ const canCreateUpdate = computed(() => {
   return role === 'owner' || role === 'accountant' || role === 'staff'
 })
 
-const matchesTagFilter = (product) => {
-  if (!tagFilter.value.length) return true
-  const productTags = product.tags || []
-  return tagFilter.value.every((selected) => {
-    if (selected === 'none') return productTags.length === 0
-    if (selected === 'tagged') return productTags.length > 0
-    const [kind, id] = selected.split(':')
-    if (kind === 'tag') return productTags.some(t => String(t.tag_id) === id)
-    if (kind === 'val') return productTags.some(t => String(t.tag_value_id) === id)
-    return true
-  })
-}
-
 const filteredProducts = computed(() => {
   const needle = normalizeText(searchQuery.value)
   return products.value.filter(p => {
@@ -534,7 +504,7 @@ const filteredProducts = computed(() => {
     if (statusFilter.value === 'inactive' &&  p.is_active) return false
     if (unitFilter.value && String(p.unit_id) !== unitFilter.value) return false
     if (categoryFilter.value && String(p.product_category_id) !== categoryFilter.value) return false
-    if (!matchesTagFilter(p)) return false
+    if (!matchesTagFilter(p.tags, tagFilter.value)) return false
     if (!inDateRange(p)) return false
     if (!needle) return true
     return (
