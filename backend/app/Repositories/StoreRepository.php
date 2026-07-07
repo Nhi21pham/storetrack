@@ -16,6 +16,12 @@ class StoreRepository
         return Store::find($id);
     }
 
+    public function businessIdFor(int $storeId): ?int
+    {
+        $businessId = Store::whereKey($storeId)->value('business_id');
+        return $businessId !== null ? (int) $businessId : null;
+    }
+
     public function update(Store $store, array $data): Store
     {
         $store->update($data);

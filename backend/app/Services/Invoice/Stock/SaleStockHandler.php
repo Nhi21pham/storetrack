@@ -4,12 +4,11 @@ namespace App\Services\Invoice\Stock;
 
 use App\Enums\ErrorCode;
 use App\Exceptions\InvoiceException;
-use App\Models\Customer;
 use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Product;
-use App\Models\Store;
 use App\Repositories\CustomerRepository;
+use App\Repositories\StoreRepository;
 use App\Services\Invoice\InventoryCostingService;
 
 class SaleStockHandler implements InvoiceStockHandler
@@ -17,19 +16,15 @@ class SaleStockHandler implements InvoiceStockHandler
     public function __construct(
         private InventoryCostingService $costingService,
         private CustomerRepository $customerRepository,
+        private StoreRepository $storeRepository,
     ) {}
 
     public function assertParty(int $partyId, int $storeId): void
     {
         // Customers are business-scoped, like suppliers.
-        $businessId = Store::whereKey($storeId)->value('business_id');
+        $businessId = $this->storeRepository->businessIdFor($storeId);
 
-        $exists = Customer::query()
-            ->where('party_id', $partyId)
-            ->where('business_id', $businessId)
-            ->exists();
-
-        if (!$exists) {
+        if ($businessId === null || !$this->customerRepository->existsInBusiness($partyId, $businessId)) {
             throw new InvoiceException(
                 ErrorCode::INVOICE_PARTY_INVALID,
                 'Customer not found in this business.'

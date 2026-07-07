@@ -32,6 +32,15 @@ class SupplierRepository
         return Supplier::find($id);
     }
 
+    /** Whether a supplier (by party) exists in the business — suppliers are business-scoped. */
+    public function existsInBusiness(int $partyId, int $businessId): bool
+    {
+        return Supplier::query()
+            ->where('party_id', $partyId)
+            ->where('business_id', $businessId)
+            ->exists();
+    }
+
     /**
      * Every supplier in the business as {party_id, name}, for resolving the
      * owner of an imported bank account by name.

@@ -32,6 +32,15 @@ class CustomerRepository
         return Customer::find($id);
     }
 
+    /** Whether a customer (by party) exists in the business — customers are business-scoped. */
+    public function existsInBusiness(int $partyId, int $businessId): bool
+    {
+        return Customer::query()
+            ->where('party_id', $partyId)
+            ->where('business_id', $businessId)
+            ->exists();
+    }
+
     /**
      * Every customer in the business as {party_id, name, phone}, for resolving
      * the owner of an imported bank account. Names aren't unique (customers are

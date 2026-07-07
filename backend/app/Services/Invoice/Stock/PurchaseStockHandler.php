@@ -7,9 +7,8 @@ use App\Exceptions\InvoiceException;
 use App\Models\Invoice\Invoice;
 use App\Models\Invoice\InvoiceProduct;
 use App\Models\Product;
-use App\Models\Store;
-use App\Models\Supplier;
 use App\Repositories\Invoice\InventoryBatchRepository;
+use App\Repositories\StoreRepository;
 use App\Repositories\SupplierRepository;
 use App\Services\Invoice\InventoryCostingService;
 
@@ -19,20 +18,16 @@ class PurchaseStockHandler implements InvoiceStockHandler
         private InventoryCostingService $costingService,
         private InventoryBatchRepository $batchRepository,
         private SupplierRepository $supplierRepository,
+        private StoreRepository $storeRepository,
     ) {}
 
     public function assertParty(int $partyId, int $storeId): void
     {
         // Suppliers are business-scoped — a supplier in the store's business can
         // be invoiced even if it isn't linked to this specific store.
-        $businessId = Store::whereKey($storeId)->value('business_id');
+        $businessId = $this->storeRepository->businessIdFor($storeId);
 
-        $exists = Supplier::query()
-            ->where('party_id', $partyId)
-            ->where('business_id', $businessId)
-            ->exists();
-
-        if (!$exists) {
+        if ($businessId === null || !$this->supplierRepository->existsInBusiness($partyId, $businessId)) {
             throw new InvoiceException(
                 ErrorCode::INVOICE_PARTY_INVALID,
                 'Supplier not found in this business.'
