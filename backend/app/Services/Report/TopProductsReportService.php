@@ -94,6 +94,7 @@ class TopProductsReportService
             'product_id'   => (int) $row->product_id,
             'product_name' => $row->product_name,
             'product_code' => $row->product_code,
+            'unit_name'    => $row->unit_name,
             'tags'         => $row->tags ?? [],
             'qty_sold'     => (float) $row->qty_sold,
             'revenue'      => $revenue,

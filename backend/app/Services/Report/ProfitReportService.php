@@ -105,6 +105,7 @@ class ProfitReportService
             'product_id'            => $line?->product_id !== null ? (int) $line->product_id : null,
             'product_name'          => $line?->product?->name ?? $line?->product_name,
             'product_code'          => $line?->product?->code,
+            'unit_name'             => $line?->product?->unit?->name,
             'tags'                  => $line?->product?->tags ?? [],
             'purchase_invoice_id'   => $batch?->source_invoice_id !== null ? (int) $batch->source_invoice_id : null,
             'purchase_invoice_code' => $batch?->sourceInvoice?->code,

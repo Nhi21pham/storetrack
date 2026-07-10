@@ -116,6 +116,10 @@
               <button v-if="row.product_code" class="code-link" @click="openProductDetail(row)"><HighlightText :text="row.product_code" :query="searchQuery" /></button>
               <span v-else class="empty-val">—</span>
             </td>
+            <td v-if="columnVisibility.isVisible('unit_name')">
+              <span v-if="row.unit_name">{{ row.unit_name }}</span>
+              <span v-else class="empty-val">—</span>
+            </td>
             <td v-if="columnVisibility.isVisible('tags')">
               <span v-if="row.tags && row.tags.length" class="tags-list">
                 <TagChip v-for="(t, i) in row.tags" :key="i" :tag-name="t.tag_name" :value="t.value" :highlighted="isTagChipHit(t, tagFilter)" />

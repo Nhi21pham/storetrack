@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 class StockReportExport extends BaseExport
 {
     public const COLUMN_KEYS = [
-        'product_name', 'product_code', 'tags', 'supplier_name', 'invoice_code',
+        'product_name', 'product_code', 'unit_name', 'tags', 'supplier_name', 'invoice_code',
         'purchase_date', 'quantity_received', 'quantity_remaining', 'unit_cost', 'total_cost',
     ];
 
@@ -86,6 +86,7 @@ class StockReportExport extends BaseExport
         return [
             'product_name'       => ['heading' => __('exports.col_product'),          'width' => 28, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->name ?? '')],
             'product_code'       => ['heading' => __('exports.col_code'),             'width' => 16, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->code ?? '')],
+            'unit_name'          => ['heading' => __('exports.col_unit'),             'width' => 14, 'value' => fn (InventoryBatch $row) => (string) ($row->product?->unit?->name ?? '')],
             'tags'               => ['heading' => __('exports.col_tags'),             'width' => 30, 'value' => fn (InventoryBatch $row) => $this->formatTags($row)],
             'supplier_name'      => ['heading' => __('exports.col_supplier'),         'width' => 26, 'value' => fn (InventoryBatch $row) => (string) ($row->sourceInvoice?->party_name ?? '')],
             'invoice_code'       => ['heading' => __('exports.col_purchase_invoice'), 'width' => 18, 'value' => fn (InventoryBatch $row) => (string) ($row->sourceInvoice?->code ?? '')],

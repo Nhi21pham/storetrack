@@ -2,6 +2,7 @@ type TopProductRow {
     product_id: ID!
     product_name: String!
     product_code: String
+    unit_name: String
     tags: [ProductTag!]!
     qty_sold: Float!
     revenue: Float!

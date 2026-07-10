@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 class TopProductsReportExport extends BaseExport
 {
     public const COLUMN_KEYS = [
-        'product_name', 'product_code', 'qty_sold', 'revenue', 'profit', 'orders',
+        'product_name', 'product_code', 'unit_name', 'qty_sold', 'revenue', 'profit', 'orders',
     ];
 
     /** Running rank assigned to rows in ranked order. */
@@ -91,6 +91,7 @@ class TopProductsReportExport extends BaseExport
         return [
             'product_name' => ['heading' => __('exports.col_product'),   'width' => 28, 'value' => fn (InvoiceProduct $row) => (string) ($row->product_name ?? '')],
             'product_code' => ['heading' => __('exports.col_code'),      'width' => 16, 'value' => fn (InvoiceProduct $row) => (string) ($row->product_code ?? '')],
+            'unit_name'    => ['heading' => __('exports.col_unit'),      'width' => 14, 'value' => fn (InvoiceProduct $row) => (string) ($row->unit_name ?? '')],
             'qty_sold'     => ['heading' => __('exports.col_qty_sold'),  'width' => 14, 'value' => fn (InvoiceProduct $row) => (float) $row->qty_sold,        'total' => fn () => $this->totalQty],
             'revenue'      => ['heading' => __('exports.col_revenue'),   'width' => 18, 'value' => fn (InvoiceProduct $row) => round((float) $row->revenue, 2), 'total' => fn () => round($this->totalRevenue, 2)],
             'profit'       => ['heading' => __('exports.col_profit'),    'width' => 18, 'value' => fn (InvoiceProduct $row) => $this->profit($row),            'total' => fn () => round($this->totalProfit, 2)],

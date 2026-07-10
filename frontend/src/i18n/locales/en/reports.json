@@ -3,6 +3,7 @@
     "num": "#",
     "product": "Product",
     "code": "Code",
+    "unit": "Unit",
     "tags": "Tags",
     "store": "Store",
     "supplier": "Supplier",

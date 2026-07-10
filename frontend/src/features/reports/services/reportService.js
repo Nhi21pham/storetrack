@@ -1,7 +1,7 @@
 import { graphql, rest } from '@/api'
 
 const STOCK_REPORT_FIELDS = `
-  id store_id store_name product_id product_name product_code
+  id store_id store_name product_id product_name product_code unit_name
   tags { tag_id tag_name tag_value_id value }
   supplier_party_id supplier_id supplier_name
   invoice_id invoice_code purchase_date
@@ -37,7 +37,7 @@ export const startStockReportBusinessExport = ({ businessId, params }) =>
   rest('post', `/api/exports/stock-report/business/${businessId}`, { params })
 
 const SALE_REPORT_FIELDS = `
-  id store_id store_name product_id product_name product_code
+  id store_id store_name product_id product_name product_code unit_name
   tags { tag_id tag_name tag_value_id value }
   customer_party_id customer_id customer_name
   purchase_invoice_id purchase_invoice_code purchase_date
@@ -74,7 +74,7 @@ export const startSaleReportBusinessExport = ({ businessId, params }) =>
   rest('post', `/api/exports/sale-report/business/${businessId}`, { params })
 
 const PROFIT_REPORT_FIELDS = `
-  id store_id store_name product_id product_name product_code
+  id store_id store_name product_id product_name product_code unit_name
   tags { tag_id tag_name tag_value_id value }
   purchase_invoice_id purchase_invoice_code purchase_date
   invoice_id invoice_code invoice_date
@@ -175,7 +175,7 @@ export const startPayablesReportBusinessExport = ({ businessId, params }) =>
   rest('post', `/api/exports/payables-report/business/${businessId}`, { params })
 
 const TOP_PRODUCTS_FIELDS = `
-  product_id product_name product_code
+  product_id product_name product_code unit_name
   tags { tag_id tag_name tag_value_id value }
   qty_sold revenue profit orders
 `

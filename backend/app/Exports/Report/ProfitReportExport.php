@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 class ProfitReportExport extends BaseExport
 {
     public const COLUMN_KEYS = [
-        'product_name', 'product_code', 'tags', 'purchase_invoice_code', 'purchase_date',
+        'product_name', 'product_code', 'unit_name', 'tags', 'purchase_invoice_code', 'purchase_date',
         'invoice_code', 'invoice_date', 'quantity', 'unit_cost', 'unit_price',
         'cost', 'revenue', 'profit',
     ];
@@ -113,6 +113,7 @@ class ProfitReportExport extends BaseExport
         return [
             'product_name'          => ['heading' => __('exports.col_product'),           'width' => 28, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->product?->name ?? $row->invoiceProduct?->product_name ?? '')],
             'product_code'          => ['heading' => __('exports.col_code'),              'width' => 16, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->product?->code ?? '')],
+            'unit_name'             => ['heading' => __('exports.col_unit'),              'width' => 14, 'value' => fn (InvoiceProductCost $row) => (string) ($row->invoiceProduct?->product?->unit?->name ?? '')],
             'tags'                  => ['heading' => __('exports.col_tags'),              'width' => 30, 'value' => fn (InvoiceProductCost $row) => $this->formatTags($row)],
             'purchase_invoice_code' => ['heading' => __('exports.col_purchase_invoice'),  'width' => 18, 'value' => fn (InvoiceProductCost $row) => (string) ($row->batch?->sourceInvoice?->code ?? '')],
             'purchase_date'         => ['heading' => __('exports.col_purchase_date'),     'width' => 16, 'value' => fn (InvoiceProductCost $row) => optional($row->batch?->received_at)->format('Y-m-d') ?? ''],

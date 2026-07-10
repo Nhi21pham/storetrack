@@ -5,6 +5,7 @@ type ProfitReportRow {
     product_id: ID
     product_name: String!
     product_code: String
+    unit_name: String
     tags: [ProductTag!]!
     purchase_invoice_id: ID
     purchase_invoice_code: String

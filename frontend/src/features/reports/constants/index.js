@@ -11,6 +11,7 @@ export const STOCK_REPORT_COLUMNS = [
   { key: 'select',             labelKey: '',                       sortable: false },
   { key: 'product_name',       labelKey: 'reports.col.product',    sortable: true  },
   { key: 'product_code',       labelKey: 'reports.col.code',       sortable: true  },
+  { key: 'unit_name',          labelKey: 'reports.col.unit',       sortable: true  },
   { key: 'tags',               labelKey: 'reports.col.tags',       sortable: false },
   { key: 'supplier_name',      labelKey: 'reports.col.supplier',   sortable: true  },
   { key: 'invoice_code',       labelKey: 'reports.col.purchaseInvoice', sortable: true  },
@@ -21,13 +22,14 @@ export const STOCK_REPORT_COLUMNS = [
   { key: 'total_cost',         labelKey: 'reports.col.totalCost',  sortable: true  },
 ]
 
-export const STOCK_REPORT_INITIAL_COL_WIDTHS = [40, 200, 130, 200, 180, 150, 130, 110, 140, 120, 130]
+export const STOCK_REPORT_INITIAL_COL_WIDTHS = [40, 200, 130, 120, 200, 180, 150, 130, 110, 140, 120, 130]
 
 export const SALE_REPORT_COLUMNS = [
   { key: 'select',                labelKey: '',                          sortable: false },
   { key: 'order_number',          labelKey: 'reports.col.num',           sortable: false },
   { key: 'product_name',          labelKey: 'reports.col.product',       sortable: true  },
   { key: 'product_code',          labelKey: 'reports.col.code',          sortable: true  },
+  { key: 'unit_name',             labelKey: 'reports.col.unit',          sortable: true  },
   { key: 'tags',                  labelKey: 'reports.col.tags',          sortable: false },
   { key: 'customer_name',         labelKey: 'reports.col.customer',      sortable: true  },
   { key: 'purchase_invoice_code', labelKey: 'reports.col.purchaseInvoice', sortable: true  },
@@ -39,13 +41,14 @@ export const SALE_REPORT_COLUMNS = [
   { key: 'total_sale',            labelKey: 'reports.col.totalSale',     sortable: true  },
 ]
 
-export const SALE_REPORT_INITIAL_COL_WIDTHS = [40, 50, 200, 130, 200, 180, 150, 130, 150, 130, 110, 150, 130]
+export const SALE_REPORT_INITIAL_COL_WIDTHS = [40, 50, 200, 130, 120, 200, 180, 150, 130, 150, 130, 110, 150, 130]
 
 export const PROFIT_REPORT_COLUMNS = [
   { key: 'select',                labelKey: '',                          sortable: false },
   { key: 'order_number',          labelKey: 'reports.col.num',           sortable: false },
   { key: 'product_name',          labelKey: 'reports.col.product',       sortable: true  },
   { key: 'product_code',          labelKey: 'reports.col.code',          sortable: true  },
+  { key: 'unit_name',             labelKey: 'reports.col.unit',          sortable: true  },
   { key: 'tags',                  labelKey: 'reports.col.tags',          sortable: false },
   { key: 'purchase_invoice_code', labelKey: 'reports.col.purchaseInvoice', sortable: true  },
   { key: 'purchase_date',         labelKey: 'reports.col.purchaseDate',  sortable: true  },
@@ -59,7 +62,7 @@ export const PROFIT_REPORT_COLUMNS = [
   { key: 'profit',                labelKey: 'reports.col.profit',        sortable: true  },
 ]
 
-export const PROFIT_REPORT_INITIAL_COL_WIDTHS = [40, 50, 200, 130, 200, 160, 130, 150, 130, 110, 140, 150, 130, 130, 130]
+export const PROFIT_REPORT_INITIAL_COL_WIDTHS = [40, 50, 200, 130, 120, 200, 160, 130, 150, 130, 110, 140, 150, 130, 130, 130]
 
 // The debt reports (customer / supplier) share one column set; only the party
 // name and "spent" labels differ per ledger, so those carry an explicit label.
@@ -87,6 +90,7 @@ export const TOP_PRODUCTS_COLUMNS = [
   { key: 'order_number', labelKey: 'reports.col.num',      sortable: false },
   { key: 'product_name', labelKey: 'reports.col.product',  sortable: true  },
   { key: 'product_code', labelKey: 'reports.col.code',     sortable: true  },
+  { key: 'unit_name',    labelKey: 'reports.col.unit',     sortable: true  },
   { key: 'tags',         labelKey: 'reports.col.tags',     sortable: false },
   { key: 'qty_sold',     labelKey: 'reports.col.qtySold',  sortable: true  },
   { key: 'revenue',      labelKey: 'reports.col.revenue',  sortable: true  },
@@ -94,7 +98,7 @@ export const TOP_PRODUCTS_COLUMNS = [
   { key: 'orders',       labelKey: 'reports.col.numOrders', sortable: true  },
 ]
 
-export const TOP_PRODUCTS_INITIAL_COL_WIDTHS = [40, 50, 220, 130, 200, 130, 160, 160, 110]
+export const TOP_PRODUCTS_INITIAL_COL_WIDTHS = [40, 50, 220, 130, 120, 200, 130, 160, 160, 110]
 
 // The metrics the "Rank by" toggle switches between (each sorts that column desc).
 export const topProductsRankMetrics = () => [

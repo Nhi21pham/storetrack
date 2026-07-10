@@ -5,6 +5,7 @@ type SaleReportRow {
     product_id: ID
     product_name: String!
     product_code: String
+    unit_name: String
     tags: [ProductTag!]!
     customer_party_id: ID
     customer_id: ID

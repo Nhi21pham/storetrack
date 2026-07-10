@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Collection;
 class ProfitReportRepository
 {
     private const RELATIONS = [
+        'invoiceProduct.product.unit',
         'invoiceProduct.product.taggables.tag',
         'invoiceProduct.product.taggables.tagValue',
         'invoiceProduct.invoice',

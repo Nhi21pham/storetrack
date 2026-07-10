@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Collection;
  */
 class StockReportRepository
 {
-    private const RELATIONS = ['product.taggables.tag', 'product.taggables.tagValue', 'sourceInvoice.party.supplier'];
+    private const RELATIONS = ['product.unit', 'product.taggables.tag', 'product.taggables.tagValue', 'sourceInvoice.party.supplier'];
 
     /** Every batch in the store (including depleted ones), for the list view. */
     public function all(int $storeId): Collection
