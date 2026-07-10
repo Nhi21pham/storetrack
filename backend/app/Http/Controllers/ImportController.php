@@ -39,7 +39,7 @@ class ImportController extends Controller
 
     public function unitsStart(Request $request, int $storeId): JsonResponse
     {
-        return $this->start($request, $storeId, 'units', $this->storeName($storeId));
+        return $this->start($request, $storeId, ImportTypeEnum::UNITS, $this->storeName($storeId));
     }
 
     public function tagsTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
@@ -59,7 +59,7 @@ class ImportController extends Controller
 
     public function tagsStart(Request $request, int $storeId): JsonResponse
     {
-        return $this->start($request, $storeId, 'tags', $this->storeName($storeId));
+        return $this->start($request, $storeId, ImportTypeEnum::TAGS, $this->storeName($storeId));
     }
 
     public function customersTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
@@ -79,7 +79,7 @@ class ImportController extends Controller
 
     public function customersStart(Request $request, int $storeId): JsonResponse
     {
-        return $this->start($request, $storeId, 'customers', $this->storeName($storeId));
+        return $this->start($request, $storeId, ImportTypeEnum::CUSTOMERS, $this->storeName($storeId));
     }
 
     public function suppliersTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
@@ -99,7 +99,7 @@ class ImportController extends Controller
 
     public function suppliersStart(Request $request, int $storeId): JsonResponse
     {
-        return $this->start($request, $storeId, 'suppliers', $this->storeName($storeId));
+        return $this->start($request, $storeId, ImportTypeEnum::SUPPLIERS, $this->storeName($storeId));
     }
 
     public function productsTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
@@ -119,7 +119,7 @@ class ImportController extends Controller
 
     public function productsStart(Request $request, int $storeId): JsonResponse
     {
-        return $this->start($request, $storeId, 'products', $this->storeName($storeId));
+        return $this->start($request, $storeId, ImportTypeEnum::PRODUCTS, $this->storeName($storeId));
     }
 
     public function banksTemplate(Request $request, int $businessId): BinaryFileResponse|JsonResponse
@@ -139,7 +139,7 @@ class ImportController extends Controller
 
     public function banksStart(Request $request, int $businessId): JsonResponse
     {
-        return $this->start($request, $businessId, 'banks', $this->businessName($businessId));
+        return $this->start($request, $businessId, ImportTypeEnum::BANKS, $this->businessName($businessId));
     }
 
     public function bankAccountsTemplate(Request $request, int $businessId): BinaryFileResponse|JsonResponse
@@ -159,7 +159,7 @@ class ImportController extends Controller
 
     public function bankAccountsStart(Request $request, int $businessId): JsonResponse
     {
-        return $this->start($request, $businessId, 'bank_accounts', $this->businessName($businessId));
+        return $this->start($request, $businessId, ImportTypeEnum::BANK_ACCOUNTS        , $this->businessName($businessId));
     }
 
     public function status(Request $request, int $importId): JsonResponse
