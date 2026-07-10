@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ImportTypeEnum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -33,6 +34,7 @@ class Import extends Model
     ];
 
     protected $casts = [
+        'type' => ImportTypeEnum::class,
         'metadata' => 'array',
         'completed_at' => 'datetime',
         'total_rows' => 'integer',

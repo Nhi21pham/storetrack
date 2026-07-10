@@ -2,7 +2,7 @@
 
 namespace App\Jobs\Imports;
 
-use App\Imports\ImporterRegistry;
+use App\Imports\ImporterFactory;
 use App\Models\Import;
 use App\Services\ImportService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -24,7 +24,7 @@ class ProcessImportJob implements ShouldQueue
 
     public function __construct(public int $importId) {}
 
-    public function handle(ImportService $importService, ImporterRegistry $registry): void
+    public function handle(ImportService $importService, ImporterFactory $factory): void
     {
         $import = Import::find($this->importId);
         if (! $import) {
@@ -36,12 +36,12 @@ class ProcessImportJob implements ShouldQueue
         }
 
         try {
-            $importer = $registry->for($import->type);
+            $importer = $factory->for($import->type);
             $importService->process($import, $importer);
         } catch (\Throwable $e) {
             Log::error('Import job failed', [
                 'import_id' => $import->id,
-                'type' => $import->type,
+                'type' => $import->type->value,
                 'exception' => get_class($e),
                 'message' => $e->getMessage(),
             ]);

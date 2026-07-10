@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ImportTypeEnum;
 use App\Exceptions\AppException;
-use App\Imports\ImporterRegistry;
+use App\Imports\ImporterFactory;
 use App\Models\Import;
 use App\Models\Store;
 use App\Services\BusinessService;
@@ -17,23 +18,23 @@ class ImportController extends Controller
 {
     public function __construct(
         private ImportService $importService,
-        private ImporterRegistry $registry,
+        private ImporterFactory $factory,
         private BusinessService $businessService,
     ) {}
 
     public function unitsTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
     {
-        return $this->template($request, $storeId, 'units');
+        return $this->template($request, $storeId, ImportTypeEnum::UNITS);
     }
 
     public function unitsPreview(Request $request, int $storeId): JsonResponse
     {
-        return $this->preview($request, $storeId, 'units');
+        return $this->preview($request, $storeId, ImportTypeEnum::UNITS);
     }
 
     public function unitsRevalidate(Request $request, int $storeId): JsonResponse
     {
-        return $this->revalidate($request, $storeId, 'units');
+        return $this->revalidate($request, $storeId, ImportTypeEnum::UNITS);
     }
 
     public function unitsStart(Request $request, int $storeId): JsonResponse
@@ -43,17 +44,17 @@ class ImportController extends Controller
 
     public function tagsTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
     {
-        return $this->template($request, $storeId, 'tags');
+        return $this->template($request, $storeId, ImportTypeEnum::TAGS);
     }
 
     public function tagsPreview(Request $request, int $storeId): JsonResponse
     {
-        return $this->preview($request, $storeId, 'tags');
+        return $this->preview($request, $storeId, ImportTypeEnum::TAGS);
     }
 
     public function tagsRevalidate(Request $request, int $storeId): JsonResponse
     {
-        return $this->revalidate($request, $storeId, 'tags');
+        return $this->revalidate($request, $storeId, ImportTypeEnum::TAGS);
     }
 
     public function tagsStart(Request $request, int $storeId): JsonResponse
@@ -63,17 +64,17 @@ class ImportController extends Controller
 
     public function customersTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
     {
-        return $this->template($request, $storeId, 'customers');
+        return $this->template($request, $storeId, ImportTypeEnum::CUSTOMERS);
     }
 
     public function customersPreview(Request $request, int $storeId): JsonResponse
     {
-        return $this->preview($request, $storeId, 'customers');
+        return $this->preview($request, $storeId, ImportTypeEnum::CUSTOMERS);
     }
 
     public function customersRevalidate(Request $request, int $storeId): JsonResponse
     {
-        return $this->revalidate($request, $storeId, 'customers');
+        return $this->revalidate($request, $storeId, ImportTypeEnum::CUSTOMERS);
     }
 
     public function customersStart(Request $request, int $storeId): JsonResponse
@@ -83,17 +84,17 @@ class ImportController extends Controller
 
     public function suppliersTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
     {
-        return $this->template($request, $storeId, 'suppliers');
+        return $this->template($request, $storeId, ImportTypeEnum::SUPPLIERS);
     }
 
     public function suppliersPreview(Request $request, int $storeId): JsonResponse
     {
-        return $this->preview($request, $storeId, 'suppliers');
+        return $this->preview($request, $storeId, ImportTypeEnum::SUPPLIERS);
     }
 
     public function suppliersRevalidate(Request $request, int $storeId): JsonResponse
     {
-        return $this->revalidate($request, $storeId, 'suppliers');
+        return $this->revalidate($request, $storeId, ImportTypeEnum::SUPPLIERS);
     }
 
     public function suppliersStart(Request $request, int $storeId): JsonResponse
@@ -103,17 +104,17 @@ class ImportController extends Controller
 
     public function productsTemplate(Request $request, int $storeId): BinaryFileResponse|JsonResponse
     {
-        return $this->template($request, $storeId, 'products');
+        return $this->template($request, $storeId, ImportTypeEnum::PRODUCTS);
     }
 
     public function productsPreview(Request $request, int $storeId): JsonResponse
     {
-        return $this->preview($request, $storeId, 'products');
+        return $this->preview($request, $storeId, ImportTypeEnum::PRODUCTS);
     }
 
     public function productsRevalidate(Request $request, int $storeId): JsonResponse
     {
-        return $this->revalidate($request, $storeId, 'products');
+        return $this->revalidate($request, $storeId, ImportTypeEnum::PRODUCTS);
     }
 
     public function productsStart(Request $request, int $storeId): JsonResponse
@@ -123,17 +124,17 @@ class ImportController extends Controller
 
     public function banksTemplate(Request $request, int $businessId): BinaryFileResponse|JsonResponse
     {
-        return $this->template($request, $businessId, 'banks');
+        return $this->template($request, $businessId, ImportTypeEnum::BANKS);
     }
 
     public function banksPreview(Request $request, int $businessId): JsonResponse
     {
-        return $this->preview($request, $businessId, 'banks');
+        return $this->preview($request, $businessId, ImportTypeEnum::BANKS);
     }
 
     public function banksRevalidate(Request $request, int $businessId): JsonResponse
     {
-        return $this->revalidate($request, $businessId, 'banks');
+        return $this->revalidate($request, $businessId, ImportTypeEnum::BANKS);
     }
 
     public function banksStart(Request $request, int $businessId): JsonResponse
@@ -143,17 +144,17 @@ class ImportController extends Controller
 
     public function bankAccountsTemplate(Request $request, int $businessId): BinaryFileResponse|JsonResponse
     {
-        return $this->template($request, $businessId, 'bank_accounts');
+        return $this->template($request, $businessId, ImportTypeEnum::BANK_ACCOUNTS);
     }
 
     public function bankAccountsPreview(Request $request, int $businessId): JsonResponse
     {
-        return $this->preview($request, $businessId, 'bank_accounts');
+        return $this->preview($request, $businessId, ImportTypeEnum::BANK_ACCOUNTS);
     }
 
     public function bankAccountsRevalidate(Request $request, int $businessId): JsonResponse
     {
-        return $this->revalidate($request, $businessId, 'bank_accounts');
+        return $this->revalidate($request, $businessId, ImportTypeEnum::BANK_ACCOUNTS);
     }
 
     public function bankAccountsStart(Request $request, int $businessId): JsonResponse
@@ -238,26 +239,26 @@ class ImportController extends Controller
         }
     }
 
-    private function template(Request $request, int $scopeId, string $type): BinaryFileResponse|JsonResponse
+    private function template(Request $request, int $scopeId, ImportTypeEnum $type): BinaryFileResponse|JsonResponse
     {
         try {
-            $importer = $this->registry->for($type);
+            $importer = $this->factory->for($type);
             $template = $this->importService->template($request->user(), $scopeId, $importer);
 
-            return Excel::download($template, $type.'-import-template.xlsx');
+            return Excel::download($template, $type->value.'-import-template.xlsx');
         } catch (AppException $e) {
             return $this->appExceptionResponse($e);
         }
     }
 
-    private function preview(Request $request, int $scopeId, string $type): JsonResponse
+    private function preview(Request $request, int $scopeId, ImportTypeEnum $type): JsonResponse
     {
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
         ]);
 
         try {
-            $importer = $this->registry->for($type);
+            $importer = $this->factory->for($type);
             $data = $this->importService->preview(
                 $request->user(),
                 $scopeId,
@@ -271,14 +272,14 @@ class ImportController extends Controller
         }
     }
 
-    private function revalidate(Request $request, int $scopeId, string $type): JsonResponse
+    private function revalidate(Request $request, int $scopeId, ImportTypeEnum $type): JsonResponse
     {
         $request->validate([
             'rows' => ['required', 'array'],
         ]);
 
         try {
-            $importer = $this->registry->for($type);
+            $importer = $this->factory->for($type);
             $data = $this->importService->revalidate(
                 $request->user(),
                 $scopeId,
@@ -292,7 +293,7 @@ class ImportController extends Controller
         }
     }
 
-    private function start(Request $request, int $scopeId, string $type, ?string $scopeName): JsonResponse
+    private function start(Request $request, int $scopeId, ImportTypeEnum $type, ?string $scopeName): JsonResponse
     {
         $request->validate([
             'rows'              => ['required', 'array', 'min:1'],
@@ -300,7 +301,7 @@ class ImportController extends Controller
         ]);
 
         try {
-            $importer = $this->registry->for($type);
+            $importer = $this->factory->for($type);
             $import = $this->importService->queueImport(
                 $request->user(),
                 $scopeId,
@@ -332,7 +333,7 @@ class ImportController extends Controller
 
         return response()->json([
             'id'                => $import->id,
-            'type'              => $import->type,
+            'type'              => $import->type->value,
             'status'            => $import->status,
             'original_filename' => $import->original_filename,
             'total_rows'        => $import->total_rows,

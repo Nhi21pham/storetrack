@@ -381,7 +381,7 @@ class ImportService
     {
         return [
             'id'                => $import->id,
-            'type'              => $import->type,
+            'type'              => $import->type->value,
             'status'            => $import->status,
             'original_filename' => $import->original_filename,
             'total_rows'        => $import->total_rows,
