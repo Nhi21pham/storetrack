@@ -40,7 +40,7 @@ https://storetrack.io.vn
 | Backend    | PHP 8.2, [Laravel 12](https://laravel.com/), [Lighthouse](https://lighthouse-php.com/) (GraphQL), Sanctum (auth), [Horizon](https://laravel.com/docs/horizon) (queues) |
 | Frontend   | [Vue 3](https://vuejs.org/) + TypeScript, Vite, Pinia, Vue Router, vue-i18n |
 | Data       | MySQL 8, Redis (queue + cache) |
-| Tooling    | Docker / Docker Compose, maatwebsite/excel, dompdf + headless Chromium (Browsershot) for PDFs, spatie/laravel-backup |
+| Tooling    | Docker / Docker Compose, maatwebsite/excel, headless Chromium (puppeteer) for HTML→PDF invoice rendering, spatie/laravel-backup |
 
 ## Architecture
 
