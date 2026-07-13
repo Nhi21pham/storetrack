@@ -86,9 +86,9 @@ Then edit `backend/.env` so it points at the Docker services instead of SQLite. 
 DB_CONNECTION=mysql
 DB_HOST=mysql_db
 DB_PORT=3306
-DB_DATABASE=storetrack
-DB_USERNAME=
-DB_PASSWORD=
+DB_DATABASE=your_database_name
+DB_USERNAME=your_database_user 
+DB_PASSWORD=your_database_password
 
 REDIS_HOST=redis_cache
 QUEUE_CONNECTION=redis
