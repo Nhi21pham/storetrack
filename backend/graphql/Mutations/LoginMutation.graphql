@@ -2,8 +2,13 @@ extend type Mutation {
     login(
         email: String!
         password: String!
-    ): LoginResponse! 
+    ): LoginResponse!
+    @throttle(maxAttempts: 5, decayMinutes: 1)
     @field(resolver: "App\\GraphQL\\Mutations\\LoginResolver@login")
+
+    logout: Boolean!
+    @guard(with: ["sanctum"])
+    @field(resolver: "App\\GraphQL\\Mutations\\LoginResolver@logout")
 }
 
 type LoginResponse {

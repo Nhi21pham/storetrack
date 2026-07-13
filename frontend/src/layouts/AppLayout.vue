@@ -28,6 +28,7 @@
 import { ref, provide } from 'vue'
 import { useRouter } from 'vue-router'
 import { t } from '@/i18n'
+import { graphql } from '@/api'
 import SideBar from '@/components/layout/SideBar.vue'
 import NavBar from '@/components/layout/NavBar.vue'
 import ChangePasswordModal from '@/components/layout/ChangePasswordModal.vue'
@@ -79,7 +80,12 @@ provide('currentStore', currentStore)
 provide('refreshStoreSwitcher', refreshBusinessSwitcher)
 provide('showToast', showToast)
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  try {
+    await graphql(`mutation { logout }`)
+  } catch {
+    // ignore — clear the session locally even if the server revoke fails
+  }
   localStorage.removeItem('token')
   localStorage.removeItem('user')
   localStorage.removeItem('currentBusinessId')

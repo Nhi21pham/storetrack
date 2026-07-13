@@ -18,4 +18,13 @@ class LoginResolver extends BaseResolver
             return $this->loginService->login($args['email'], $args['password']);
         });
     }
+
+    public function logout(null $root, array $args): bool
+    {
+        return $this->safe(function () {
+            $this->user()->currentAccessToken()?->delete();
+
+            return true;
+        });
+    }
 }
