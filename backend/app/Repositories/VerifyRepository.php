@@ -30,10 +30,9 @@ class VerifyRepository
     public function incrementAttempts(string $prefix, string $email): int
     {
         $key = $prefix . ':attempts:' . $email;
-        $attempts = (int) Cache::get($key, 0) + 1;
-        Cache::put($key, $attempts, now()->addMinutes(10));
+        Cache::add($key, 0, now()->addMinutes(10));
 
-        return $attempts;
+        return (int) Cache::increment($key);
     }
 
     public function clearAttempts(string $prefix, string $email): void
