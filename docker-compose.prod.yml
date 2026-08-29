@@ -38,6 +38,9 @@ services:
   db:
     image: mysql:8.0
     container_name: mysql_db
+    # Sized for a 1 GB host: the stock buffer pool + performance_schema alone
+    # would outweigh everything else on the box.
+    command: --innodb-buffer-pool-size=64M --performance-schema=OFF
     ports:
       - "127.0.0.1:3306:3306"  # loopback only — DB reachable via SSH tunnel, never public
     restart: unless-stopped

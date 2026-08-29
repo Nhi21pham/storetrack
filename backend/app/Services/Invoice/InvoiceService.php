@@ -12,7 +12,6 @@ use App\Exceptions\InvoiceException;
 use App\Exceptions\ProductException;
 use App\Exceptions\TaxException;
 use App\Exports\InvoiceExport;
-use App\Jobs\Exports\ExportInvoiceDocumentJob;
 use App\Jobs\Exports\ExportInvoiceJob;
 use App\Models\Export;
 use App\Models\Invoice\Invoice;
@@ -238,34 +237,6 @@ class InvoiceService
             $scopeName,
             $normalizedFilters,
             $jobClass,
-            $clientId,
-        );
-    }
-
-    /**
-     * Queue a per-invoice PDF document export: a zip with one PDF per matched
-     * invoice. Rejects an empty selection up front; the render itself is chunked
-     * across parallel jobs, so the number of invoices is not capped.
-     */
-    public function queueDocumentExport(User $user, int $storeId, array $filters = [], ?string $clientId = null): Export
-    {
-        $this->permissionService->authorizeStore($user, PermissionEnum::UPDATE_INVOICE, $storeId);
-
-        $normalizedFilters = $this->normalizeExportFilters($filters);
-        unset($normalizedFilters['columns']);
-
-        if (! $this->invoiceRepository->documentsQuery($storeId, $normalizedFilters)->exists()) {
-            throw new InvoiceException(ErrorCode::VALIDATION_ERROR, 'No invoices match the current selection to export.');
-        }
-
-        return $this->exportService->queue(
-            $user,
-            ExportInvoiceDocumentJob::TYPE,
-            ExportScope::STORE,
-            $storeId,
-            Store::find($storeId)?->name,
-            $normalizedFilters,
-            ExportInvoiceDocumentJob::class,
             $clientId,
         );
     }

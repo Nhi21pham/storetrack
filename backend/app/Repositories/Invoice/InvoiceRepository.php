@@ -39,8 +39,6 @@ class InvoiceRepository
             ->get();
     }
 
-    private const DOCUMENT_RELATIONS = ['party.supplier', 'party.customer', 'creator', 'items.taxes', 'items.product.unit'];
-
     /**
      * A filtered, ordered query of invoices for a store. Used by the export job,
      * which streams it in chunks, so this returns a Builder rather than a result.
@@ -49,20 +47,6 @@ class InvoiceRepository
     {
         $query = Invoice::query()
             ->with(self::LIST_RELATIONS)
-            ->where('store_id', $storeId);
-
-        return $this->applyListFilters($query, $filters)->orderByDesc('id');
-    }
-
-    /**
-     * Same filtered, ordered selection as listQuery but eager-loading each
-     * invoice's line items and their taxes — for the per-invoice PDF document
-     * export, which renders the full content of every matched invoice.
-     */
-    public function documentsQuery(int $storeId, array $filters = []): Builder
-    {
-        $query = Invoice::query()
-            ->with(self::DOCUMENT_RELATIONS)
             ->where('store_id', $storeId);
 
         return $this->applyListFilters($query, $filters)->orderByDesc('id');

@@ -35,19 +35,16 @@
           :reset-columns="columnVisibility.resetColumns"
         />
         <ExportButton :exporting="exporting" :disabled="sortedInvoices.length === 0" @click="run" />
-        <ExportButton :label="$t('invoices.exportPdf')" :title="$t('invoices.exportPdfTitle')" :exporting="exportingPdf" :disabled="sortedInvoices.length === 0" @click="runPdf" />
       </div>
 
       <InvoiceSelectionBar
         v-if="selectedIds.size > 0"
         :count="selectedIds.size"
         :exporting="exporting"
-        :exportingPdf="exportingPdf"
         :bulkDeleting="bulkDeleting"
         :canDelete="!!currentStore?.is_active && canDelete"
         @clear="clearSelection"
         @export="run"
-        @export-pdf="runPdf"
         @delete="confirmBulkDelete"
       />
 
@@ -229,7 +226,7 @@ import { useClientPagination } from '@/composables/useClientPagination'
 import { useExport } from '@/composables/useExport'
 import { t } from '@/i18n'
 import { translateError } from '@/utils/translateError'
-import { fetchInvoice, startInvoiceExport, startInvoiceDocumentExport } from '@/features/invoices/services/invoiceService'
+import { fetchInvoice, startInvoiceExport } from '@/features/invoices/services/invoiceService'
 import {
   makeInvoiceColumns, INVOICE_INITIAL_COL_WIDTHS, INVOICE_TYPE,
   paymentMethodOptions, paymentStatusOptions,
@@ -364,13 +361,6 @@ const { exporting, run } = useExport({
   },
   defaultFilename: (id) => `sale-invoices-${id}.xlsx`,
   onSuccess: () => showToast(t('invoices.exportReady'), 'success'),
-  onError:   (msg) => showToast(msg, 'error'),
-})
-
-const { exporting: exportingPdf, run: runPdf } = useExport({
-  start: () => startInvoiceDocumentExport({ storeId: currentStore.value.id, params: baseExportParams() }),
-  defaultFilename: (id) => `sale-invoices-${id}.zip`,
-  onSuccess: () => showToast(t('invoices.pdfExportReady'), 'success'),
   onError:   (msg) => showToast(msg, 'error'),
 })
 

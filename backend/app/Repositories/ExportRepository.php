@@ -15,8 +15,7 @@ class ExportRepository
 
     /**
      * Paginated export history for a scope, newest first, optionally narrowed to
-     * a set of export types (e.g. ['invoices', 'invoice-documents'] for the
-     * invoice pages) and a created-at date range. Scoped by metadata->scope_id
+     * a set of export types and a created-at date range. Scoped by metadata->scope_id
      * so every member of the store/business sees the scope's exports, not just
      * their own.
      *
