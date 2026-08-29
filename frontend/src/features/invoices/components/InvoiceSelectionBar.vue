@@ -4,7 +4,6 @@
     <div class="selection-actions">
       <button class="btn-selection-action" @click="$emit('clear')">{{ $t('common.clear') }}</button>
       <ExportButton variant="ghost" :label="$t('invoices.exportExcel')" :exporting="exporting" @click="$emit('export')" />
-      <ExportButton variant="ghost" :label="$t('invoices.exportPdf')" :title="$t('invoices.exportSelectedPdfTitle')" :exporting="exportingPdf" @click="$emit('export-pdf')" />
       <button
         v-if="canDelete"
         class="btn-selection-action danger"
@@ -24,12 +23,11 @@ import ExportButton from '@/components/common/ExportButton.vue'
 defineProps({
   count:        { type: Number,  required: true },
   exporting:    { type: Boolean, required: true },
-  exportingPdf: { type: Boolean, required: true },
   bulkDeleting: { type: Boolean, required: true },
   canDelete:    { type: Boolean, required: true },
 })
 
-defineEmits(['clear', 'export', 'export-pdf', 'delete'])
+defineEmits(['clear', 'export', 'delete'])
 </script>
 
 <style scoped>

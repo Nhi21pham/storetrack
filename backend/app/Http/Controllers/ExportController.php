@@ -125,16 +125,6 @@ class ExportController extends Controller
         ));
     }
 
-    public function queueInvoiceDocuments(Request $request, int $storeId): JsonResponse
-    {
-        return $this->queued(fn () => $this->invoiceService->queueDocumentExport(
-            $request->user(),
-            $storeId,
-            $this->extractInvoiceExportFilters($request),
-            $this->extractClientId($request),
-        ));
-    }
-
     public function queueStockReport(Request $request, int $storeId): JsonResponse
     {
         return $this->queued(fn () => $this->stockReportService->queueExport(
@@ -327,7 +317,7 @@ class ExportController extends Controller
 
     /**
      * Export types to narrow the history to — accepts a single `type` or a
-     * repeated `type[]` (the invoice pages pass invoices + invoice-documents).
+     * repeated `type[]`.
      * Returns null to mean "every type for this scope".
      */
     private function extractHistoryTypes(Request $request): ?array
